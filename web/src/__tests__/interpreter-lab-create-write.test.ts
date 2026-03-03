@@ -19,13 +19,13 @@ const labSource = fs.readFileSync(LAB_PATH, "utf-8");
 // A) Create action visibility gating
 // ---------------------------------------------------------------------------
 describe("Phase 4B — create action gating", () => {
-  it("defines CREATABLE_NEXT_ACTIONS set excluding ask_clarification", () => {
-    expect(labSource).toContain("CREATABLE_NEXT_ACTIONS");
+  it("defines ACTIONABLE_NEXT_ACTIONS set excluding ask_clarification", () => {
+    expect(labSource).toContain("ACTIONABLE_NEXT_ACTIONS");
     expect(labSource).toContain('"show_preview"');
     expect(labSource).toContain('"await_confirmation"');
     expect(labSource).toContain('"done"');
     // Must NOT include ask_clarification
-    const start = labSource.indexOf("const CREATABLE_NEXT_ACTIONS");
+    const start = labSource.indexOf("const ACTIONABLE_NEXT_ACTIONS");
     const end = labSource.indexOf("]);", start);
     const setDefinition =
       start >= 0 && end > start ? labSource.slice(start, end + 3) : "";
@@ -37,7 +37,7 @@ describe("Phase 4B — create action gating", () => {
     expect(labSource).toContain('mode === "create"');
     expect(labSource).toContain("lastInterpretResponse !== null");
     expect(labSource).toContain(
-      "CREATABLE_NEXT_ACTIONS.has(lastInterpretResponse.next_action"
+      "ACTIONABLE_NEXT_ACTIONS.has(lastInterpretResponse.next_action"
     );
   });
 
@@ -97,7 +97,9 @@ describe("Phase 4B — mapDraftToCreatePayload", () => {
   });
 
   it("validates event_type is a non-empty array", () => {
-    expect(labSource).toContain("!Array.isArray(eventType) || eventType.length === 0");
+    expect(labSource).toContain("rawEventTypes");
+    expect(labSource).toContain("hintedEventType ? [hintedEventType] : rawEventTypes");
+    expect(labSource).toContain("if (eventType.length === 0)");
     expect(labSource).toContain("event_type must be a non-empty array");
   });
 
@@ -163,6 +165,26 @@ describe("Phase 4B — mapDraftToCreatePayload", () => {
 
   it("normalizes signup_mode to DB-safe enum values", () => {
     expect(labSource).toContain("normalizeSignupMode(body.signup_mode)");
+  });
+
+  it("prefixes title with venue name for conversational create payloads", () => {
+    expect(labSource).toContain("normalizeTitleWithVenuePrefix");
+    expect(labSource).toContain("resolvedVenueName");
+    expect(labSource).toContain("title: normalizedTitle");
+  });
+
+  it("ensures description includes concrete event details when missing or too thin", () => {
+    expect(labSource).toContain("buildMinimumEventDescription");
+    expect(labSource).toContain("hasDescriptionDetails");
+    expect(labSource).toContain("When:");
+    expect(labSource).toContain("Where:");
+  });
+
+  it("derives event_type hint from user intent text (e.g. showcase vs open_mic)", () => {
+    expect(labSource).toContain("inferEventTypeFromIntentText");
+    expect(labSource).toContain("hintedEventType ? [hintedEventType] : rawEventTypes");
+    expect(labSource).toContain("showcase");
+    expect(labSource).toContain("open_mic");
   });
 });
 

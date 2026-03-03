@@ -213,10 +213,10 @@ function base64ToJpegFile(base64: string): File {
 }
 
 // ---------------------------------------------------------------------------
-// Phase 4B: Allowed next_action values for create write
+// Phase 4B: Allowed next_action values for actionable write operations
 // ---------------------------------------------------------------------------
 
-const CREATABLE_NEXT_ACTIONS: ReadonlySet<NextAction> = new Set([
+const ACTIONABLE_NEXT_ACTIONS: ReadonlySet<NextAction> = new Set([
   "show_preview",
   "await_confirmation",
   "done",
@@ -406,6 +406,133 @@ function normalizeRecurrenceRuleForCreate(value: unknown): string | null {
   return raw;
 }
 
+function hasNonEmptyText(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+const EVENT_TYPE_SIGNAL_PATTERNS: Record<string, RegExp[]> = {
+  showcase: [/\bshowcase\b/i, /\bsongwriter(?:s)?\s+showcase\b/i],
+  open_mic: [/\bopen[\s-]?mic\b/i, /\bopen[\s-]?mike\b/i],
+  jam_session: [/\bjam\s+session\b/i, /\bjam\b/i],
+  workshop: [/\bworkshop\b/i, /\bmasterclass\b/i],
+  song_circle: [/\bsong\s+circle\b/i],
+  gig: [/\bgig\b/i, /\blive\s+music\b/i, /\bconcert\b/i],
+  meetup: [/\bmeetup\b/i, /\bmeet\s?up\b/i],
+  poetry: [/\bpoetry\b/i],
+  comedy: [/\bcomedy\b/i, /\bstand[\s-]?up\b/i],
+};
+
+const EVENT_TYPE_PRIORITY: Record<string, number> = {
+  showcase: 100,
+  workshop: 90,
+  song_circle: 80,
+  jam_session: 70,
+  open_mic: 60,
+  gig: 50,
+  meetup: 40,
+  poetry: 30,
+  comedy: 20,
+};
+
+function inferEventTypeFromIntentText(intentText: string): string | null {
+  if (!intentText.trim()) return null;
+  const ranked = Object.entries(EVENT_TYPE_SIGNAL_PATTERNS)
+    .map(([eventType, patterns]) => ({
+      eventType,
+      matches: patterns.reduce((count, pattern) => count + (pattern.test(intentText) ? 1 : 0), 0),
+    }))
+    .filter((entry) => entry.matches > 0)
+    .sort((a, b) => {
+      if (b.matches !== a.matches) return b.matches - a.matches;
+      return (EVENT_TYPE_PRIORITY[b.eventType] ?? 0) - (EVENT_TYPE_PRIORITY[a.eventType] ?? 0);
+    });
+
+  if (ranked.length === 0) return null;
+  if (
+    ranked.length > 1 &&
+    ranked[0].matches === ranked[1].matches &&
+    (EVENT_TYPE_PRIORITY[ranked[0].eventType] ?? 0) ===
+      (EVENT_TYPE_PRIORITY[ranked[1].eventType] ?? 0)
+  ) {
+    return null;
+  }
+  return ranked[0].eventType;
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function normalizeTitleWithVenuePrefix(input: {
+  title: unknown;
+  venueName: string | null;
+}): string | null {
+  if (!hasNonEmptyText(input.title)) return null;
+  const cleanTitle = input.title.trim();
+  if (!input.venueName) return cleanTitle;
+
+  const cleanVenue = input.venueName.trim();
+  if (!cleanVenue) return cleanTitle;
+
+  const alreadyPrefixed = new RegExp(
+    `^${escapeRegExp(cleanVenue)}\\s*-\\s*`,
+    "i"
+  ).test(cleanTitle);
+  if (alreadyPrefixed) return cleanTitle;
+
+  return `${cleanVenue} - ${cleanTitle}`;
+}
+
+function buildMinimumEventDescription(input: {
+  title: string;
+  eventType: string[];
+  startDate: string;
+  startTime: unknown;
+  endTime: unknown;
+  venueName: string | null;
+  recurrenceRule: unknown;
+  dayOfWeek: unknown;
+}): string {
+  const typeLabel = input.eventType
+    .map((v) => v.replace(/_/g, " ").trim())
+    .filter(Boolean)
+    .join(", ");
+
+  const recurrenceLabel = humanizeRecurrence(
+    typeof input.recurrenceRule === "string" ? input.recurrenceRule : null,
+    typeof input.dayOfWeek === "string" ? input.dayOfWeek : null
+  );
+
+  const whenParts: string[] = [];
+  if (hasNonEmptyText(input.startDate)) {
+    whenParts.push(input.startDate);
+  }
+  if (hasNonEmptyText(input.startTime)) {
+    whenParts.push(`starts at ${input.startTime}`);
+  }
+  if (hasNonEmptyText(input.endTime)) {
+    whenParts.push(`ends at ${input.endTime}`);
+  }
+
+  const lines = [
+    input.title,
+    typeLabel ? `Type: ${typeLabel}.` : null,
+    whenParts.length > 0 ? `When: ${whenParts.join(", ")}.` : null,
+    input.venueName ? `Where: ${input.venueName}.` : null,
+    recurrenceLabel ? `Recurrence: ${recurrenceLabel}.` : null,
+  ].filter((v): v is string => typeof v === "string" && v.trim().length > 0);
+
+  return lines.join("\n");
+}
+
+function hasDescriptionDetails(value: unknown, title: string): boolean {
+  if (!hasNonEmptyText(value)) return false;
+  const trimmed = value.trim();
+  if (trimmed.length < 40) return false;
+  if (trimmed.toLowerCase() === title.trim().toLowerCase()) return false;
+  return true;
+}
+
 /**
  * Map an interpreter sanitized draft_payload into a body suitable for
  * POST /api/my-events. Returns an error if required fields are missing.
@@ -429,8 +556,13 @@ function mapDraftToCreatePayload(
   }
 
   // event_type must be a non-empty array
-  const eventType = draft.event_type;
-  if (!Array.isArray(eventType) || eventType.length === 0) {
+  const rawEventTypes = Array.isArray(draft.event_type)
+    ? draft.event_type.filter((v): v is string => typeof v === "string" && v.trim().length > 0)
+    : [];
+  const hintedEventType = inferEventTypeFromIntentText(intentText);
+  const eventType = hintedEventType ? [hintedEventType] : rawEventTypes;
+
+  if (eventType.length === 0) {
     return { ok: false, error: "event_type must be a non-empty array" };
   }
 
@@ -440,8 +572,24 @@ function mapDraftToCreatePayload(
     return { ok: false, error: "start_date must be a valid date (YYYY-MM-DD)." };
   }
 
-  const body: Record<string, unknown> = {
+  const resolvedVenueName =
+    hasNonEmptyText(draft.venue_name)
+      ? draft.venue_name.trim()
+      : hasNonEmptyText(draft.custom_location_name)
+        ? draft.custom_location_name.trim()
+        : null;
+
+  const normalizedTitle = normalizeTitleWithVenuePrefix({
     title: draft.title,
+    venueName: resolvedVenueName,
+  });
+
+  if (!normalizedTitle) {
+    return { ok: false, error: "Missing required field: title" };
+  }
+
+  const body: Record<string, unknown> = {
+    title: normalizedTitle,
     event_type: eventType,
     start_time: draft.start_time,
     start_date: normalizedStartDate,
@@ -521,9 +669,78 @@ function mapDraftToCreatePayload(
   // 4e. Enforce DB-safe signup_mode enum values.
   body.signup_mode = normalizeSignupMode(body.signup_mode);
 
+  // 4f. Ensure description always has useful content.
+  if (!hasDescriptionDetails(body.description, normalizedTitle)) {
+    const generatedDescription = buildMinimumEventDescription({
+      title: normalizedTitle,
+      eventType: eventType.filter((v): v is string => typeof v === "string"),
+      startDate: normalizedStartDate,
+      startTime: body.start_time,
+      endTime: body.end_time,
+      venueName: resolvedVenueName,
+      recurrenceRule: body.recurrence_rule,
+      dayOfWeek: body.day_of_week,
+    });
+
+    if (hasNonEmptyText(body.description)) {
+      body.description = `${body.description.trim()}\n\n${generatedDescription}`;
+    } else {
+      body.description = generatedDescription;
+    }
+  }
+
+  if (!hasNonEmptyText(body.description)) {
+    body.description = buildMinimumEventDescription({
+      title: normalizedTitle,
+      eventType: eventType.filter((v): v is string => typeof v === "string"),
+      startDate: normalizedStartDate,
+      startTime: body.start_time,
+      endTime: body.end_time,
+      venueName: resolvedVenueName,
+      recurrenceRule: body.recurrence_rule,
+      dayOfWeek: body.day_of_week,
+    });
+  }
+
   // 5. series_mode default
   if (!body.series_mode) {
     body.series_mode = "single";
+  }
+
+  return { ok: true, body };
+}
+
+// ---------------------------------------------------------------------------
+// Occurrence edit: thin mapper (pass-through + validation)
+// ---------------------------------------------------------------------------
+
+const DATE_KEY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+function mapDraftToOccurrencePayload(
+  draft: Record<string, unknown>,
+  fallbackDateKey: string
+): { ok: true; body: Record<string, unknown> } | { ok: false; error: string } {
+  // Resolve date_key: prefer draft, fall back to input
+  const draftDateKey = typeof draft.date_key === "string" ? draft.date_key : null;
+  const resolvedDateKey = draftDateKey && DATE_KEY_PATTERN.test(draftDateKey)
+    ? draftDateKey
+    : DATE_KEY_PATTERN.test(fallbackDateKey)
+      ? fallbackDateKey
+      : null;
+
+  if (!resolvedDateKey) {
+    return { ok: false, error: "Missing or invalid date_key (expected YYYY-MM-DD)" };
+  }
+
+  const body: Record<string, unknown> = { date_key: resolvedDateKey };
+
+  // Pass through occurrence-specific top-level fields
+  if (typeof draft.status === "string") body.status = draft.status;
+  if (typeof draft.override_start_time === "string") body.override_start_time = draft.override_start_time;
+  if (typeof draft.override_cover_image_url === "string") body.override_cover_image_url = draft.override_cover_image_url;
+  if (typeof draft.override_notes === "string") body.override_notes = draft.override_notes;
+  if (draft.override_patch && typeof draft.override_patch === "object" && !Array.isArray(draft.override_patch)) {
+    body.override_patch = draft.override_patch;
   }
 
   return { ok: true, body };
@@ -619,6 +836,13 @@ export function ConversationalCreateUI({
     text: string;
   } | null>(null);
 
+  // Occurrence edit apply state (separate from create)
+  const [isApplyingOccurrence, setIsApplyingOccurrence] = useState(false);
+  const [occurrenceMessage, setOccurrenceMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
+
   const responseGuidance = useMemo<ResponseGuidance | null>(() => {
     if (!responseBody || typeof responseBody !== "object") return null;
     const maybe = responseBody as Record<string, unknown>;
@@ -676,7 +900,16 @@ export function ConversationalCreateUI({
     writesEnabled &&
     effectiveMode === "create" &&
     lastInterpretResponse !== null &&
-    CREATABLE_NEXT_ACTIONS.has(lastInterpretResponse.next_action as NextAction);
+    ACTIONABLE_NEXT_ACTIONS.has(lastInterpretResponse.next_action as NextAction);
+
+  // Occurrence edit apply guard (lab variant only — host variant forces create via effectiveMode)
+  const canShowOccurrenceAction =
+    writesEnabled &&
+    effectiveMode === "edit_occurrence" &&
+    lastInterpretResponse !== null &&
+    eventId.trim().length > 0 &&
+    DATE_KEY_PATTERN.test(dateKey.trim()) &&
+    ACTIONABLE_NEXT_ACTIONS.has(lastInterpretResponse.next_action as NextAction);
 
   // Clear cover candidate when mode changes or images change
   useEffect(() => {
@@ -1039,6 +1272,58 @@ export function ConversationalCreateUI({
       });
     } finally {
       setIsApplyingCover(false);
+    }
+  }
+
+  // ---- Occurrence edit apply (edit_occurrence mode only, lab variant) ----
+
+  async function applyOccurrenceEdit() {
+    if (!canShowOccurrenceAction || !lastInterpretResponse) return;
+
+    const mapResult = mapDraftToOccurrencePayload(
+      lastInterpretResponse.draft_payload,
+      dateKey.trim()
+    );
+    if (!mapResult.ok) {
+      setOccurrenceMessage({ type: "error", text: `Cannot apply: ${mapResult.error}` });
+      return;
+    }
+
+    setIsApplyingOccurrence(true);
+    setOccurrenceMessage(null);
+
+    try {
+      const res = await fetch(`/api/my-events/${eventId.trim()}/overrides`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(mapResult.body),
+      });
+
+      if (!res.ok) {
+        const errorBody = await res.json().catch(() => null);
+        const errorText = errorBody?.error ?? `Request failed (${res.status})`;
+        if (res.status === 403) {
+          setOccurrenceMessage({ type: "error", text: "You don't have permission to edit this event." });
+        } else {
+          setOccurrenceMessage({ type: "error", text: errorText });
+        }
+        return;
+      }
+
+      const data = await res.json();
+      if (data.action === "reverted") {
+        setOccurrenceMessage({ type: "success", text: "Occurrence override reverted to series defaults." });
+      } else {
+        setOccurrenceMessage({ type: "success", text: `Occurrence override applied for ${mapResult.body.date_key}.` });
+      }
+    } catch (err) {
+      setOccurrenceMessage({
+        type: "error",
+        text: `Occurrence apply failed: ${err instanceof Error ? err.message : "unknown error"}`,
+      });
+    } finally {
+      setIsApplyingOccurrence(false);
     }
   }
 
@@ -1466,6 +1751,18 @@ export function ConversationalCreateUI({
               </button>
             )}
 
+            {/* Occurrence edit apply — lab variant only (host forces create via effectiveMode) */}
+            {canShowOccurrenceAction && (
+              <button
+                onClick={applyOccurrenceEdit}
+                disabled={isApplyingOccurrence || isSubmitting}
+                type="button"
+                className="px-4 py-2 rounded-lg bg-indigo-600 text-white font-semibold disabled:opacity-60 transition-colors hover:bg-indigo-700"
+              >
+                {isApplyingOccurrence ? "Applying…" : "Confirm & Apply Occurrence Edit"}
+              </button>
+            )}
+
             {conversationHistory.length > 0 && (
               <button
                 onClick={clearHistory}
@@ -1513,6 +1810,19 @@ export function ConversationalCreateUI({
           {createMessage && createMessage.type === "error" && (
             <p className="text-xs text-[var(--color-text-error)]">
               {createMessage.text}
+            </p>
+          )}
+
+          {/* Occurrence edit apply message */}
+          {occurrenceMessage && (
+            <p
+              className={`text-xs ${
+                occurrenceMessage.type === "success"
+                  ? "text-emerald-500"
+                  : "text-[var(--color-text-error)]"
+              }`}
+            >
+              {occurrenceMessage.text}
             </p>
           )}
 
