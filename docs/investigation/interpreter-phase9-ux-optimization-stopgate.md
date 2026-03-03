@@ -310,3 +310,45 @@ Before execution prompt issuance:
 **If HOLD:** Keep current exposure. Extend monitoring 7 more days. Document reason.
 **If ROLLBACK:** Set `NEXT_PUBLIC_ENABLE_CONVERSATIONAL_CREATE_ENTRY=false`, redeploy, verify classic-only. Document root cause.
 
+---
+
+## INTERPRETER-12 — Non-owner 403 Production Smoke Evidence
+
+**Date:** 2026-03-03 ~09:35 MT
+**Status:** PASS — 403 confirmed on both interpret and overrides routes
+
+### Test Setup
+
+| Parameter | Value |
+|-----------|-------|
+| **Logged-in account** | Test Member Account (`016b26b9-0ad1-4e2b-a7f5-9b216f26a4fa`) — role: `member`, is_host: `false` |
+| **Target event** | Lion's Lair - Music Open Mic (`18f64580-f2f0-46e8-b753-65f0f0721d3d`) |
+| **Event owner** | Tony Meade (`2a75f6c5-57cd-4d30-b61b-7006e1fdac52`) |
+| **event_hosts membership** | None for test account — only Tony Meade in event_hosts |
+| **Date key** | `2026-03-04` (next Wednesday occurrence) |
+| **Surface** | `/dashboard/my-events/interpreter-lab` (edit_occurrence mode) |
+
+### Results
+
+| Route | Method | HTTP Status | Response Body | Verdict |
+|-------|--------|-------------|---------------|---------|
+| `/api/events/interpret` | POST (via Generate Draft) | **403** | `{ "error": "Forbidden" }` | ✅ PASS |
+| `/api/my-events/:id/overrides` | POST (via direct fetch) | **403** | `{ "error": "Forbidden" }` | ✅ PASS |
+
+### UI Behavior
+
+- The 403 from `/api/events/interpret` is displayed in the **Debug: Raw API Response** panel as `HTTP 403` with body `{ "error": "Forbidden" }`.
+- **No user-facing error message** appears in the main form area (no toast, no inline alert). The form remains in its submitted state.
+- This is acceptable for the lab surface (debug-only), but a future host-facing surface should display an explicit permission error. Logged as minor UX gap.
+
+### Authorization Verification
+
+The non-owner account was confirmed to lack all three authorization paths:
+1. **Not `events.host_id`** — event owned by `2a75f6c5...` (Tony Meade)
+2. **Not in `event_hosts`** — only entry is Tony Meade with role `host`
+3. **Not admin** — account role is `member`
+
+### Conclusion
+
+The 403 auth guard fires correctly at the interpret route level, preventing non-owners from even generating a draft for another user's event. The overrides route independently enforces the same 403. Both routes return consistent `{ "error": "Forbidden" }` responses.
+
