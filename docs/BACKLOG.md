@@ -390,6 +390,7 @@ Polish member profiles before external test users see them. Three scope areas:
 | INTERPRETER-09 | Interpreter UX productization + launch gating (8A->8E) | P0 | DONE — production verified | 8A–8E shipped: host-facing conversational create entrypoint behind feature flag, classic fallback preserved, mobile + rollback smoke verified. Stop-gate: `docs/investigation/interpreter-phase8-ux-launch-stopgate.md`. |
 | INTERPRETER-10 | Interpreter UX optimization + trust metrics (Phase 9A->9E) | P1 | IN MONITORING (Day 0/7) | Implemented 2026-03-01. 9A-9E deployed + production smoke passed. Awaiting 7-day metrics window before rollout decision. Stop-gate: `docs/investigation/interpreter-phase9-ux-optimization-stopgate.md`. |
 | INTERPRETER-11 | Occurrence edit apply wiring (lab variant) | P2 | DONE — production smoke passed | Conversational UI lab variant can now apply occurrence edits via `POST /api/my-events/:id/overrides`. Upsert + revert paths verified. Host variant unaffected (create-only invariant). `edit_series` apply deferred. |
+| TEST-FIX-01 | Fix date-sensitive `custom-dates-edit.test.ts` CI failures | P0 | DONE | 4 occurrence expansion tests used wrong call signature (positional strings instead of `ExpansionOptions` object) and hardcoded 2026-03-01 dates that went stale. Fixed: correct API + dates pushed to 2027. |
 
 ### Homepage / Navigation / UX
 
