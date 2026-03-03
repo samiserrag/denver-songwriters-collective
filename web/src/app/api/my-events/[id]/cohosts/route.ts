@@ -103,6 +103,32 @@ export async function POST(
     }, { status: 400 });
   }
 
+  // Determine role: assign "host" if event has no primary host and no existing/pending host row.
+  // This prevents inviting as co-host when someone should be the first host.
+  let assignedRole: "host" | "cohost" = "cohost";
+  {
+    const { data: eventRow } = await serviceClient
+      .from("events")
+      .select("host_id")
+      .eq("id", eventId)
+      .single();
+
+    if (!eventRow?.host_id) {
+      // Check for any existing host row (accepted or pending) to guard against drift/race
+      const { data: existingHostRow } = await serviceClient
+        .from("event_hosts")
+        .select("id")
+        .eq("event_id", eventId)
+        .eq("role", "host")
+        .limit(1)
+        .maybeSingle();
+
+      if (!existingHostRow) {
+        assignedRole = "host";
+      }
+    }
+  }
+
   // Create invitation using service role client
   // RLS policy requires approved_hosts membership, but we've already verified
   // the user is authorized (admin or primary host) at the API level
@@ -111,7 +137,7 @@ export async function POST(
     .insert({
       event_id: eventId,
       user_id: targetUserId,
-      role: "cohost",
+      role: assignedRole,
       invitation_status: "pending",
       invited_by: sessionUser.id
     })
@@ -147,11 +173,12 @@ export async function POST(
   const inviterName = inviter?.full_name || "Someone";
 
   // Send notification to invited user with event details
+  const roleLabel = assignedRole === "host" ? "host" : "co-host";
   const { error: notifyError } = await supabase.rpc("create_user_notification", {
     p_user_id: targetUserId,
     p_type: "cohost_invitation",
-    p_title: `Co-host Invitation: ${eventTitle}`,
-    p_message: `${inviterName} invited you to co-host "${eventTitle}"`,
+    p_title: `${assignedRole === "host" ? "Host" : "Co-host"} Invitation: ${eventTitle}`,
+    p_message: `${inviterName} invited you to ${roleLabel} "${eventTitle}"`,
     p_link: `/dashboard/invitations`
   });
 
@@ -170,6 +197,7 @@ export async function POST(
       eventId,
       venueName: event?.venue_name,
       startTime: event?.start_time,
+      role: assignedRole,
     });
 
     try {
@@ -179,7 +207,7 @@ export async function POST(
         html: emailContent.html,
         text: emailContent.text,
       });
-      console.log(`Sent co-host invitation email to ${invitedUser.email}`);
+      console.log(`Sent ${assignedRole} invitation email to ${invitedUser.email}`);
     } catch (emailErr) {
       // Log but don't fail - the invitation was created successfully
       console.error("Failed to send co-host invitation email:", emailErr);

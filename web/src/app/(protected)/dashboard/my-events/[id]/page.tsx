@@ -202,7 +202,10 @@ export default async function EditEventPage({
     .order("created_at", { ascending: false });
 
   // Determine user's role for the client component
-  const currentUserRole: "host" | "cohost" = userHost?.role === "host" ? "host" : "cohost";
+  // Admins without an event_hosts row get null — prevents showing Leave button
+  const currentUserRole: "host" | "cohost" | null = userHost
+    ? (userHost.role === "host" ? "host" : "cohost")
+    : null;
 
   return (
     <main className="min-h-screen bg-[var(--color-background)] py-12 px-6">

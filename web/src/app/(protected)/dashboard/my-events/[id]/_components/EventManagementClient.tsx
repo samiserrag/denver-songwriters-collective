@@ -36,7 +36,7 @@ interface EventManagementClientProps {
   // Host data
   hosts: EventHost[];
   currentUserId: string;
-  currentUserRole: "host" | "cohost";
+  currentUserRole: "host" | "cohost" | null;
   isPrimaryHost: boolean;
   isAdmin: boolean;
   isEventOwner: boolean;

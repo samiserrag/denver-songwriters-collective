@@ -26,7 +26,7 @@ export default function InvitationsList({ invitations }: { invitations: Invitati
   const [processing, setProcessing] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const handleRespond = async (id: string, action: "accept" | "decline", eventTitle: string) => {
+  const handleRespond = async (id: string, action: "accept" | "decline", eventTitle: string, role: string) => {
     setProcessing(id);
     setSuccessMessage(null);
 
@@ -39,7 +39,8 @@ export default function InvitationsList({ invitations }: { invitations: Invitati
 
       if (res.ok) {
         if (action === "accept") {
-          setSuccessMessage(`You are now a co-host for "${eventTitle}"! Check My Happenings to manage it.`);
+          const roleLabel = role === "host" ? "host" : "co-host";
+          setSuccessMessage(`You are now the ${roleLabel} for "${eventTitle}"! Check My Happenings to manage it.`);
         } else {
           setSuccessMessage("Invitation declined.");
         }
@@ -58,7 +59,7 @@ export default function InvitationsList({ invitations }: { invitations: Invitati
         <div className="text-6xl mb-4">📬</div>
         <h2 className="text-xl text-[var(--color-text-primary)] mb-2">No pending invitations</h2>
         <p className="text-[var(--color-text-secondary)]">
-          When someone invites you to co-host a happening, it will appear here.
+          When someone invites you to host or co-host a happening, it will appear here.
         </p>
       </div>
     );
@@ -98,14 +99,14 @@ export default function InvitationsList({ invitations }: { invitations: Invitati
 
             <div className="flex gap-3 mt-4">
               <button
-                onClick={() => handleRespond(invitation.id, "accept", eventTitle)}
+                onClick={() => handleRespond(invitation.id, "accept", eventTitle, invitation.role)}
                 disabled={processing === invitation.id}
                 className="px-4 py-2 bg-green-600 hover:bg-green-500 text-[var(--color-bg-inverse)] rounded-lg disabled:opacity-50"
               >
                 {processing === invitation.id ? "..." : "Accept"}
               </button>
               <button
-                onClick={() => handleRespond(invitation.id, "decline", eventTitle)}
+                onClick={() => handleRespond(invitation.id, "decline", eventTitle, invitation.role)}
                 disabled={processing === invitation.id}
                 className="px-4 py-2 bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] rounded-lg disabled:opacity-50"
               >

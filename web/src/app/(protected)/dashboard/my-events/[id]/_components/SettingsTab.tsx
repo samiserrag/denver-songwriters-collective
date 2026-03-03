@@ -21,7 +21,7 @@ interface SettingsTabProps {
   eventStatus: string;
   hosts: EventHost[];
   currentUserId: string;
-  currentUserRole: "host" | "cohost";
+  currentUserRole: "host" | "cohost" | null;
   isPrimaryHost: boolean;
   isAdmin: boolean;
 }
@@ -55,7 +55,7 @@ export default function SettingsTab({
           eventTitle={eventTitle}
           hosts={hosts}
           currentUserId={currentUserId}
-          currentUserRole={currentUserRole}
+          currentUserRole={currentUserRole ?? undefined}
           isSoleHost={acceptedHostCount === 1}
         />
       </section>
