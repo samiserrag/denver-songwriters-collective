@@ -258,18 +258,18 @@ describe("expandOccurrencesForEvent — custom_dates changes", () => {
     const event = {
       id: "evt-custom",
       recurrence_rule: "custom" as const,
-      custom_dates: ["2026-03-01", "2026-03-15", "2026-04-01"],
+      custom_dates: ["2027-03-01", "2027-03-15", "2027-04-01"],
       day_of_week: null,
-      event_date: "2026-03-01",
+      event_date: "2027-03-01",
       max_occurrences: null,
     };
 
-    const result = expandOccurrencesForEvent(event, "2026-03-01", "2026-04-30");
+    const result = expandOccurrencesForEvent(event, { startKey: "2027-03-01", endKey: "2027-04-30" });
     const dateKeys = result.map(o => o.dateKey);
 
-    expect(dateKeys).toContain("2026-03-01");
-    expect(dateKeys).toContain("2026-03-15");
-    expect(dateKeys).toContain("2026-04-01");
+    expect(dateKeys).toContain("2027-03-01");
+    expect(dateKeys).toContain("2027-03-15");
+    expect(dateKeys).toContain("2027-04-01");
     expect(dateKeys).toHaveLength(3);
   });
 
@@ -277,18 +277,18 @@ describe("expandOccurrencesForEvent — custom_dates changes", () => {
     const event = {
       id: "evt-custom",
       recurrence_rule: "custom" as const,
-      custom_dates: ["2026-03-01", "2026-04-01"], // 2026-03-15 removed
+      custom_dates: ["2027-03-01", "2027-04-01"], // 2027-03-15 removed
       day_of_week: null,
-      event_date: "2026-03-01",
+      event_date: "2027-03-01",
       max_occurrences: null,
     };
 
-    const result = expandOccurrencesForEvent(event, "2026-03-01", "2026-04-30");
+    const result = expandOccurrencesForEvent(event, { startKey: "2027-03-01", endKey: "2027-04-30" });
     const dateKeys = result.map(o => o.dateKey);
 
-    expect(dateKeys).not.toContain("2026-03-15");
-    expect(dateKeys).toContain("2026-03-01");
-    expect(dateKeys).toContain("2026-04-01");
+    expect(dateKeys).not.toContain("2027-03-15");
+    expect(dateKeys).toContain("2027-03-01");
+    expect(dateKeys).toContain("2027-04-01");
     expect(dateKeys).toHaveLength(2);
   });
 
@@ -296,16 +296,16 @@ describe("expandOccurrencesForEvent — custom_dates changes", () => {
     const event = {
       id: "evt-custom",
       recurrence_rule: "custom" as const,
-      custom_dates: ["2026-03-01", "2026-03-15", "2026-04-01", "2026-04-15"],
+      custom_dates: ["2027-03-01", "2027-03-15", "2027-04-01", "2027-04-15"],
       day_of_week: null,
-      event_date: "2026-03-01",
+      event_date: "2027-03-01",
       max_occurrences: null,
     };
 
-    const result = expandOccurrencesForEvent(event, "2026-03-01", "2026-04-30");
+    const result = expandOccurrencesForEvent(event, { startKey: "2027-03-01", endKey: "2027-04-30" });
     const dateKeys = result.map(o => o.dateKey);
 
-    expect(dateKeys).toContain("2026-04-15");
+    expect(dateKeys).toContain("2027-04-15");
     expect(dateKeys).toHaveLength(4);
   });
 
@@ -313,17 +313,17 @@ describe("expandOccurrencesForEvent — custom_dates changes", () => {
     const event = {
       id: "evt-custom",
       recurrence_rule: "custom" as const,
-      custom_dates: ["2026-01-01", "2026-03-01", "2026-06-01"],
+      custom_dates: ["2027-01-01", "2027-03-01", "2027-06-01"],
       day_of_week: null,
-      event_date: "2026-01-01",
+      event_date: "2027-01-01",
       max_occurrences: null,
     };
 
     // Window: March only
-    const result = expandOccurrencesForEvent(event, "2026-03-01", "2026-03-31");
+    const result = expandOccurrencesForEvent(event, { startKey: "2027-03-01", endKey: "2027-03-31" });
     const dateKeys = result.map(o => o.dateKey);
 
-    expect(dateKeys).toEqual(["2026-03-01"]);
+    expect(dateKeys).toEqual(["2027-03-01"]);
   });
 });
 
