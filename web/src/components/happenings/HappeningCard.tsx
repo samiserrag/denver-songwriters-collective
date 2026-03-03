@@ -614,11 +614,12 @@ export function HappeningCard({
     }
   };
 
-  // Wrapper
-  const CardWrapper = onClick ? "div" : Link;
+  // Wrapper — always a <div> to avoid nested <a> hydration errors.
+  // The primary card link is rendered as a stretched overlay inside <article>.
+  const CardWrapper = "div";
   const wrapperProps = onClick
     ? { onClick: handleClick, role: "button", tabIndex: 0, className: "block h-full group focus-visible:outline-none" }
-    : { href: detailHref, className: "block h-full group focus-visible:outline-none" };
+    : { className: "block h-full group focus-visible:outline-none" };
 
   // Image tiers:
   // 1. cover_image_card_url (optimized 4:3)
@@ -681,7 +682,7 @@ export function HappeningCard({
       <article
         className={cn(
           // MemberCard exact surface: card-spotlight class
-          "h-full overflow-hidden font-sans card-spotlight",
+          "relative h-full overflow-hidden font-sans card-spotlight",
           // Transitions matching MemberCard (card-spotlight provides base transition)
           "transition-all duration-200 ease-out",
           "hover:shadow-md hover:border-[var(--color-accent-primary)]/30",
@@ -701,9 +702,19 @@ export function HappeningCard({
         data-testid="happening-card"
         data-cancelled={isCancelled ? "true" : undefined}
       >
+        {/* Stretched card link — covers entire article, sits below interactive elements */}
+        {!onClick && (
+          <Link
+            href={detailHref}
+            className="absolute inset-0 z-0"
+            aria-label={effectiveTitle || "View event details"}
+            tabIndex={0}
+          />
+        )}
+
         {/* Poster Media Section - Reduced height for density (was 4:3, now 3:2) */}
         {/* bg-tertiary provides letterbox background for object-contain images */}
-        <div className="relative aspect-[3/2] overflow-hidden bg-[var(--color-bg-tertiary)]" data-testid="poster-thumbnail">
+        <div className="relative z-[1] pointer-events-none aspect-[3/2] overflow-hidden bg-[var(--color-bg-tertiary)]" data-testid="poster-thumbnail">
           {/* Tier 1: Card-optimized 4:3 image */}
           {hasCardImage && (
             <Image
@@ -773,7 +784,7 @@ export function HappeningCard({
             onClick={toggleFavorite}
             aria-label={favorited ? "Remove favorite" : "Add favorite"}
             className={cn(
-              "absolute top-2.5 right-2.5 z-10",
+              "absolute top-2.5 right-2.5 z-10 pointer-events-auto",
               "w-8 h-8 rounded-full flex items-center justify-center",
               "bg-black/40 backdrop-blur-sm",
               "text-lg leading-none transition-colors",
@@ -826,7 +837,9 @@ export function HappeningCard({
         </div>
 
         {/* Content Section - Denser padding (was p-4, now p-3) */}
-        <div className="p-3 space-y-1">
+        {/* pointer-events-none lets clicks pass through to the stretched card link;
+            interactive children (VenueLink, chips) use pointer-events-auto */}
+        <div className="relative z-[1] pointer-events-none p-3 space-y-1">
           {/* Title - slightly larger on desktop, tighter leading */}
           <h3
             className={cn(

@@ -405,6 +405,7 @@ Polish member profiles before external test users see them. Three scope areas:
 | UX-07 | Homepage vs `/happenings` "Tonight" list consistency | P1 | DONE — Phase 6 complete (`docs/investigation/phase6-cross-surface-consistency-stopgate.md`, PR #118) |
 | UX-08 | Mobile event card metadata truncation (city/state/time/cost visibility) | P1 | DONE — Phase 6 complete (`docs/investigation/phase6-cross-surface-consistency-stopgate.md`, PR #118) |
 | UX-09 | Cross-surface consistency rules contract for discovery surfaces | P1 | DONE — Contracted in `docs/CONTRACTS.md` § Cross-Surface Event Consistency |
+| UX-12 | Fix nested `<a>` hydration warnings in HappeningCard (VenueLink inside card Link) | P0 | DONE — Implemented stretched-link pattern: card wrapper always `<div>`, absolute `<Link>` overlay at z-0, content sections pointer-events-none, interactive elements (VenueLink, favorite) pointer-events-auto. 8 regression tests. |
 
 ### Search (HIGH PRIORITY)
 

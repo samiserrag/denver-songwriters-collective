@@ -186,3 +186,56 @@ describe("Cross-surface link consistency", () => {
     expect(happeningCardHref).toBe(datePillHref);
   });
 });
+
+// ============================================================================
+// Nested anchor prevention — stretched-link pattern
+// ============================================================================
+import * as fs from "node:fs";
+import * as path from "node:path";
+
+const CARD_PATH = path.resolve(
+  __dirname,
+  "../components/happenings/HappeningCard.tsx"
+);
+const VENUE_LINK_PATH = path.resolve(
+  __dirname,
+  "../components/venue/VenueLink.tsx"
+);
+const cardSource = fs.readFileSync(CARD_PATH, "utf-8");
+const venueLinkSource = fs.readFileSync(VENUE_LINK_PATH, "utf-8");
+
+describe("Nested anchor prevention — stretched-link pattern", () => {
+  it("CardWrapper is always a div, never a Link", () => {
+    // The wrapper must be a plain div to avoid <a> containing <a>
+    expect(cardSource).toContain('const CardWrapper = "div"');
+    expect(cardSource).not.toMatch(/CardWrapper\s*=\s*.*Link/);
+  });
+
+  it("article has relative positioning for stretched link containment", () => {
+    expect(cardSource).toContain("relative h-full overflow-hidden");
+  });
+
+  it("stretched Link overlay exists inside article with z-0", () => {
+    expect(cardSource).toContain('className="absolute inset-0 z-0"');
+  });
+
+  it("content section uses pointer-events-none to pass clicks to stretched link", () => {
+    expect(cardSource).toContain("relative z-[1] pointer-events-none p-3 space-y-1");
+  });
+
+  it("poster section uses pointer-events-none to pass clicks to stretched link", () => {
+    expect(cardSource).toContain("relative z-[1] pointer-events-none aspect-[3/2]");
+  });
+
+  it("favorite button has pointer-events-auto to remain clickable", () => {
+    expect(cardSource).toContain("pointer-events-auto");
+  });
+
+  it("VenueLink uses stopPropagation to prevent card navigation", () => {
+    expect(venueLinkSource).toContain("stopPropagation");
+  });
+
+  it("VenueLink has relative z-10 pointer-events-auto to sit above stretched link", () => {
+    expect(venueLinkSource).toContain("relative z-10 pointer-events-auto");
+  });
+});

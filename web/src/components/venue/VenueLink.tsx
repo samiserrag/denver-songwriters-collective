@@ -38,8 +38,9 @@ export function VenueLink({ name, venue, className }: VenueLinkProps) {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
+      onClick={(e) => e.stopPropagation()}
       className={cn(
-        "hover:underline text-[var(--color-link)]",
+        "relative z-10 pointer-events-auto hover:underline text-[var(--color-link)]",
         className
       )}
     >
