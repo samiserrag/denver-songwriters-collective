@@ -740,7 +740,15 @@ function mapDraftToOccurrencePayload(
   if (typeof draft.override_cover_image_url === "string") body.override_cover_image_url = draft.override_cover_image_url;
   if (typeof draft.override_notes === "string") body.override_notes = draft.override_notes;
   if (draft.override_patch && typeof draft.override_patch === "object" && !Array.isArray(draft.override_patch)) {
-    body.override_patch = draft.override_patch;
+    // Strip null/undefined values — the overrides route validates present keys
+    const rawPatch = draft.override_patch as Record<string, unknown>;
+    const cleanedPatch: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(rawPatch)) {
+      if (v != null) cleanedPatch[k] = v;
+    }
+    if (Object.keys(cleanedPatch).length > 0) {
+      body.override_patch = cleanedPatch;
+    }
   }
 
   return { ok: true, body };

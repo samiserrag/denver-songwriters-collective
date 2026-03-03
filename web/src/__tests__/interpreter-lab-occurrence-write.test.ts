@@ -82,6 +82,14 @@ describe("Occurrence apply — thin mapper", () => {
     const fnSection = labSource.slice(fnStart, fnStart + 800);
     expect(fnSection).toContain("Missing or invalid date_key");
   });
+
+  it("strips null values from override_patch before sending", () => {
+    const fnStart = labSource.indexOf("function mapDraftToOccurrencePayload");
+    const fnSection = labSource.slice(fnStart, fnStart + 1800);
+    // Must strip null/undefined from override_patch to avoid route validation failures
+    expect(fnSection).toContain("v != null");
+    expect(fnSection).toContain("cleanedPatch");
+  });
 });
 
 // ---------------------------------------------------------------------------
