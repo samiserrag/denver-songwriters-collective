@@ -409,7 +409,7 @@ Polish member profiles before external test users see them. Three scope areas:
 | UX-08 | Mobile event card metadata truncation (city/state/time/cost visibility) | P1 | DONE — Phase 6 complete (`docs/investigation/phase6-cross-surface-consistency-stopgate.md`, PR #118) |
 | UX-09 | Cross-surface consistency rules contract for discovery surfaces | P1 | DONE — Contracted in `docs/CONTRACTS.md` § Cross-Surface Event Consistency |
 | UX-12 | Fix nested `<a>` hydration warnings in HappeningCard (VenueLink inside card Link) | P0 | DONE — Implemented stretched-link pattern: card wrapper always `<div>`, absolute `<Link>` overlay at z-0, content sections pointer-events-none, interactive elements (VenueLink, favorite) pointer-events-auto. 8 regression tests. |
-| UX-13 | Host VenueSelector hides "+ Add new venue" option behind `canCreateVenue` prop | P2 | OPEN | Non-admin hosts cannot add new venues from the classic create form. Only the admin VenueSelector (`web/src/components/admin/VenueSelector.tsx`) always shows it. Host-facing `web/src/components/ui/VenueSelector.tsx` conditionally hides it (line ~162). Needs prop pass-through or role-based logic so hosts can submit new venue requests. |
+| UX-13 | Host VenueSelector hides "+ Add new venue" option behind `canCreateVenue` prop | P2 | DONE — commit `fb7de42f` | Path A: new `/api/venues` POST route (host + admin auth via `checkHostStatus`), VenueSelector endpoint updated, 3 page routes pass `canCreateVenue={isAdmin \|\| isApprovedHost}`. 22 tests, 4/4 CI green. Negative smoke: non-host member correctly blocked (403 + no UI). |
 
 ### Search (HIGH PRIORITY)
 

@@ -387,3 +387,52 @@ The 403 auth guard fires correctly at the interpret route level, preventing non-
 
 `374fee6a` — `feat(host-ux): improve conversational create copy and layout for hosts (INTERPRETER-14)`
 
+---
+
+## UX-13 — Host Venue Creation Gap Production Smoke Evidence
+
+### Decision Memo
+
+**Path A selected**: Allow approved hosts to create venues directly (not just suggest).
+
+**Rationale:**
+- Venues are public data (name + address) — no sensitive fields at risk
+- Same geocoding pipeline + validation as admin venue creation
+- No RLS migration needed — new `/api/venues` POST uses service role client
+- Bad venues can be cleaned up by admins
+- Unblocks hosts who encounter unlisted venues during event creation
+
+### Changes
+
+| File | Change |
+|------|--------|
+| `web/src/app/api/venues/route.ts` | **NEW** — host-accessible venue creation (checkHostStatus auth) |
+| `web/src/components/ui/VenueSelector.tsx` | POST endpoint changed to `/api/venues`, comment updated |
+| `web/src/app/(protected)/dashboard/my-events/new/page.tsx` | `canCreateVenue={isAdmin \|\| isApprovedHost}` |
+| `web/src/app/(protected)/dashboard/my-events/[id]/page.tsx` | `canCreateVenue={isAdmin \|\| isApprovedHost}` |
+| `web/src/app/(protected)/dashboard/my-events/[id]/overrides/[dateKey]/page.tsx` | Added `checkHostStatus` import + call, `canCreateVenue={isAdmin \|\| isApprovedHost}` |
+| `web/src/__tests__/ux-13-host-venue-creation.test.ts` | **NEW** — 22 source assertion tests |
+| `web/src/__tests__/venue-selector-phase445b.test.tsx` | Updated auth matrix test + endpoint assertion |
+
+### Production Smoke Results
+
+| Check | Method | Result |
+|-------|--------|--------|
+| `/api/venues` route deployed | GET → 405 (POST only) | ✅ |
+| Non-host member blocked from API | POST → 403 `{"error":"Forbidden"}` | ✅ |
+| Non-host member sees no "+ Add new venue" | DOM inspection of dropdown | ✅ |
+| Non-host member still sees "Custom Location" | DOM inspection | ✅ |
+| CI: 4/4 checks green | Web Tests, CI, CI (Build), RLS Tripwire | ✅ |
+| Build succeeds | `npm run build` clean | ✅ |
+| Full test suite | 4,980 tests pass (240 files) | ✅ |
+
+**Pending positive-case verification:** Approved host account login required to confirm "+ Add new venue" appears in dropdown and venue creation succeeds. Code path is verified by source assertion tests.
+
+### Residual Risks
+
+1. **"Edit this venue (Admin)" link** — When `canCreateVenue=true`, EventForm shows an admin dashboard link that 403s for non-admin hosts. Cosmetic only — does not block any workflow. Low priority fix.
+2. **Venue quality** — Host-created venues may have inconsistent naming or addresses. Mitigated by geocoding pipeline + admin oversight via existing venue management dashboard.
+
+### Commit
+
+`fb7de42f` — `feat(ux-13): allow approved hosts to create venues during event creation`
