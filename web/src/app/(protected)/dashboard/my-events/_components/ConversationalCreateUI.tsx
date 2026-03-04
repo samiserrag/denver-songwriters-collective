@@ -878,8 +878,13 @@ export function ConversationalCreateUI({
     };
   }, [responseBody]);
 
-  const runActionLabel =
-    responseGuidance?.next_action === "ask_clarification"
+  // INTERPRETER-14: host variant uses simplified two-state label;
+  // lab variant keeps three-state (Generate Draft / Update Draft / Send Answer).
+  const runActionLabel = isHostVariant
+    ? responseGuidance?.next_action === "ask_clarification"
+      ? "Send Answer"
+      : "Generate Draft"
+    : responseGuidance?.next_action === "ask_clarification"
       ? "Send Answer"
       : conversationHistory.length > 0
         ? "Update Draft"
@@ -1546,10 +1551,10 @@ export function ConversationalCreateUI({
         {isHostVariant ? (
           <div>
             <h1 className="font-[var(--font-family-serif)] text-3xl text-[var(--color-text-primary)] mb-2">
-              Create Happening
+              Create Happening with AI
             </h1>
             <p className="text-[var(--color-text-secondary)]">
-              Describe your happening and we&apos;ll set it up for you.
+              Describe your event, click Generate Draft, then answer follow-up questions in the same box.
             </p>
             <Link
               href="/dashboard/my-events/new?classic=true"
@@ -2103,9 +2108,9 @@ export function ConversationalCreateUI({
 
         {/* ---- Conversation history display ---- */}
         {conversationHistory.length > 0 && (
-          <div className="card-base p-6 space-y-3">
-            <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
-              Conversation History
+          <div className={`card-base p-6 space-y-3 ${isHostVariant ? "opacity-70" : ""}`}>
+            <h2 className={`font-semibold text-[var(--color-text-primary)] ${isHostVariant ? "text-sm" : "text-lg"}`}>
+              {isHostVariant ? "Previous Messages" : "Conversation History"}
             </h2>
             <div className="space-y-2 max-h-64 overflow-auto">
               {conversationHistory.map((entry, i) => (
@@ -2117,7 +2122,9 @@ export function ConversationalCreateUI({
                       : "bg-[var(--color-accent-primary)]/10 text-[var(--color-text-secondary)]"
                   }`}
                 >
-                  <span className="font-mono font-bold">{entry.role}:</span>{" "}
+                  <span className={isHostVariant ? "font-bold" : "font-mono font-bold"}>
+                    {isHostVariant ? (entry.role === "user" ? "You:" : "AI:") : `${entry.role}:`}
+                  </span>{" "}
                   {entry.content}
                 </div>
               ))}
