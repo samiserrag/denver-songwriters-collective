@@ -425,8 +425,9 @@ The 403 auth guard fires correctly at the interpret route level, preventing non-
 | CI: 4/4 checks green | Web Tests, CI, CI (Build), RLS Tripwire | ✅ |
 | Build succeeds | `npm run build` clean | ✅ |
 | Full test suite | 4,980 tests pass (240 files) | ✅ |
-
-**Pending positive-case verification:** Approved host account login required to confirm "+ Add new venue" appears in dropdown and venue creation succeeds. Code path is verified by source assertion tests.
+| Approved host sees "+ Add new venue" | DOM inspection (Test Member Account) | ✅ |
+| Approved host can create venue | POST `/api/venues` → 201, geocoding applied | ✅ |
+| Axiom audit trail | `[POST /api/venues] Venue created: 672f6455... actor: 016b26b9...` | ✅ |
 
 ### Residual Risks
 
