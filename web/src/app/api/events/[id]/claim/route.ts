@@ -1,11 +1,53 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/lib/supabase/database.types";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getServiceRoleClient } from "@/lib/supabase/serviceRoleClient";
 import { notifications } from "@/lib/notifications";
 import {
   ADMIN_EMAIL,
   getAdminEventClaimNotificationEmail,
   sendEmail,
 } from "@/lib/email";
+import { sendAdminEmailWithPreferences } from "@/lib/email/sendWithPreferences";
+
+interface AdminRecipient {
+  userId: string | null;
+  email: string;
+}
+
+function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
+async function resolveAdminRecipients(
+  supabase: SupabaseClient<Database>
+): Promise<AdminRecipient[]> {
+  const fallback: AdminRecipient = { userId: null, email: ADMIN_EMAIL };
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, email")
+    .eq("role", "admin")
+    .not("email", "is", null);
+
+  if (error) {
+    console.error("[EventClaim] Failed to resolve admin recipients:", error);
+    return [fallback];
+  }
+
+  const byEmail = new Map<string, AdminRecipient>();
+  for (const row of data || []) {
+    const email = row.email?.trim();
+    if (!email) continue;
+    byEmail.set(normalizeEmail(email), { userId: row.id, email });
+  }
+
+  if (!byEmail.has(normalizeEmail(ADMIN_EMAIL))) {
+    byEmail.set(normalizeEmail(ADMIN_EMAIL), fallback);
+  }
+
+  return [...byEmail.values()];
+}
 
 export async function POST(
   request: NextRequest,
@@ -120,15 +162,52 @@ export async function POST(
         eventSlug: event.slug,
       });
 
-      await sendEmail({
-        to: ADMIN_EMAIL,
+      const serviceRole = getServiceRoleClient();
+      const recipients = await resolveAdminRecipients(serviceRole);
+      const payloadBase = {
         subject: adminEmail.subject,
         html: adminEmail.html,
         text: adminEmail.text,
-        templateName: "adminEventClaimNotification",
-      });
+        templateName: "adminEventClaimNotification" as const,
+      };
+
+      const results = await Promise.allSettled(
+        recipients.map((recipient) =>
+          sendAdminEmailWithPreferences(
+            serviceRole,
+            recipient.userId,
+            "adminEventClaimNotification",
+            {
+              ...payloadBase,
+              to: recipient.email,
+            }
+          )
+        )
+      );
+
+      const failedCount = results.filter((r) => r.status === "rejected").length;
+      if (failedCount > 0) {
+        console.error(`[EventClaim] Failed to send ${failedCount} admin claim emails`);
+      }
     } catch (emailError) {
-      console.error("[EventClaim] Failed to send admin claim email:", emailError);
+      console.error("[EventClaim] Failed to send admin claim emails, using fallback:", emailError);
+      try {
+        const adminEmail = getAdminEventClaimNotificationEmail({
+          requesterName,
+          eventTitle: event.title,
+          eventId: event.id,
+          eventSlug: event.slug,
+        });
+        await sendEmail({
+          to: ADMIN_EMAIL,
+          subject: adminEmail.subject,
+          html: adminEmail.html,
+          text: adminEmail.text,
+          templateName: "adminEventClaimNotification",
+        });
+      } catch (fallbackError) {
+        console.error("[EventClaim] Fallback admin claim email failed:", fallbackError);
+      }
     }
 
     return NextResponse.json({
