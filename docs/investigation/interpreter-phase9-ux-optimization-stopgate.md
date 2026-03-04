@@ -352,3 +352,38 @@ The non-owner account was confirmed to lack all three authorization paths:
 
 The 403 auth guard fires correctly at the interpret route level, preventing non-owners from even generating a draft for another user's event. The overrides route independently enforces the same 403. Both routes return consistent `{ "error": "Forbidden" }` responses.
 
+---
+
+## INTERPRETER-14 — Host UX Polish Production Smoke Evidence
+
+**Date:** 2026-03-03 ~17:30 MT
+**Status:** PASS — all acceptance criteria met
+
+### Changes Shipped
+
+| Change | Before | After |
+|--------|--------|-------|
+| **Host title** | "Create Happening" | "Create Happening with AI" |
+| **Host subtitle** | "Describe your happening and we'll set it up for you." | "Describe your event, click Generate Draft, then answer follow-up questions in the same box." |
+| **Run button (host)** | 3-state: Generate Draft / Update Draft / Send Answer | 2-state: Generate Draft / Send Answer |
+| **Conversation history (host)** | "Conversation History" with `user:`/`assistant:` labels | "Previous Messages" with "You:"/"AI:" labels, opacity-70 de-emphasis |
+
+### Production Smoke Results
+
+| Scenario | Viewport | Result |
+|----------|----------|--------|
+| Desktop host flow — new copy renders | 1470px | ✅ PASS |
+| iPhone 12 width — no overflow, readable | 375px | ✅ PASS |
+| Narrow Android width — no overflow, readable | 360px | ✅ PASS |
+| Fallback link → classic form | Desktop | ✅ PASS — navigates to `/dashboard/my-events/new?classic=true` |
+
+### Test Coverage
+
+- 16 new source assertions in `interpreter-14-host-ux-polish.test.ts`
+- Full suite: 4,958 tests pass (239 files), zero failures
+- ESLint: clean on changed file
+
+### Commit
+
+`374fee6a` — `feat(host-ux): improve conversational create copy and layout for hosts (INTERPRETER-14)`
+
