@@ -1,7 +1,7 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
-import { checkAdminRole } from "@/lib/auth/adminAuth";
+import { checkAdminRole, checkHostStatus } from "@/lib/auth/adminAuth";
 import { readEventEmbedsWithFallback } from "@/lib/mediaEmbedsServer";
 import { formatDateGroupHeader, getTodayDenver, addDaysDenver, expandOccurrencesForEvent } from "@/lib/events/nextOccurrence";
 import EventForm from "../../../_components/EventForm";
@@ -32,6 +32,8 @@ export default async function EditOccurrencePage({ params }: PageProps) {
   }
 
   const isAdmin = await checkAdminRole(supabase, sessionUser.id);
+  // UX-13: Check host status for venue creation permission
+  const isApprovedHost = await checkHostStatus(supabase, sessionUser.id);
 
   // Fetch event with venue
   const { data: event, error } = await supabase
@@ -176,7 +178,7 @@ export default async function EditOccurrencePage({ params }: PageProps) {
             venues={venues ?? []}
             event={effectiveEvent}
             canCreateCSC={false}
-            canCreateVenue={isAdmin}
+            canCreateVenue={isAdmin || isApprovedHost}
             mediaEmbedUrls={overrideMediaEmbedUrls}
             occurrenceMode={true}
             occurrenceDateKey={dateKey}

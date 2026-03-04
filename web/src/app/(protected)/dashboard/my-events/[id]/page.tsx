@@ -339,7 +339,7 @@ export default async function EditEventPage({
               venues={venues ?? []}
               event={event}
               canCreateCSC={canCreateCSC}
-              canCreateVenue={isAdmin}
+              canCreateVenue={isAdmin || isApprovedHost}
               mediaEmbedUrls={mediaEmbedUrls}
               hasActiveClaims={hasActiveClaims}
             />

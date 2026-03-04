@@ -87,7 +87,8 @@ export default async function NewEventPage({
           </div>
         )}
 
-        <EventForm mode="create" venues={venues ?? []} canCreateCSC={canCreateCSC} canCreateVenue={isAdmin} />
+        {/* UX-13: Allow approved hosts (not just admins) to create venues */}
+        <EventForm mode="create" venues={venues ?? []} canCreateCSC={canCreateCSC} canCreateVenue={isAdmin || isApprovedHost} />
       </div>
     </main>
   );

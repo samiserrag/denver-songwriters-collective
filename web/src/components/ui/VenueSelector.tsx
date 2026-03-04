@@ -20,7 +20,7 @@ interface VenueSelectorProps {
   isCustomLocationSelected?: boolean;
   required?: boolean;
   disabled?: boolean;
-  /** Phase 4.45b: Only show "Add new venue" if user can create venues (admin only) */
+  /** Phase 4.45b / UX-13: Show "Add new venue" for approved hosts and admins */
   canCreateVenue?: boolean;
 }
 
@@ -70,7 +70,8 @@ export default function VenueSelector({
     setError(null);
 
     try {
-      const response = await fetch("/api/admin/venues", {
+      // UX-13: Use host-accessible venue creation endpoint (approved hosts + admins).
+      const response = await fetch("/api/venues", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -105,7 +106,7 @@ export default function VenueSelector({
       setShowNewVenueForm(false);
       if (typeof (payload as { geocodingWarning?: { message?: string } }).geocodingWarning?.message === "string") {
         setError(
-          `Venue created, but geocoding could not complete. ${(payload as { geocodingWarning: { message: string } }).geocodingWarning.message} Admin was notified.`
+          `Venue created, but geocoding could not complete. ${(payload as { geocodingWarning: { message: string } }).geocodingWarning.message}`
         );
       }
     } catch (err) {

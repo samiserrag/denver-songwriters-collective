@@ -80,23 +80,23 @@ describe("canCreateVenue authorization", () => {
     expect(defaultValue).toBe(false);
   });
 
-  it("only admins should have canCreateVenue=true", () => {
-    // RLS policy: venues_insert_admin requires public.is_admin()
-    // Therefore canCreateVenue should only be true for admins
+  it("UX-13: admins and approved hosts should have canCreateVenue=true", () => {
+    // UX-13: Venue creation expanded from admin-only to approved hosts + admins.
+    // RLS still requires is_admin() but the /api/venues route uses service role
+    // client with checkHostStatus auth gate (approved_hosts OR admin).
 
-    // Test the authorization matrix for each role
     const scenarios = [
-      { role: "admin", isAdmin: true, canCreateVenue: true },
-      { role: "approved_host", isAdmin: false, canCreateVenue: false },
-      { role: "regular_member", isAdmin: false, canCreateVenue: false },
+      { role: "admin", isAdmin: true, isApprovedHost: true, canCreateVenue: true },
+      { role: "approved_host", isAdmin: false, isApprovedHost: true, canCreateVenue: true },
+      { role: "regular_member", isAdmin: false, isApprovedHost: false, canCreateVenue: false },
     ];
 
-    scenarios.forEach(({ role, isAdmin, canCreateVenue }) => {
-      // canCreateVenue should only be true when isAdmin is true
-      const computedCanCreateVenue = isAdmin;
+    scenarios.forEach(({ role, isAdmin, isApprovedHost, canCreateVenue }) => {
+      // canCreateVenue = isAdmin || isApprovedHost
+      const computedCanCreateVenue = isAdmin || isApprovedHost;
       expect(computedCanCreateVenue).toBe(canCreateVenue);
-      // Verify hosts cannot create venues
-      if (role === "approved_host") {
+      // Regular members still cannot create venues
+      if (role === "regular_member") {
         expect(canCreateVenue).toBe(false);
       }
     });
@@ -276,7 +276,9 @@ describe("Venue creation geocoding contract", () => {
       "utf-8"
     );
 
-    expect(uiSelectorSource).toContain('fetch("/api/admin/venues"');
+    // UX-13: UI VenueSelector now uses host-accessible /api/venues endpoint
+    expect(uiSelectorSource).toContain('fetch("/api/venues"');
+    // Admin VenueSelector still uses admin-only endpoint
     expect(adminSelectorSource).toContain('fetch("/api/admin/venues"');
     expect(uiSelectorSource).not.toContain('.from("venues")');
     expect(adminSelectorSource).not.toContain('.from("venues")');
