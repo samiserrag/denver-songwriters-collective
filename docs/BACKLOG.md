@@ -410,6 +410,7 @@ Polish member profiles before external test users see them. Three scope areas:
 | UX-09 | Cross-surface consistency rules contract for discovery surfaces | P1 | DONE — Contracted in `docs/CONTRACTS.md` § Cross-Surface Event Consistency |
 | UX-12 | Fix nested `<a>` hydration warnings in HappeningCard (VenueLink inside card Link) | P0 | DONE — Implemented stretched-link pattern: card wrapper always `<div>`, absolute `<Link>` overlay at z-0, content sections pointer-events-none, interactive elements (VenueLink, favorite) pointer-events-auto. 8 regression tests. |
 | UX-13 | Host VenueSelector hides "+ Add new venue" option behind `canCreateVenue` prop | P2 | DONE — commit `fb7de42f` | Path A: new `/api/venues` POST route (host + admin auth via `checkHostStatus`), VenueSelector endpoint updated, 3 page routes pass `canCreateVenue={isAdmin \|\| isApprovedHost}`. 22 tests, 4/4 CI green. Negative smoke: non-host member correctly blocked (403 + no UI). |
+| HOST-ROLE-01 | Host role invariants: orphaned cohosts, race conditions, capability sync | P1 | DONE — commit `c8a8cd67` | Token-invite auto-role, atomic CAS on accept, approved_hosts sync, 4 orphaned events repaired, 16 new tests. |
 
 ### Search (HIGH PRIORITY)
 
