@@ -146,31 +146,34 @@ export async function POST(request: NextRequest) {
     const roleToGrant = invite.role_to_grant;
 
     if (roleToGrant === "host") {
-      // Host invite: only succeeds if events.host_id IS NULL
-      if (event.host_id !== null) {
-        console.log(
-          `[EventInviteAccept] Host invite rejected - event already has primary host, eventId=${invite.event_id}`
-        );
-        return NextResponse.json(
-          { error: "This event already has a primary host" },
-          { status: 409 }
-        );
-      }
-
-      // Set primary owner
-      const { error: updateEventError } = await serviceClient
+      // HOST-ROLE-01: Atomic conditional update (CAS) — only succeeds if host_id IS NULL.
+      // Prevents race condition where two users could both read host_id=null.
+      const { data: claimed, error: claimError } = await serviceClient
         .from("events")
         .update({ host_id: sessionUser.id })
-        .eq("id", invite.event_id);
+        .eq("id", invite.event_id)
+        .is("host_id", null)
+        .select("id")
+        .maybeSingle();
 
-      if (updateEventError) {
+      if (claimError) {
         console.error(
-          "[EventInviteAccept] Failed to set host_id:",
-          updateEventError
+          "[EventInviteAccept] Failed to claim host_id:",
+          claimError
         );
         return NextResponse.json(
           { error: "Failed to grant host access" },
           { status: 500 }
+        );
+      }
+
+      if (!claimed) {
+        console.log(
+          `[EventInviteAccept] Host invite rejected - event already has primary host (CAS failed), eventId=${invite.event_id}`
+        );
+        return NextResponse.json(
+          { error: "This event already has a primary host" },
+          { status: 409 }
         );
       }
     }
@@ -201,6 +204,35 @@ export async function POST(request: NextRequest) {
         { error: "Failed to grant event access" },
         { status: 500 }
       );
+    }
+
+    // HOST-ROLE-01: Sync approved_hosts on host invite acceptance.
+    // Ensures the user can use host tools platform-wide (venue creation, etc).
+    if (roleToGrant === "host") {
+      const { error: hostSyncError } = await serviceClient
+        .from("approved_hosts")
+        .upsert(
+          {
+            user_id: sessionUser.id,
+            status: "active",
+            approved_at: new Date().toISOString(),
+            approved_by: invite.created_by || sessionUser.id,
+          },
+          { onConflict: "user_id" }
+        );
+      if (hostSyncError) {
+        console.error("[EventInviteAccept] approved_hosts sync failed:", hostSyncError);
+        // Non-fatal: the event-level access was already granted
+      } else {
+        // Also sync legacy profiles.is_host flag
+        await serviceClient
+          .from("profiles")
+          .update({ is_host: true })
+          .eq("id", sessionUser.id);
+        console.log(
+          `[EventInviteAccept] Synced approved_hosts for userId=${sessionUser.id}`
+        );
+      }
     }
 
     // Mark invite as accepted

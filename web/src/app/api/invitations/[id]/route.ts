@@ -90,6 +90,32 @@ export async function PATCH(
       return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
 
+    // HOST-ROLE-01: Sync approved_hosts on host invite acceptance.
+    {
+      const { error: hostSyncError } = await serviceClient
+        .from("approved_hosts")
+        .upsert(
+          {
+            user_id: sessionUser.id,
+            status: "active",
+            approved_at: new Date().toISOString(),
+            approved_by: invitation.invited_by || sessionUser.id,
+          },
+          { onConflict: "user_id" }
+        );
+      if (hostSyncError) {
+        console.error("[InvitationAccept] approved_hosts sync failed:", hostSyncError);
+      } else {
+        await serviceClient
+          .from("profiles")
+          .update({ is_host: true })
+          .eq("id", sessionUser.id);
+        console.log(
+          `[InvitationAccept] Synced approved_hosts for userId=${sessionUser.id}`
+        );
+      }
+    }
+
     // Notify the person who invited them
     if (invitation.invited_by) {
       const { error: notifyError } = await supabase.rpc("create_user_notification", {

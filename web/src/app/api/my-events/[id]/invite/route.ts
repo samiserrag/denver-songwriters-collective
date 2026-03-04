@@ -78,7 +78,7 @@ export async function POST(
     }
 
     const body = await request.json();
-    const roleToGrant = body.role_to_grant || "cohost";
+    let roleToGrant = body.role_to_grant || "cohost";
     const emailRestriction = body.email_restriction?.trim().toLowerCase() || null;
     const expiresInDays = body.expires_in_days || 7;
 
@@ -88,6 +88,25 @@ export async function POST(
         { error: "role_to_grant must be 'host' or 'cohost'" },
         { status: 400 }
       );
+    }
+
+    // HOST-ROLE-01: Auto-detect role for orphaned events.
+    // If event has no primary host and no existing host row, upgrade to "host".
+    if (roleToGrant === "cohost" && !event!.host_id) {
+      const serviceClient = (await import("@/lib/supabase/serviceRoleClient")).createServiceRoleClient();
+      const { data: existingHostRow } = await serviceClient
+        .from("event_hosts")
+        .select("id")
+        .eq("event_id", eventId)
+        .eq("role", "host")
+        .limit(1)
+        .maybeSingle();
+      if (!existingHostRow) {
+        roleToGrant = "host";
+        console.log(
+          `[EventInviteCreate] Auto-upgraded role to "host" for orphaned event ${eventId}`
+        );
+      }
     }
 
     // Generate secure token
