@@ -1136,6 +1136,45 @@ An override applies only to:
 
 ---
 
+## Contract: Host Capability vs Event Roles (HOST-ROLE-01)
+
+> **Track Status:** March 2026
+
+### Role Model
+
+| Layer | Source of Truth | Meaning |
+|-------|------------------|---------|
+| Platform host capability | `approved_hosts.status='active'` and `profiles.is_host=true` (or admin) | User can access host-level platform actions (for example venue creation in host flows) |
+| Event primary host | `events.host_id` + accepted `event_hosts.role='host'` row for same user | Canonical owner/operator of a specific event |
+| Event co-host | accepted `event_hosts.role='cohost'` row | Collaborator on a specific event; not primary owner |
+
+### Invariants
+
+1. Accepted host/cohost participation must never exist without a valid primary host.
+2. If `events.host_id` is non-null, there must be a matching accepted `event_hosts` row with `role='host'` for that same user.
+3. Invite acceptance that claims an orphaned event must use atomic compare-and-set (`host_id IS NULL`) to prevent race-based ownership drift.
+4. Host invite acceptance must sync platform capability tables (`approved_hosts` upsert + `profiles.is_host=true`).
+5. Admin role does not imply event membership; event-level role must come from `event_hosts`/`events.host_id`, not UI defaults.
+
+### Authorization Contract
+
+- Event write auth remains: admin OR `events.host_id == user` OR accepted `event_hosts` role for the user (route-specific constraints may be stricter).
+- Non-authorized access must return HTTP 403 (not silent fallback to success).
+
+### UI Contract
+
+- My Happenings and event edit surfaces must derive role badges/actions from real event membership rows.
+- UI must not render "Co-host" state for admins or members who do not have an accepted `event_hosts` row.
+
+### Test Coverage
+
+| Test File | Contracts Enforced |
+|-----------|-------------------|
+| `__tests__/host-role-01-invariants.test.ts` | Auto-role detection, CAS claim guard, approved_hosts sync, admin ghost-role prevention |
+| `__tests__/host-invite-auto-role.test.ts` | Invite role decision contract + role-aware behavior |
+
+---
+
 ## Contract: RSVP System (Phase 4.48b)
 
 > **Track Status:** January 2026

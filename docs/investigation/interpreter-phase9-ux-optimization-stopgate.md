@@ -1,7 +1,7 @@
 # Stop-Gate Track: Interpreter UX Optimization + Trust Metrics (INTERPRETER-10)
 
 **Date:** 2026-03-01  
-**Status:** IMPLEMENTED — AWAITING 7-DAY ROLLOUT DECISION
+**Status:** IMPLEMENTED — MONITORING WINDOW ACTIVE (Day 2/7)
 **Parent tract:** `/Users/samiserrag/Documents/GitHub/denver-songwriters-collective/docs/investigation/interpreter-phase8-ux-launch-stopgate.md` (Phase 8 production-verified)
 
 ---
@@ -289,9 +289,17 @@ Before execution prompt issuance:
 
 | Checkpoint | Date | Status |
 |------------|------|--------|
-| T+1h | 2026-03-01 ~19:00 MT | PENDING |
-| T+24h | 2026-03-02 | PENDING |
+| T+1h | 2026-03-01 ~19:00 MT | COMPLETE — production smoke + telemetry sanity completed |
+| T+24h (target) | 2026-03-02 | MISSED — capture next checkpoint with actual timestamp (do not backfill) |
+| T+48h (actual catch-up) | 2026-03-03 | PENDING |
 | T+7d | 2026-03-08 | PENDING |
+
+### Monitoring Interpretation Rules
+
+1. Minimum sample for a meaningful read: at least `20` impressions and `10` create attempts in the measurement window.
+2. If Axiom queries return zero rows or sample is below minimum, record checkpoint status as **ZERO TRAFFIC — HOLD (no signal)**.
+3. Do not fabricate timestamps or backfill missed checkpoints; always record the actual capture time.
+4. Day-7 GO/HOLD/ROLLBACK decision is only valid when sample threshold is met.
 
 ### Day-7 Rollout Decision Template
 
