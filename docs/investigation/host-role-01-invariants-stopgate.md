@@ -112,3 +112,12 @@ Direct host ownership assignment through invite acceptance is now blocked.
 - `web/src/__tests__/admin-user-toggle-feedback-and-sync.test.ts`
 - `web/src/__tests__/event-claim-admin-email-fanout.test.ts`
 - `web/src/__tests__/host-requests-admin-email-fanout.test.ts`
+
+### 7.5 Follow-up hardening addendum (2026-03-05)
+
+1. Commit: `bf4f132f`.
+2. `updateSpotlightType` now enforces server-side eligibility before write:
+   - `performer` spotlight requires songwriter identity.
+   - `host` spotlight requires host identity or accepted event-host role (`host`/`cohost`).
+   - `studio` spotlight requires studio identity.
+3. Admin users table Host column now renders the host toggle for host-only users as well (not only songwriters), so admins can revoke/restore `is_host` directly from this surface.
