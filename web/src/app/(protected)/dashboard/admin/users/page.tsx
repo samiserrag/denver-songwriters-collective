@@ -37,6 +37,17 @@ export default async function AdminUsersPage() {
     .select("*")
     .order("created_at", { ascending: false });
 
+  // Accepted event-level hosts/cohosts (used for host spotlight eligibility in admin UX)
+  const { data: acceptedEventHosts } = await supabase
+    .from("event_hosts")
+    .select("user_id")
+    .eq("invitation_status", "accepted")
+    .in("role", ["host", "cohost"]);
+
+  const acceptedEventHostUserIds = Array.from(
+    new Set((acceptedEventHosts ?? []).map((row) => row.user_id).filter(Boolean))
+  ) as string[];
+
   // Fetch user emails from auth.users using service role client
   const serviceClient = createServiceRoleClient();
   const { data: authUsers } = await serviceClient.auth.admin.listUsers();
@@ -64,6 +75,7 @@ export default async function AdminUsersPage() {
 
       <UserDirectoryTable
         users={(users ?? []) as Profile[]}
+        acceptedEventHostUserIds={acceptedEventHostUserIds}
         emailMap={emailMap}
         isSuperAdmin={currentUserIsSuperAdmin}
         currentUserId={user.id}
