@@ -165,11 +165,11 @@ export async function POST(
   const inviterName = inviter?.full_name || "Someone";
 
   // Send notification to invited user with event details
-  const roleLabel = assignedRole === "host" ? "host" : "co-host";
+  const roleLabel = "co-host";
   const { error: notifyError } = await supabase.rpc("create_user_notification", {
     p_user_id: targetUserId,
     p_type: "cohost_invitation",
-    p_title: `${assignedRole === "host" ? "Host" : "Co-host"} Invitation: ${eventTitle}`,
+    p_title: `Co-host Invitation: ${eventTitle}`,
     p_message: `${inviterName} invited you to ${roleLabel} "${eventTitle}"`,
     p_link: `/dashboard/invitations`
   });
