@@ -10,6 +10,7 @@ type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 
 interface Props {
   users: Profile[];
+  acceptedEventHostUserIds?: string[];
   emailMap?: Record<string, string>;
   isSuperAdmin?: boolean;
   currentUserId?: string;
@@ -68,8 +69,18 @@ function getAdminProfileHref(u: Profile): string {
 // Filter types - flag-based with admin using role
 type FilterType = "all" | "songwriters" | "studios" | "hosts" | "fans" | "admin";
 
-export default function UserDirectoryTable({ users, emailMap = {}, isSuperAdmin = false, currentUserId }: Props) {
+export default function UserDirectoryTable({
+  users,
+  acceptedEventHostUserIds = [],
+  emailMap = {},
+  isSuperAdmin = false,
+  currentUserId,
+}: Props) {
   const router = useRouter();
+  const acceptedEventHostSet = useMemo(
+    () => new Set(acceptedEventHostUserIds),
+    [acceptedEventHostUserIds]
+  );
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState<FilterType>("all");
   const [deleteModal, setDeleteModal] = useState<{ open: boolean; user: Profile | null }>({
@@ -84,6 +95,10 @@ export default function UserDirectoryTable({ users, emailMap = {}, isSuperAdmin 
   const [togglingStudioSpotlight, setTogglingStudioSpotlight] = useState<string | null>(null);
   const [togglingHost, setTogglingHost] = useState<string | null>(null);
   const [togglingAdmin, setTogglingAdmin] = useState<string | null>(null);
+  const [actionNotice, setActionNotice] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
   const [mediaModal, setMediaModal] = useState<{
     open: boolean;
     user: Profile | null;
@@ -107,6 +122,24 @@ export default function UserDirectoryTable({ users, emailMap = {}, isSuperAdmin 
     setDeletedUserIds(new Set());
   }, [users]);
 
+  const isEventLevelHost = (u: Profile): boolean => acceptedEventHostSet.has(u.id);
+  const isHostSpotlightEligible = (u: Profile): boolean =>
+    isUserHost(u) || isEventLevelHost(u);
+
+  const renderDisabledSpotlightControl = (reason: string) => (
+    <div className="flex flex-col items-start gap-1">
+      <button
+        type="button"
+        disabled
+        title={reason}
+        className="cursor-not-allowed px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-500 border border-gray-300 dark:border-gray-600 opacity-70"
+      >
+        No
+      </button>
+      <span className="text-[10px] text-[var(--color-text-secondary)]">{reason}</span>
+    </div>
+  );
+
   const filtered = useMemo(() => {
     return users.filter((u) => {
       // Exclude optimistically deleted users
@@ -122,7 +155,7 @@ export default function UserDirectoryTable({ users, emailMap = {}, isSuperAdmin 
           matchesFilter = isUserStudio(u);
           break;
         case "hosts":
-          matchesFilter = isUserHost(u);
+          matchesFilter = isUserHost(u) || acceptedEventHostSet.has(u.id);
           break;
         case "fans":
           matchesFilter = isUserFan(u);
@@ -146,7 +179,7 @@ export default function UserDirectoryTable({ users, emailMap = {}, isSuperAdmin 
         (name.includes(term) || typeLabel.includes(term) || email.includes(term))
       );
     });
-  }, [users, search, filterType, deletedUserIds, emailMap]);
+  }, [users, search, filterType, deletedUserIds, emailMap, acceptedEventHostSet]);
 
   const handleArtistSpotlightToggle = async (user: Profile) => {
     setTogglingArtistSpotlight(user.id);
@@ -154,10 +187,18 @@ export default function UserDirectoryTable({ users, emailMap = {}, isSuperAdmin 
       const isCurrently = user.is_featured && user.spotlight_type === "performer";
       const result = await updateSpotlightType(user.id, isCurrently ? null : "performer");
       if (!result.success) {
-        console.error("Toggle artist spotlight error:", result.error);
+        const message = result.error || "Failed to update artist spotlight.";
+        setActionNotice({ type: "error", text: message });
+        console.error("Toggle artist spotlight error:", message);
+        return;
       }
+      setActionNotice({
+        type: "success",
+        text: isCurrently ? "Artist spotlight removed." : "Artist spotlight enabled.",
+      });
       router.refresh();
     } catch (err) {
+      setActionNotice({ type: "error", text: "Failed to update artist spotlight." });
       console.error("Toggle artist spotlight error:", err);
     } finally {
       setTogglingArtistSpotlight(null);
@@ -170,10 +211,18 @@ export default function UserDirectoryTable({ users, emailMap = {}, isSuperAdmin 
       const isCurrentlyHostSpotlight = user.is_featured && user.spotlight_type === "host";
       const result = await updateSpotlightType(user.id, isCurrentlyHostSpotlight ? null : "host");
       if (!result.success) {
-        console.error("Toggle host spotlight error:", result.error);
+        const message = result.error || "Failed to update host spotlight.";
+        setActionNotice({ type: "error", text: message });
+        console.error("Toggle host spotlight error:", message);
+        return;
       }
+      setActionNotice({
+        type: "success",
+        text: isCurrentlyHostSpotlight ? "Host spotlight removed." : "Host spotlight enabled.",
+      });
       router.refresh();
     } catch (err) {
+      setActionNotice({ type: "error", text: "Failed to update host spotlight." });
       console.error("Toggle host spotlight error:", err);
     } finally {
       setTogglingHostSpotlight(null);
@@ -186,10 +235,18 @@ export default function UserDirectoryTable({ users, emailMap = {}, isSuperAdmin 
       const isCurrently = user.is_featured && user.spotlight_type === "studio";
       const result = await updateSpotlightType(user.id, isCurrently ? null : "studio");
       if (!result.success) {
-        console.error("Toggle studio spotlight error:", result.error);
+        const message = result.error || "Failed to update studio spotlight.";
+        setActionNotice({ type: "error", text: message });
+        console.error("Toggle studio spotlight error:", message);
+        return;
       }
+      setActionNotice({
+        type: "success",
+        text: isCurrently ? "Studio spotlight removed." : "Studio spotlight enabled.",
+      });
       router.refresh();
     } catch (err) {
+      setActionNotice({ type: "error", text: "Failed to update studio spotlight." });
       console.error("Toggle studio spotlight error:", err);
     } finally {
       setTogglingStudioSpotlight(null);
@@ -202,10 +259,18 @@ export default function UserDirectoryTable({ users, emailMap = {}, isSuperAdmin 
       const newHostStatus = !user.is_host;
       const result = await toggleHostStatus(user.id, newHostStatus);
       if (!result.success) {
-        console.error("Toggle host error:", result.error);
+        const message = result.error || "Failed to update host status.";
+        setActionNotice({ type: "error", text: message });
+        console.error("Toggle host error:", message);
+        return;
       }
+      setActionNotice({
+        type: "success",
+        text: result.message || (newHostStatus ? "Host enabled." : "Host disabled."),
+      });
       router.refresh();
     } catch (err) {
+      setActionNotice({ type: "error", text: "Failed to update host status." });
       console.error("Toggle host error:", err);
     } finally {
       setTogglingHost(null);
@@ -218,11 +283,18 @@ export default function UserDirectoryTable({ users, emailMap = {}, isSuperAdmin 
       const makeAdmin = user.role !== "admin";
       const result = await toggleAdminRole(user.id, makeAdmin);
       if (!result.success) {
-        console.error("Toggle admin error:", result.error);
-        alert(result.error);
+        const message = result.error || "Failed to update admin role.";
+        setActionNotice({ type: "error", text: message });
+        console.error("Toggle admin error:", message);
+        return;
       }
+      setActionNotice({
+        type: "success",
+        text: makeAdmin ? "Admin role granted." : "Admin role removed.",
+      });
       router.refresh();
     } catch (err) {
+      setActionNotice({ type: "error", text: "Failed to update admin role." });
       console.error("Toggle admin error:", err);
     } finally {
       setTogglingAdmin(null);
@@ -344,6 +416,18 @@ export default function UserDirectoryTable({ users, emailMap = {}, isSuperAdmin 
         </div>
       </div>
 
+      {actionNotice && (
+        <div
+          className={`rounded-lg border px-3 py-2 text-sm ${
+            actionNotice.type === "success"
+              ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-300"
+              : "bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700 text-red-700 dark:text-red-300"
+          }`}
+        >
+          {actionNotice.text}
+        </div>
+      )}
+
       {/* Table */}
       <div className="w-full overflow-x-auto rounded-lg border border-[var(--color-border-default)] p-4 bg-[var(--color-bg-card)]">
         <table className="min-w-full text-left text-sm text-[var(--color-text-primary)]">
@@ -400,8 +484,10 @@ export default function UserDirectoryTable({ users, emailMap = {}, isSuperAdmin 
                           ? "Yes"
                           : "No"}
                       </button>
-                    ) : isUserHost(u) && !isUserSongwriter(u) ? (
-                      <span className="text-emerald-700 dark:text-emerald-300 text-xs">Primary Host</span>
+                    ) : isHostSpotlightEligible(u) && !isUserSongwriter(u) ? (
+                      <span className="text-emerald-700 dark:text-emerald-300 text-xs">
+                        {isUserHost(u) ? "Primary Host" : "Event Host"}
+                      </span>
                     ) : (
                       <span className="text-[var(--color-text-secondary)] text-xs">-</span>
                     )}
@@ -424,13 +510,11 @@ export default function UserDirectoryTable({ users, emailMap = {}, isSuperAdmin 
                           ? "Yes"
                           : "No"}
                       </button>
-                    ) : (
-                      <span className="text-[var(--color-text-secondary)] text-xs">-</span>
-                    )}
+                    ) : renderDisabledSpotlightControl("Songwriter only")}
                   </td>
                   <td className="py-2 px-3">
                     {/* Host Spotlight toggle — only for hosts */}
-                    {isUserHost(u) ? (
+                    {isHostSpotlightEligible(u) ? (
                       <button
                         onClick={() => handleHostSpotlightToggle(u)}
                         disabled={togglingHostSpotlight === u.id}
@@ -446,9 +530,7 @@ export default function UserDirectoryTable({ users, emailMap = {}, isSuperAdmin 
                           ? "Yes"
                           : "No"}
                       </button>
-                    ) : (
-                      <span className="text-[var(--color-text-secondary)] text-xs">-</span>
-                    )}
+                    ) : renderDisabledSpotlightControl("Host only")}
                   </td>
                   <td className="py-2 px-3">
                     {/* Studio Spotlight toggle — only for studios */}
@@ -468,9 +550,7 @@ export default function UserDirectoryTable({ users, emailMap = {}, isSuperAdmin 
                           ? "Yes"
                           : "No"}
                       </button>
-                    ) : (
-                      <span className="text-[var(--color-text-secondary)] text-xs">-</span>
-                    )}
+                    ) : renderDisabledSpotlightControl("Studio only")}
                   </td>
                   <td className="py-2 px-3 text-[var(--color-text-secondary)] text-xs">
                     {u.created_at

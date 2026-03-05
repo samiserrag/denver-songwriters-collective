@@ -89,6 +89,22 @@ export async function POST(
   // We've already verified authorization above (user is admin or primary host)
   const serviceClient = createServiceRoleClient();
 
+  const { data: eventRow } = await serviceClient
+    .from("events")
+    .select("host_id")
+    .eq("id", eventId)
+    .single();
+
+  if (!eventRow?.host_id) {
+    return NextResponse.json(
+      {
+        error:
+          "This event has no primary host yet. Submit a host claim for admin approval before inviting co-hosts.",
+      },
+      { status: 409 }
+    );
+  }
+
   // Check if already a host
   const { data: existing } = await serviceClient
     .from("event_hosts")
@@ -103,31 +119,7 @@ export async function POST(
     }, { status: 400 });
   }
 
-  // Determine role: assign "host" if event has no primary host and no existing/pending host row.
-  // This prevents inviting as co-host when someone should be the first host.
-  let assignedRole: "host" | "cohost" = "cohost";
-  {
-    const { data: eventRow } = await serviceClient
-      .from("events")
-      .select("host_id")
-      .eq("id", eventId)
-      .single();
-
-    if (!eventRow?.host_id) {
-      // Check for any existing host row (accepted or pending) to guard against drift/race
-      const { data: existingHostRow } = await serviceClient
-        .from("event_hosts")
-        .select("id")
-        .eq("event_id", eventId)
-        .eq("role", "host")
-        .limit(1)
-        .maybeSingle();
-
-      if (!existingHostRow) {
-        assignedRole = "host";
-      }
-    }
-  }
+  const assignedRole = "cohost" as const;
 
   // Create invitation using service role client
   // RLS policy requires approved_hosts membership, but we've already verified

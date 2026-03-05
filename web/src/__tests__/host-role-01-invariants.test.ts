@@ -2,11 +2,10 @@
  * HOST-ROLE-01 — Host Role Invariants source assertions.
  *
  * Verifies:
- * 1. Token-invite route auto-detects role for orphaned events.
- * 2. Token-accept route uses atomic CAS for host_id claim.
- * 3. Both accept routes sync approved_hosts on host invite acceptance.
- * 4. Invitations accept route uses atomic CAS (pre-existing, preserved).
- * 5. Admin ghost-role fix: nullable currentUserRole on detail page.
+ * 1. Claims-only host ownership: direct host invites are blocked.
+ * 2. Claims-only host ownership: host invite acceptance is blocked.
+ * 3. Claims-only host ownership: cohost invites on orphaned events are blocked.
+ * 4. Admin ghost-role fix: nullable currentUserRole on detail page.
  */
 import { describe, expect, it } from "vitest";
 import * as fs from "node:fs";
@@ -18,92 +17,56 @@ const readSrc = (relPath: string) =>
 const tokenInviteRoute = readSrc("../app/api/my-events/[id]/invite/route.ts");
 const tokenAcceptRoute = readSrc("../app/api/event-invites/accept/route.ts");
 const invitationsAcceptRoute = readSrc("../app/api/invitations/[id]/route.ts");
+const cohostsRoute = readSrc("../app/api/my-events/[id]/cohosts/route.ts");
 const editPage = readSrc(
   "../app/(protected)/dashboard/my-events/[id]/page.tsx"
 );
 
 // ---------------------------------------------------------------------------
-// A) Token-invite auto-role detection
+// A) Token-invite enforcement
 // ---------------------------------------------------------------------------
-describe("HOST-ROLE-01 — Token-invite auto-role detection", () => {
-  it("checks event.host_id for orphaned event detection", () => {
-    expect(tokenInviteRoute).toContain("!event!.host_id");
+describe("HOST-ROLE-01 — Token-invite claims-only enforcement", () => {
+  it("blocks invites when event has no primary host", () => {
+    expect(tokenInviteRoute).toContain("This event has no primary host yet");
+    expect(tokenInviteRoute).toContain("Submit a host claim");
   });
 
-  it("queries event_hosts for existing host row before upgrading", () => {
-    expect(tokenInviteRoute).toContain('.eq("role", "host")');
-  });
-
-  it("auto-upgrades cohost to host when event is orphaned", () => {
-    expect(tokenInviteRoute).toContain('roleToGrant = "host"');
-    expect(tokenInviteRoute).toContain("Auto-upgraded role");
+  it("blocks direct host invites", () => {
+    expect(tokenInviteRoute).toContain("Direct host invites are disabled");
+    expect(tokenInviteRoute).toContain("host claim approval workflow");
   });
 });
 
 // ---------------------------------------------------------------------------
-// B) Token-accept atomic CAS
+// B) Host invite acceptance blocked
 // ---------------------------------------------------------------------------
-describe("HOST-ROLE-01 — Token-accept atomic CAS", () => {
-  it("uses .is('host_id', null) for atomic conditional update", () => {
-    expect(tokenAcceptRoute).toContain('.is("host_id", null)');
+describe("HOST-ROLE-01 — Host invite acceptance blocked", () => {
+  it("token accept route blocks host ownership via invite", () => {
+    expect(tokenAcceptRoute).toContain("Host ownership must be approved via the host claim workflow");
   });
 
-  it("checks claimed result for race condition detection", () => {
-    expect(tokenAcceptRoute).toContain("if (!claimed)");
-  });
-
-  it("uses .select().maybeSingle() pattern for CAS", () => {
-    expect(tokenAcceptRoute).toContain(".maybeSingle()");
-  });
-
-  it("no longer uses read-then-write pattern", () => {
-    // Old pattern: if (event.host_id !== null) — should not be the gate
-    expect(tokenAcceptRoute).not.toContain("event.host_id !== null");
+  it("legacy invitations accept route blocks host ownership via invitation", () => {
+    expect(invitationsAcceptRoute).toContain("Host ownership must be approved via the host claim workflow");
   });
 });
 
 // ---------------------------------------------------------------------------
-// C) approved_hosts sync on host invite acceptance
+// C) Cohost route orphan guard
 // ---------------------------------------------------------------------------
-describe("HOST-ROLE-01 — approved_hosts sync on acceptance", () => {
-  it("token-accept route syncs approved_hosts for host role", () => {
-    expect(tokenAcceptRoute).toContain("approved_hosts");
-    expect(tokenAcceptRoute).toContain(
-      'status: "active"'
-    );
+describe("HOST-ROLE-01 — Cohost route orphan guard", () => {
+  it("blocks cohost invitations for orphaned events", () => {
+    expect(cohostsRoute).toContain("This event has no primary host yet");
+    expect(cohostsRoute).toContain("before inviting co-hosts");
   });
 
-  it("token-accept route syncs profiles.is_host", () => {
-    expect(tokenAcceptRoute).toContain("is_host: true");
-  });
-
-  it("invitations accept route syncs approved_hosts for host role", () => {
-    expect(invitationsAcceptRoute).toContain("approved_hosts");
-    expect(invitationsAcceptRoute).toContain(
-      'status: "active"'
-    );
-  });
-
-  it("invitations accept route syncs profiles.is_host", () => {
-    expect(invitationsAcceptRoute).toContain("is_host: true");
+  it("cohost route no longer auto-promotes invitees to host", () => {
+    expect(cohostsRoute).not.toContain('assignedRole = "host"');
+    expect(cohostsRoute).toContain('const assignedRole = "cohost" as const');
   });
 });
 
 // ---------------------------------------------------------------------------
-// D) Invitations accept route preserves atomic CAS
-// ---------------------------------------------------------------------------
-describe("HOST-ROLE-01 — Invitations accept route CAS preserved", () => {
-  it("uses .is('host_id', null) for atomic conditional update", () => {
-    expect(invitationsAcceptRoute).toContain('.is("host_id", null)');
-  });
-
-  it("rolls back host_id on event_hosts update failure", () => {
-    expect(invitationsAcceptRoute).toContain("host_id: null");
-  });
-});
-
-// ---------------------------------------------------------------------------
-// E) Admin ghost-role fix (nullable currentUserRole)
+// D) Admin ghost-role fix (nullable currentUserRole)
 // ---------------------------------------------------------------------------
 describe("HOST-ROLE-01 — Admin ghost-role fix", () => {
   it("currentUserRole is nullable (host | cohost | null)", () => {
@@ -113,15 +76,5 @@ describe("HOST-ROLE-01 — Admin ghost-role fix", () => {
   it("returns null when user has no event_hosts row", () => {
     // The pattern: userHost ? (...) : null
     expect(editPage).toContain(": null;");
-  });
-});
-
-// ---------------------------------------------------------------------------
-// F) Token-accept rollback logic preserved
-// ---------------------------------------------------------------------------
-describe("HOST-ROLE-01 — Rollback logic preserved", () => {
-  it("token-accept rolls back host_id on event_hosts insert failure", () => {
-    expect(tokenAcceptRoute).toContain("Rollback host_id");
-    expect(tokenAcceptRoute).toContain("host_id: null");
   });
 });

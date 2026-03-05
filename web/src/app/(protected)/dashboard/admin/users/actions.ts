@@ -461,8 +461,9 @@ export async function updateSpotlightType(
 export async function toggleHostStatus(
   userId: string,
   isHost: boolean
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; message?: string }> {
   const supabase = await createSupabaseServerClient();
+  const serviceClient = createServiceRoleClient();
 
   // Verify the current user is an admin
   const {
@@ -483,7 +484,45 @@ export async function toggleHostStatus(
     return { success: false, error: "Not authorized - admin only" };
   }
 
-  const { error } = await supabase
+  if (isHost) {
+    const { error: approvedHostsError } = await serviceClient
+      .from("approved_hosts")
+      .upsert(
+        {
+          user_id: userId,
+          status: "active",
+          approved_by: sessionUser.id,
+          approved_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id" }
+      );
+
+    if (approvedHostsError) {
+      console.error("Toggle host approved_hosts sync error:", approvedHostsError);
+      return {
+        success: false,
+        error: `Failed to sync approved host status: ${approvedHostsError.message}`,
+      };
+    }
+  } else {
+    const { error: revokeError } = await serviceClient
+      .from("approved_hosts")
+      .update({
+        status: "revoked",
+        approved_by: sessionUser.id,
+      })
+      .eq("user_id", userId);
+
+    if (revokeError) {
+      console.error("Toggle host approved_hosts revoke error:", revokeError);
+      return {
+        success: false,
+        error: `Failed to revoke approved host status: ${revokeError.message}`,
+      };
+    }
+  }
+
+  const { error } = await serviceClient
     .from("profiles")
     .update({ is_host: isHost })
     .eq("id", userId);
@@ -494,7 +533,12 @@ export async function toggleHostStatus(
   }
 
   revalidatePath("/dashboard/admin/users");
-  return { success: true };
+  return {
+    success: true,
+    message: isHost
+      ? "Host access enabled and synced."
+      : "Host access disabled and synced.",
+  };
 }
 
 /**

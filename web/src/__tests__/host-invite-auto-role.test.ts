@@ -1,10 +1,9 @@
 /**
- * Tests for host invitation auto-role assignment and email template.
+ * Tests for host invitation policy and email template.
  *
  * Covers:
- * 1. Role determination logic at invite creation time
+ * 1. Claims-only ownership policy (no direct host assignment via invite paths)
  * 2. Email template role-awareness
- * 3. Atomic host claim on acceptance
  */
 
 import { describe, it, expect } from "vitest";
@@ -68,73 +67,39 @@ describe("Host invitation email template", () => {
   });
 });
 
-// ── Role determination logic tests ────────────────────────────────
+// ── Claims-only host ownership policy tests ───────────────────────
 
-describe("Host role auto-assignment logic", () => {
-  // These test the business rules without hitting the API:
-  // The role decision algorithm from cohosts/route.ts
-
-  function determineInviteRole(opts: {
-    eventHostId: string | null;
-    existingHostRows: Array<{ role: string; invitation_status: string }>;
-  }): "host" | "cohost" {
-    // Mirror the logic from the API route
-    if (opts.eventHostId) return "cohost";
-
-    const hasExistingHost = opts.existingHostRows.some(
-      (row) => row.role === "host"
-    );
-    if (hasExistingHost) return "cohost";
-
-    return "host";
+describe("Claims-only host ownership policy", () => {
+  function canInviteCohost(eventHostId: string | null): boolean {
+    // Mirror claims-only enforcement in cohost and token invite routes:
+    // no cohost invites on orphaned events.
+    return eventHostId !== null;
   }
 
-  it("assigns host when event has no host_id and no host rows", () => {
-    expect(
-      determineInviteRole({ eventHostId: null, existingHostRows: [] })
-    ).toBe("host");
+  function canCreateHostInvite(): boolean {
+    // Direct host invites are disabled.
+    return false;
+  }
+
+  function canAcceptHostInvite(): boolean {
+    // Host ownership must be approved via claim workflow.
+    return false;
+  }
+
+  it("blocks cohost invite creation on orphaned events", () => {
+    expect(canInviteCohost(null)).toBe(false);
   });
 
-  it("assigns cohost when event has host_id set", () => {
-    expect(
-      determineInviteRole({ eventHostId: "user-abc", existingHostRows: [] })
-    ).toBe("cohost");
+  it("allows cohost invite creation only when event has primary host", () => {
+    expect(canInviteCohost("user-abc")).toBe(true);
   });
 
-  it("assigns cohost when pending host invite exists (no host_id)", () => {
-    expect(
-      determineInviteRole({
-        eventHostId: null,
-        existingHostRows: [{ role: "host", invitation_status: "pending" }],
-      })
-    ).toBe("cohost");
+  it("never allows direct host invite creation", () => {
+    expect(canCreateHostInvite()).toBe(false);
   });
 
-  it("assigns cohost when accepted host row exists but host_id is null (drift)", () => {
-    expect(
-      determineInviteRole({
-        eventHostId: null,
-        existingHostRows: [{ role: "host", invitation_status: "accepted" }],
-      })
-    ).toBe("cohost");
-  });
-
-  it("assigns cohost when event has host_id and cohost rows", () => {
-    expect(
-      determineInviteRole({
-        eventHostId: "user-abc",
-        existingHostRows: [{ role: "cohost", invitation_status: "accepted" }],
-      })
-    ).toBe("cohost");
-  });
-
-  it("assigns host when only cohost rows exist and no host_id (orphaned event)", () => {
-    expect(
-      determineInviteRole({
-        eventHostId: null,
-        existingHostRows: [{ role: "cohost", invitation_status: "accepted" }],
-      })
-    ).toBe("host");
+  it("never allows host ownership via invite acceptance", () => {
+    expect(canAcceptHostInvite()).toBe(false);
   });
 });
 

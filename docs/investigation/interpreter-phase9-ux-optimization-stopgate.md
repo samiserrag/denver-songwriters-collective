@@ -291,7 +291,7 @@ Before execution prompt issuance:
 |------------|------|--------|
 | T+1h | 2026-03-01 ~19:00 MT | COMPLETE — production smoke + telemetry sanity completed |
 | T+24h (target) | 2026-03-02 | MISSED — capture next checkpoint with actual timestamp (do not backfill) |
-| T+48h (actual catch-up) | 2026-03-03 | PENDING |
+| T+48h (actual catch-up) | 2026-03-04 ~13:10 MT | COMPLETE — captured as T+72h actual (no backfill) |
 | T+7d | 2026-03-08 | PENDING |
 
 ### Monitoring Interpretation Rules
@@ -300,6 +300,23 @@ Before execution prompt issuance:
 2. If Axiom queries return zero rows or sample is below minimum, record checkpoint status as **ZERO TRAFFIC — HOLD (no signal)**.
 3. Do not fabricate timestamps or backfill missed checkpoints; always record the actual capture time.
 4. Day-7 GO/HOLD/ROLLBACK decision is only valid when sample threshold is met.
+
+### T+72h Monitoring Snapshot (actual capture: 2026-03-04 ~13:10 MT)
+
+| Metric | Observed | Notes |
+|--------|----------|-------|
+| Host impressions (7d) | 23 | From `[events/telemetry]` with `eventName='interpreter_impression'` and `surface='host'` |
+| Host create sessions (7d) | 11 | `/api/my-events` create logs joined by `traceId` to host impression sessions |
+| Create completion (impression -> create) | 47.8% | 11 / 23. Below target; likely mixed-quality exploratory traffic in early rollout |
+| Median turns (host sessions) | 2 | Meets target (`<=2`) |
+| P90 turns (host sessions) | 2 | Meets target (`<=4`) |
+| Host fallback clicks (7d) | 3 | ~13.0% fallback rate (3 / 23) |
+| Interpret error logs (7d) | 0 observed | No `[events/interpret]` error-level logs observed in the 7-day window |
+
+Checkpoint interpretation:
+1. Sample gate is met (`23` impressions, `11` create sessions).
+2. This is an early-window checkpoint; no Day-7 GO/HOLD/ROLLBACK decision is made yet.
+3. Proceed to T+7d decision gate on 2026-03-08 with the same queries.
 
 ### Day-7 Rollout Decision Template
 

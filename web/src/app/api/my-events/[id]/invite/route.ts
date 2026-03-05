@@ -78,7 +78,7 @@ export async function POST(
     }
 
     const body = await request.json();
-    let roleToGrant = body.role_to_grant || "cohost";
+    const roleToGrant = body.role_to_grant || "cohost";
     const emailRestriction = body.email_restriction?.trim().toLowerCase() || null;
     const expiresInDays = body.expires_in_days || 7;
 
@@ -90,23 +90,26 @@ export async function POST(
       );
     }
 
-    // HOST-ROLE-01: Auto-detect role for orphaned events.
-    // If event has no primary host and no existing host row, upgrade to "host".
-    if (roleToGrant === "cohost" && !event!.host_id) {
-      const serviceClient = (await import("@/lib/supabase/serviceRoleClient")).createServiceRoleClient();
-      const { data: existingHostRow } = await serviceClient
-        .from("event_hosts")
-        .select("id")
-        .eq("event_id", eventId)
-        .eq("role", "host")
-        .limit(1)
-        .maybeSingle();
-      if (!existingHostRow) {
-        roleToGrant = "host";
-        console.log(
-          `[EventInviteCreate] Auto-upgraded role to "host" for orphaned event ${eventId}`
-        );
-      }
+    // Claims-only ownership policy:
+    // host ownership for unclaimed events must go through admin claim approval.
+    if (!event.host_id) {
+      return NextResponse.json(
+        {
+          error:
+            "This event has no primary host yet. Submit a host claim for admin approval before creating invites.",
+        },
+        { status: 409 }
+      );
+    }
+
+    if (roleToGrant === "host") {
+      return NextResponse.json(
+        {
+          error:
+            "Direct host invites are disabled. Use the host claim approval workflow.",
+        },
+        { status: 409 }
+      );
     }
 
     // Generate secure token
