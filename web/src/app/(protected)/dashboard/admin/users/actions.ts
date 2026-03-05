@@ -428,6 +428,44 @@ export async function updateSpotlightType(
     return { success: false, error: "Not authorized - admin only" };
   }
 
+  // Validate spotlight type matches user identity flags
+  if (spotlightType !== null) {
+    const { data: targetProfile } = await supabase
+      .from("profiles")
+      .select("is_songwriter, is_host, is_studio, role")
+      .eq("id", userId)
+      .single();
+
+    if (!targetProfile) {
+      return { success: false, error: "User not found" };
+    }
+
+    const isSongwriter = targetProfile.is_songwriter || targetProfile.role === "performer";
+    const isHost = targetProfile.is_host || targetProfile.role === "host";
+    const isStudio = targetProfile.is_studio || targetProfile.role === "studio";
+
+    if (spotlightType === "performer" && !isSongwriter) {
+      return { success: false, error: "Artist spotlight requires songwriter identity" };
+    }
+    if (spotlightType === "host" && !isHost) {
+      // Also check event-level host eligibility
+      const { data: eventHostRows } = await supabase
+        .from("event_hosts")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("invitation_status", "accepted")
+        .in("role", ["host", "cohost"])
+        .limit(1);
+
+      if (!eventHostRows?.length) {
+        return { success: false, error: "Host spotlight requires host identity or accepted event host role" };
+      }
+    }
+    if (spotlightType === "studio" && !isStudio) {
+      return { success: false, error: "Studio spotlight requires studio identity" };
+    }
+  }
+
   // Update the spotlight fields
   const updates: {
     is_featured: boolean;

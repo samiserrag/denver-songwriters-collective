@@ -467,8 +467,8 @@ export default function UserDirectoryTable({
                     </span>
                   </td>
                   <td className="py-2 px-3">
-                    {/* Host toggle for songwriters (flag-based) */}
-                    {isUserSongwriter(u) && !isUserAdmin(u) ? (
+                    {/* Host toggle for songwriters and flag-based hosts */}
+                    {(isUserSongwriter(u) || isUserHost(u)) && !isUserAdmin(u) ? (
                       <button
                         onClick={() => handleToggleHost(u)}
                         disabled={togglingHost === u.id}
@@ -484,9 +484,9 @@ export default function UserDirectoryTable({
                           ? "Yes"
                           : "No"}
                       </button>
-                    ) : isHostSpotlightEligible(u) && !isUserSongwriter(u) ? (
+                    ) : isEventLevelHost(u) && !isUserSongwriter(u) ? (
                       <span className="text-emerald-700 dark:text-emerald-300 text-xs">
-                        {isUserHost(u) ? "Primary Host" : "Event Host"}
+                        Event Host
                       </span>
                     ) : (
                       <span className="text-[var(--color-text-secondary)] text-xs">-</span>
