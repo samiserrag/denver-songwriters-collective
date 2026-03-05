@@ -117,7 +117,8 @@ Direct host ownership assignment through invite acceptance is now blocked.
 
 1. Commit: `bf4f132f`.
 2. `updateSpotlightType` now enforces server-side eligibility before write:
-   - `performer` spotlight requires songwriter identity.
+   - `performer` spotlight requires artist identity (`is_songwriter` or `is_host`).
    - `host` spotlight requires host identity or accepted event-host role (`host`/`cohost`).
    - `studio` spotlight requires studio identity.
 3. Admin users table Host column now renders the host toggle for host-only users as well (not only songwriters), so admins can revoke/restore `is_host` directly from this surface.
+4. Artist Spotlight UI eligibility is aligned to the same artist identity rule (`is_songwriter OR is_host`) and helper copy now reads `Artist only` instead of `Songwriter only`.

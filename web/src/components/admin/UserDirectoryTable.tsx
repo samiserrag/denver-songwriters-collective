@@ -25,6 +25,10 @@ function isUserHost(u: Profile): boolean {
   return u.is_host || u.role === "host";
 }
 
+function isUserArtist(u: Profile): boolean {
+  return isUserSongwriter(u) || isUserHost(u);
+}
+
 function isUserStudio(u: Profile): boolean {
   return u.is_studio || u.role === "studio";
 }
@@ -493,8 +497,8 @@ export default function UserDirectoryTable({
                     )}
                   </td>
                   <td className="py-2 px-3">
-                    {/* Artist Spotlight toggle — only for songwriters */}
-                    {isUserSongwriter(u) ? (
+                    {/* Artist Spotlight toggle — for artists (songwriters + hosts) */}
+                    {isUserArtist(u) ? (
                       <button
                         onClick={() => handleArtistSpotlightToggle(u)}
                         disabled={togglingArtistSpotlight === u.id}
@@ -510,7 +514,7 @@ export default function UserDirectoryTable({
                           ? "Yes"
                           : "No"}
                       </button>
-                    ) : renderDisabledSpotlightControl("Songwriter only")}
+                    ) : renderDisabledSpotlightControl("Artist only")}
                   </td>
                   <td className="py-2 px-3">
                     {/* Host Spotlight toggle — only for hosts */}

@@ -442,10 +442,11 @@ export async function updateSpotlightType(
 
     const isSongwriter = targetProfile.is_songwriter || targetProfile.role === "performer";
     const isHost = targetProfile.is_host || targetProfile.role === "host";
+    const isArtist = isSongwriter || isHost;
     const isStudio = targetProfile.is_studio || targetProfile.role === "studio";
 
-    if (spotlightType === "performer" && !isSongwriter) {
-      return { success: false, error: "Artist spotlight requires songwriter identity" };
+    if (spotlightType === "performer" && !isArtist) {
+      return { success: false, error: "Artist spotlight requires songwriter or host identity" };
     }
     if (spotlightType === "host" && !isHost) {
       // Also check event-level host eligibility
