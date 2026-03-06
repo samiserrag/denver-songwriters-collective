@@ -764,6 +764,20 @@ export default function SettingsPage() {
           )}
         </section>
 
+        {/* Account Security */}
+        <section className="mb-12 p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">
+          <h2 className="text-xl font-semibold text-[var(--color-text-primary)] mb-2">Account Security</h2>
+          <p className="text-[var(--color-text-secondary)] mb-4">
+            Need to change your password? We&apos;ll send a secure reset link to your email.
+          </p>
+          <Link
+            href="/auth/reset-request"
+            className="inline-block px-4 py-2 rounded-lg bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] hover:bg-[var(--color-accent-hover)] transition-colors"
+          >
+            Reset Password
+          </Link>
+        </section>
+
         {/* Privacy Link */}
         <section className="mb-12 p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">
           <h2 className="text-xl font-semibold text-[var(--color-text-primary)] mb-2">Privacy</h2>
