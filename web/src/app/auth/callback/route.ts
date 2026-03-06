@@ -115,6 +115,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(applyReferralToUrl(redirectTo));
     }
 
+    // Handle password recovery links
+    if (type === "recovery") {
+      return NextResponse.redirect(applyReferralToUrl("/auth/reset"));
+    }
+
     // Handle signup
     if (type === "signup") {
       return NextResponse.redirect(applyReferralToUrl("/onboarding/profile?signup=1"));
