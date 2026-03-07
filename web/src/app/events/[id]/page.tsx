@@ -357,8 +357,9 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
   // based solely on event_date (anchor date). The actual isPastEvent check for recurring
   // events happens after occurrence expansion below.
   const hasRecurrenceRule = !!(event as { recurrence_rule?: string | null }).recurrence_rule;
+  const todayDenverKey = getTodayDenver();
   const isPastEventBasedOnAnchor = event.event_date
-    ? new Date(event.event_date + "T23:59:59") < new Date()
+    ? event.event_date < todayDenverKey
     : false;
   // For recurring events, assume not past until we expand occurrences
   let isPastEvent = hasRecurrenceRule ? false : isPastEventBasedOnAnchor;

@@ -6,6 +6,25 @@ This file holds the historical implementation log that was previously under the 
 
 ---
 
+### Fix: Event Detail "Has Ended" Banner Could Flip Early (March 2026)
+
+**Summary:** Fixed a timezone-boundary bug where one-time event detail pages could show "This happening has ended" before local Denver midnight. The check used server-local `new Date()` against `event_date + T23:59:59`, which can mark same-day events as past when the server has already rolled to the next UTC date.
+
+**Fix:** Replaced the server-local datetime comparison with Denver-canonical date-key comparison:
+- Before: `new Date(event.event_date + "T23:59:59") < new Date()`
+- After: `event.event_date < getTodayDenver()`
+
+**Files changed:**
+
+| File | Change |
+|------|--------|
+| `web/src/app/events/[id]/page.tsx` | Compute `todayDenverKey` via `getTodayDenver()` and use date-key comparison for one-time `isPastEvent` calculation |
+
+**Validation:**
+- `npm run lint -- src/app/events/[id]/page.tsx` passed
+
+---
+
 ### Feature: Buy Me a Coffee + Patreon Support (March 2026)
 
 **Summary:** Added Buy Me a Coffee link to site-level surfaces (About page, Tip Jar page, weekly digest email footer) and added Buy Me a Coffee + Patreon URL fields to member profiles alongside existing Venmo/Cash App/PayPal.
