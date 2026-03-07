@@ -15,7 +15,7 @@ import { consumePendingRedirect } from "@/lib/auth/pendingRedirect";
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, loading: authLoading, resendConfirmationEmail } = useAuth();
+  const { user, loading: authLoading, signOut, resendConfirmationEmail } = useAuth();
   // Check URL param first, then localStorage (for signup flows that lose the param)
   const redirectParam = searchParams.get("redirectTo");
   const pendingRedirect = typeof window !== "undefined" ? consumePendingRedirect() : null;
