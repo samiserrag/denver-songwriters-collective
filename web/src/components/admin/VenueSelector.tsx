@@ -96,7 +96,7 @@ export default function VenueSelector({
       setShowNewVenueForm(false);
       if (typeof (payload as { geocodingWarning?: { message?: string } }).geocodingWarning?.message === "string") {
         setError(
-          `Venue created, but geocoding could not complete. ${(payload as { geocodingWarning: { message: string } }).geocodingWarning.message} Admin was notified.`
+          `Venue created, but geocoding could not complete. ${(payload as { geocodingWarning: { message: string } }).geocodingWarning.message}`
         );
       }
     } catch (err) {

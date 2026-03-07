@@ -16,6 +16,16 @@ interface NotifyVenueGeocodingFailureParams {
   geocodingStatus: GeocodingStatus;
 }
 
+function shouldSendAdminVenueGeocodingAlert(status: GeocodingStatus): boolean {
+  // Missing API key is a deployment/config state, not a per-venue operational
+  // failure. Emailing admins for every venue creation in that state creates
+  // alert fatigue without adding new signal.
+  if (status.reason === "missing_api_key") {
+    return false;
+  }
+  return true;
+}
+
 function warningMessageForStatus(status: GeocodingStatus): string {
   switch (status.reason) {
     case "missing_api_key":
@@ -84,6 +94,25 @@ export async function notifyVenueGeocodingFailure(
   );
 
   try {
+    if (!shouldSendAdminVenueGeocodingAlert(geocodingStatus)) {
+      await appLogger.info(
+        "venue_geocoding_alert_suppressed",
+        {
+          route,
+          venueId,
+          venueName,
+          geocodingReason: geocodingStatus.reason,
+          geocodingDetails: geocodingStatus.details,
+        },
+        {
+          source: "venue_geocoding",
+          userId: actorId,
+          userEmail: actorEmail || undefined,
+        }
+      );
+      return;
+    }
+
     await sendAdminVenueGeocodingFailureAlert({
       venueId,
       venueName,
@@ -117,4 +146,3 @@ export async function notifyVenueGeocodingFailure(
     );
   }
 }
-
