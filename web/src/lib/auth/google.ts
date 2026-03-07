@@ -28,6 +28,9 @@ export async function signInWithGoogle(
       provider: "google",
       options: {
         redirectTo,
+        queryParams: {
+          prompt: "select_account",
+        },
         skipBrowserRedirect: false,
       },
     });
