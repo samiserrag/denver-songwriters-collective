@@ -15,6 +15,29 @@ Approved amendments were implemented end-to-end:
 5. Feature flag added: `DIGEST_PERSONALIZATION_ENABLED` (default OFF).
 6. Phased execution completed (migration/helpers -> gating fix -> UI -> personalization).
 
+### Post-Execution Fixes (March 1, 2026 — UX QA)
+
+During production UX QA, two blocking bugs were discovered and fixed:
+
+**Bug 1: Frozen DOM — Saved Filters status chip never updates (P1)**
+- **Symptom:** Status chip permanently displayed SSR-rendered value ("Sign in to use" or "Loading…") even after auth resolved and state updated correctly.
+- **Root cause:** Pre-existing React #418 hydration errors on `/happenings` (caused by browser extensions or SSR mismatches) corrupt React's reconciler, preventing effect-initiated `setState` calls from flushing to the DOM.
+- **Fix:** Dynamic-import `HappeningsFilters` with `ssr: false` in `StickyControls.tsx`. This eliminates the SSR→client mismatch entirely since the component only renders client-side.
+- **File:** `web/src/components/happenings/StickyControls.tsx` — replaced static import with `next/dynamic` (`ssr: false`), removed `<Suspense>` wrapper (dynamic import handles its own loading state).
+- **Trade-off:** 1–2s pulse-animated placeholder on page load where SSR-rendered filters previously appeared instantly. Accepted to eliminate the hydration freeze.
+- **Commit:** `9b0930d6`
+
+**Bug 2: Supabase query hangs indefinitely during page load (P1)**
+- **Symptom:** `savedLoading` state never transitions from `true` to `false`; "Loading…" chip displayed forever.
+- **Root cause:** ~500 concurrent `/auth/v1/user` calls during page load (pre-existing Supabase auth client issue) saturate the browser's 6-connection-per-domain limit. The PostgREST query to `happenings_saved_filters` gets queued in the browser's network layer and never executes. Since the promise never settles, the `finally` block never runs.
+- **Fix:** Wrapped `getUserSavedHappeningsFilters()` call in `Promise.race()` with a 5-second timeout that resolves to `null`. If the query hangs, the timeout fires, `finally` executes, and the user sees "No filters saved yet" (graceful degradation).
+- **File:** `web/src/components/happenings/HappeningsFilters.tsx` — `Promise.race([query, 5s timeout])` pattern.
+- **Commit:** `484c3a90`
+
+**Known deferred issue:** ~500 concurrent `/auth/v1/user` calls on `/happenings` page load. This is a pre-existing Supabase auth client issue affecting the entire app, not specific to saved filters. It causes the connection saturation that triggers Bug 2. Should be investigated separately.
+
+**UX QA verdict:** GO (4.7/5). All save/apply/reset flows functional. Auth state transitions correct (logged-out → "Sign in to use", logged-in → "No filters saved yet" / "One-click mode"). Settings 3-step layout validated.
+
 ### Implemented Surfaces
 
 - Migration + RLS:
@@ -24,6 +47,7 @@ Approved amendments were implemented end-to-end:
   - `web/src/lib/happenings/index.ts`
 - Happenings client recall + saved-filter UX:
   - `web/src/components/happenings/HappeningsFilters.tsx`
+  - `web/src/components/happenings/StickyControls.tsx` (dynamic import with `ssr: false`)
 - Dashboard saved-filter management UX:
   - `web/src/app/(protected)/dashboard/settings/page.tsx`
 - Digest gating + personalization:

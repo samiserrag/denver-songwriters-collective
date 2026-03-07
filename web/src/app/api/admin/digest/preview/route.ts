@@ -21,6 +21,7 @@ import { checkAdminRole } from "@/lib/auth/adminAuth";
 import {
   getUpcomingHappenings,
   getDigestRecipients,
+  type DigestRecipient,
   personalizeDigestRecipients,
 } from "@/lib/digest/weeklyHappenings";
 import { getUpcomingOpenMics, getDigestRecipients as getOpenMicRecipients } from "@/lib/digest/weeklyOpenMics";
@@ -35,8 +36,19 @@ import {
   type ResolvedEditorial,
   type EditorialUnresolved,
 } from "@/lib/digest/digestEditorial";
+import {
+  getSavedHappeningsFiltersForUsers,
+  hasDigestApplicableFilters,
+  toDigestApplicableFilters,
+} from "@/lib/happenings/savedFilters";
 
 export const dynamic = "force-dynamic";
+
+type PreviewReasonCode =
+  | "gated_out_by_preferences"
+  | "no_saved_filters"
+  | "no_digest_applicable_filters"
+  | "zero_matches_after_filters";
 
 export async function GET(request: NextRequest) {
   const supabase = await createSupabaseServerClient();
@@ -66,8 +78,174 @@ export async function GET(request: NextRequest) {
   try {
     if (digestType === "weekly_happenings") {
       const digestData = await getUpcomingHappenings(serviceClient);
-      const recipients = await getDigestRecipients(serviceClient);
       const personalizationEnabled = isDigestPersonalizationEnabled();
+      const targetUserId = request.nextUrl.searchParams.get("user_id")?.trim() || null;
+
+      // Targeted per-user preview path (admin-only, dry-run only).
+      // Personalization is always forced ON here so admins can validate safely
+      // before enabling DIGEST_PERSONALIZATION_ENABLED for production sends.
+      if (targetUserId) {
+        const { data: targetProfile, error: targetProfileError } = await serviceClient
+          .from("profiles")
+          .select("id, email, full_name")
+          .eq("id", targetUserId)
+          .maybeSingle();
+
+        if (targetProfileError) {
+          return NextResponse.json(
+            { error: "Failed to load target user profile" },
+            { status: 500 }
+          );
+        }
+
+        if (!targetProfile) {
+          return NextResponse.json(
+            { error: "Target user not found" },
+            { status: 404 }
+          );
+        }
+
+        const { data: preferenceRow, error: preferenceError } = await serviceClient
+          .from("notification_preferences")
+          .select("email_enabled, email_digests")
+          .eq("user_id", targetUserId)
+          .maybeSingle();
+
+        if (preferenceError) {
+          return NextResponse.json(
+            { error: "Failed to load target user preferences" },
+            { status: 500 }
+          );
+        }
+
+        const emailEnabled = preferenceRow?.email_enabled ?? true;
+        const emailDigests = preferenceRow?.email_digests ?? true;
+        const wouldBeExcludedFromSend = !targetProfile.email || !emailEnabled || !emailDigests;
+
+        const savedByUserId = await getSavedHappeningsFiltersForUsers(serviceClient, [targetUserId]);
+        const saved = savedByUserId.get(targetUserId) || null;
+        const digestApplicableFilters = saved ? toDigestApplicableFilters(saved.filters) : {};
+        const hasDigestFilters = hasDigestApplicableFilters(digestApplicableFilters);
+        const appliedFilterKeys = Object.entries(digestApplicableFilters)
+          .filter(([, value]) => {
+            if (Array.isArray(value)) return value.length > 0;
+            return Boolean(value);
+          })
+          .map(([key]) => key);
+
+        const reasonCodes: PreviewReasonCode[] = [];
+        if (wouldBeExcludedFromSend) {
+          reasonCodes.push("gated_out_by_preferences");
+        }
+        if (!saved) {
+          reasonCodes.push("no_saved_filters");
+        } else if (!hasDigestFilters) {
+          reasonCodes.push("no_digest_applicable_filters");
+        }
+
+        const targetRecipient: DigestRecipient = {
+          userId: targetUserId,
+          email: targetProfile.email || `preview+${targetUserId}@no-email.local`,
+          firstName: targetProfile.full_name?.split(" ")[0] || null,
+        };
+
+        const personalized = await personalizeDigestRecipients(
+          serviceClient,
+          [targetRecipient],
+          digestData,
+          {
+            enabled: true,
+            logPrefix: "[AdminPreviewUser]",
+          }
+        );
+
+        const previewRecipient = personalized.recipients[0];
+        if (!previewRecipient) {
+          reasonCodes.push("zero_matches_after_filters");
+          return NextResponse.json({
+            recipientUserId: targetUserId,
+            recipientEmail: targetProfile.email,
+            noMatchesForUser: true,
+            reasonCodes,
+            savedFiltersRaw: saved?.filters || {},
+            digestApplicableFilters,
+            appliedFilterKeys,
+            totalHappenings: 0,
+            totalVenues: 0,
+            dateRange: digestData.dateRange,
+            personalizationFlagState: personalizationEnabled,
+            personalizationAppliedInPreview: true,
+            personalizedRecipients: personalized.personalizedCount,
+            skippedByFilters: personalized.skippedCount,
+            emailEnabled,
+            emailDigests,
+            wouldBeExcludedFromSend,
+          });
+        }
+
+        const recipientDigestData =
+          personalized.digestByUserId.get(previewRecipient.userId) || digestData;
+
+        // GTM-3: Resolve editorial for preview
+        const weekKey = request.nextUrl.searchParams.get("week_key") || computeWeekKey();
+        let resolvedEditorial: ResolvedEditorial | undefined;
+        let unresolved: EditorialUnresolved[] = [];
+        try {
+          const editorial = await getEditorial(serviceClient, weekKey, "weekly_happenings");
+          if (editorial) {
+            const result = await resolveEditorialWithDiagnostics(serviceClient, editorial);
+            resolvedEditorial = result.resolved;
+            unresolved = result.unresolved;
+            const galleryUnresolved = editorial.gallery_feature_ref
+              && !resolvedEditorial.galleryFeature
+              && unresolved.some((item) => item.field === "gallery_feature_ref");
+            if (galleryUnresolved && editorial.updated_by) {
+              resolvedEditorial.galleryFeature = {
+                title: "Gallery unavailable (unpublished)",
+                url: "",
+              };
+            }
+          }
+        } catch (editorialError) {
+          console.warn("[AdminPreviewUser] Editorial resolution failed:", editorialError);
+        }
+
+        const previewEmail = getWeeklyHappeningsDigestEmail({
+          firstName: previewRecipient.firstName,
+          userId: previewRecipient.userId,
+          byDate: recipientDigestData.byDate,
+          totalCount: recipientDigestData.totalCount,
+          venueCount: recipientDigestData.venueCount,
+          editorial: resolvedEditorial,
+        });
+
+        return NextResponse.json({
+          recipientUserId: targetUserId,
+          recipientEmail: targetProfile.email,
+          subject: previewEmail.subject,
+          html: previewEmail.html,
+          text: previewEmail.text,
+          noMatchesForUser: false,
+          reasonCodes,
+          savedFiltersRaw: saved?.filters || {},
+          digestApplicableFilters,
+          appliedFilterKeys,
+          totalHappenings: recipientDigestData.totalCount,
+          totalVenues: recipientDigestData.venueCount,
+          dateRange: recipientDigestData.dateRange,
+          weekKey,
+          unresolved,
+          personalizationFlagState: personalizationEnabled,
+          personalizationAppliedInPreview: true,
+          personalizedRecipients: personalized.personalizedCount,
+          skippedByFilters: personalized.skippedCount,
+          emailEnabled,
+          emailDigests,
+          wouldBeExcludedFromSend,
+        });
+      }
+
+      const recipients = await getDigestRecipients(serviceClient);
       const personalized = await personalizeDigestRecipients(
         serviceClient,
         recipients,
