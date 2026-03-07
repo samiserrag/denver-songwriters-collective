@@ -24,16 +24,11 @@ function LoginForm() {
   const [password, setPassword] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(false);
+  const [accountActionLoading, setAccountActionLoading] = React.useState(false);
+  const [accountActionError, setAccountActionError] = React.useState<string | null>(null);
 
   // Check for password reset success message
   const resetSuccess = searchParams.get("reset") === "success";
-
-  // Redirect if already logged in
-  React.useEffect(() => {
-    if (!authLoading && user) {
-      router.replace(redirectTo);
-    }
-  }, [user, authLoading, router, redirectTo]);
 
   // Show loading while checking auth
   if (authLoading) {
@@ -44,11 +39,66 @@ function LoginForm() {
     );
   }
 
-  // If user is logged in, show redirecting message
+  // If user is already logged in, provide explicit account controls instead of
+  // silently redirecting. This avoids confusion when users intentionally open
+  // /login to switch accounts.
   if (user) {
     return (
-      <div className="w-full max-w-md card-base px-8 py-10 text-center">
-        <p className="text-[var(--color-text-tertiary)]">Redirecting...</p>
+      <div className="w-full max-w-md card-base px-8 py-10 space-y-4">
+        <h1 className="text-[var(--color-text-accent)] text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] italic text-center">
+          You&apos;re already signed in
+        </h1>
+        <p className="text-sm text-[var(--color-text-tertiary)] text-center">
+          Signed in as <span className="text-[var(--color-text-primary)]">{user.email}</span>
+        </p>
+
+        {accountActionError && (
+          <p className="text-sm text-[var(--color-error)] text-center">{accountActionError}</p>
+        )}
+
+        <Button
+          type="button"
+          variant="primary"
+          size="lg"
+          className="w-full"
+          onClick={() => router.replace(redirectTo)}
+          disabled={accountActionLoading}
+        >
+          Continue to dashboard
+        </Button>
+
+        <button
+          type="button"
+          className="w-full bg-[var(--color-bg-input)] text-[var(--color-text-primary)] py-2 rounded border border-[var(--color-border-input)] hover:bg-[var(--color-bg-secondary)] disabled:opacity-60"
+          disabled={accountActionLoading}
+          onClick={async () => {
+            setAccountActionError(null);
+            setAccountActionLoading(true);
+            await signOut();
+            const result = await signInWithGoogle();
+            setAccountActionLoading(false);
+            if (!result.ok) {
+              setAccountActionError(result.error || "Unable to switch Google account.");
+            }
+          }}
+        >
+          {accountActionLoading ? "Switching account..." : "Switch Google account"}
+        </button>
+
+        <button
+          type="button"
+          className="w-full bg-transparent text-[var(--color-text-secondary)] py-2 rounded border border-[var(--color-border-input)] hover:bg-[var(--color-bg-secondary)] disabled:opacity-60"
+          disabled={accountActionLoading}
+          onClick={async () => {
+            setAccountActionError(null);
+            setAccountActionLoading(true);
+            await signOut();
+            setAccountActionLoading(false);
+            router.refresh();
+          }}
+        >
+          Sign out
+        </button>
       </div>
     );
   }
