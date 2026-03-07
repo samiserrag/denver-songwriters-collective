@@ -2,7 +2,7 @@
   "_meta": {
     "version": "1.0.0",
     "description": "Phase 7 interpreter hardening regression fixtures. Each case simulates an LLM response and validates the deterministic post-processing pipeline (sanitization, venue resolution, hardening, title fallback, clarification reduction, recurrence guard).",
-    "safety_critical_ids": ["F03", "F04", "F07", "F08", "F12", "F16", "F21", "F22", "F23", "F24"]
+    "safety_critical_ids": ["F03", "F04", "F07", "F08", "F12", "F16", "F21", "F22", "F23", "F24", "F26", "F28", "F29"]
   },
   "cases": [
     {
@@ -924,6 +924,163 @@
         "blocking_fields_empty": true
       },
       "safety_critical": false
+    },
+    {
+      "id": "F26",
+      "name": "SAFETY: OCR monthly pattern promotes recurring when typed message only has anchor date",
+      "mode": "create",
+      "message": "Amplified Open Mic Night\nMar 17, 2026, 6:30 PM – 9:30 PM\nThe End Lafayette, 525 Courtney Way, Lafayette, CO 80026, USA\nAmplified Open Mic Night at The End Lafayette (inside Dog House Music Studios)!",
+      "conversationHistory": [],
+      "extractedImageText": "Tue. March 17th (Monthly on the 3rd Tuesday). AMPLIFIED OPEN MIC. MONTHLY ON THE 3RD TUESDAY. 6:30PM-9:30PM.",
+      "extractionConfidence": 0.82,
+      "venueCatalog": [
+        { "id": "venue-end", "name": "The End Lafayette", "slug": "the-end-lafayette" }
+      ],
+      "simulatedLlmResponse": {
+        "next_action": "show_preview",
+        "confidence": 0.78,
+        "human_summary": "Create one-time Amplified Open Mic Night on 2026-03-17 at The End Lafayette.",
+        "clarification_question": null,
+        "blocking_fields": [],
+        "draft_payload": {
+          "title": "Amplified Open Mic Night",
+          "event_type": ["open_mic"],
+          "start_time": "18:30:00",
+          "end_time": "21:30:00",
+          "start_date": "2026-03-17",
+          "series_mode": "single",
+          "recurrence_rule": null,
+          "venue_name": "The End Lafayette",
+          "location_mode": "venue",
+          "is_free": true,
+          "signup_mode": "in_person"
+        }
+      },
+      "expected": {
+        "next_action": "show_preview",
+        "title": "Amplified Open Mic Night",
+        "series_mode": "recurring",
+        "recurrence_rule": "FREQ=MONTHLY;BYDAY=TU;BYSETPOS=3",
+        "day_of_week": "tuesday",
+        "venue_id": "venue-end",
+        "location_mode": "venue",
+        "blocking_fields_empty": true
+      },
+      "safety_critical": true,
+      "safety_rule": "high-confidence OCR recurrence intent must not be downgraded to single event"
+    },
+    {
+      "id": "F27",
+      "name": "Hybrid intent is preserved when venue_id and online_url both exist",
+      "mode": "create",
+      "message": "Hybrid songwriter meetup at Long Table Brewhouse with Zoom simulcast.",
+      "conversationHistory": [],
+      "venueCatalog": [
+        { "id": "venue-ltb", "name": "Long Table Brewhouse", "slug": "long-table-brewhouse" }
+      ],
+      "simulatedLlmResponse": {
+        "next_action": "show_preview",
+        "confidence": 0.9,
+        "human_summary": "Hybrid meetup with in-person venue and Zoom stream.",
+        "clarification_question": null,
+        "blocking_fields": [],
+        "draft_payload": {
+          "title": "Songwriter Meetup",
+          "event_type": ["meetup"],
+          "start_time": "19:00:00",
+          "start_date": "2026-03-12",
+          "series_mode": "single",
+          "recurrence_rule": null,
+          "venue_id": "venue-ltb",
+          "venue_name": "Long Table Brewhouse",
+          "location_mode": "hybrid",
+          "online_url": "https://zoom.us/j/123456"
+        }
+      },
+      "expected": {
+        "next_action": "show_preview",
+        "venue_id": "venue-ltb",
+        "location_mode": "hybrid",
+        "blocking_fields_empty": true
+      },
+      "safety_critical": false
+    },
+    {
+      "id": "F28",
+      "name": "SAFETY: low-confidence OCR recurrence must not prevent single-event downgrade",
+      "mode": "create",
+      "message": "Open mic on March 17 at 6:30 PM at The End Lafayette.",
+      "conversationHistory": [],
+      "extractedImageText": "MONTHLY ON THE 3RD TUESDAY",
+      "extractionConfidence": 0.45,
+      "venueCatalog": [
+        { "id": "venue-end", "name": "The End Lafayette", "slug": "the-end-lafayette" }
+      ],
+      "simulatedLlmResponse": {
+        "next_action": "show_preview",
+        "confidence": 0.72,
+        "human_summary": "Recurring open mic at The End Lafayette.",
+        "clarification_question": null,
+        "blocking_fields": [],
+        "draft_payload": {
+          "title": "Open Mic Night",
+          "event_type": ["open_mic"],
+          "start_time": "18:30:00",
+          "start_date": "2026-03-17",
+          "series_mode": "recurring",
+          "recurrence_rule": "FREQ=MONTHLY;BYDAY=TU;BYSETPOS=3",
+          "day_of_week": "tuesday",
+          "venue_name": "The End Lafayette",
+          "location_mode": "venue"
+        }
+      },
+      "expected": {
+        "next_action": "show_preview",
+        "series_mode": "single",
+        "recurrence_rule_must_be_null": true,
+        "venue_id": "venue-end",
+        "blocking_fields_empty": true
+      },
+      "safety_critical": true,
+      "safety_rule": "low-confidence OCR recurrence hints must not override single-event user intent"
+    },
+    {
+      "id": "F29",
+      "name": "SAFETY: explicit one-time cue overrides high-confidence OCR recurrence hint",
+      "mode": "create",
+      "message": "This is a one-time open mic event on March 17 at 6:30 PM.",
+      "conversationHistory": [],
+      "extractedImageText": "MONTHLY ON THE 3RD TUESDAY",
+      "extractionConfidence": 0.91,
+      "venueCatalog": [
+        { "id": "venue-end", "name": "The End Lafayette", "slug": "the-end-lafayette" }
+      ],
+      "simulatedLlmResponse": {
+        "next_action": "show_preview",
+        "confidence": 0.72,
+        "human_summary": "Recurring open mic at The End Lafayette.",
+        "clarification_question": null,
+        "blocking_fields": [],
+        "draft_payload": {
+          "title": "Open Mic Night",
+          "event_type": ["open_mic"],
+          "start_time": "18:30:00",
+          "start_date": "2026-03-17",
+          "series_mode": "recurring",
+          "recurrence_rule": "FREQ=MONTHLY;BYDAY=TU;BYSETPOS=3",
+          "day_of_week": "tuesday",
+          "venue_name": "The End Lafayette",
+          "location_mode": "venue"
+        }
+      },
+      "expected": {
+        "next_action": "show_preview",
+        "series_mode": "single",
+        "recurrence_rule_must_be_null": true,
+        "blocking_fields_empty": true
+      },
+      "safety_critical": true,
+      "safety_rule": "explicit one-time user cues take precedence over OCR recurrence text"
     }
   ]
 }

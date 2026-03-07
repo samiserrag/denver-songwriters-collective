@@ -23,14 +23,261 @@ export const RECURRENCE_INTENT_PATTERNS = [
   /\bevery\s+other\b/i,
 ];
 
-export function detectsRecurrenceIntent(
+export const OCR_RECURRENCE_CONFIDENCE_THRESHOLD = 0.7;
+
+function buildUserIntentText(
   message: string,
   history: Array<{ role: "user" | "assistant"; content: string }>
+): string {
+  return [message, ...history.filter((h) => h.role === "user").map((h) => h.content)].join("\n");
+}
+
+export function detectsRecurrenceIntent(
+  message: string,
+  history: Array<{ role: "user" | "assistant"; content: string }>,
+  extractedImageText?: string,
+  extractionConfidence?: number
 ): boolean {
-  const intentText = [message, ...history.filter((h) => h.role === "user").map((h) => h.content)]
-    .join("\n");
-  if (!intentText.trim()) return false;
-  return RECURRENCE_INTENT_PATTERNS.some((pattern) => pattern.test(intentText));
+  const userIntentText = buildUserIntentText(message, history);
+  if (EXPLICIT_ONE_TIME_CUE_PATTERN.test(userIntentText)) return false;
+
+  if (RECURRENCE_INTENT_PATTERNS.some((pattern) => pattern.test(userIntentText))) {
+    return true;
+  }
+
+  if (
+    typeof extractionConfidence !== "number" ||
+    extractionConfidence < OCR_RECURRENCE_CONFIDENCE_THRESHOLD
+  ) {
+    return false;
+  }
+
+  if (typeof extractedImageText !== "string" || !extractedImageText.trim()) {
+    return false;
+  }
+
+  return RECURRENCE_INTENT_PATTERNS.some((pattern) => pattern.test(extractedImageText));
+}
+
+const WEEKDAY_TO_BYDAY: Record<string, string> = {
+  monday: "MO",
+  tuesday: "TU",
+  wednesday: "WE",
+  thursday: "TH",
+  friday: "FR",
+  saturday: "SA",
+  sunday: "SU",
+};
+
+const ORDINAL_TO_BYSETPOS: Record<string, string> = {
+  "1st": "1",
+  first: "1",
+  "2nd": "2",
+  second: "2",
+  "3rd": "3",
+  third: "3",
+  "4th": "4",
+  fourth: "4",
+  last: "-1",
+};
+
+const EXPLICIT_ONE_TIME_CUE_PATTERN =
+  /\b(one[-\s]?time|single\s+event|not\s+recurring|just\s+this\s+once)\b/i;
+
+type DerivedRecurrenceHint = {
+  recurrenceRule: string;
+  dayOfWeek: string;
+};
+
+export function deriveRecurrenceHintFromText(text: string): DerivedRecurrenceHint | null {
+  if (!text.trim()) return null;
+
+  const monthlyMatch = text.match(
+    /\bmonthly(?:\s+on)?\s+the\s+(1st|2nd|3rd|4th|first|second|third|fourth|last)\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i
+  );
+  if (monthlyMatch) {
+    const ordinalRaw = monthlyMatch[1].toLowerCase();
+    const weekdayRaw = monthlyMatch[2].toLowerCase();
+    const byDay = WEEKDAY_TO_BYDAY[weekdayRaw];
+    const bySetPos = ORDINAL_TO_BYSETPOS[ordinalRaw];
+    if (byDay && bySetPos) {
+      return {
+        recurrenceRule: `FREQ=MONTHLY;BYDAY=${byDay};BYSETPOS=${bySetPos}`,
+        dayOfWeek: weekdayRaw,
+      };
+    }
+  }
+
+  const weeklyMatch = text.match(
+    /\bevery\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i
+  );
+  if (weeklyMatch) {
+    const weekdayRaw = weeklyMatch[1].toLowerCase();
+    const byDay = WEEKDAY_TO_BYDAY[weekdayRaw];
+    if (byDay) {
+      return {
+        recurrenceRule: `FREQ=WEEKLY;BYDAY=${byDay}`,
+        dayOfWeek: weekdayRaw,
+      };
+    }
+  }
+
+  return null;
+}
+
+function hasRecurringRule(value: unknown): boolean {
+  return typeof value === "string" && /\bFREQ=(?:DAILY|WEEKLY|MONTHLY|YEARLY)\b/i.test(value);
+}
+
+export function applyRecurrenceHintFromExtractedText(input: {
+  draft: Record<string, unknown>;
+  message: string;
+  history: Array<{ role: "user" | "assistant"; content: string }>;
+  extractedImageText?: string;
+  extractionConfidence?: number;
+}): void {
+  const { draft, message, history, extractedImageText, extractionConfidence } = input;
+
+  if (typeof extractedImageText !== "string" || !extractedImageText.trim()) return;
+  if (
+    typeof extractionConfidence !== "number" ||
+    extractionConfidence < OCR_RECURRENCE_CONFIDENCE_THRESHOLD
+  ) {
+    return;
+  }
+
+  const userIntentText = buildUserIntentText(message, history);
+  if (EXPLICIT_ONE_TIME_CUE_PATTERN.test(userIntentText)) return;
+
+  const hint = deriveRecurrenceHintFromText(extractedImageText);
+  if (!hint) return;
+
+  if (!hasRecurringRule(draft.recurrence_rule) || draft.series_mode === "single") {
+    draft.recurrence_rule = hint.recurrenceRule;
+    draft.series_mode = "recurring";
+    if (typeof draft.day_of_week !== "string" || !draft.day_of_week.trim()) {
+      draft.day_of_week = hint.dayOfWeek;
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Event-type intent guard (Phase 10)
+// ---------------------------------------------------------------------------
+
+const EVENT_TYPE_SIGNAL_PATTERNS: Record<string, RegExp[]> = {
+  showcase: [/\bshowcase\b/i, /\bsongwriter(?:s)?\s+showcase\b/i],
+  open_mic: [/\bopen[\s-]?mic\b/i, /\bopen[\s-]?mike\b/i],
+  jam_session: [/\bjam\s+session\b/i, /\bjam\b/i],
+  workshop: [/\bworkshop\b/i, /\bmasterclass\b/i],
+  song_circle: [/\bsong\s+circle\b/i, /\bsongwriter(?:s)?\s+circle\b/i],
+  gig: [/\bgig\b/i, /\blive\s+music\b/i, /\bconcert\b/i],
+  meetup: [/\bmeetup\b/i, /\bmeet\s?up\b/i],
+  poetry: [/\bpoetry\b/i, /\bpoet(?:ry)?\s+night\b/i],
+  comedy: [/\bcomedy\b/i, /\bstand[\s-]?up\b/i],
+};
+
+const EVENT_TYPE_PRIORITY: Record<string, number> = {
+  showcase: 100,
+  workshop: 90,
+  song_circle: 80,
+  jam_session: 70,
+  open_mic: 60,
+  gig: 50,
+  meetup: 40,
+  poetry: 30,
+  comedy: 20,
+};
+
+function countPatternMatches(text: string, patterns: RegExp[]): number {
+  return patterns.reduce((count, pattern) => {
+    return count + (pattern.test(text) ? 1 : 0);
+  }, 0);
+}
+
+function deriveSingleEventTypeFromText(text: string): string | null {
+  if (!text.trim()) return null;
+
+  const counts = Object.entries(EVENT_TYPE_SIGNAL_PATTERNS)
+    .map(([eventType, patterns]) => ({
+      eventType,
+      matches: countPatternMatches(text, patterns),
+    }))
+    .filter((entry) => entry.matches > 0)
+    .sort((a, b) => {
+      if (b.matches !== a.matches) return b.matches - a.matches;
+      return (EVENT_TYPE_PRIORITY[b.eventType] ?? 0) - (EVENT_TYPE_PRIORITY[a.eventType] ?? 0);
+    });
+
+  if (counts.length === 0) return null;
+  if (
+    counts.length > 1 &&
+    counts[0].matches === counts[1].matches &&
+    (EVENT_TYPE_PRIORITY[counts[0].eventType] ?? 0) ===
+      (EVENT_TYPE_PRIORITY[counts[1].eventType] ?? 0)
+  ) {
+    return null;
+  }
+  return counts[0].eventType;
+}
+
+export function deriveEventTypeHint(input: {
+  message: string;
+  history: Array<{ role: "user" | "assistant"; content: string }>;
+  extractedImageText?: string;
+}): string | null {
+  const { message, history, extractedImageText } = input;
+  const userText = [
+    message,
+    ...history.filter((entry) => entry.role === "user").map((entry) => entry.content),
+  ].join("\n");
+
+  // User text wins over OCR when both exist.
+  const userHint = deriveSingleEventTypeFromText(userText);
+  if (userHint) return userHint;
+
+  if (typeof extractedImageText === "string" && extractedImageText.trim().length > 0) {
+    return deriveSingleEventTypeFromText(extractedImageText);
+  }
+  return null;
+}
+
+const EVENT_TYPE_TO_CATEGORY_LABEL: Record<string, string> = {
+  open_mic: "Open Mic",
+  showcase: "Showcase",
+  song_circle: "Song Circle",
+  workshop: "Workshop",
+  jam_session: "Jam Session",
+  gig: "Live Music",
+  meetup: "Meetup",
+  poetry: "Poetry",
+  comedy: "Comedy",
+};
+
+export function applyEventTypeHint(input: {
+  draft: Record<string, unknown>;
+  message: string;
+  history: Array<{ role: "user" | "assistant"; content: string }>;
+  extractedImageText?: string;
+}): void {
+  const { draft, message, history, extractedImageText } = input;
+  const hint = deriveEventTypeHint({ message, history, extractedImageText });
+  if (!hint) return;
+
+  // Promote the deterministic hint to primary type.
+  draft.event_type = [hint];
+
+  const label = EVENT_TYPE_TO_CATEGORY_LABEL[hint];
+  if (!label) return;
+
+  const existingCategories = Array.isArray(draft.categories)
+    ? draft.categories
+        .filter((value): value is string => typeof value === "string")
+        .map((value) => value.trim())
+        .filter((value) => value.length > 0)
+    : [];
+
+  draft.categories = [label, ...existingCategories.filter((value) => value.toLowerCase() !== label.toLowerCase())];
 }
 
 // ---------------------------------------------------------------------------

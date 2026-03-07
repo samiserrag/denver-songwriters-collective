@@ -28,6 +28,7 @@ import {
 import { normalizeSignupMode } from "@/lib/events/signupModeContract";
 import {
   detectsRecurrenceIntent,
+  applyRecurrenceHintFromExtractedText,
   applyTimeSemantics,
   reduceClarificationToSingle,
   enforceVenueCustomExclusivity,
@@ -51,6 +52,8 @@ interface FixtureCase {
   eventId?: string;
   dateKey?: string;
   conversationHistory: Array<{ role: "user" | "assistant"; content: string }>;
+  extractedImageText?: string;
+  extractionConfidence?: number;
   locked_draft?: Record<string, unknown>;
   venueCatalog: Array<{ id: string; name: string; slug?: string }>;
   simulatedLlmResponse: {
@@ -209,19 +212,27 @@ function runDeterministicPipeline(fixture: FixtureCase) {
   }
 
   // 3. Hardening (mirrors hardenDraftForCreateEdit)
+  let normalizedLocationIntent: "venue" | "online" | "hybrid" | null = null;
+  let hasOnlineUrlAfterNormalization = false;
+
   if (mode === "create" || mode === "edit_series") {
     const hasOnlineUrl = hasNonEmptyString(sanitizedDraft.online_url);
-    sanitizedDraft.location_mode = normalizeInterpreterLocationMode(
+    const normalizedLocationMode = normalizeInterpreterLocationMode(
       sanitizedDraft.location_mode,
       hasOnlineUrl ? "online" : "venue"
     );
+    normalizedLocationIntent = normalizedLocationMode;
+    hasOnlineUrlAfterNormalization = hasOnlineUrl;
+    sanitizedDraft.location_mode = normalizedLocationMode;
     sanitizedDraft.signup_mode = normalizeSignupMode(sanitizedDraft.signup_mode);
   }
   if (isGoogleMapsUrl(sanitizedDraft.external_url)) {
     sanitizedDraft.external_url = null;
   }
   if (hasNonEmptyString(sanitizedDraft.venue_id)) {
-    sanitizedDraft.location_mode = "venue";
+    const shouldPreserveHybridIntent =
+      normalizedLocationIntent === "hybrid" && hasOnlineUrlAfterNormalization;
+    sanitizedDraft.location_mode = shouldPreserveHybridIntent ? "hybrid" : "venue";
   }
   if (mode === "create" && sanitizedDraft.has_timeslots === true) {
     if (!collectsTimeslotIntent(fixture.message, fixture.conversationHistory)) {
@@ -233,12 +244,30 @@ function runDeterministicPipeline(fixture: FixtureCase) {
   }
 
   // 4. Phase 7B: Recurrence intent guard — SHARED MODULE
+  if (mode === "create") {
+    applyRecurrenceHintFromExtractedText({
+      draft: sanitizedDraft,
+      message: fixture.message,
+      history: fixture.conversationHistory,
+      extractedImageText: fixture.extractedImageText,
+      extractionConfidence: fixture.extractionConfidence,
+    });
+  }
+
+  // 4. Phase 7B: Recurrence intent guard — SHARED MODULE
   if (
     mode === "create" &&
     typeof sanitizedDraft.series_mode === "string" &&
     sanitizedDraft.series_mode !== "single"
   ) {
-    if (!detectsRecurrenceIntent(fixture.message, fixture.conversationHistory)) {
+    if (
+      !detectsRecurrenceIntent(
+        fixture.message,
+        fixture.conversationHistory,
+        fixture.extractedImageText,
+        fixture.extractionConfidence
+      )
+    ) {
       sanitizedDraft.series_mode = "single";
       sanitizedDraft.recurrence_rule = null;
       sanitizedDraft.day_of_week = null;
@@ -421,6 +450,18 @@ describe("Phase 7 Interpreter Fixture Regression Suite", () => {
       if (expected.recurrence_rule_must_not_be_null === true) {
         if (draft.recurrence_rule === null || draft.recurrence_rule === undefined) {
           errors.push(`recurrence_rule_must_not_be_null: recurrence_rule is null/undefined`);
+        }
+      }
+
+      if (expected.recurrence_rule !== undefined) {
+        if (draft.recurrence_rule !== expected.recurrence_rule) {
+          errors.push(`recurrence_rule: expected ${expected.recurrence_rule}, got ${draft.recurrence_rule}`);
+        }
+      }
+
+      if (expected.day_of_week !== undefined) {
+        if (draft.day_of_week !== expected.day_of_week) {
+          errors.push(`day_of_week: expected ${expected.day_of_week}, got ${draft.day_of_week}`);
         }
       }
 

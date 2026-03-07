@@ -23,6 +23,8 @@ import {
 import { normalizeSignupMode } from "@/lib/events/signupModeContract";
 import {
   detectsRecurrenceIntent,
+  applyRecurrenceHintFromExtractedText,
+  applyEventTypeHint,
   applyTimeSemantics,
   reduceClarificationToSingle,
   enforceVenueCustomExclusivity,
@@ -509,15 +511,29 @@ function hardenDraftForCreateEdit(input: {
   message: string;
   conversationHistory: Array<{ role: "user" | "assistant"; content: string }>;
   extractedImageText?: string;
+  extractionConfidence?: number;
 }) {
-  const { mode, draft, message, conversationHistory } = input;
+  const {
+    mode,
+    draft,
+    message,
+    conversationHistory,
+    extractedImageText,
+    extractionConfidence,
+  } = input;
+
+  let normalizedLocationIntent: "venue" | "online" | "hybrid" | null = null;
+  let hasOnlineUrlAfterNormalization = false;
 
   if (mode === "create" || mode === "edit_series") {
     const hasOnlineUrl = hasNonEmptyString(draft.online_url);
-    draft.location_mode = normalizeInterpreterLocationMode(
+    const normalizedLocationMode = normalizeInterpreterLocationMode(
       draft.location_mode,
       hasOnlineUrl ? "online" : "venue"
     );
+    hasOnlineUrlAfterNormalization = hasOnlineUrl;
+    normalizedLocationIntent = normalizedLocationMode;
+    draft.location_mode = normalizedLocationMode;
     draft.signup_mode = normalizeSignupMode(draft.signup_mode);
   }
 
@@ -526,9 +542,12 @@ function hardenDraftForCreateEdit(input: {
     draft.external_url = null;
   }
 
-  // If a canonical venue is resolved, enforce venue mode.
+  // If a canonical venue is resolved, enforce venue mode unless the normalized
+  // pre-override intent was hybrid and online_url is still present.
   if (hasNonEmptyString(draft.venue_id)) {
-    draft.location_mode = "venue";
+    const shouldPreserveHybridIntent =
+      normalizedLocationIntent === "hybrid" && hasOnlineUrlAfterNormalization;
+    draft.location_mode = shouldPreserveHybridIntent ? "hybrid" : "venue";
   }
 
   // Prevent accidental slot-enable unless user explicitly asked for slots.
@@ -542,6 +561,19 @@ function hardenDraftForCreateEdit(input: {
     }
   }
 
+  // If OCR/vision confidently detected recurrence signals (for example
+  // "monthly on the 3rd Tuesday"), preserve that intent even when the
+  // typed message only includes a single anchor date.
+  if (mode === "create") {
+    applyRecurrenceHintFromExtractedText({
+      draft,
+      message,
+      history: conversationHistory,
+      extractedImageText,
+      extractionConfidence,
+    });
+  }
+
   // Phase 7B: Prevent accidental recurring series unless user explicitly
   // used recurrence language (every, weekly, biweekly, monthly, etc.).
   if (
@@ -549,7 +581,14 @@ function hardenDraftForCreateEdit(input: {
     typeof draft.series_mode === "string" &&
     draft.series_mode !== "single"
   ) {
-    if (!detectsRecurrenceIntent(message, conversationHistory)) {
+    if (
+      !detectsRecurrenceIntent(
+        message,
+        conversationHistory,
+        extractedImageText,
+        extractionConfidence
+      )
+    ) {
       draft.series_mode = "single";
       draft.recurrence_rule = null;
       draft.day_of_week = null;
@@ -563,6 +602,17 @@ function hardenDraftForCreateEdit(input: {
   // as start_time = Y (performance start), not doors time.
   if (mode === "create" || mode === "edit_series") {
     applyTimeSemantics(draft, message);
+  }
+
+  // Phase 10: Deterministic event-type/category hinting.
+  // User-typed intent wins over OCR when both are present.
+  if (mode === "create" || mode === "edit_series") {
+    applyEventTypeHint({
+      draft,
+      message,
+      history: conversationHistory,
+      extractedImageText,
+    });
   }
 
   // Phase 7D: Enforce venue/custom location mutual exclusivity.
@@ -896,6 +946,9 @@ function buildSystemPrompt() {
     "- Use date format YYYY-MM-DD and 24h times HH:MM:SS when possible.",
     "- If venue match is uncertain, leave venue_id null and set venue_name to your best guess of the venue the user intended. The server will attempt deterministic resolution.",
     "- If locked_draft is provided, preserve its confirmed fields unless the user explicitly changes them.",
+    "- For create mode title formatting, prefer: `<Venue Name> - <Event Name>` when venue is known.",
+    "- Always include concrete event details in description (at minimum when/where/type/cost if known).",
+    "- Set event_type/category from explicit wording: if user says showcase, use showcase (not open_mic).",
     "- Keep human_summary concise and deterministic.",
   ].join("\n");
 }
@@ -1400,6 +1453,7 @@ export async function POST(request: Request) {
     message: normalizedMessage,
     conversationHistory,
     extractedImageText,
+    extractionConfidence: extractionMetadata?.confidence,
   });
 
   if (mode === "create") {
@@ -1408,6 +1462,15 @@ export async function POST(request: Request) {
       lockedDraft,
       message: normalizedMessage,
       conversationHistory,
+    });
+
+    // Re-apply event-type hint after locked draft merge so explicit user intent
+    // can override stale carried-forward event_type values.
+    applyEventTypeHint({
+      draft: sanitizedDraft,
+      message: normalizedMessage,
+      history: conversationHistory,
+      extractedImageText,
     });
 
     const hasOnlineUrl = hasNonEmptyString(sanitizedDraft.online_url);

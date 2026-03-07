@@ -94,3 +94,49 @@ describe("Phase 9B — reverse venue/custom exclusivity", () => {
     expect(fnSection).toContain("custom_location_name");
   });
 });
+
+// ---------------------------------------------------------------------------
+// D) OCR recurrence guard
+// ---------------------------------------------------------------------------
+describe("Phase 9B — OCR recurrence guard", () => {
+  it("postprocess includes OCR recurrence hint helpers", () => {
+    expect(postprocessSource).toContain("deriveRecurrenceHintFromText");
+    expect(postprocessSource).toContain("applyRecurrenceHintFromExtractedText");
+    expect(postprocessSource).toContain("OCR_RECURRENCE_CONFIDENCE_THRESHOLD");
+    expect(postprocessSource).toContain("monthly(?:\\s+on)?\\s+the");
+  });
+
+  it("route applies OCR recurrence hint before recurrence downgrade guard", () => {
+    const hardenStart = interpretRouteSource.indexOf("function hardenDraftForCreateEdit");
+    const hardenSection = interpretRouteSource.slice(hardenStart, hardenStart + 4200);
+    expect(hardenSection).toContain("applyRecurrenceHintFromExtractedText");
+    expect(hardenSection).toContain("detectsRecurrenceIntent(");
+    expect(hardenSection).toContain("extractionConfidence");
+  });
+
+  it("route passes extraction confidence into hardening", () => {
+    expect(interpretRouteSource).toContain("extractionConfidence: extractionMetadata?.confidence");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// E) Event-type/category reliability
+// ---------------------------------------------------------------------------
+describe("Phase 9B — event-type reliability", () => {
+  it("postprocess includes deterministic event-type hint helpers", () => {
+    expect(postprocessSource).toContain("deriveEventTypeHint");
+    expect(postprocessSource).toContain("applyEventTypeHint");
+    expect(postprocessSource).toContain("EVENT_TYPE_SIGNAL_PATTERNS");
+  });
+
+  it("route applies event-type hints in hardening and again after locked draft merge", () => {
+    expect(interpretRouteSource).toContain("applyEventTypeHint({");
+    const createMergeSectionStart = interpretRouteSource.indexOf("mergeLockedCreateDraft({");
+    const createMergeSection = interpretRouteSource.slice(createMergeSectionStart, createMergeSectionStart + 800);
+    expect(createMergeSection).toContain("applyEventTypeHint");
+  });
+
+  it("system prompt now instructs showcase/open_mic type correctness", () => {
+    expect(interpretRouteSource).toContain("if user says showcase, use showcase");
+  });
+});
