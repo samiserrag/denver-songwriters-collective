@@ -477,6 +477,18 @@ open_mic, showcase, song_circle, workshop, other, gig, meetup,
 jam_session, poetry, irish, blues, bluegrass, comedy
 ```
 
+Write-path input normalization (`normalizeIncomingEventTypes`):
+- Lowercases and trims all incoming values.
+- Canonicalizes spacing/hyphen variants to snake_case (example: `open mic` -> `open_mic`).
+- Applies alias normalization before validation:
+  - `meeting`, `meet up`, `meetings` -> `meetup`
+  - `open mike` -> `open_mic`
+  - `jam` -> `jam_session`
+  - `concert`, `live music` -> `gig`
+  - `poetry night` -> `poetry`
+  - `stand-up` -> `comedy`
+  - `kindred_group` / `kindred group` -> `other`
+
 `kindred_group` is treated as a legacy value:
 - Hidden from event type pickers
 - Rejected for new writes
@@ -554,6 +566,7 @@ Routing uses `.includes("open_mic")` on the array, not scalar equality:
 | `__tests__/ops-event-csv.test.ts` | Pipe-delimited serialization |
 | `__tests__/ops-event-diff.test.ts` | Array-aware diff comparison |
 | `__tests__/card-variants.test.tsx` | `getPrimaryEventType` display fallback |
+| `src/lib/events/__tests__/eventTypeContract.test.ts` | Write-path canonicalization + alias mapping (`meeting` -> `meetup`, spacing/hyphen variants) |
 
 ---
 

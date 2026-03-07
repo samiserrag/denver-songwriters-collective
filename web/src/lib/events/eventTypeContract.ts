@@ -24,11 +24,36 @@ export const VALID_EVENT_TYPES = new Set([
 
 export type ValidEventType = typeof VALID_EVENT_TYPES extends Set<infer T> ? T : never;
 
+const EVENT_TYPE_ALIASES: Record<string, string> = {
+  kindred_group: "other",
+  meeting: "meetup",
+  meetings: "meetup",
+  meet_up: "meetup",
+  open_mike: "open_mic",
+  songwriters_circle: "song_circle",
+  songwriter_circle: "song_circle",
+  jam: "jam_session",
+  concert: "gig",
+  live_music: "gig",
+  poetry_night: "poetry",
+  standup: "comedy",
+  stand_up: "comedy",
+};
+
+function canonicalizeRawEventType(type: string): string {
+  const normalized = type
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+
+  return EVENT_TYPE_ALIASES[normalized] ?? normalized;
+}
+
 export function normalizeIncomingEventTypes(input: unknown): string[] {
   const raw = Array.isArray(input) ? input : [input].filter(Boolean);
   const normalized = raw
-    .map((type) => (type === "kindred_group" ? "other" : type))
-    .filter((type): type is string => typeof type === "string" && type.trim().length > 0);
+    .filter((type): type is string => typeof type === "string" && type.trim().length > 0)
+    .map((type) => canonicalizeRawEventType(type));
   return [...new Set(normalized)];
 }
 
