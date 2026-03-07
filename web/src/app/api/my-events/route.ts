@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/serviceRoleClient";
 import { NextResponse } from "next/server";
 import { checkHostStatus } from "@/lib/auth/adminAuth";
 import { canonicalizeDayOfWeek } from "@/lib/events/recurrenceCanonicalization";
@@ -8,6 +9,8 @@ import { normalizeSignupMode } from "@/lib/events/signupModeContract";
 import { MediaEmbedValidationError, normalizeMediaEmbedUrl } from "@/lib/mediaEmbeds";
 import { upsertMediaEmbeds } from "@/lib/mediaEmbedsServer";
 import { sendAdminEventAlert } from "@/lib/email/adminEventAlerts";
+import { processVenueGeocodingWithStatus } from "@/lib/venue/geocoding";
+import { Database } from "@/lib/supabase/database.types";
 
 function normalizeLocationMode(value: unknown): "venue" | "online" | "hybrid" {
   if (typeof value !== "string") return "venue";
@@ -18,6 +21,75 @@ function normalizeLocationMode(value: unknown): "venue" | "online" | "hybrid" {
   if (mode === "online" || mode === "virtual") return "online";
   if (mode === "hybrid") return "hybrid";
   return "venue";
+}
+
+type VenuePromotionCandidate = {
+  id: string;
+  name: string;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+};
+
+type VenueCandidateMatchResult =
+  | { kind: "strong_match"; venue: VenuePromotionCandidate }
+  | { kind: "ambiguous"; candidates: VenuePromotionCandidate[] }
+  | { kind: "no_match" };
+
+function normalizeMatchToken(value: unknown): string {
+  return typeof value === "string" ? value.trim().toLowerCase().replace(/\s+/g, " ") : "";
+}
+
+/**
+ * Strong match policy for conversational venue auto-promotion:
+ * - exact address unique match, OR
+ * - unique name+city+state match.
+ *
+ * Any multi-candidate unresolved result is treated as ambiguous and must not
+ * auto-promote or auto-create canonical venues in the same request.
+ */
+function classifyVenueCandidatesForPromotion(input: {
+  candidates: VenuePromotionCandidate[];
+  customAddress: string;
+  customCity: string;
+  customState: string;
+}): VenueCandidateMatchResult {
+  const candidates = input.candidates;
+  if (candidates.length === 0) return { kind: "no_match" };
+
+  const normalizedAddress = normalizeMatchToken(input.customAddress);
+  if (normalizedAddress) {
+    const addressMatches = candidates.filter(
+      (candidate) => normalizeMatchToken(candidate.address) === normalizedAddress
+    );
+    if (addressMatches.length === 1) {
+      return { kind: "strong_match", venue: addressMatches[0] };
+    }
+    if (addressMatches.length > 1) {
+      return { kind: "ambiguous", candidates: addressMatches };
+    }
+  }
+
+  const normalizedCity = normalizeMatchToken(input.customCity);
+  const normalizedState = normalizeMatchToken(input.customState);
+  if (normalizedCity && normalizedState) {
+    const cityStateMatches = candidates.filter((candidate) => {
+      return (
+        normalizeMatchToken(candidate.city) === normalizedCity &&
+        normalizeMatchToken(candidate.state) === normalizedState
+      );
+    });
+    if (cityStateMatches.length === 1) {
+      return { kind: "strong_match", venue: cityStateMatches[0] };
+    }
+    if (cityStateMatches.length > 1) {
+      return { kind: "ambiguous", candidates: cityStateMatches };
+    }
+  }
+
+  return candidates.length > 1
+    ? { kind: "ambiguous", candidates }
+    : { kind: "no_match" };
 }
 
 // GET - Get events where user is host/cohost
@@ -331,8 +403,156 @@ export async function POST(request: Request) {
 
   // Phase 4.0: Determine location selection mode
   // User can either select a venue OR provide a custom location (mutually exclusive)
-  const hasVenue = !!body.venue_id;
-  const hasCustomLocation = !!body.custom_location_name;
+  let hasVenue = !!body.venue_id;
+  let hasCustomLocation = !!body.custom_location_name;
+  const requestedLocationMode = body.location_mode;
+  const hasOnlineUrlForHybrid =
+    typeof body.online_url === "string" && body.online_url.trim().length > 0;
+
+  // Phase 10.1: Auto-promote conversational custom locations to canonical venues.
+  // If a create request has custom location details but no venue_id, attempt to:
+  // 1) Reuse an existing venue by name
+  // 2) Create a new canonical venue (admin-only path due venues RLS)
+  // This keeps new venues reusable across future events instead of one-time custom locations.
+  if (
+    !hasVenue &&
+    hasCustomLocation &&
+    (body.location_mode === "venue" || body.location_mode === "hybrid" || !body.location_mode)
+  ) {
+    const customName =
+      typeof body.custom_location_name === "string" ? body.custom_location_name.trim() : "";
+    const customAddress =
+      typeof body.custom_address === "string" ? body.custom_address.trim() : "";
+    const customCity =
+      typeof body.custom_city === "string" ? body.custom_city.trim() : "";
+    const customState =
+      typeof body.custom_state === "string" ? body.custom_state.trim() : "";
+
+    if (customName) {
+      // 1) Reuse existing canonical venue by name (case-insensitive), but only
+      // promote on deterministic strong matches (exact address OR unique city/state).
+      const { data: venueCandidatesRaw, error: venueLookupError } = await supabase
+        .from("venues")
+        .select("id, name, address, city, state")
+        .ilike("name", customName)
+        .limit(25);
+
+      if (venueLookupError) {
+        console.warn(
+          "[POST /api/my-events] Venue candidate lookup failed:",
+          venueLookupError.message,
+          "| traceId:",
+          traceId
+        );
+      }
+
+      const venueCandidates: VenuePromotionCandidate[] = Array.isArray(venueCandidatesRaw)
+        ? venueCandidatesRaw
+        : [];
+
+      const matchResult = classifyVenueCandidatesForPromotion({
+        candidates: venueCandidates,
+        customAddress,
+        customCity,
+        customState,
+      });
+
+      let promotedVenue: VenuePromotionCandidate | null =
+        matchResult.kind === "strong_match" ? matchResult.venue : null;
+      const hasAmbiguousCandidates = matchResult.kind === "ambiguous";
+
+      if (hasAmbiguousCandidates) {
+        console.info(
+          "[POST /api/my-events] Venue auto-promotion skipped due to ambiguous candidates:",
+          venueCandidates.map((candidate) => candidate.id).join(","),
+          "| traceId:",
+          traceId
+        );
+      }
+
+      // 2) Admin-only canonical venue creation (venues INSERT is admin-only by RLS).
+      if (
+        !promotedVenue &&
+        !hasAmbiguousCandidates &&
+        isAdmin &&
+        customAddress &&
+        customCity &&
+        customState
+      ) {
+        const serviceClient = createServiceRoleClient();
+
+        const baseInsert: Database["public"]["Tables"]["venues"]["Insert"] = {
+          name: customName,
+          address: customAddress,
+          city: customCity,
+          state: customState,
+          zip:
+            typeof body.custom_address === "string"
+              ? (body.custom_address.match(/\b\d{5}(?:-\d{4})?\b/)?.[0] ?? null)
+              : null,
+          google_maps_url:
+            typeof body.google_maps_url === "string" ? body.google_maps_url.trim() || null : null,
+          website_url: null,
+        };
+
+        const { updates: geocodedInsertRaw } = await processVenueGeocodingWithStatus(
+          null,
+          baseInsert
+        );
+        const geocodedInsert =
+          geocodedInsertRaw as Database["public"]["Tables"]["venues"]["Insert"];
+
+        const { data: insertedVenue, error: insertError } = await serviceClient
+          .from("venues")
+          .insert(geocodedInsert)
+          .select("id, name, address, city, state")
+          .single();
+
+        if (insertError) {
+          // Graceful fallback: if unique-name race/conflict, try read path once.
+          // Otherwise keep custom location behavior for this request.
+          const { data: conflictedVenueRaw } = await supabase
+            .from("venues")
+            .select("id, name, address, city, state")
+            .ilike("name", customName)
+            .limit(25);
+
+          const conflictedCandidates: VenuePromotionCandidate[] = Array.isArray(conflictedVenueRaw)
+            ? conflictedVenueRaw
+            : [];
+          const conflictMatch = classifyVenueCandidatesForPromotion({
+            candidates: conflictedCandidates,
+            customAddress,
+            customCity,
+            customState,
+          });
+
+          if (conflictMatch.kind === "strong_match") {
+            promotedVenue = conflictMatch.venue;
+          } else {
+            console.warn("[POST /api/my-events] Venue auto-promotion skipped:", insertError.message, "| traceId:", traceId);
+          }
+        } else if (insertedVenue) {
+          promotedVenue = insertedVenue;
+        }
+      }
+
+      if (promotedVenue) {
+        body.venue_id = promotedVenue.id;
+        body.venue_name = promotedVenue.name;
+        body.custom_location_name = null;
+        body.custom_address = null;
+        body.custom_city = null;
+        body.custom_state = null;
+        body.custom_latitude = null;
+        body.custom_longitude = null;
+        hasVenue = true;
+        hasCustomLocation = false;
+        body.location_mode =
+          requestedLocationMode === "hybrid" && hasOnlineUrlForHybrid ? "hybrid" : "venue";
+      }
+    }
+  }
 
   // Validate: exactly one of venue_id or custom_location_name must be set for in-person/hybrid events
   if (body.location_mode === "venue" || body.location_mode === "hybrid" || !body.location_mode) {
