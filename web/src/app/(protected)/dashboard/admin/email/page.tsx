@@ -157,6 +157,7 @@ function renderRichTextPreviewHtml(content: string): string {
 }
 
 export default function AdminEmailPage() {
+  const currentWeekKey = computeWeekKeyClient();
   const [settings, setSettings] = useState<DigestSetting[]>([]);
   const [history, setHistory] = useState<SendHistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -172,12 +173,7 @@ export default function AdminEmailPage() {
   const [previewLoading, setPreviewLoading] = useState(false);
 
   // GTM-3: Editorial state
-  const [editorialWeekKey, setEditorialWeekKey] = useState(() => {
-    // Default to next week's key
-    const next = new Date();
-    next.setDate(next.getDate() + 7);
-    return computeWeekKeyClient(next);
-  });
+  const [editorialWeekKey, setEditorialWeekKey] = useState(() => computeWeekKeyClient());
   const [editorial, setEditorial] = useState<EditorialData>({
     subject_override: "",
     intro_note: "",
@@ -195,6 +191,7 @@ export default function AdminEmailPage() {
     message: string;
     variant: "success" | "error";
   } | null>(null);
+  const isEditorialWeekCurrent = editorialWeekKey === currentWeekKey;
 
   // GTM-3: Fetch editorial for selected week
   const fetchEditorial = useCallback(async (weekKey: string) => {
@@ -425,6 +422,16 @@ export default function AdminEmailPage() {
     const actionLabel = mode === "test" ? "test email" : "full send";
     if (
       mode === "full" &&
+      digestType === "weekly_happenings" &&
+      !isEditorialWeekCurrent &&
+      !window.confirm(
+        `Weekly Happenings full send always uses THIS WEEK (${currentWeekKey}) to match cron.\n\nYou currently have ${editorialWeekKey} selected for editing and preview.\n\nSend now for ${currentWeekKey}?`
+      )
+    ) {
+      return;
+    }
+    if (
+      mode === "full" &&
       !window.confirm(
         `Send ${DIGEST_LABELS[digestType] ?? digestType} to ALL eligible recipients?\n\nThis action respects the idempotency lock — it cannot be sent twice for the same week.`
       )
@@ -436,7 +443,7 @@ export default function AdminEmailPage() {
     setSendResult(null);
     try {
       const sendPayload: Record<string, unknown> = { digestType, mode };
-      if (digestType === "weekly_happenings") {
+      if (digestType === "weekly_happenings" && mode === "test") {
         sendPayload.weekKey = editorialWeekKey;
       }
       const res = await fetch("/api/admin/digest/send", {
@@ -456,9 +463,13 @@ export default function AdminEmailPage() {
           });
         } else {
           const sentTo = mode === "test" ? ` to ${data.sentTo}` : "";
+          const weekSuffix =
+            digestType === "weekly_happenings" && data.weekKey
+              ? ` Week: ${data.weekKey}.`
+              : "";
           setSendResult({
             type: digestType,
-            message: `${mode === "test" ? "Test" : "Full"} ${actionLabel} complete: ${data.sent} sent, ${data.failed} failed${sentTo}.`,
+            message: `${mode === "test" ? "Test" : "Full"} ${actionLabel} complete: ${data.sent} sent, ${data.failed} failed${sentTo}.${weekSuffix}`,
             variant: data.failed > 0 ? "error" : "success",
           });
           // Refresh history after successful full send
@@ -724,6 +735,9 @@ export default function AdminEmailPage() {
         <p className="text-sm text-[var(--color-text-secondary)] mb-4">
           Add personal editorial to the Weekly Happenings Digest, including member and host spotlights. All fields are optional.
         </p>
+        <p className="text-xs text-[var(--color-text-tertiary)] mb-4">
+          Cron and full sends always use <span className="font-mono">{currentWeekKey}</span>. The selected week below is used for editing, preview, and test sends.
+        </p>
 
         {/* Editorial result banner */}
         {editorialResult && (
@@ -773,6 +787,11 @@ export default function AdminEmailPage() {
               <span className="text-sm text-[var(--color-text-tertiary)]">Loading...</span>
             )}
           </div>
+          {!isEditorialWeekCurrent && (
+            <p className="mt-2 text-xs text-amber-700 dark:text-amber-300">
+              Selected week is <span className="font-mono">{editorialWeekKey}</span>. Cron/full send this Sunday uses <span className="font-mono">{currentWeekKey}</span>.
+            </p>
+          )}
         </div>
 
         {/* Subject override */}

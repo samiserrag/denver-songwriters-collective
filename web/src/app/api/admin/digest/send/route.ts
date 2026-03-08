@@ -87,10 +87,11 @@ export async function POST(request: NextRequest) {
   // weekKey (which defaults to "next week") as the lock key, causing the cron
   // to skip the actual week because it found a lock for a future week.
   const lockWeekKey = computeWeekKey();
-  const editorialWeekKey =
+  const requestedEditorialWeekKey =
     typeof requestedWeekKey === "string" && requestedWeekKey.trim()
       ? requestedWeekKey.trim()
-      : lockWeekKey;
+      : undefined;
+  const testEditorialWeekKey = requestedEditorialWeekKey ?? lockWeekKey;
 
   try {
     // Get admin's email for test mode
@@ -136,17 +137,17 @@ export async function POST(request: NextRequest) {
             sent: 0,
             failed: 0,
             sentTo: adminProfile.email,
-            weekKey: editorialWeekKey,
+            weekKey: testEditorialWeekKey,
             hasEditorial: false,
             message: "No digest events for the recipient after personalization filters.",
           });
         }
 
         // GTM-3: Resolve editorial for test send (uses editorial picker week key)
-        console.log(`[AdminTestSend] Using editorialWeekKey ${editorialWeekKey}`);
+        console.log(`[AdminTestSend] Using editorialWeekKey ${testEditorialWeekKey}`);
         let resolvedEditorial: ResolvedEditorial | undefined;
         try {
-          const editorial = await getEditorial(serviceClient, editorialWeekKey, "weekly_happenings");
+          const editorial = await getEditorial(serviceClient, testEditorialWeekKey, "weekly_happenings");
           if (editorial) {
             const result = await resolveEditorialWithDiagnostics(serviceClient, editorial);
             resolvedEditorial = result.resolved;
@@ -190,7 +191,7 @@ export async function POST(request: NextRequest) {
           sent: result.sent,
           failed: result.failed,
           sentTo: adminProfile.email,
-          weekKey: editorialWeekKey,
+          weekKey: testEditorialWeekKey,
           hasEditorial: !!resolvedEditorial,
           personalizationEnabled,
           personalizedRecipients: personalized.personalizedCount,
@@ -230,8 +231,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Full mode — respects idempotency lock
-    // Lock key is ALWAYS the current week; editorial key may differ (admin picker)
-    console.log(`[AdminFullSend] lockWeekKey=${lockWeekKey}, editorialWeekKey=${editorialWeekKey}`);
+    // Full sends must always use current-week editorial to match cron behavior.
+    const fullEditorialWeekKey = lockWeekKey;
+    if (requestedEditorialWeekKey && requestedEditorialWeekKey !== fullEditorialWeekKey) {
+      console.warn(
+        `[AdminFullSend] Ignoring requested weekKey=${requestedEditorialWeekKey}; using current weekKey=${fullEditorialWeekKey}`
+      );
+    }
+    console.log(`[AdminFullSend] lockWeekKey=${lockWeekKey}, editorialWeekKey=${fullEditorialWeekKey}`);
 
     if (digestType === "weekly_happenings") {
       const digestData = await getUpcomingHappenings(serviceClient);
@@ -281,12 +288,12 @@ export async function POST(request: NextRequest) {
       }
 
       // GTM-3: Resolve editorial AFTER lock (Delta 1)
-      // Editorial uses the picker's week key so admin can prep content ahead of time
+      // Full sends intentionally use the lock week to avoid test/full week drift.
       let resolvedEditorial: ResolvedEditorial | undefined;
       try {
-        const editorial = await getEditorial(serviceClient, editorialWeekKey, "weekly_happenings");
+        const editorial = await getEditorial(serviceClient, fullEditorialWeekKey, "weekly_happenings");
         if (editorial) {
-          console.log(`[AdminFullSend] Found editorial for ${editorialWeekKey}, resolving references...`);
+          console.log(`[AdminFullSend] Found editorial for ${fullEditorialWeekKey}, resolving references...`);
           resolvedEditorial = await resolveEditorial(serviceClient, editorial);
           console.log("[AdminFullSend] Editorial resolved successfully");
         }
