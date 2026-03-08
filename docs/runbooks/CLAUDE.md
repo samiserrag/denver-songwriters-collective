@@ -64,7 +64,7 @@ This file holds reference material that is useful during investigations and exec
 | Route | Schedule | Purpose |
 |-------|----------|---------|
 | `/api/cron/weekly-open-mics` | `0 3 * * 0` (Sunday 3:00 UTC) | Weekly Open Mics Digest email |
-| `/api/cron/weekly-happenings` | `20 23 * * 0` (Sunday 23:20 UTC) | Weekly Happenings Digest email (ALL event types) |
+| `/api/cron/weekly-happenings` | `20 22 * * 0` and `20 23 * * 0` (Sunday) | Weekly Happenings Digest email (ALL event types), guarded to send only at 4:20 PM Denver |
 
 **Cron Configuration:** `web/vercel.json`
 
@@ -108,7 +108,7 @@ This file holds reference material that is useful during investigations and exec
 
 **Timezone Notes:**
 - Open Mics cron: `0 3 * * 0` = Sunday 3:00 UTC = Saturday 8:00 PM MST / 9:00 PM MDT
-- Happenings cron: `20 23 * * 0` = Sunday 23:20 UTC = Sunday 4:20 PM MST / 5:20 PM MDT
+- Happenings cron uses both `20 22 * * 0` and `20 23 * * 0`; route-level Denver-time guard sends only in the 4:20 PM local window year-round.
 - Digest covers Sunday through Saturday (7-day window)
 
 **Idempotency Lock Key:**

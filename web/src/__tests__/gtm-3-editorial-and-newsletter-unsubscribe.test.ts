@@ -931,7 +931,7 @@ describe("Part B: Editorial Layer", () => {
   // GTM-3.1: Cron Schedule + Baseball Card Renderer + Slug/URL Normalization
   // =========================================================================
 
-  describe("GTM-3.1: Cron schedule update to Sunday 23:20 UTC", () => {
+  describe("GTM-3.1: Weekly happenings cron schedule + local-time guard", () => {
     const vercelConfig = fs.readFileSync(
       path.join(process.cwd(), "vercel.json"),
       "utf-8"
@@ -941,23 +941,29 @@ describe("Part B: Editorial Layer", () => {
       "utf-8"
     );
 
-    it("vercel.json schedules weekly-happenings at 20 23 * * 0 (Sunday 23:20 UTC)", () => {
+    it("vercel.json schedules weekly-happenings at both 20 22 * * 0 and 20 23 * * 0", () => {
       const config = JSON.parse(vercelConfig);
-      const happeningsCron = config.crons?.find(
+      const happeningsCrons = config.crons?.filter(
         (c: { path: string }) => c.path === "/api/cron/weekly-happenings"
       );
-      expect(happeningsCron).toBeDefined();
-      expect(happeningsCron.schedule).toBe("20 23 * * 0");
+      expect(happeningsCrons).toBeDefined();
+      expect(happeningsCrons).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ schedule: "20 22 * * 0" }),
+          expect.objectContaining({ schedule: "20 23 * * 0" }),
+        ])
+      );
     });
 
-    it("cron route documents MST/MDT timing in header comment", () => {
-      expect(cronSource).toContain("Sunday 23:20 UTC");
-      expect(cronSource).toContain("MST");
-      expect(cronSource).toContain("MDT");
+    it("cron route documents dual schedule and Denver local-time behavior", () => {
+      expect(cronSource).toContain("20 22 * * 0");
+      expect(cronSource).toContain("20 23 * * 0");
+      expect(cronSource).toContain("Denver 4:20 PM window");
     });
 
-    it("cron route mentions manual seasonal adjustment in comment", () => {
-      expect(cronSource).toContain("seasonal adjustment");
+    it("cron route enforces a local-time guard before sending", () => {
+      expect(cronSource).toContain("Local Time Guard — only send during 4:20 PM Denver window");
+      expect(cronSource).toContain("Outside 4:20 PM Denver send window");
     });
   });
 

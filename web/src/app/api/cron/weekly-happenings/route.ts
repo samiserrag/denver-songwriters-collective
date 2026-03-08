@@ -1,9 +1,9 @@
 /**
  * Weekly Happenings Cron Handler
  *
- * Triggered by Vercel Cron at 20 23 * * 0 (Sunday 23:20 UTC)
- * MST (winter): Sunday 4:20 PM Denver | MDT (summer): Sunday 5:20 PM Denver
- * Manual seasonal adjustment: use 22:20 UTC for MDT 4:20 PM, 23:20 UTC for MST 4:20 PM.
+ * Triggered by Vercel Cron at both 20 22 * * 0 and 20 23 * * 0.
+ * Route-level guard allows sending only during the Denver 4:20 PM window.
+ * This keeps schedule fixed at 4:20 PM local time year-round without seasonal edits.
  * Sends weekly digest emails covering ALL event types to all opted-in users.
  *
  * Control hierarchy (GTM-2):
@@ -43,6 +43,34 @@ import {
 export const dynamic = "force-dynamic";
 export const maxDuration = 60; // Allow up to 60 seconds for sending all emails
 
+function getDenverLocalTime(now: Date = new Date()): {
+  hour24: number;
+  minute: number;
+  label: string;
+} {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Denver",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(now);
+
+  const hour24 = Number(parts.find((part) => part.type === "hour")?.value ?? "0");
+  const minute = Number(parts.find((part) => part.type === "minute")?.value ?? "0");
+  const label = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Denver",
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  }).format(now);
+
+  return { hour24, minute, label };
+}
+
 /**
  * GET /api/cron/weekly-happenings
  *
@@ -80,6 +108,28 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       { error: "Unauthorized" },
       { status: 401 }
+    );
+  }
+
+  // ============================================================
+  // Local Time Guard — only send during 4:20 PM Denver window
+  // ============================================================
+  const denverTime = getDenverLocalTime();
+  const inSendWindow =
+    denverTime.hour24 === 16 && denverTime.minute >= 20 && denverTime.minute < 30;
+  if (!inSendWindow) {
+    console.log(
+      `[WeeklyHappenings] Time guard skip at ${denverTime.label} Denver (expected 4:20 PM window)`
+    );
+    return NextResponse.json(
+      {
+        success: true,
+        skipped: true,
+        message: "Outside 4:20 PM Denver send window",
+        denverTime: denverTime.label,
+        sent: 0,
+      },
+      { status: 200 }
     );
   }
 

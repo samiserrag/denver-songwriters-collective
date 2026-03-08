@@ -1059,7 +1059,8 @@ export default function AdminEmailPage() {
       <div className="mt-6 text-sm text-[var(--color-text-tertiary)]">
         <p>
           Digests are sent automatically when enabled. The happenings cron runs
-          Sunday 23:20 UTC (Sunday 4:20 PM MST / 5:20 PM MDT Denver time). The
+          at Sunday 22:20 UTC and 23:20 UTC, and a Denver-time guard allows
+          sending only in the Sunday 4:20 PM local window year-round. The
           idempotency guard prevents duplicate sends for the same week. Use
           &quot;Send test to me&quot; to preview without affecting the weekly lock.
         </p>

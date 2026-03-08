@@ -316,7 +316,7 @@ Signup/confirm emails sent by Supabase Auth are not generated from `web/src/lib/
 | # | Use Case | Trigger | Template | Category | Status |
 |---|----------|---------|----------|----------|--------|
 | 22 | Weekly Open Mics Digest | Cron: Sunday 3:00 UTC | `weeklyOpenMicsDigest.ts` | event_updates | Covered |
-| 23 | Weekly Happenings Digest | Cron: Sunday 23:20 UTC (4:20 PM MST) | `weeklyHappeningsDigest.ts` | event_updates | Covered |
+| 23 | Weekly Happenings Digest | Cron: Sunday 22:20 UTC + 23:20 UTC (route guard sends at 4:20 PM Denver local) | `weeklyHappeningsDigest.ts` | event_updates | Covered |
 
 ### Gallery Collaboration
 
