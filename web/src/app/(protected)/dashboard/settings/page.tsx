@@ -610,6 +610,16 @@ export default function SettingsPage() {
                   <span>Prioritize CSC-only happenings on the Happenings page</span>
                 </label>
 
+                <label className="inline-flex items-start gap-2 cursor-pointer text-sm text-[var(--color-text-primary)]">
+                  <input
+                    type="checkbox"
+                    checked={savedFilters.favorites === true}
+                    onChange={(e) => updateSavedFilters({ favorites: e.target.checked ? true : undefined })}
+                    className="mt-0.5 rounded border-[var(--color-border-default)] bg-[var(--color-bg-secondary)]"
+                  />
+                  <span>Save Favorites filter on Happenings and always include favorites in weekly digest personalization</span>
+                </label>
+
                 <div className="space-y-2">
                   <span className="text-sm text-[var(--color-text-secondary)]">Days</span>
                   <div className="flex flex-wrap gap-2">
@@ -727,7 +737,7 @@ export default function SettingsPage() {
 
               <div className="rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] p-4 space-y-3">
                 <p className="text-[var(--color-text-tertiary)] text-xs">
-                  Weekly digest personalization uses your saved type, day, cost, and location filters. CSC-only is excluded from digest personalization.
+                  Weekly digest personalization uses your saved type, day, cost, and location filters. If Favorites is enabled, favorites are always included in your personalized digest. CSC-only is excluded from digest personalization.
                 </p>
 
                 <div className="flex flex-wrap gap-3">

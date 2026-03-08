@@ -40,6 +40,7 @@ export const dynamic = "force-dynamic";
  * - verify: verified|needs_verification
  * - location: venue|online|hybrid
  * - cost: free|paid|unknown
+ * - favorites: 1 = favorites only
  * - days: comma-separated day abbreviations (mon,tue,wed,etc.)
  * - showCancelled: 1 = show cancelled occurrences (default: hidden)
  * - pastOffset: number of 90-day chunks to go back for progressive loading (default: 0)
@@ -56,6 +57,7 @@ interface HappeningsSearchParams {
   verify?: string;
   location?: string;
   cost?: string;
+  favorites?: string;
   days?: string;
   debugDates?: string;
   showCancelled?: string;
@@ -87,6 +89,7 @@ export default async function HappeningsPage({
   const verifyFilter = params.verify || "";
   const locationFilter = params.location || "";
   const costFilter = params.cost || "";
+  const favoritesOnlyFilter = params.favorites === "1";
   // Day-of-week filter (comma-separated abbreviations: mon,tue,wed,etc.)
   const daysFilter = params.days ? params.days.split(",").map(d => d.trim().toLowerCase()) : [];
   // Debug mode for date computation visualization
@@ -100,6 +103,30 @@ export default async function HappeningsPage({
     params.view === "series" ? "series" :
     params.view === "map" ? "map" :
     "timeline";
+
+  // Phase 6.x: Batch-fetch user favorites when needed.
+  // Tri-state:
+  // - null: anonymous user
+  // - undefined: fetch failed
+  // - Set<string>: favorite event IDs
+  // Needed for:
+  // 1) Favorites-only filtering (all views)
+  // 2) Timeline card star hydration (existing behavior)
+  let favoriteEventIds: Set<string> | null | undefined = userId ? undefined : null;
+  if (userId && (viewMode === "timeline" || favoritesOnlyFilter)) {
+    try {
+      const { data: favs, error } = await supabase
+        .from("favorites")
+        .select("event_id")
+        .eq("user_id", userId);
+      if (!error && favs) {
+        favoriteEventIds = new Set(favs.map((f: { event_id: string }) => f.event_id));
+      }
+      // On error: favoriteEventIds stays undefined
+    } catch {
+      // stays undefined
+    }
+  }
 
   // Phase 1.4: City/ZIP location filter params
   const cityParam = params.city;
@@ -290,6 +317,15 @@ export default async function HappeningsPage({
   // Hide internal DSC TEST events from public discovery when unconfirmed.
   list = list.filter((event: any) => !shouldSuppressUnconfirmedDscTestEvent(event));
 
+  // Favorites-only filter (server-side).
+  if (favoritesOnlyFilter) {
+    if (!userId || !(favoriteEventIds instanceof Set)) {
+      list = [];
+    } else {
+      list = list.filter((event: any) => favoriteEventIds.has(event.id));
+    }
+  }
+
   // Client-side search filtering (case-insensitive across multiple fields)
   if (searchQuery) {
     const q = searchQuery.toLowerCase();
@@ -470,26 +506,6 @@ export default async function HappeningsPage({
     (entry) => entry.dateKey !== today && entry.dateKey !== tomorrow
   );
 
-  // Phase Option A: Batch-fetch ALL user favorites in a single query.
-  // Tri-state: null = anonymous (skip client query), undefined = fetch failed (client fallback),
-  // Set<string> = known favorites (cards use prop directly, no per-card query).
-  // Only fetch for timeline view where HappeningsCard is rendered.
-  let favoriteEventIds: Set<string> | null | undefined = userId ? undefined : null;
-  if (userId && viewMode === "timeline") {
-    try {
-      const { data: favs, error } = await supabase
-        .from("favorites")
-        .select("event_id")
-        .eq("user_id", userId);
-      if (!error && favs) {
-        favoriteEventIds = new Set(favs.map((f: { event_id: string }) => f.event_id));
-      }
-      // On error: favoriteEventIds stays undefined → cards fall back to client query
-    } catch {
-      // stays undefined → client fallback
-    }
-  }
-
   // Count total occurrences for display
   let totalOccurrences = 0;
   for (const entries of filteredGroups.values()) {
@@ -522,7 +538,7 @@ export default async function HappeningsPage({
   }
 
   // Hero only shows on unfiltered /happenings (no filters active)
-  const hasFilters = searchQuery || typeFilter || cscFilter || verifyFilter || locationFilter || costFilter || daysFilter.length > 0 || (timeFilter && timeFilter !== "upcoming") || hasLocationFilter;
+  const hasFilters = searchQuery || typeFilter || cscFilter || verifyFilter || locationFilter || costFilter || favoritesOnlyFilter || daysFilter.length > 0 || (timeFilter && timeFilter !== "upcoming") || hasLocationFilter;
   const showHero = !hasFilters;
 
   // Page title based on active type filter
@@ -576,6 +592,9 @@ export default async function HappeningsPage({
       const labels: Record<string, string> = { free: "Free", paid: "Paid", unknown: "Unknown cost" };
       parts.push(labels[costFilter] || costFilter);
     }
+    if (favoritesOnlyFilter) {
+      parts.push("Favorites");
+    }
     if (daysFilter.length > 0) {
       const dayLabels = daysFilter.map(d => d.charAt(0).toUpperCase() + d.slice(1)).join(", ");
       parts.push(dayLabels);
@@ -617,6 +636,12 @@ export default async function HappeningsPage({
       }
     }
     // Other filters active
+    if (favoritesOnlyFilter && !userId) {
+      return {
+        headline: "Sign in to filter by favorites.",
+        detail: "Log in, star events, then turn on Favorites."
+      };
+    }
     if (searchQuery || hasFilters) {
       return {
         headline: "No happenings match your filters.",

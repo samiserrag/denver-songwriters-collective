@@ -11,10 +11,12 @@ function createSupabaseMock(params: {
   profiles?: Array<{ id: string; email: string | null; full_name: string | null }>;
   preferences?: Array<{ user_id: string; email_enabled: boolean; email_digests: boolean }>;
   savedFiltersRows?: Array<{ user_id: string; auto_apply: boolean; filters: unknown }>;
+  favoritesRows?: Array<{ user_id: string; event_id: string }>;
 }) {
   const profiles = params.profiles || [];
   const preferences = params.preferences || [];
   const savedFiltersRows = params.savedFiltersRows || [];
+  const favoritesRows = params.favoritesRows || [];
 
   return {
     from: (table: string) => {
@@ -37,6 +39,17 @@ function createSupabaseMock(params: {
           select: () => ({
             in: async (_field: string, userIds: string[]) => ({
               data: savedFiltersRows.filter((row) => userIds.includes(row.user_id)),
+              error: null,
+            }),
+          }),
+        };
+      }
+
+      if (table === "favorites") {
+        return {
+          select: () => ({
+            in: async (_field: string, userIds: string[]) => ({
+              data: favoritesRows.filter((row) => userIds.includes(row.user_id)),
               error: null,
             }),
           }),
@@ -241,6 +254,107 @@ describe("personalizeDigestRecipients", () => {
 
     const result = await personalizeDigestRecipients(supabase, recipients, baseData, {
       enabled: true,
+    });
+
+    expect(result.recipients).toHaveLength(1);
+    expect(result.personalizedCount).toBe(0);
+    expect(result.skippedCount).toBe(0);
+    expect(result.digestByUserId.size).toBe(0);
+  });
+
+  it("always includes favorites in digest when favorites flag is enabled with narrowing filters", async () => {
+    const baseData = buildBaseDigestData();
+    const recipients: DigestRecipient[] = [
+      { userId: "u1", email: "u1@example.com", firstName: "One" },
+    ];
+
+    const supabase = createSupabaseMock({
+      savedFiltersRows: [
+        {
+          user_id: "u1",
+          auto_apply: true,
+          filters: {
+            type: "open_mic",
+            days: ["sun"],
+            cost: "free",
+            city: "Denver",
+            radius: "10",
+            favorites: true,
+          },
+        },
+      ],
+      favoritesRows: [{ user_id: "u1", event_id: "event-3" }],
+    });
+
+    const result = await personalizeDigestRecipients(supabase, recipients, baseData, {
+      enabled: true,
+      logPrefix: "[Test]",
+    });
+
+    expect(result.recipients.map((r) => r.userId)).toEqual(["u1"]);
+    expect(result.personalizedCount).toBe(1);
+    expect(result.skippedCount).toBe(0);
+
+    const personalizedU1 = result.digestByUserId.get("u1");
+    expect(personalizedU1?.totalCount).toBe(2);
+    expect(personalizedU1?.byDate.get("2026-03-01")?.[0]?.event.id).toBe("event-1");
+    expect(personalizedU1?.byDate.get("2026-03-02")?.[0]?.event.id).toBe("event-3");
+  });
+
+  it("keeps recipient when narrowing filters produce zero results but favorites exist", async () => {
+    const baseData = buildBaseDigestData();
+    const recipients: DigestRecipient[] = [
+      { userId: "u1", email: "u1@example.com", firstName: "One" },
+    ];
+
+    const supabase = createSupabaseMock({
+      savedFiltersRows: [
+        {
+          user_id: "u1",
+          auto_apply: true,
+          filters: {
+            type: "workshop",
+            favorites: true,
+          },
+        },
+      ],
+      favoritesRows: [{ user_id: "u1", event_id: "event-3" }],
+    });
+
+    const result = await personalizeDigestRecipients(supabase, recipients, baseData, {
+      enabled: true,
+      logPrefix: "[Test]",
+    });
+
+    expect(result.recipients.map((r) => r.userId)).toEqual(["u1"]);
+    expect(result.personalizedCount).toBe(1);
+    expect(result.skippedCount).toBe(0);
+    expect(result.digestByUserId.get("u1")?.totalCount).toBe(1);
+    expect(result.digestByUserId.get("u1")?.byDate.get("2026-03-02")?.[0]?.event.id).toBe("event-3");
+  });
+
+  it("does not personalize when only favorites flag is saved", async () => {
+    const baseData = buildBaseDigestData();
+    const recipients: DigestRecipient[] = [
+      { userId: "u1", email: "u1@example.com", firstName: "One" },
+    ];
+
+    const supabase = createSupabaseMock({
+      savedFiltersRows: [
+        {
+          user_id: "u1",
+          auto_apply: true,
+          filters: {
+            favorites: true,
+          },
+        },
+      ],
+      favoritesRows: [{ user_id: "u1", event_id: "event-1" }],
+    });
+
+    const result = await personalizeDigestRecipients(supabase, recipients, baseData, {
+      enabled: true,
+      logPrefix: "[Test]",
     });
 
     expect(result.recipients).toHaveLength(1);

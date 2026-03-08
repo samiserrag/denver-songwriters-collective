@@ -15,6 +15,19 @@ Approved amendments were implemented end-to-end:
 5. Feature flag added: `DIGEST_PERSONALIZATION_ENABLED` (default OFF).
 6. Phased execution completed (migration/helpers -> gating fix -> UI -> personalization).
 
+### Post-Execution Addendum (March 8, 2026 — Favorites Integration)
+
+Two follow-up personalization improvements were shipped:
+1. **Favorites-only Happenings filter** on `/happenings` (`favorites=1`) with URL-driven behavior matching existing filters.
+2. **Saved Favorites preference** for digest personalization as an additive include (not replacement).
+
+Behavioral contract:
+- Starred events are stored in `favorites`.
+- Users can toggle Favorites filter directly on Happenings and save it with other saved filters.
+- For weekly digest personalization, saved type/day/cost/location filters still apply first.
+- If saved Favorites is enabled, favorited events are merged into the user’s personalized digest result set (deduped by event/date context).
+- If a user has only Favorites saved (no narrowing filters), digest payload remains baseline (no narrowing side effects).
+
 ### Post-Execution Fixes (March 1, 2026 — UX QA)
 
 During production UX QA, two blocking bugs were discovered and fixed:

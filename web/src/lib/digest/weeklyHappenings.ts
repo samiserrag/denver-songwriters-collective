@@ -541,9 +541,22 @@ function buildFilteredDigestData(
     }
   }
 
+  return summarizeDigestData(locationFiltered, data.dateRange);
+}
+
+function summarizeDigestData(
+  byDate: Map<string, HappeningOccurrence[]>,
+  dateRange: HappeningsDigestData["dateRange"]
+): HappeningsDigestData {
   const uniqueVenues = new Set<string>();
   let totalCount = 0;
-  for (const occurrences of locationFiltered.values()) {
+
+  for (const occurrences of byDate.values()) {
+    occurrences.sort((a, b) => {
+      const timeA = a.event.start_time || "23:59:59";
+      const timeB = b.event.start_time || "23:59:59";
+      return timeA.localeCompare(timeB);
+    });
     totalCount += occurrences.length;
     for (const occurrence of occurrences) {
       if (occurrence.event.venue?.id) {
@@ -553,11 +566,80 @@ function buildFilteredDigestData(
   }
 
   return {
-    byDate: locationFiltered,
+    byDate,
     totalCount,
     venueCount: uniqueVenues.size,
-    dateRange: data.dateRange,
+    dateRange,
   };
+}
+
+async function getFavoriteEventIdsForUsers(
+  supabase: SupabaseClient<Database>,
+  userIds: string[]
+): Promise<Map<string, Set<string>>> {
+  if (userIds.length === 0) return new Map();
+
+  const { data, error } = await supabase
+    .from("favorites")
+    .select("user_id, event_id")
+    .in("user_id", userIds);
+
+  if (error) {
+    console.error("[WeeklyHappenings] Failed to fetch favorites for personalization:", error);
+    return new Map();
+  }
+
+  const favoritesByUserId = new Map<string, Set<string>>();
+  for (const row of data || []) {
+    if (!favoritesByUserId.has(row.user_id)) {
+      favoritesByUserId.set(row.user_id, new Set());
+    }
+    favoritesByUserId.get(row.user_id)!.add(row.event_id);
+  }
+
+  return favoritesByUserId;
+}
+
+function mergeDigestDataWithFavorites(
+  baseData: HappeningsDigestData,
+  filteredData: HappeningsDigestData,
+  favoriteEventIds: Set<string>
+): HappeningsDigestData {
+  if (favoriteEventIds.size === 0) {
+    return filteredData;
+  }
+
+  const byDate = new Map<string, HappeningOccurrence[]>();
+  const seenByDate = new Map<string, Set<string>>();
+
+  for (const [dateKey, occurrences] of filteredData.byDate.entries()) {
+    byDate.set(dateKey, [...occurrences]);
+    seenByDate.set(
+      dateKey,
+      new Set(occurrences.map((occurrence) => occurrence.event.id))
+    );
+  }
+
+  for (const [dateKey, occurrences] of baseData.byDate.entries()) {
+    const existing = byDate.get(dateKey) || [];
+    const seen = seenByDate.get(dateKey) || new Set<string>();
+
+    for (const occurrence of occurrences) {
+      const eventId = occurrence.event.id;
+      if (!favoriteEventIds.has(eventId)) continue;
+      if (seen.has(eventId)) continue;
+
+      existing.push(occurrence);
+      seen.add(eventId);
+    }
+
+    if (existing.length > 0) {
+      byDate.set(dateKey, existing);
+      seenByDate.set(dateKey, seen);
+    }
+  }
+
+  return summarizeDigestData(byDate, filteredData.dateRange);
 }
 
 export async function personalizeDigestRecipients(
@@ -583,25 +665,65 @@ export async function personalizeDigestRecipients(
     recipients.map((r) => r.userId)
   );
 
+  const digestFiltersByUserId = new Map<string, DigestApplicableSavedFilters>();
+  let shouldFetchFavorites = false;
+
+  for (const recipient of recipients) {
+    const saved = savedByUserId.get(recipient.userId);
+    if (!saved) continue;
+    const applicable = toDigestApplicableFilters(saved.filters);
+    digestFiltersByUserId.set(recipient.userId, applicable);
+    if (applicable.favorites === true) {
+      shouldFetchFavorites = true;
+    }
+  }
+
+  const favoriteEventIdsByUserId = shouldFetchFavorites
+    ? await getFavoriteEventIdsForUsers(
+        supabase,
+        recipients.map((r) => r.userId)
+      )
+    : new Map<string, Set<string>>();
+
   const recipientsToSend: DigestRecipient[] = [];
   const digestByUserId = new Map<string, HappeningsDigestData>();
   let personalizedCount = 0;
   let skippedCount = 0;
 
   for (const recipient of recipients) {
-    const saved = savedByUserId.get(recipient.userId);
-    if (!saved) {
+    const applicable = digestFiltersByUserId.get(recipient.userId);
+    if (!applicable) {
       recipientsToSend.push(recipient);
       continue;
     }
 
-    const applicable = toDigestApplicableFilters(saved.filters);
-    if (!hasDigestApplicableFilters(applicable)) {
+    const includeFavorites = applicable.favorites === true;
+    const hasNarrowingFilters = hasDigestApplicableFilters(applicable);
+
+    if (!hasNarrowingFilters && !includeFavorites) {
       recipientsToSend.push(recipient);
       continue;
     }
 
-    const personalized = buildFilteredDigestData(digestData, applicable);
+    // favorites=true with no narrowing filters does not change the digest payload
+    // (base digest already contains all happenings, including favorites).
+    if (!hasNarrowingFilters) {
+      recipientsToSend.push(recipient);
+      continue;
+    }
+
+    let personalized = buildFilteredDigestData(digestData, applicable);
+    if (includeFavorites) {
+      const favoriteEventIds = favoriteEventIdsByUserId.get(recipient.userId);
+      if (favoriteEventIds && favoriteEventIds.size > 0) {
+        personalized = mergeDigestDataWithFavorites(
+          digestData,
+          personalized,
+          favoriteEventIds
+        );
+      }
+    }
+
     if (personalized.totalCount === 0) {
       skippedCount++;
       console.log(

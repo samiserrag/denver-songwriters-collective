@@ -131,6 +131,15 @@ Phase 1.5 only sends to registered users with `email_event_updates` enabled.
 | Anonymous subscriber digests | GTM-4 | Send to `newsletter_subscribers` with defaults |
 | Digest preview before signup | GTM-5 | Show sample digest to convert signups |
 
+### 3.3.1 Shipped Personalization Follow-up (March 8, 2026)
+
+- `/happenings` now supports a **Favorites-only** filter via URL param `favorites=1`.
+- Saved happenings filters now support a `favorites` flag.
+- Weekly happenings digest personalization now treats Favorites as an **additive include**:
+  - Narrowing filters (type/day/cost/location) still apply.
+  - Favorited events are merged into each user’s personalized digest result.
+  - Favorites do not replace or erase existing saved filters.
+
 ### 3.4 The "Digest Everywhere" Principle
 
 > **Anywhere a user can filter happenings, they should be able to save those filters as their digest preferences.**

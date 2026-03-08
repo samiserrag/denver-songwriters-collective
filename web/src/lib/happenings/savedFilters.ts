@@ -26,6 +26,7 @@ export type SavedCostFilter = (typeof FILTER_COST_VALUES)[number];
 export interface SavedHappeningsFilters {
   type?: string;
   csc?: boolean;
+  favorites?: boolean;
   days?: SavedDayFilter[];
   cost?: SavedCostFilter;
   city?: string;
@@ -40,6 +41,7 @@ export interface SavedHappeningsFiltersRow {
 
 export interface DigestApplicableSavedFilters {
   type?: string;
+  favorites?: boolean;
   days?: SavedDayFilter[];
   cost?: SavedCostFilter;
   city?: string;
@@ -80,6 +82,11 @@ export function sanitizeSavedHappeningsFilters(input: unknown): SavedHappeningsF
       ? true
       : undefined;
 
+  const favorites =
+    raw.favorites === true || raw.favorites === "1" || raw.favorites === 1
+      ? true
+      : undefined;
+
   const days = normalizeDays(raw.days);
 
   const cost =
@@ -105,6 +112,7 @@ export function sanitizeSavedHappeningsFilters(input: unknown): SavedHappeningsF
   return {
     ...(type ? { type } : {}),
     ...(csc ? { csc: true } : {}),
+    ...(favorites ? { favorites: true } : {}),
     ...(days && days.length > 0 ? { days } : {}),
     ...(cost ? { cost } : {}),
     ...(normalizedZip
@@ -120,6 +128,7 @@ export function hasSavedHappeningsFilters(filters: SavedHappeningsFilters): bool
   return Boolean(
     filters.type ||
       filters.csc ||
+      filters.favorites ||
       (filters.days && filters.days.length > 0) ||
       filters.cost ||
       filters.city ||
@@ -132,6 +141,7 @@ export function toDigestApplicableFilters(
 ): DigestApplicableSavedFilters {
   return {
     ...(filters.type ? { type: filters.type } : {}),
+    ...(filters.favorites ? { favorites: true } : {}),
     ...(filters.days && filters.days.length > 0 ? { days: filters.days } : {}),
     ...(filters.cost ? { cost: filters.cost } : {}),
     ...(filters.zip
@@ -148,6 +158,8 @@ export function toDigestApplicableFilters(
 export function hasDigestApplicableFilters(
   filters: DigestApplicableSavedFilters
 ): boolean {
+  // Note: favorites is intentionally excluded here.
+  // Digest uses favorites as an additive include, not a narrowing filter.
   return Boolean(
     filters.type ||
       (filters.days && filters.days.length > 0) ||
@@ -163,6 +175,7 @@ export function savedFiltersToUrlUpdates(
   return {
     type: filters.type || null,
     csc: filters.csc ? "1" : null,
+    favorites: filters.favorites ? "1" : null,
     days: filters.days && filters.days.length > 0 ? filters.days.join(",") : null,
     cost: filters.cost || null,
     city: filters.zip ? null : filters.city || null,
@@ -264,4 +277,3 @@ export async function upsertUserSavedHappeningsFilters(
     filters: sanitizeSavedHappeningsFilters(data.filters),
   };
 }
-

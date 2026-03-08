@@ -19,6 +19,7 @@
  * - verify: all|verified|needs_verification
  * - location: all|venue|online|hybrid
  * - cost: all|free|paid|unknown
+ * - favorites: 1 (favorites only)
  * - days: comma-separated day abbreviations (mon,tue,wed,etc.) - Phase 4.8
  * - city: city name for nearby filter - Phase 1.4
  * - zip: ZIP code for nearby filter - Phase 1.4
@@ -176,6 +177,7 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
   const verify = searchParams.get("verify") || "";
   const location = searchParams.get("location") || "";
   const cost = searchParams.get("cost") || "";
+  const favoritesOnly = searchParams.get("favorites") === "1";
   // Phase 4.8: Day-of-week filter (comma-separated: "mon,tue,wed")
   const daysParam = searchParams.get("days") || "";
   const selectedDays = React.useMemo(
@@ -394,6 +396,7 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
     const currentFilters: SavedHappeningsFilters = sanitizeSavedHappeningsFilters({
       type,
       csc,
+      favorites: favoritesOnly,
       days: selectedDays,
       cost,
       city,
@@ -419,7 +422,7 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
     }
 
     setSavedSaving(false);
-  }, [city, cost, csc, radius, savedAutoApply, selectedDays, supabase, type, userId, zip]);
+  }, [city, cost, csc, favoritesOnly, radius, savedAutoApply, selectedDays, supabase, type, userId, zip]);
 
   const applySavedFilters = React.useCallback(() => {
     if (!savedFilters || !hasSavedHappeningsFilters(savedFilters)) return;
@@ -515,6 +518,9 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
       icon: <TagIcon className="w-3 h-3" />
     });
   }
+  if (favoritesOnly) {
+    activeFilters.push({ key: "favorites", label: "Favorites" });
+  }
   if (verify) {
     const verifyLabel = VERIFY_OPTIONS.find(o => o.value === verify)?.label || verify;
     activeFilters.push({ key: "verify", label: verifyLabel });
@@ -557,6 +563,7 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
   const isBluesActive = type === "blues";
   const isBluegrassActive = type === "bluegrass";
   const isComedyActive = type === "comedy";
+  const isFavoritesActive = favoritesOnly;
 
   // Build active filter summary for collapsed state
   const activeFilterSummary: string[] = [];
@@ -568,6 +575,7 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
   if (cost === "paid") activeFilterSummary.push("Paid");
   if (time === "past") activeFilterSummary.push("Past");
   if (time === "all") activeFilterSummary.push("All time");
+  if (favoritesOnly) activeFilterSummary.push("Favorites");
   // Phase 1.4: Location summary (ZIP wins over city)
   if (zip) {
     activeFilterSummary.push(`Near ${zip}`);
@@ -582,6 +590,7 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
       verify ||
       location ||
       cost ||
+      favoritesOnly ||
       daysParam ||
       city ||
       zip ||
@@ -614,6 +623,7 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
     location,
     cost,
     verify,
+    favoritesOnly,
     zip || city, // Phase 1.4: Location filter counts as one
   ].filter(Boolean).length;
 
@@ -643,6 +653,7 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
         {([
           { type: "open_mic", label: "Open Mics", emoji: "🎤", isActive: isOpenMicsActive },
           { type: "csc", label: "CSC", emoji: "⭐", isActive: isCscActive },
+          { type: "favorites", label: "Favorites", emoji: "★", isActive: isFavoritesActive },
           { type: "showcase", label: "Showcases", emoji: "🎭", isActive: isShowcaseActive },
           { type: "gig", label: "Gigs", emoji: "🎵", isActive: isGigActive },
           { type: "workshop", label: "Workshops", emoji: "📚", isActive: isWorkshopActive },
@@ -662,6 +673,8 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
                 } else {
                   router.push(buildUrl({ csc: "1", type: null }));
                 }
+              } else if (filter.type === "favorites") {
+                updateFilter("favorites", filter.isActive ? null : "1");
               } else {
                 if (filter.isActive) {
                   updateFilter("type", null);
@@ -878,7 +891,7 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
               </p>
             )}
             <p className="text-xs text-[var(--color-text-tertiary)]">
-              Weekly digest personalization uses your saved type, day, cost, and location filters.
+              Weekly digest personalization uses your saved type, day, cost, and location filters. If Favorites is enabled, favorites are always included.
             </p>
             {savedMessage && (
               <p className="text-xs text-[var(--color-text-secondary)]">{savedMessage}</p>

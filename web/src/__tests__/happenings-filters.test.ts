@@ -80,6 +80,10 @@ describe('HappeningsFilters Component', () => {
     it('should read cost param for cost filter', () => {
       expect(componentContent).toContain('searchParams.get("cost")');
     });
+
+    it('should read favorites param for favorites-only filter', () => {
+      expect(componentContent).toContain('searchParams.get("favorites")');
+    });
   });
 
   describe('Filter Options', () => {
@@ -170,6 +174,12 @@ describe('Happenings Page Filter Logic', () => {
       expect(pageContent).toContain('.eq("is_free", true)');
       expect(pageContent).toContain('.eq("is_free", false)');
       expect(pageContent).toContain('.is("is_free", null)');
+    });
+
+    it('should support favorites-only filtering', () => {
+      expect(pageContent).toContain('const favoritesOnlyFilter = params.favorites === "1"');
+      expect(pageContent).toContain('if (favoritesOnlyFilter)');
+      expect(pageContent).toContain('favoriteEventIds.has(event.id)');
     });
   });
 
