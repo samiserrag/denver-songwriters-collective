@@ -810,6 +810,18 @@ Users who want to find happenings near a specific location (their neighborhood, 
 - Commit evidence:
   - `90c9de4`, `9851a16`
 
+**Implementation closeout (phase 2):**
+- Added versioned event OG image URL helper:
+  - `web/src/lib/events/sharePreview.ts`
+- Metadata now emits `/og/event/{slug-or-id}?v={event.updated_at}` for event/open-mic canonical pages:
+  - `web/src/app/events/[id]/page.tsx`
+  - `web/src/app/open-mics/[slug]/page.tsx`
+- Added non-blocking share-preview warm-up after create/update:
+  - `web/src/app/api/my-events/route.ts`
+  - `web/src/app/api/my-events/[id]/route.ts`
+- Validation summary:
+  - `npm --prefix web test -- --run src/__tests__/og-metadata.test.ts src/__tests__/open-mics-redirect.test.ts src/__tests__/pr4-read-surface-hardening.test.ts` passed.
+
 ---
 
 ### TV Display / Lineup Control Audit & Reliability Fixes

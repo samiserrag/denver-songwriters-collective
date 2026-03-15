@@ -2,6 +2,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { formatTimeToAMPM } from "@/lib/recurrenceHumanizer";
+import { buildEventOgImageUrl } from "@/lib/events/sharePreview";
 
 /**
  * Phase 4.43d: Open Mics Slug Route
@@ -51,7 +52,7 @@ export async function generateMetadata({
   // Canonical URL points to /events/ since that's where users land
   const canonicalSlug = event.slug || event.id;
   const canonicalUrl = `${siteUrl}/events/${canonicalSlug}`;
-  const ogImageUrl = `${siteUrl}/og/event/${canonicalSlug}`;
+  const ogImageUrl = buildEventOgImageUrl(canonicalSlug, event.updated_at);
 
   return {
     title,

@@ -218,3 +218,26 @@ Validation:
 Commit evidence:
 - `90c9de4`
 - `9851a16`
+
+## 13) Phase 2 closeout — OG cache-busting + warm-up (March 2026)
+
+Follow-up hardening was added to reduce stale Facebook previews after event edits and to avoid first-share cold-path misses.
+
+Implemented:
+- Event metadata now uses a deterministic versioned OG image URL:
+  - `/og/event/{slug-or-id}?v={event.updated_at}`
+- This applies to both canonical event metadata surfaces:
+  - `web/src/app/events/[id]/page.tsx`
+  - `web/src/app/open-mics/[slug]/page.tsx`
+- Added non-blocking server warm-up after event create/update:
+  - `web/src/lib/events/sharePreview.ts`
+  - hooked from:
+    - `web/src/app/api/my-events/route.ts` (POST create)
+    - `web/src/app/api/my-events/[id]/route.ts` (PATCH update)
+
+Validation:
+- `npm --prefix web test -- --run src/__tests__/og-metadata.test.ts src/__tests__/open-mics-redirect.test.ts src/__tests__/pr4-read-surface-hardening.test.ts` passed.
+
+Expected outcome:
+- Existing event pages now emit cache-busting OG image URLs tied to `updated_at`.
+- Newly created/updated events proactively warm event HTML + OG image endpoints, reducing scrape latency and stale preview risk for Facebook.

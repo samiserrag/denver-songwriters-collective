@@ -38,6 +38,7 @@ import { getOccurrenceWindowNotice } from "@/lib/events/occurrenceWindow";
 import { getVenueDirectionsUrl } from "@/lib/venue/getDirectionsUrl";
 import { getSignupMeta } from "@/lib/events/signupMeta";
 import { isExternalEmbedsEnabled } from "@/lib/featureFlags";
+import { buildEventOgImageUrl } from "@/lib/events/sharePreview";
 
 export const dynamic = "force-dynamic";
 
@@ -89,12 +90,12 @@ export async function generateMetadata({
   const { data: event } = isUUID(id)
     ? await supabase
         .from("events")
-        .select("title, description, event_type, venue_name, slug, visibility")
+        .select("title, description, event_type, venue_name, slug, visibility, updated_at")
         .eq("id", id)
         .single()
     : await supabase
         .from("events")
-        .select("title, description, event_type, venue_name, slug, visibility")
+        .select("title, description, event_type, venue_name, slug, visibility, updated_at")
         .eq("slug", id)
         .single();
 
@@ -115,7 +116,7 @@ export async function generateMetadata({
 
   const canonicalSlug = event.slug || id;
   const canonicalUrl = `${siteUrl}/events/${canonicalSlug}`;
-  const ogImageUrl = `${siteUrl}/og/event/${canonicalSlug}`;
+  const ogImageUrl = buildEventOgImageUrl(canonicalSlug, event.updated_at);
 
   return {
     title,

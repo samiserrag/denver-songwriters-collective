@@ -6,6 +6,27 @@ This file holds the historical implementation log that was previously under the 
 
 ---
 
+### Fix: Event Sharing Preview Cache-Busting + Warm-Up (March 2026)
+
+**Summary:** Hardened social sharing reliability (especially Facebook) by versioning event OG image URLs with `event.updated_at` and warming share preview endpoints after event create/update. This removes the need for manual scraper refresh in most cases and reduces stale preview reuse.
+
+**What changed:**
+- Added shared helper module:
+  - `web/src/lib/events/sharePreview.ts`
+  - `buildEventOgImageUrl(eventIdentifier, updatedAt)` -> `/og/event/{id-or-slug}?v={updated_at}`
+  - `warmEventSharePreview(...)` -> fetches event page + OG URL with `cache: "no-store"` (fire-and-forget)
+- Wired metadata to versioned OG image URLs:
+  - `web/src/app/events/[id]/page.tsx`
+  - `web/src/app/open-mics/[slug]/page.tsx`
+- Wired warm-up on event mutations:
+  - `web/src/app/api/my-events/route.ts` (POST)
+  - `web/src/app/api/my-events/[id]/route.ts` (PATCH)
+
+**Validation:**
+- `npm --prefix web test -- --run src/__tests__/og-metadata.test.ts src/__tests__/open-mics-redirect.test.ts src/__tests__/pr4-read-surface-hardening.test.ts` passed (`74/74`).
+
+---
+
 ### Fix: Event Detail "Has Ended" Banner Could Flip Early (March 2026)
 
 **Summary:** Fixed a timezone-boundary bug where one-time event detail pages could show "This happening has ended" before local Denver midnight. The check used server-local `new Date()` against `event_date + T23:59:59`, which can mark same-day events as past when the server has already rolled to the next UTC date.

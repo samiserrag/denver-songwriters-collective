@@ -11,6 +11,7 @@ import { upsertMediaEmbeds } from "@/lib/mediaEmbedsServer";
 import { sendAdminEventAlert } from "@/lib/email/adminEventAlerts";
 import { processVenueGeocodingWithStatus } from "@/lib/venue/geocoding";
 import { Database } from "@/lib/supabase/database.types";
+import { warmEventSharePreview } from "@/lib/events/sharePreview";
 
 function normalizeLocationMode(value: unknown): "venue" | "online" | "hybrid" {
   if (typeof value !== "string") return "venue";
@@ -672,7 +673,12 @@ export async function POST(request: Request) {
   console.log("[POST /api/my-events] Creating", eventDates.length, "event(s), series_id:", seriesId, "| mode:", seriesMode);
 
   // Create all events in the series
-  const createdEvents: { id: string; event_date: string | null; slug: string | null }[] = [];
+  const createdEvents: {
+    id: string;
+    event_date: string | null;
+    slug: string | null;
+    updated_at: string | null;
+  }[] = [];
 
   for (let i = 0; i < eventDates.length; i++) {
     const eventDate = eventDates[i];
@@ -728,7 +734,12 @@ export async function POST(request: Request) {
     }
 
     console.log("[POST /api/my-events] Event created:", event.id, "| date:", eventDate, "| series_index:", i, "| traceId:", traceId);
-    createdEvents.push({ id: event.id, event_date: event.event_date, slug: event.slug || null });
+    createdEvents.push({
+      id: event.id,
+      event_date: event.event_date,
+      slug: event.slug || null,
+      updated_at: event.updated_at || null,
+    });
 
     // Add creator as host
     const { error: hostError } = await supabase
@@ -830,6 +841,15 @@ export async function POST(request: Request) {
       seriesCount: createdEvents.length,
     }).catch((emailError) => {
       console.error("[POST /api/my-events] Failed to send non-admin create admin email:", emailError);
+    });
+  }
+
+  if (firstEvent) {
+    void warmEventSharePreview({
+      eventIdentifier: firstEvent.slug || firstEvent.id,
+      updatedAt: firstEvent.updated_at,
+    }).catch((error) => {
+      console.error("[POST /api/my-events] Share preview warm-up failed:", error);
     });
   }
 

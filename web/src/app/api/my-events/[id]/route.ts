@@ -12,6 +12,7 @@ import { normalizeSignupMode } from "@/lib/events/signupModeContract";
 import { MediaEmbedValidationError, normalizeMediaEmbedUrl } from "@/lib/mediaEmbeds";
 import { upsertMediaEmbeds } from "@/lib/mediaEmbedsServer";
 import { sendAdminEventAlert } from "@/lib/email/adminEventAlerts";
+import { warmEventSharePreview } from "@/lib/events/sharePreview";
 
 const LEGACY_VERIFICATION_STATUSES = new Set(["needs_verification", "unverified"]);
 
@@ -815,6 +816,13 @@ export async function PATCH(
       console.error(`[PATCH /api/my-events/${eventId}] Failed to send non-admin edit admin email:`, emailError);
     });
   }
+
+  void warmEventSharePreview({
+    eventIdentifier: event.slug || event.id,
+    updatedAt: event.updated_at,
+  }).catch((error) => {
+    console.error(`[PATCH /api/my-events/${eventId}] Share preview warm-up failed:`, error);
+  });
 
   return NextResponse.json(event);
 }
