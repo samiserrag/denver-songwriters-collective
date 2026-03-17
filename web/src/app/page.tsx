@@ -133,8 +133,9 @@ export default async function HomePage() {
       .order("event_date", { ascending: true })
       .limit(6),
     // Tonight's happenings - all event types, published only
-    // Uses shared DISCOVERY_STATUS_FILTER and DISCOVERY_VENUE_SELECT for cross-surface consistency
-    // Homepage only uses today's group from expansion; 200 is ample for that purpose
+    // Uses shared DISCOVERY_STATUS_FILTER and DISCOVERY_VENUE_SELECT for cross-surface consistency.
+    // Query parity with /happenings upcoming mode: include dated future events,
+    // null-dated recurring events, and explicit recurrence anchors.
     supabase
       .from("events")
       .select(`
@@ -144,7 +145,10 @@ export default async function HomePage() {
       .eq("is_published", true)
       .eq("visibility", "public")
       .in("status", [...DISCOVERY_STATUS_FILTER])
-      .limit(200),
+      .or(`event_date.gte.${today},event_date.is.null,recurrence_rule.not.is.null`)
+      .order("event_date", { ascending: true })
+      .order("start_time", { ascending: true })
+      .order("id", { ascending: true }),
     // Spotlight happenings - admin-selected featured events
     supabase
       .from("events")
@@ -684,7 +688,7 @@ export default async function HomePage() {
           </div>
           {hasTonightsHappenings ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {tonightsHappenings.slice(0, 6).map((entry) => (
+              {tonightsHappenings.map((entry) => (
                 <HappeningsCard
                   key={`${entry.event.id}-${entry.dateKey}`}
                   event={entry.event}

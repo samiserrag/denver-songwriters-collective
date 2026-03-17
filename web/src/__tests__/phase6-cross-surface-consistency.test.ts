@@ -243,6 +243,53 @@ describe("Phase 6: /happenings uses shared contract constants", () => {
 });
 
 // ============================================================================
+// E. Homepage vs /happenings Upcoming Query Parity
+// ============================================================================
+
+describe("Phase 6: Upcoming query parity across homepage and /happenings", () => {
+  it("homepage tonight query includes null-dated recurring events", async () => {
+    const fs = await import("fs");
+    const source = fs.readFileSync(
+      "src/app/page.tsx",
+      "utf-8"
+    );
+    expect(source).toContain(
+      '.or(`event_date.gte.${today},event_date.is.null,recurrence_rule.not.is.null`)'
+    );
+  });
+
+  it("homepage tonight query does not cap discovery candidates with limit(200)", async () => {
+    const fs = await import("fs");
+    const source = fs.readFileSync(
+      "src/app/page.tsx",
+      "utf-8"
+    );
+    expect(source).not.toContain(".limit(200)");
+  });
+
+  it("/happenings applies deterministic ordering for stable per-day card order", async () => {
+    const fs = await import("fs");
+    const source = fs.readFileSync(
+      "src/app/happenings/page.tsx",
+      "utf-8"
+    );
+    expect(source).toContain('.order("event_date", { ascending: true })');
+    expect(source).toContain('.order("start_time", { ascending: true })');
+    expect(source).toContain('.order("id", { ascending: true })');
+  });
+
+  it("homepage tonight rail renders full tonight list (no preview slice)", async () => {
+    const fs = await import("fs");
+    const source = fs.readFileSync(
+      "src/app/page.tsx",
+      "utf-8"
+    );
+    expect(source).not.toContain("tonightsHappenings.slice(0, 6)");
+    expect(source).toContain("tonightsHappenings.map((entry) =>");
+  });
+});
+
+// ============================================================================
 // D. Override Pipeline Contract (Homepage)
 // ============================================================================
 

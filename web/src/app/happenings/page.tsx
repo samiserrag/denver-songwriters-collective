@@ -304,6 +304,12 @@ export default async function HappeningsPage({
   }
   // For "all", no additional date filter needed
 
+  // Deterministic base ordering keeps per-day cards stable across surfaces.
+  query = query
+    .order("event_date", { ascending: true })
+    .order("start_time", { ascending: true })
+    .order("id", { ascending: true });
+
   const { data: events, error } = await query;
 
   if (error) {
