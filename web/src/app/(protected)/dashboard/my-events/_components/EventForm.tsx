@@ -296,7 +296,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     recurrence_rule: event?.recurrence_rule || "",
     host_notes: event?.host_notes || "",
     // Events start as drafts by default; host must explicitly publish
-    is_published: event?.is_published ?? false, // All events are published by default
+    is_published: event?.is_published ?? false,
     // Event date field (for edit mode of non-recurring events)
     event_date: event?.event_date || "",
     // Series start date / event date (used by schedule section date inputs)
@@ -933,6 +933,12 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
 
   return (
     <form onSubmit={handleSubmit} noValidate className="space-y-6">
+      <div className="p-4 bg-amber-100 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-500/30 rounded-lg text-amber-900 dark:text-amber-200">
+        <p className="font-medium">
+          Important: Save all changes, then click <strong>Publish Event</strong> for this happening to be public.
+        </p>
+      </div>
+
       {error && (
         <div className="p-4 bg-red-100 dark:bg-red-500/10 border border-red-300 dark:border-red-500/30 rounded-lg text-red-800 dark:text-red-600">
           <p className="font-medium">{error}</p>

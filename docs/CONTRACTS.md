@@ -800,6 +800,24 @@ Open Mics link must use `/happenings?type=open_mic`, not `/open-mics`.
 
 ---
 
+## Contract: Publish Visibility Guidance (EVENTS-UX-03)
+
+**Scope:** `web/src/app/(protected)/dashboard/my-events/_components/EventForm.tsx`
+
+### Messaging Rule
+
+- Event form surfaces must show a persistent top-of-form guidance message.
+- Message must clearly state both steps:
+1. Save changes first
+2. Click `Publish Event` for the happening to be public
+
+### Visibility Rule
+
+- Draft events (`is_published=false`) are not publicly visible.
+- Public visibility requires explicit publish action after save.
+
+---
+
 ## Contract: Conversational Event Draft/Confirm (EVENTS-NL-01)
 
 > **Track Status:** February 2026 — In implementation (preview only)
