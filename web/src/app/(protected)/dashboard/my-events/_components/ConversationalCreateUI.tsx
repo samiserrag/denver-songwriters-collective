@@ -1554,8 +1554,13 @@ export function ConversationalCreateUI({
               Create Happening with AI
             </h1>
             <p className="text-[var(--color-text-secondary)]">
-              Describe your event, click Generate Draft, then answer follow-up questions in the same box.
+              Describe your event, click Generate Draft, then answer follow-up questions in the same box. Your event stays private until you publish it.
             </p>
+            <div className="mt-3 rounded-lg border border-amber-300 dark:border-amber-500/30 bg-amber-100 dark:bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-200">
+              <p className="font-medium">
+                Important: Confirm and create your draft, then click <strong>Publish Event</strong> to make it public.
+              </p>
+            </div>
             <Link
               href="/dashboard/my-events/new?classic=true"
               className="inline-block mt-2 text-sm text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors"
@@ -1752,7 +1757,7 @@ export function ConversationalCreateUI({
               </button>
             )}
 
-            {/* Phase 4B+8D: Confirm & Create — disabled after success to prevent duplicates */}
+            {/* Phase 4B+8D: Confirm & Create Draft — disabled after success to prevent duplicates */}
             {canShowCreateAction && !createdEventId && (
               <button
                 onClick={createEvent}
@@ -1760,7 +1765,7 @@ export function ConversationalCreateUI({
                 type="button"
                 className="px-4 py-2 rounded-lg bg-blue-600 text-white font-semibold disabled:opacity-60 transition-colors hover:bg-blue-700"
               >
-                {isCreating ? "Creating…" : "Confirm & Create"}
+                {isCreating ? "Creating…" : "Confirm & Create Draft"}
               </button>
             )}
 
@@ -1852,6 +1857,9 @@ export function ConversationalCreateUI({
                   <span className="text-xs text-amber-500 ml-auto">{createMessage.text}</span>
                 )}
               </div>
+              <p className="text-xs text-[var(--color-text-secondary)]">
+                This event is private until you click <strong>Publish Event</strong> in the draft.
+              </p>
 
               {/* What was written summary */}
               <div className="space-y-1">
@@ -1933,7 +1941,7 @@ export function ConversationalCreateUI({
                   href="/dashboard/my-events"
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--color-border-input)] text-xs font-semibold text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
                 >
-                  Go to My Happenings
+                  Go to My Happenings (check Drafts)
                 </Link>
                 <Link
                   href={`/dashboard/my-events/${createdSummary.eventId}`}
@@ -2044,7 +2052,7 @@ export function ConversationalCreateUI({
                 <p className="text-sm text-[var(--color-text-primary)]">
                   The draft is ready.
                   {canShowCreateAction
-                    ? " Click Confirm & Create below to save."
+                    ? " Click Confirm & Create Draft below to save, then Publish Event to make it public."
                     : ""}
                 </p>
               </div>

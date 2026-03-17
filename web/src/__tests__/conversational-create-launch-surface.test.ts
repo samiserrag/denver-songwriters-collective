@@ -213,6 +213,10 @@ describe("Phase 8E — launcher page chooser", () => {
     expect(launcherSource).toContain("/dashboard/my-events/new/conversational");
   });
 
+  it("explains that AI create starts as a draft", () => {
+    expect(launcherSource).toContain("AI creates a draft first, then you publish when ready");
+  });
+
   it("renders Use classic form chooser card", () => {
     expect(launcherSource).toContain("Use classic form");
     expect(launcherSource).toContain("/dashboard/my-events/new?classic=true");

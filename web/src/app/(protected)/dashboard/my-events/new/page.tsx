@@ -70,7 +70,7 @@ export default async function NewEventPage({
                 ✨ Create with AI
               </p>
               <p className="text-sm text-[var(--color-text-tertiary)] mt-1">
-                Describe your happening in plain language and we&apos;ll set it up for you.
+                Describe your happening in plain language. AI creates a draft first, then you publish when ready.
               </p>
             </Link>
             <Link

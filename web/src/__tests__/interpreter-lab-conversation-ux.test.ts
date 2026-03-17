@@ -51,7 +51,7 @@ describe("Phase 8B — human-readable guidance is primary", () => {
 
   it("shows ready state when draft is complete", () => {
     expect(labSource).toContain("The draft is ready.");
-    expect(labSource).toContain("Confirm & Create below to save");
+    expect(labSource).toContain("Confirm & Create Draft below to save, then Publish Event to make it public");
   });
 
   it("renders quality hints when present", () => {
@@ -165,7 +165,7 @@ describe("Phase 8B — existing functionality preserved", () => {
   });
 
   it("preserves create action button", () => {
-    expect(labSource).toContain("Confirm & Create");
+    expect(labSource).toContain("Confirm & Create Draft");
     expect(labSource).toContain("canShowCreateAction");
   });
 

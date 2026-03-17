@@ -66,8 +66,8 @@ describe("Phase 4B — create action gating", () => {
     expect(labSource).toContain("setCreateMessage(null)");
   });
 
-  it("renders Confirm & Create button text", () => {
-    expect(labSource).toContain("Confirm & Create");
+  it("renders Confirm & Create Draft button text", () => {
+    expect(labSource).toContain("Confirm & Create Draft");
   });
 
   it("disables create button during creating or submitting", () => {

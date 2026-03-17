@@ -4,7 +4,7 @@
  * Source-code assertion tests verifying that the lab page:
  * 1. Defines CreatedEventSummary interface + buildCreatedEventSummary helper.
  * 2. Shows "What Was Written" summary after create (title, recurrence, date/time, location, signup, cover).
- * 3. Provides strong next-action CTAs (Open Draft, My Happenings, Edit & Publish).
+ * 3. Provides strong next-action CTAs (Open Draft, My Happenings with draft cue, Edit & Publish).
  * 4. Prevents duplicate submit by hiding create button after success.
  * 5. Preserves all existing Phase 8A/8B/8C functionality unchanged.
  */
@@ -135,8 +135,8 @@ describe("Phase 8D — next-action CTAs", () => {
     expect(labSource).toContain("`/dashboard/my-events/${createdSummary.eventId}`");
   });
 
-  it("renders Go to My Happenings CTA", () => {
-    expect(labSource).toContain("Go to My Happenings");
+  it("renders Go to My Happenings CTA with draft cue", () => {
+    expect(labSource).toContain("Go to My Happenings (check Drafts)");
   });
 
   it("renders Edit & Publish CTA", () => {

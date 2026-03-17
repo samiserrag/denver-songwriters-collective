@@ -30,12 +30,17 @@ describe("INTERPRETER-14 — Host copy updates", () => {
 
   it("host subtitle includes 3-step cue with Generate Draft reference", () => {
     expect(src).toContain(
-      "Describe your event, click Generate Draft, then answer follow-up questions in the same box."
+      "Describe your event, click Generate Draft, then answer follow-up questions in the same box. Your event stays private until you publish it."
     );
   });
 
   it("host fallback link says 'Use classic form instead'", () => {
     expect(src).toContain("Use classic form instead");
+  });
+
+  it("host variant includes explicit publish warning", () => {
+    expect(src).toContain("Important: Confirm and create your draft");
+    expect(src).toContain("Publish Event");
   });
 });
 
