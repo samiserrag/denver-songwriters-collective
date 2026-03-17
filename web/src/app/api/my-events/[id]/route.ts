@@ -134,6 +134,44 @@ function collectChangedFieldLabels(
   return labels;
 }
 
+function collectEffectiveChangedKeys(
+  prevEvent: Record<string, unknown> | null | undefined,
+  nextEvent: Record<string, unknown> | null | undefined,
+  candidateKeys: string[]
+): string[] {
+  if (!prevEvent || !nextEvent) {
+    return [];
+  }
+
+  return candidateKeys.filter((key) => !areValuesEqual(prevEvent[key], nextEvent[key]));
+}
+
+function humanizeFieldKeyForAdminAlert(key: string): string {
+  return key
+    .split("_")
+    .filter(Boolean)
+    .map((part) => {
+      if (part.toLowerCase() === "id") return "ID";
+      return `${part.charAt(0).toUpperCase()}${part.slice(1)}`;
+    })
+    .join(" ");
+}
+
+function collectAdminAlertChangedFieldLabels(changedKeys: string[]): string[] {
+  const labels: string[] = [];
+  const seen = new Set<string>();
+
+  for (const key of changedKeys) {
+    if (NOTIFICATION_IGNORED_FIELDS.has(key)) continue;
+    const label = EVENT_UPDATE_FIELD_LABELS[key] ?? humanizeFieldKeyForAdminAlert(key);
+    if (seen.has(label)) continue;
+    seen.add(label);
+    labels.push(label);
+  }
+
+  return labels;
+}
+
 // GET - Get single event with full details (for editing)
 export async function GET(
   request: Request,
@@ -709,11 +747,17 @@ export async function PATCH(
   // Skip cancellation and explicit restore because those have separate UX/email behavior.
   const statusBecomingCancelled = body.status === "cancelled" && prevEvent?.status !== "cancelled";
   const statusBecomingRestored = isRestoreAction && prevEvent?.status === "cancelled";
-  const changedFieldLabels = collectChangedFieldLabels(
+  const effectiveChangedKeys = collectEffectiveChangedKeys(
     prevEvent as Record<string, unknown> | undefined,
     event as Record<string, unknown> | undefined,
     Object.keys(updates)
   );
+  const changedFieldLabels = collectChangedFieldLabels(
+    prevEvent as Record<string, unknown> | undefined,
+    event as Record<string, unknown> | undefined,
+    effectiveChangedKeys
+  );
+  const adminAlertChangedFieldLabels = collectAdminAlertChangedFieldLabels(effectiveChangedKeys);
   const shouldNotifyUpdate = !!prevEvent?.is_published
     && !statusBecomingCancelled
     && !statusBecomingRestored
@@ -798,8 +842,7 @@ export async function PATCH(
     });
   }
 
-  const nonAdminChangedKeys = Object.keys(updates).filter((key) => key !== "updated_at");
-  if (!isAdmin && nonAdminChangedKeys.length > 0) {
+  if (!isAdmin && adminAlertChangedFieldLabels.length > 0) {
     sendAdminEventAlert({
       type: "edited",
       actionContext: "edit_series",
@@ -811,7 +854,7 @@ export async function PATCH(
       eventSlug: event.slug || prevEvent?.slug || null,
       eventTitle: event.title || prevEvent?.title || null,
       eventDate: event.event_date || prevEvent?.event_date || null,
-      changedFields: changedFieldLabels,
+      changedFields: adminAlertChangedFieldLabels,
     }).catch((emailError) => {
       console.error(`[PATCH /api/my-events/${eventId}] Failed to send non-admin edit admin email:`, emailError);
     });

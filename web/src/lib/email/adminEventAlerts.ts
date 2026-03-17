@@ -29,6 +29,9 @@ interface AdminRecipient {
   email: string;
 }
 
+const ALERT_DEDUPE_WINDOW_MS = 2 * 60 * 1000;
+const recentAlertTimestamps = new Map<string, number>();
+
 function clean(value: string | null | undefined, fallback: string): string {
   const trimmed = value?.trim();
   return trimmed && trimmed.length > 0 ? trimmed : fallback;
@@ -36,6 +39,49 @@ function clean(value: string | null | undefined, fallback: string): string {
 
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
+}
+
+function buildAlertDedupeKey(params: {
+  type: AdminEventAlertType;
+  actionContext: AdminEventAlertAction;
+  actorUserId: string;
+  eventId: string;
+  occurrenceDateKey: string | null;
+  changedFields: string[];
+}): string {
+  const normalizedFields = [...params.changedFields]
+    .map((field) => field.trim().toLowerCase())
+    .filter(Boolean)
+    .sort()
+    .join("|");
+  return [
+    params.type,
+    params.actionContext,
+    params.actorUserId,
+    params.eventId,
+    params.occurrenceDateKey ?? "-",
+    normalizedFields || "-",
+  ].join("::");
+}
+
+function shouldSuppressDuplicateAlert(key: string, nowMs: number = Date.now()): boolean {
+  for (const [existingKey, timestamp] of recentAlertTimestamps.entries()) {
+    if (nowMs - timestamp >= ALERT_DEDUPE_WINDOW_MS) {
+      recentAlertTimestamps.delete(existingKey);
+    }
+  }
+
+  const previousTimestamp = recentAlertTimestamps.get(key);
+  if (previousTimestamp !== undefined && nowMs - previousTimestamp < ALERT_DEDUPE_WINDOW_MS) {
+    return true;
+  }
+
+  recentAlertTimestamps.set(key, nowMs);
+  return false;
+}
+
+export function __resetAdminEventAlertDedupeForTests(): void {
+  recentAlertTimestamps.clear();
 }
 
 async function resolveAdminRecipients(
@@ -101,6 +147,21 @@ export async function sendAdminEventAlert(params: SendAdminEventAlertParams): Pr
         ? "Edit occurrence"
         : "Edit series";
 
+  const dedupeKey = buildAlertDedupeKey({
+    type,
+    actionContext,
+    actorUserId,
+    eventId,
+    occurrenceDateKey,
+    changedFields,
+  });
+  if (shouldSuppressDuplicateAlert(dedupeKey)) {
+    console.info(
+      `[adminEventAlerts] Suppressing duplicate alert type=${type} action=${actionContext} eventId=${eventId} actorUserId=${actorUserId}`
+    );
+    return;
+  }
+
   const subject =
     type === "created"
       ? `[CSC Activity] Event created by non-admin (${actionLabel}): ${safeTitle}`
@@ -109,7 +170,7 @@ export async function sendAdminEventAlert(params: SendAdminEventAlertParams): Pr
   const changedLines =
     type === "edited" && changedFields.length > 0
       ? changedFields.slice(0, 20).map((field) => `- ${field}`).join("\n")
-      : "- (field-level diff not available)";
+      : "- (no effective field changes detected)";
 
   const html = `
     <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #111827;">

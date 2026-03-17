@@ -23,7 +23,7 @@ vi.mock("@/lib/email/render", () => ({
   SITE_URL: "https://coloradosongwriterscollective.org",
 }));
 
-import { sendAdminEventAlert } from "@/lib/email/adminEventAlerts";
+import { __resetAdminEventAlertDedupeForTests, sendAdminEventAlert } from "@/lib/email/adminEventAlerts";
 
 describe("sendAdminEventAlert", () => {
   function makeSupabaseMock(rows: Array<{ id: string; email: string | null }> | null, error: unknown = null) {
@@ -38,6 +38,7 @@ describe("sendAdminEventAlert", () => {
     sendEmailMock.mockReset();
     sendAdminWithPrefsMock.mockReset();
     getServiceRoleClientMock.mockReset();
+    __resetAdminEventAlertDedupeForTests();
     sendEmailMock.mockResolvedValue(true);
     sendAdminWithPrefsMock.mockResolvedValue(true);
   });
@@ -119,5 +120,59 @@ describe("sendAdminEventAlert", () => {
     expect(payload.to).toBe("admin@example.com");
     expect(payload.templateName).toBe("adminEventLifecycleAlert");
     consoleErrorSpy.mockRestore();
+  });
+
+  it("suppresses duplicate alerts within the dedupe window", async () => {
+    const supabase = makeSupabaseMock([{ id: "admin-1", email: "admin@example.com" }]);
+    getServiceRoleClientMock.mockReturnValue(supabase);
+
+    const payload = {
+      type: "edited" as const,
+      actionContext: "edit_series" as const,
+      actorUserId: "user-9",
+      actorRole: "member",
+      actorName: "Dup Test",
+      actorEmail: "dup@example.com",
+      eventId: "event-dup",
+      eventTitle: "Duplicate Test",
+      eventDate: "2026-03-17",
+      changedFields: ["Date", "Time"],
+    };
+
+    await sendAdminEventAlert(payload);
+    await sendAdminEventAlert(payload);
+
+    expect(sendAdminWithPrefsMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not suppress alerts when the changed field set is different", async () => {
+    const supabase = makeSupabaseMock([{ id: "admin-1", email: "admin@example.com" }]);
+    getServiceRoleClientMock.mockReturnValue(supabase);
+
+    await sendAdminEventAlert({
+      type: "edited",
+      actionContext: "edit_series",
+      actorUserId: "user-10",
+      actorRole: "member",
+      actorName: "Editor",
+      actorEmail: "editor@example.com",
+      eventId: "event-10",
+      eventTitle: "Field Diff A",
+      changedFields: ["Date"],
+    });
+
+    await sendAdminEventAlert({
+      type: "edited",
+      actionContext: "edit_series",
+      actorUserId: "user-10",
+      actorRole: "member",
+      actorName: "Editor",
+      actorEmail: "editor@example.com",
+      eventId: "event-10",
+      eventTitle: "Field Diff B",
+      changedFields: ["Venue"],
+    });
+
+    expect(sendAdminWithPrefsMock).toHaveBeenCalledTimes(2);
   });
 });
