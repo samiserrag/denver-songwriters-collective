@@ -172,6 +172,7 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
   // Read current values from URL
   const q = searchParams.get("q") || "";
   const time = searchParams.get("time") || "upcoming";
+  const dateFilter = searchParams.get("date") || "";
   const type = searchParams.get("type") || "";
   const csc = searchParams.get("csc") === "1";
   const verify = searchParams.get("verify") || "";
@@ -529,6 +530,16 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
     const timeLabel = TIME_OPTIONS.find(o => o.value === time)?.label || time;
     activeFilters.push({ key: "time", label: timeLabel });
   }
+  if (dateFilter) {
+    const displayDate = new Date(`${dateFilter}T12:00:00Z`);
+    const formattedDate = new Intl.DateTimeFormat("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      timeZone: "UTC",
+    }).format(displayDate);
+    activeFilters.push({ key: "date", label: `On ${formattedDate}` });
+  }
   // Phase 4.8: Day-of-week filter
   if (selectedDays.length > 0) {
     const dayLabels = selectedDays.map((d) => DAY_OPTIONS.find((o) => o.value === d)?.label || d).join(", ");
@@ -575,6 +586,7 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
   if (cost === "paid") activeFilterSummary.push("Paid");
   if (time === "past") activeFilterSummary.push("Past");
   if (time === "all") activeFilterSummary.push("All time");
+  if (dateFilter) activeFilterSummary.push(`On ${dateFilter}`);
   if (favoritesOnly) activeFilterSummary.push("Favorites");
   // Phase 1.4: Location summary (ZIP wins over city)
   if (zip) {
@@ -595,7 +607,8 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
       city ||
       zip ||
       (radius && radius !== "10") ||
-      (time && time !== "upcoming")
+      (time && time !== "upcoming") ||
+      dateFilter
   );
 
   React.useEffect(() => {
@@ -618,6 +631,7 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
   // Count active filters (excluding quick filters and search)
   const advancedFilterCount = [
     selectedDays.length > 0,
+    dateFilter,
     time !== "upcoming" && time !== "",
     type && !isOpenMicsActive && !isShowcaseActive && !isGigActive && !isWorkshopActive && !isJamSessionsActive && !isPoetryActive && !isIrishActive && !isBluesActive && !isBluegrassActive && !isComedyActive,
     location,
@@ -648,7 +662,7 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
   return (
     <div className={cn("space-y-4", className)}>
       {/* Quick Filter Cards - engaging buttons with emoji icons in flexible wrap layout */}
-      <div className="flex flex-wrap gap-2 sm:gap-3">
+      <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 snap-x sm:mx-0 sm:px-0 sm:overflow-visible sm:flex-wrap sm:pb-0 sm:gap-3">
         {/* Type filter buttons with emojis from EVENT_TYPE_CONFIG */}
         {([
           { type: "open_mic", label: "Open Mics", emoji: "🎤", isActive: isOpenMicsActive },
@@ -684,14 +698,14 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
               }
             }}
             className={cn(
-              "flex-1 min-w-[90px] py-3 px-3 rounded-xl text-center font-medium transition-all",
+              "shrink-0 min-w-[108px] sm:min-w-[120px] sm:flex-1 py-2.5 sm:py-3 px-3 rounded-xl text-center font-medium transition-all snap-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-primary)]/40",
               filter.isActive
                 ? "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] shadow-lg"
                 : "bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] border border-[var(--color-border-default)] hover:border-[var(--color-accent-primary)] hover:shadow-md"
             )}
           >
-            <span className="text-xl block mb-0.5">{filter.emoji}</span>
-            <span className="text-sm">{filter.label}</span>
+            <span className="text-lg sm:text-xl block mb-0.5">{filter.emoji}</span>
+            <span className="text-xs sm:text-sm">{filter.label}</span>
           </button>
         ))}
       </div>
@@ -718,9 +732,12 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
       </div>
 
       {/* Phase 1.41: Location Filter Row - Always visible (moved outside <details>) */}
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-[var(--color-text-secondary)]">Location</label>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+      <div className="rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] p-3 sm:p-4 space-y-3">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+          <label className="text-sm font-medium text-[var(--color-text-secondary)]">Location</label>
+          <p className="text-xs text-[var(--color-text-tertiary)]">Use city or ZIP to focus nearby results.</p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
           <div className="space-y-1">
             <input
               type="text"
@@ -914,7 +931,7 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
               )}
             </span>
             {activeFilterSummary.length > 0 && (
-              <span className="text-sm text-[var(--color-text-secondary)]">
+              <span className="hidden sm:inline text-sm text-[var(--color-text-secondary)]">
                 {activeFilterSummary.join(" · ")}
               </span>
             )}
@@ -926,14 +943,14 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
           {/* Days */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-[var(--color-text-secondary)]">Days</label>
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-wrap gap-1.5 sm:gap-2">
               {DAY_OPTIONS.map((day) => (
                 <button
                   key={day.value}
                   onClick={() => toggleDay(day.value)}
                   title={day.full}
                   className={cn(
-                    "px-3 py-1.5 text-sm font-medium rounded-lg transition-colors",
+                    "px-3 py-2 text-sm font-medium rounded-lg transition-colors",
                     selectedDays.includes(day.value)
                       ? "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)]"
                       : "bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
@@ -946,7 +963,7 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
           </div>
 
           {/* When + Type + Cost Row */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-[var(--color-text-secondary)]">When</label>
               <select
@@ -998,7 +1015,7 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
             <div className="flex justify-end pt-2">
               <button
                 onClick={clearAll}
-                className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] underline"
+                className="inline-flex items-center justify-center px-3 py-2 rounded-lg border border-[var(--color-border-default)] text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-accent)] transition-colors"
               >
                 Clear all filters
               </button>

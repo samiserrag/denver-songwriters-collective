@@ -84,13 +84,14 @@ export function StickyControls({ todayKey, windowStartKey, windowEndKey, timeFil
       {showFilters ? <HappeningsFilters /> : <HappeningsFiltersShell />}
 
       {/* Date Jump Control + Cancelled Toggle Row */}
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-start sm:justify-between">
         <Suspense fallback={null}>
           <DateJumpControl
             todayKey={todayKey}
             windowStartKey={windowStartKey}
             windowEndKey={windowEndKey}
             timeFilter={timeFilter}
+            className="w-full"
           />
         </Suspense>
 
@@ -99,7 +100,7 @@ export function StickyControls({ todayKey, windowStartKey, windowEndKey, timeFil
           <button
             onClick={toggleShowCancelled}
             className={cn(
-              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
+              "inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors self-start",
               showCancelled
                 ? "bg-red-500/20 text-red-400 border border-red-500/30"
                 : "bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] border border-[var(--color-border-default)] hover:border-red-500/30 hover:text-red-400"

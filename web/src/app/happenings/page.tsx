@@ -45,6 +45,7 @@ export const dynamic = "force-dynamic";
  * - showCancelled: 1 = show cancelled occurrences (default: hidden)
  * - pastOffset: number of 90-day chunks to go back for progressive loading (default: 0)
  * - view: timeline|series|map (Phase 4.54/1.0, default: timeline)
+ * - date: YYYY-MM-DD single-date filter (applies to timeline/series/map)
  * - city: city name for location filter (Phase 1.4)
  * - zip: ZIP code for location filter (Phase 1.4, wins over city if both present)
  * - radius: radius in miles for nearby venues (Phase 1.4, default: 10, valid: 5|10|25|50)
@@ -63,6 +64,7 @@ interface HappeningsSearchParams {
   showCancelled?: string;
   pastOffset?: string;
   view?: string;
+  date?: string;
   city?: string;
   zip?: string;
   radius?: string;
@@ -98,6 +100,8 @@ export default async function HappeningsPage({
   const showCancelled = params.showCancelled === "1";
   // Progressive loading offset for past events (each offset = 90 days further back)
   const pastOffset = parseInt(params.pastOffset || "0", 10) || 0;
+  const dateFilterCandidate = params.date?.trim() || "";
+  const dateFilter = /^\d{4}-\d{2}-\d{2}$/.test(dateFilterCandidate) ? dateFilterCandidate : "";
   // Phase 4.54/1.0: View mode (timeline = grouped by date, series = grouped by event, map = geographic)
   const viewMode: HappeningsViewMode =
     params.view === "series" ? "series" :
@@ -488,11 +492,26 @@ export default async function HappeningsPage({
     // Location filter active but no venues found - empty unknown events too
     filteredUnknownEvents = [];
   }
+
+  // Optional single-date filter for direct date controls (Today/Tomorrow/Jump to date).
+  // This runs before map pin generation so map view respects date filtering.
+  if (dateFilter) {
+    const entriesForDate = filteredGroups.get(dateFilter) || [];
+    filteredGroups = entriesForDate.length > 0
+      ? new Map([[dateFilter, entriesForDate]])
+      : new Map();
+    // Unknown schedule entries are intentionally excluded when a specific date is selected.
+    filteredUnknownEvents = [];
+  }
+
   const sortedUnknownEvents = filteredUnknownEvents.sort((a: any, b: any) => {
     const titleA = a.title || "";
     const titleB = b.title || "";
     return titleA.localeCompare(titleB);
   });
+  const dateFilteredEventIds = dateFilter
+    ? new Set((filteredGroups.get(dateFilter) || []).map((entry) => entry.event.id))
+    : null;
 
   // Phase 4.23: Group cancelled occurrences by date for Today/Tomorrow disclosure
   const tomorrow = addDaysDenver(today, 1);
@@ -544,7 +563,7 @@ export default async function HappeningsPage({
   }
 
   // Hero only shows on unfiltered /happenings (no filters active)
-  const hasFilters = searchQuery || typeFilter || cscFilter || verifyFilter || locationFilter || costFilter || favoritesOnlyFilter || daysFilter.length > 0 || (timeFilter && timeFilter !== "upcoming") || hasLocationFilter;
+  const hasFilters = searchQuery || typeFilter || cscFilter || verifyFilter || locationFilter || costFilter || favoritesOnlyFilter || daysFilter.length > 0 || (timeFilter && timeFilter !== "upcoming") || hasLocationFilter || dateFilter;
   const showHero = !hasFilters;
 
   // Page title based on active type filter
@@ -607,6 +626,18 @@ export default async function HappeningsPage({
     }
     if (timeFilter && timeFilter !== "upcoming") {
       parts.push(timeFilter === "past" ? "Past" : "All time");
+    }
+    if (dateFilter) {
+      const displayDate = new Date(`${dateFilter}T12:00:00Z`);
+      parts.push(
+        `On ${new Intl.DateTimeFormat("en-US", {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+          timeZone: "UTC",
+        }).format(displayDate)}`
+      );
     }
     // Phase 1.4: Location filter summary
     if (locationFilterResult) {
@@ -921,6 +952,9 @@ export default async function HappeningsPage({
               });
             } else if (hasLocationFilter && locationFilterResult?.emptyReason) {
               seriesList = [];
+            }
+            if (dateFilter && dateFilteredEventIds) {
+              seriesList = seriesList.filter((event: any) => dateFilteredEventIds.has(event.id));
             }
 
             return (
