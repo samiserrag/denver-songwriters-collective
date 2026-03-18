@@ -803,6 +803,13 @@ export default async function HappeningsPage({
 
     mapPinResult = occurrencesToMapPins(allOccurrences, mapConfig);
   }
+  const mapVisibleOccurrences = mapPinResult
+    ? mapPinResult.pins.reduce((sum, pin) => sum + pin.events.length, 0)
+    : 0;
+  const mapVisibleVenues = mapPinResult?.pins.length || 0;
+  const mapExcludedOccurrences = mapPinResult
+    ? mapPinResult.excludedOnlineOnly + mapPinResult.excludedMissingCoords
+    : 0;
 
   return (
     <>
@@ -886,7 +893,39 @@ export default async function HappeningsPage({
 
         {/* Results summary - humanized, Phase 4.55 */}
         <div className="py-3">
-          {timeFilter === "upcoming" && !hasFilters ? (
+          {viewMode === "map" ? (
+            <div className="text-sm text-[var(--color-text-secondary)]">
+              {mapPinResult?.limitExceeded ? (
+                <>
+                  <span className="font-medium text-[var(--color-text-primary)]">
+                    {mapPinResult.totalProcessed} {mapPinResult.totalProcessed === 1 ? "happening" : "happenings"}
+                  </span>
+                  {" "}match current filters (too many venues to render on map)
+                </>
+              ) : (
+                <>
+                  <span className="font-medium text-[var(--color-text-primary)]">
+                    {mapVisibleOccurrences} {mapVisibleOccurrences === 1 ? "happening" : "happenings"}
+                  </span>
+                  {" "}shown on map across{" "}
+                  <span className="font-medium text-[var(--color-text-primary)]">
+                    {mapVisibleVenues}
+                  </span>
+                  {" "}{mapVisibleVenues === 1 ? "venue" : "venues"}
+                  {mapExcludedOccurrences > 0 && (
+                    <span className="ml-2 text-[var(--color-text-tertiary)]">
+                      · {mapExcludedOccurrences} not mappable (online-only or no venue assigned)
+                    </span>
+                  )}
+                </>
+              )}
+              {filterSummary.length > 0 && (
+                <span className="ml-2 text-[var(--color-text-tertiary)]">
+                  · {filterSummary.join(", ")}
+                </span>
+              )}
+            </div>
+          ) : timeFilter === "upcoming" && !hasFilters ? (
             /* Humanized summary for default view (rolling ~3 month upcoming window) */
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
               {tonightCount > 0 && (

@@ -31,6 +31,8 @@
    - Location controls are grouped in a dedicated responsive card.
    - Advanced filters collapse cleanly and stack correctly on smaller screens.
    - Date controls are presented in a dedicated card with larger touch targets and explicit active-state label.
+7. Map-mode summary now reports map-visible counts (not timeline totals), with explicit excluded count:
+   - Example: `24 happenings shown on map across 24 venues · 4 not mappable`.
 
 ## Risk and coupling notes
 
@@ -68,7 +70,56 @@ Validated URL + behavior:
 6. Switch views:
    - timeline retains `date=...`
    - series retains `date=...` and only shows series matching that date
+7. Confirm map summary matches map-visible counts and no longer conflicts with pin stats.
 
 ## Follow-up
 
 - Add/expand integration tests for `date` query-param behavior across timeline/series/map to prevent regressions in future filter refactors.
+
+## Production data remediation (2026-03-18)
+
+Issue observed in production after UI fixes:
+
+- Date-filtered map view showed summary totals (e.g. `28 happenings across 1 date`) that did not match map pin totals (`24 venues with 24 happenings`).
+
+Root cause:
+
+- 5 published/public `location_mode='venue'` events had no `venue_id` and no custom coordinates, so they were excluded from map pins.
+
+Remediation applied directly in production DB:
+
+1. Created/finalized venue records and linked affected events:
+   - `Bizarre Electronics Lounge` (`506 11th Ave, Longmont, CO 80501`)
+   - `Couched Studios` (`9456 Cody Drive, Broomfield, CO 80021`)
+   - `Jamestown Mercantile` (`108 Main St, Jamestown, CO 80455`)
+   - `The Rusty Bucket Bar and Grill` (`3355 S Wadsworth Blvd Unit G101, Lakewood, CO 80227`)
+   - `Vision Quest Brewery` (`2510 47th St Unit A2, Boulder, CO 80301`)
+2. Added coordinates for all but Couched Studios (Broomfield centroid fallback applies until exact coordinates are confirmed).
+3. Updated the 5 event rows to set `events.venue_id`.
+
+Post-fix dataset audit:
+
+```sql
+with discovery as (
+  select id, location_mode, venue_id, custom_latitude, custom_longitude
+  from public.events
+  where is_published = true
+    and visibility = 'public'
+    and status in ('active', 'needs_verification')
+)
+select
+  count(*) as total_discovery_events,
+  count(*) filter (where location_mode = 'online') as online_only,
+  count(*) filter (
+    where location_mode <> 'online'
+      and venue_id is null
+      and (custom_latitude is null or custom_longitude is null)
+  ) as strictly_unmappable_non_online
+from discovery;
+```
+
+Outcome:
+
+- `total_discovery_events = 155`
+- `online_only = 0`
+- `strictly_unmappable_non_online = 0`
