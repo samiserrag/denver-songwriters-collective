@@ -342,6 +342,15 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     };
   }, [pendingCoverPreviewUrl]);
 
+  // Keep form publish state aligned with server state after Publish/Unpublish actions.
+  useEffect(() => {
+    if (event?.is_published === undefined) return;
+    setFormData(prev => {
+      if (prev.is_published === event.is_published) return prev;
+      return { ...prev, is_published: event.is_published };
+    });
+  }, [event?.is_published]);
+
   const normalizeImageUrl = (url: string) => url.split("?")[0];
 
   // Phase 4.0: Location selection mode - "venue" or "custom"
@@ -751,8 +760,10 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         effectiveDayOfWeek = isRecurring && anchorDate ? weekdayNameFromDateMT(anchorDate) : null;
       }
 
+      const formDataWithoutPublishState = { ...formData };
+      delete formDataWithoutPublishState.is_published;
       const body = {
-        ...formData,
+        ...formDataWithoutPublishState,
         // Override recurrence fields based on series mode
         recurrence_rule: effectiveRecurrenceRule,
         day_of_week: effectiveDayOfWeek,
@@ -760,7 +771,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         // Phase 4.43: capacity is independent of timeslots (RSVP always available)
         capacity: formData.capacity ? parseInt(formData.capacity) : null,
         cover_image_url: mode === "create" && pendingCoverFile ? null : coverImageUrl,
-        is_published: formData.is_published,
+        ...(mode === "create" ? { is_published: formData.is_published } : {}),
         // Slot configuration
         has_timeslots: slotConfig.has_timeslots,
         total_slots: slotConfig.has_timeslots ? slotConfig.total_slots : null,

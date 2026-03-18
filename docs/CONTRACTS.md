@@ -816,6 +816,17 @@ Open Mics link must use `/happenings?type=open_mic`, not `/open-mics`.
 - Draft events (`is_published=false`) are not publicly visible.
 - Public visibility requires explicit publish action after save.
 
+### Persisted-State Confirmation Rule
+
+- Publish/unpublish UI must not present success solely from optimistic client assumptions.
+- After toggle requests, host-visible success must correspond to persisted backend state (`is_published`).
+- If backend state does not match requested state, UI must surface a visible error (no silent failure).
+- Edit-series saves must not mutate `is_published` unless the user explicitly used publish/unpublish controls.
+
+### Guard Coverage
+
+- `web/src/__tests__/publish-state-persistence-guard.test.ts`
+
 ---
 
 ## Contract: Conversational Event Draft/Confirm (EVENTS-NL-01)

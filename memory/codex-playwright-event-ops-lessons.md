@@ -61,3 +61,15 @@ const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
 ## Category defaults
 - Use "Music" for songwriter/music events unless clearly another type.
 - Available categories: Music, Comedy, Poetry, Variety, Other.
+
+## Publish verification is mandatory (no optimistic trust)
+- A "published" toast/banner is not sufficient proof by itself.
+- After publish, always verify all three:
+  1. Edit page status badge is `Live` (not `Draft`)
+  2. Event detail page does not show `Draft Preview`
+  3. Event appears on `/happenings` (use search by venue/title)
+- If publish appears to succeed but event remains draft:
+  1. Click `Save Changes`
+  2. Click `Publish Event`
+  3. Re-verify the three checks above
+- Never tell the user an event is live until these checks pass.
