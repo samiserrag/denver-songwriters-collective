@@ -11,6 +11,7 @@ interface SignUpResult {
   ok: boolean;
   error?: string;
   message?: string;
+  requiresEmailConfirmation?: boolean;
 }
 
 export async function signUpWithEmail(
@@ -45,12 +46,27 @@ export async function signUpWithEmail(
       return { ok: false, error: error.message ?? "Unable to create account." };
     }
 
-    // Log the result - user will be null if email already exists (Supabase anti-enumeration)
-    console.log("[Email Signup] Success - user created:", !!data?.user, "session:", !!data?.session);
+    // user can be null for existing accounts (anti-enumeration). When session or
+    // confirmed_at/email_confirmed_at is present, the account is already active.
+    const hasSession = !!data?.session;
+    const hasConfirmedUser = !!(data?.user?.email_confirmed_at || data?.user?.confirmed_at);
+    const requiresEmailConfirmation = !hasSession && !hasConfirmedUser;
+
+    console.log(
+      "[Email Signup] Success - user created:",
+      !!data?.user,
+      "session:",
+      hasSession,
+      "requiresEmailConfirmation:",
+      requiresEmailConfirmation,
+    );
 
     return {
       ok: true,
-      message: "Check your email for a confirmation link.",
+      message: requiresEmailConfirmation
+        ? "Check your email for a confirmation link."
+        : "Account created successfully.",
+      requiresEmailConfirmation,
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unable to create account.";

@@ -112,6 +112,15 @@ After configuring:
 - Regenerate app-specific password in Fastmail
 - Ensure username is the full email address (e.g., `user@fastmail.com`)
 
+### Signups Auto-Confirming Unexpectedly
+- Symptom: users report no confirm-signup email, and `email_confirmed_at` is set immediately.
+- Check `Authentication > Sign In / Providers > User Signups > Confirm email` in Supabase.
+- If OFF, turn it ON and save.
+- Run impact report:
+  - `supabase/scripts/auth_signup_confirmation_gap_report.sql`
+- See incident details:
+  - `docs/postmortems/2026-03-18-auth-confirm-email-regression.md`
+
 ---
 
 ## Related Documentation

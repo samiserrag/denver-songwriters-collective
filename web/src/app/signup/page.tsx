@@ -45,7 +45,15 @@ function SignupForm() {
       return;
     }
 
-    // Redirect to confirmation sent page
+    // If Supabase returns an active session/already-confirmed user, proceed
+    // directly to onboarding instead of showing the confirm-email screen.
+    if (result.requiresEmailConfirmation === false) {
+      router.refresh();
+      router.push("/onboarding/profile?signup=1");
+      return;
+    }
+
+    // Otherwise keep the explicit confirm-email flow.
     router.push(`/auth/confirm-sent?email=${encodeURIComponent(email)}`);
   }
 
