@@ -10,6 +10,25 @@ import {
   toSlug,
 } from "@/lib/organizations";
 
+type MemberOption = {
+  id: string;
+  full_name: string | null;
+  slug: string | null;
+  avatar_url: string | null;
+  role: string | null;
+  is_public: boolean;
+  is_songwriter: boolean | null;
+  is_host: boolean | null;
+  is_studio: boolean | null;
+  is_fan: boolean | null;
+};
+
+type OrganizationMemberTagInput = {
+  profile_id: string;
+  sort_order: number;
+  tag_reason: string;
+};
+
 type OrganizationFormState = {
   slug: string;
   name: string;
@@ -27,28 +46,40 @@ type OrganizationFormState = {
   gallery_image_urls: string;
   fun_note: string;
   sort_order: number;
+  member_tags: OrganizationMemberTagInput[];
 };
 
-const EMPTY_FORM: OrganizationFormState = {
-  slug: "",
-  name: "",
-  website_url: "",
-  city: "",
-  organization_type: "",
-  short_blurb: "",
-  why_it_matters: "",
-  tags: "",
-  featured: false,
-  is_active: true,
-  visibility: "unlisted",
-  logo_image_url: "",
-  cover_image_url: "",
-  gallery_image_urls: "",
-  fun_note: "",
-  sort_order: 0,
-};
+function createEmptyForm(): OrganizationFormState {
+  return {
+    slug: "",
+    name: "",
+    website_url: "",
+    city: "",
+    organization_type: "",
+    short_blurb: "",
+    why_it_matters: "",
+    tags: "",
+    featured: false,
+    is_active: true,
+    visibility: "unlisted",
+    logo_image_url: "",
+    cover_image_url: "",
+    gallery_image_urls: "",
+    fun_note: "",
+    sort_order: 0,
+    member_tags: [],
+  };
+}
 
 function fromRecord(record: OrganizationRecord): OrganizationFormState {
+  const memberTags = [...(record.member_tags || [])]
+    .sort((a, b) => a.sort_order - b.sort_order)
+    .map((tag) => ({
+      profile_id: tag.profile_id,
+      sort_order: tag.sort_order,
+      tag_reason: tag.tag_reason || "",
+    }));
+
   return {
     slug: record.slug,
     name: record.name,
@@ -66,6 +97,7 @@ function fromRecord(record: OrganizationRecord): OrganizationFormState {
     gallery_image_urls: stringifyGallery(record.gallery_image_urls),
     fun_note: record.fun_note ?? "",
     sort_order: record.sort_order ?? 0,
+    member_tags: memberTags,
   };
 }
 
@@ -87,17 +119,34 @@ function toPayload(form: OrganizationFormState) {
     gallery_image_urls: parseGalleryInput(form.gallery_image_urls),
     fun_note: form.fun_note.trim(),
     sort_order: Number(form.sort_order) || 0,
+    member_tags: form.member_tags
+      .map((tag) => ({
+        profile_id: tag.profile_id,
+        sort_order: Number(tag.sort_order) || 0,
+        tag_reason: tag.tag_reason.trim(),
+      }))
+      .filter((tag) => tag.profile_id),
   };
+}
+
+function getMemberTypeLabel(member: MemberOption): string {
+  if (member.is_studio || member.role === "studio") return "Studio";
+  if (member.is_songwriter && member.is_host) return "Songwriter + Host";
+  if (member.is_songwriter || member.role === "performer") return "Songwriter";
+  if (member.is_host || member.role === "host") return "Host";
+  if (member.is_fan || member.role === "fan") return "Fan";
+  return "Member";
 }
 
 export default function AdminOrganizationsClient() {
   const [organizations, setOrganizations] = useState<OrganizationRecord[]>([]);
+  const [memberOptions, setMemberOptions] = useState<MemberOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [createForm, setCreateForm] = useState<OrganizationFormState>(EMPTY_FORM);
+  const [createForm, setCreateForm] = useState<OrganizationFormState>(createEmptyForm());
   const [editing, setEditing] = useState<OrganizationRecord | null>(null);
-  const [editForm, setEditForm] = useState<OrganizationFormState>(EMPTY_FORM);
+  const [editForm, setEditForm] = useState<OrganizationFormState>(createEmptyForm());
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const total = organizations.length;
@@ -117,7 +166,15 @@ export default function AdminOrganizationsClient() {
     if (!res.ok) {
       throw new Error(data.error || "Failed to fetch organizations");
     }
-    setOrganizations(data as OrganizationRecord[]);
+
+    if (Array.isArray(data)) {
+      setOrganizations(data as OrganizationRecord[]);
+      setMemberOptions([]);
+      return;
+    }
+
+    setOrganizations((data.organizations || []) as OrganizationRecord[]);
+    setMemberOptions((data.memberOptions || []) as MemberOption[]);
   }
 
   useEffect(() => {
@@ -154,7 +211,7 @@ export default function AdminOrganizationsClient() {
       if (!res.ok) throw new Error(data.error || "Failed to create organization");
 
       await fetchOrganizations();
-      setCreateForm(EMPTY_FORM);
+      setCreateForm(createEmptyForm());
       setShowCreateForm(false);
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to create organization");
@@ -179,7 +236,7 @@ export default function AdminOrganizationsClient() {
 
       await fetchOrganizations();
       setEditing(null);
-      setEditForm(EMPTY_FORM);
+      setEditForm(createEmptyForm());
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to update organization");
     } finally {
@@ -200,6 +257,121 @@ export default function AdminOrganizationsClient() {
     } finally {
       setActionLoading(null);
     }
+  }
+
+  function renderMemberTags(
+    form: OrganizationFormState,
+    setForm: (next: OrganizationFormState) => void
+  ) {
+    const selectedIds = new Set(form.member_tags.map((tag) => tag.profile_id));
+    const availableMembers = memberOptions.filter((member) => !selectedIds.has(member.id));
+
+    return (
+      <div className="md:col-span-2 space-y-3 rounded-lg border border-[var(--color-border-default)] p-4 bg-[var(--color-bg-tertiary)]/50">
+        <div>
+          <h4 className="text-sm font-semibold text-[var(--color-text-primary)]">Tagged Members</h4>
+          <p className="text-xs text-[var(--color-text-tertiary)]">
+            Add linked members to show as pill links on this organization card.
+          </p>
+        </div>
+
+        <select
+          value=""
+          onChange={(e) => {
+            const profileId = e.target.value;
+            if (!profileId) return;
+            setForm({
+              ...form,
+              member_tags: [
+                ...form.member_tags,
+                {
+                  profile_id: profileId,
+                  sort_order: (form.member_tags.length + 1) * 10,
+                  tag_reason: "",
+                },
+              ],
+            });
+          }}
+          className="w-full px-3 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
+        >
+          <option value="">Add tagged member...</option>
+          {availableMembers.map((member) => (
+            <option key={member.id} value={member.id}>
+              {(member.full_name || "Unnamed member") +
+                " - " +
+                getMemberTypeLabel(member) +
+                (member.is_public ? "" : " (private profile)")}
+            </option>
+          ))}
+        </select>
+
+        {form.member_tags.length > 0 ? (
+          <div className="space-y-2">
+            {form.member_tags.map((tag, index) => {
+              const member = memberOptions.find((option) => option.id === tag.profile_id) || null;
+              return (
+                <div
+                  key={tag.profile_id}
+                  className="rounded border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] p-3"
+                >
+                  <div className="flex items-center justify-between gap-3 mb-2">
+                    <p className="text-sm text-[var(--color-text-primary)] font-medium">
+                      {member?.full_name || "Unknown member"}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setForm({
+                          ...form,
+                          member_tags: form.member_tags.filter((_, idx) => idx !== index),
+                        })
+                      }
+                      className="text-xs text-red-500 hover:text-red-400"
+                    >
+                      Remove
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <input
+                      type="number"
+                      value={tag.sort_order}
+                      onChange={(e) => {
+                        const sortOrder = parseInt(e.target.value || "0", 10) || 0;
+                        setForm({
+                          ...form,
+                          member_tags: form.member_tags.map((item, idx) =>
+                            idx === index ? { ...item, sort_order: sortOrder } : item
+                          ),
+                        });
+                      }}
+                      placeholder="Sort order"
+                      className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
+                    />
+                    <input
+                      type="text"
+                      value={tag.tag_reason}
+                      onChange={(e) => {
+                        setForm({
+                          ...form,
+                          member_tags: form.member_tags.map((item, idx) =>
+                            idx === index ? { ...item, tag_reason: e.target.value } : item
+                          ),
+                        });
+                      }}
+                      placeholder="Optional short reason"
+                      className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-xs text-[var(--color-text-tertiary)]">No tagged members yet.</p>
+        )}
+      </div>
+    );
   }
 
   function renderForm(
@@ -333,6 +505,8 @@ export default function AdminOrganizationsClient() {
           />
           Active
         </label>
+
+        {renderMemberTags(form, setForm)}
       </div>
     );
   }
@@ -411,7 +585,7 @@ export default function AdminOrganizationsClient() {
                 type="button"
                 onClick={() => {
                   setEditing(null);
-                  setEditForm(EMPTY_FORM);
+                  setEditForm(createEmptyForm());
                 }}
                 className="px-4 py-2 bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-secondary)] rounded text-[var(--color-text-primary)]"
               >
@@ -444,6 +618,7 @@ export default function AdminOrganizationsClient() {
                 <td className="px-4 py-3 text-sm text-[var(--color-text-secondary)]">
                   {row.is_active ? "active" : "inactive"}
                   {row.featured ? " · featured" : ""}
+                  {(row.member_tags?.length || 0) > 0 ? ` · ${row.member_tags?.length} tagged` : ""}
                 </td>
                 <td className="px-4 py-3 text-sm text-[var(--color-text-secondary)]">{row.sort_order ?? 0}</td>
                 <td className="px-4 py-3">
@@ -478,4 +653,3 @@ export default function AdminOrganizationsClient() {
     </div>
   );
 }
-

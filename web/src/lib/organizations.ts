@@ -1,4 +1,4 @@
-import type { CollectiveFriend } from "@/lib/friends-of-the-collective";
+import type { CollectiveFriend, CollectiveFriendMemberTag } from "@/lib/friends-of-the-collective";
 
 export type OrganizationVisibility = "private" | "unlisted" | "public";
 
@@ -20,8 +20,58 @@ export interface OrganizationRecord {
   gallery_image_urls: string[] | null;
   fun_note: string | null;
   sort_order: number;
+  member_tags?: OrganizationMemberTagRecord[] | null;
   created_at?: string;
   updated_at?: string;
+}
+
+export interface OrganizationMemberTagRecord {
+  id: string;
+  organization_id: string;
+  profile_id: string;
+  sort_order: number;
+  tag_reason: string | null;
+  profile?: OrganizationMemberTagProfile | null;
+}
+
+export interface OrganizationMemberTagProfile {
+  id: string;
+  slug: string | null;
+  full_name: string | null;
+  avatar_url: string | null;
+  role: string | null;
+  is_public?: boolean | null;
+  is_songwriter: boolean | null;
+  is_host: boolean | null;
+  is_studio: boolean | null;
+  is_fan: boolean | null;
+}
+
+function buildProfileHref(profile: OrganizationMemberTagProfile): string {
+  const identifier = profile.slug || profile.id;
+  if (profile.is_studio || profile.role === "studio") return `/studios/${identifier}`;
+  if (profile.is_songwriter || profile.is_host || profile.role === "performer" || profile.role === "host") {
+    return `/songwriters/${identifier}`;
+  }
+  return `/members/${identifier}`;
+}
+
+function mapMemberTags(tags: OrganizationMemberTagRecord[] | null | undefined): CollectiveFriendMemberTag[] {
+  if (!tags || tags.length === 0) return [];
+  return tags
+    .filter((tag) => tag.profile)
+    .sort((a, b) => a.sort_order - b.sort_order)
+    .map((tag) => {
+      const profile = tag.profile as OrganizationMemberTagProfile;
+      return {
+        profileId: profile.id,
+        name: profile.full_name || "Member",
+        avatarUrl: profile.avatar_url ?? undefined,
+        profileUrl: buildProfileHref(profile),
+        sortOrder: tag.sort_order ?? 0,
+        tagReason: tag.tag_reason ?? undefined,
+      };
+    });
 }
 
 export function toFriendView(row: OrganizationRecord): CollectiveFriend {
@@ -41,6 +91,7 @@ export function toFriendView(row: OrganizationRecord): CollectiveFriend {
     funNote: row.fun_note ?? undefined,
     sortOrder: row.sort_order,
     slug: row.slug,
+    memberTags: mapMemberTags(row.member_tags),
   };
 }
 
@@ -75,4 +126,3 @@ export function toSlug(value: string): string {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 }
-

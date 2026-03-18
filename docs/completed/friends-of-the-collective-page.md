@@ -79,6 +79,21 @@
 - Tokens are stored as SHA-256 hashes only; plaintext token is shown once at creation.
 - Invites enforce expiry, one-time acceptance, revocation, and optional email restriction.
 
+## Phase 4: Host Spotlight Context + Member Tagging
+
+- New migration:
+  - `supabase/migrations/20260318154500_friends_host_spotlight_and_member_tags.sql`
+- New schema:
+  - `profiles.host_spotlight_reason` (admin-authored copy for host feature context)
+  - `organization_member_tags` table (organization ↔ member links with optional reason and sort order)
+- Friends page updates:
+  - New `Featured Host Members` section that surfaces host spotlights with a `Why Featured` explanation.
+  - Organization cards now render `Connected Members` pills with avatar + profile links.
+- Admin UX updates:
+  - Organization admin editor now supports tagged member management per organization.
+  - Admin users table includes a `Host reason` editor for spotlighted hosts.
+  - New endpoint: `web/src/app/api/admin/users/[id]/host-spotlight-reason/route.ts`
+
 ## Content Model
 
 Each listed organization uses this shape:

@@ -30,15 +30,17 @@ describe("Admin organizations portal", () => {
     expect(source).toContain("Create Organization");
     expect(source).toContain("Edit Organization");
     expect(source).toContain("Delete organization");
+    expect(source).toContain("Tagged Members");
   });
 
   it("admin APIs target organizations table", () => {
     const source = fs.readFileSync(apiPath, "utf-8");
     const sourceItem = fs.readFileSync(apiItemPath, "utf-8");
     expect(source).toContain("const TABLE_NAME = \"organizations\"");
+    expect(source).toContain("const TAG_TABLE_NAME = \"organization_member_tags\"");
     expect(sourceItem).toContain("const TABLE_NAME = \"organizations\"");
+    expect(sourceItem).toContain("const TAG_TABLE_NAME = \"organization_member_tags\"");
     expect(source).toContain("checkAdminRole");
     expect(sourceItem).toContain("checkAdminRole");
   });
 });
-

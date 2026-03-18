@@ -14,6 +14,16 @@ export interface CollectiveFriend {
   coverImageUrl?: string;
   funNote?: string;
   sortOrder?: number;
+  memberTags?: CollectiveFriendMemberTag[];
+}
+
+export interface CollectiveFriendMemberTag {
+  profileId: string;
+  name: string;
+  avatarUrl?: string;
+  profileUrl: string;
+  sortOrder: number;
+  tagReason?: string;
 }
 
 /**

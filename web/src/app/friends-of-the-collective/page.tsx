@@ -6,7 +6,12 @@ import { Button } from "@/components/ui";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getFriendsOfCollective } from "@/lib/friends-of-the-collective";
 import { createServiceRoleClient } from "@/lib/supabase/serviceRoleClient";
-import { toFriendView, type OrganizationRecord } from "@/lib/organizations";
+import {
+  toFriendView,
+  type OrganizationRecord,
+  type OrganizationMemberTagRecord,
+  type OrganizationMemberTagProfile,
+} from "@/lib/organizations";
 
 const FRIENDS_PAGE_PUBLIC = process.env.NEXT_PUBLIC_FRIENDS_PAGE_PUBLIC === "true";
 
@@ -17,12 +22,33 @@ export const metadata: Metadata = {
   robots: "noindex, nofollow",
 };
 
+type FeaturedHostMember = {
+  id: string;
+  slug: string | null;
+  full_name: string | null;
+  avatar_url: string | null;
+  bio: string | null;
+  host_spotlight_reason: string | null;
+  role: string | null;
+  is_songwriter: boolean | null;
+  is_host: boolean | null;
+  is_studio: boolean | null;
+  is_fan: boolean | null;
+};
+
 function hostnameFromUrl(url: string): string {
   try {
     return new URL(url).hostname.replace(/^www\./i, "");
   } catch {
     return url;
   }
+}
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "CSC";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
 function getFriendImageUrl(friend: {
@@ -37,6 +63,33 @@ function getFriendImageUrl(friend: {
   } catch {
     return null;
   }
+}
+
+function profileHref(profile: {
+  id: string;
+  slug: string | null;
+  role: string | null;
+  is_songwriter: boolean | null;
+  is_host: boolean | null;
+  is_studio: boolean | null;
+}): string {
+  const identifier = profile.slug || profile.id;
+  if (profile.is_studio || profile.role === "studio") return `/studios/${identifier}`;
+  if (profile.is_songwriter || profile.is_host || profile.role === "performer" || profile.role === "host") {
+    return `/songwriters/${identifier}`;
+  }
+  return `/members/${identifier}`;
+}
+
+function normalizeProfileRelation(value: unknown): OrganizationMemberTagProfile | null {
+  if (!value) return null;
+  if (Array.isArray(value)) {
+    const first = value[0];
+    if (!first || typeof first !== "object") return null;
+    return first as OrganizationMemberTagProfile;
+  }
+  if (typeof value !== "object") return null;
+  return value as OrganizationMemberTagProfile;
 }
 
 export const dynamic = "force-dynamic";
@@ -60,6 +113,28 @@ async function enforcePrivateAccessUntilLaunch() {
   if (!profile || profile.role !== "admin") notFound();
 }
 
+async function loadFeaturedHostMembers(): Promise<FeaturedHostMember[]> {
+  const serviceClient = createServiceRoleClient();
+  const { data, error } = await (serviceClient as any)
+    .from("profiles")
+    .select(
+      "id, slug, full_name, avatar_url, bio, host_spotlight_reason, role, is_songwriter, is_host, is_studio, is_fan"
+    )
+    .eq("is_featured", true)
+    .eq("spotlight_type", "host")
+    .eq("is_public", true)
+    .order("featured_rank", { ascending: true })
+    .order("created_at", { ascending: false })
+    .limit(8);
+
+  if (error) {
+    console.error("Featured host members query failed:", error);
+    return [];
+  }
+
+  return (data || []) as FeaturedHostMember[];
+}
+
 async function loadOrganizationsForPage(isPublicMode: boolean) {
   const serviceClient = createServiceRoleClient();
   let query = (serviceClient as any)
@@ -76,22 +151,182 @@ async function loadOrganizationsForPage(isPublicMode: boolean) {
     query = query.eq("visibility", "public");
   }
 
-  const { data, error } = await query;
-  if (error) {
-    // Graceful fallback while migration may still be pending in some environments.
-    console.error("Friends organizations query failed, using fallback:", error);
+  const { data: organizationRows, error: organizationError } = await query;
+  if (organizationError) {
+    console.error("Friends organizations query failed, using fallback:", organizationError);
     return getFriendsOfCollective();
   }
 
-  return ((data || []) as OrganizationRecord[]).map(toFriendView);
+  const organizations = (organizationRows || []) as OrganizationRecord[];
+  if (organizations.length === 0) return [];
+
+  const organizationIds = organizations.map((row) => row.id);
+  const { data: tagRows, error: tagError } = await (serviceClient as any)
+    .from("organization_member_tags")
+    .select(
+      "id, organization_id, profile_id, sort_order, tag_reason, created_at, profiles(id, slug, full_name, avatar_url, role, is_public, is_songwriter, is_host, is_studio, is_fan)"
+    )
+    .in("organization_id", organizationIds)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (tagError) {
+    console.error("Organization member tags query failed:", tagError);
+  }
+
+  const tagsByOrganization = new Map<string, OrganizationMemberTagRecord[]>();
+  for (const raw of ((tagRows || []) as Array<Record<string, unknown>>)) {
+    const organizationId = raw.organization_id;
+    if (typeof organizationId !== "string") continue;
+
+    const profile = normalizeProfileRelation(raw.profiles);
+    if (!profile) continue;
+    if (isPublicMode && !profile.is_public) continue;
+
+    const tag: OrganizationMemberTagRecord = {
+      id: String(raw.id),
+      organization_id: organizationId,
+      profile_id: String(raw.profile_id),
+      sort_order: Number(raw.sort_order) || 0,
+      tag_reason: typeof raw.tag_reason === "string" ? raw.tag_reason : null,
+      profile,
+    };
+
+    const list = tagsByOrganization.get(organizationId) || [];
+    list.push(tag);
+    tagsByOrganization.set(organizationId, list);
+  }
+
+  const withTags = organizations.map((organization) => ({
+    ...organization,
+    member_tags: tagsByOrganization.get(organization.id) || [],
+  }));
+
+  return withTags.map(toFriendView);
 }
 
 export default async function FriendsOfTheCollectivePage() {
   await enforcePrivateAccessUntilLaunch();
 
-  const friends = await loadOrganizationsForPage(FRIENDS_PAGE_PUBLIC);
+  const [friends, featuredHosts] = await Promise.all([
+    loadOrganizationsForPage(FRIENDS_PAGE_PUBLIC),
+    loadFeaturedHostMembers(),
+  ]);
+
   const featured = friends.filter((friend) => friend.featured);
   const standard = friends.filter((friend) => !friend.featured);
+
+  function renderFriendCard(friend: (typeof friends)[number], isFeatured: boolean) {
+    const imageUrl = getFriendImageUrl(friend);
+
+    return (
+      <article
+        key={friend.id}
+        className={`rounded-2xl border bg-[var(--color-bg-secondary)] p-6 space-y-4 ${
+          isFeatured
+            ? "border-[var(--color-border-accent)]/40"
+            : "border-[var(--color-border-default)]"
+        }`}
+      >
+        <div className="space-y-1">
+          <h3 className="text-xl font-[var(--font-family-serif)] font-semibold text-[var(--color-text-primary)]">
+            {friend.name}
+          </h3>
+          <p className="text-xs tracking-wide uppercase text-[var(--color-text-tertiary)]">
+            {friend.organizationType || "Community Organization"}
+            {friend.city ? ` • ${friend.city}` : ""}
+          </p>
+        </div>
+
+        <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">{friend.shortBlurb}</p>
+
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={`${friend.name} cover`}
+            className="w-full h-36 object-cover rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)]"
+            loading="lazy"
+          />
+        ) : (
+          <div className="w-full h-36 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] flex items-center justify-center">
+            <span className="text-sm text-[var(--color-text-tertiary)]">Image coming soon</span>
+          </div>
+        )}
+
+        <p className="text-sm text-[var(--color-text-primary)] leading-relaxed">{friend.whyItMatters}</p>
+
+        {friend.funNote && (
+          <p className="text-sm italic text-[var(--color-text-secondary)]">{friend.funNote}</p>
+        )}
+
+        {friend.tags && friend.tags.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {friend.tags.map((tag) => (
+              <span
+                key={tag}
+                className="px-2.5 py-1 rounded-full text-xs border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)]"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {friend.memberTags && friend.memberTags.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs uppercase tracking-wide text-[var(--color-text-tertiary)]">
+              Connected Members
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {friend.memberTags.map((tag) => (
+                <Link
+                  key={`${friend.id}-${tag.profileId}`}
+                  href={tag.profileUrl}
+                  className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] hover:border-[var(--color-border-accent)]"
+                  title={tag.tagReason || tag.name}
+                >
+                  {tag.avatarUrl ? (
+                    <img
+                      src={tag.avatarUrl}
+                      alt={tag.name}
+                      className="h-5 w-5 rounded-full object-cover"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <span className="h-5 w-5 rounded-full bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[10px] font-semibold text-[var(--color-text-secondary)] flex items-center justify-center">
+                      {getInitials(tag.name)}
+                    </span>
+                  )}
+                  <span className="text-xs text-[var(--color-text-secondary)]">{tag.name}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="pt-2 flex items-center justify-between gap-3">
+          <a
+            href={friend.websiteUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-[var(--color-text-accent)] hover:underline"
+          >
+            Visit Site
+          </a>
+          <span className="text-xs text-[var(--color-text-tertiary)]">{hostnameFromUrl(friend.websiteUrl)}</span>
+        </div>
+
+        <div className="pt-1">
+          <Link
+            href="/dashboard/my-organizations"
+            className="text-xs text-[var(--color-text-tertiary)] hover:text-[var(--color-text-accent)] underline-offset-2 hover:underline"
+          >
+            Represent this organization? Claim or update this profile.
+          </Link>
+        </div>
+      </article>
+    );
+  }
 
   return (
     <>
@@ -141,6 +376,66 @@ export default async function FriendsOfTheCollectivePage() {
             </div>
           </section>
 
+          {featuredHosts.length > 0 && (
+            <section className="space-y-5">
+              <h2 className="text-2xl md:text-3xl font-[var(--font-family-serif)] font-semibold text-[var(--color-text-primary)]">
+                Featured Host Members
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {featuredHosts.map((host) => {
+                  const name = host.full_name || "Host Member";
+                  const reason =
+                    host.host_spotlight_reason?.trim() ||
+                    host.bio?.trim() ||
+                    "Featured for contributing meaningful hosting and community support.";
+                  const href = profileHref(host);
+                  return (
+                    <article
+                      key={host.id}
+                      className="rounded-2xl border border-[var(--color-border-accent)]/40 bg-[var(--color-bg-secondary)] p-6 space-y-4"
+                    >
+                      <div className="flex items-center gap-3">
+                        {host.avatar_url ? (
+                          <img
+                            src={host.avatar_url}
+                            alt={name}
+                            className="h-14 w-14 rounded-full object-cover border border-[var(--color-border-default)]"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="h-14 w-14 rounded-full bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] flex items-center justify-center text-sm font-semibold text-[var(--color-text-secondary)]">
+                            {getInitials(name)}
+                          </div>
+                        )}
+                        <div>
+                          <h3 className="text-xl font-[var(--font-family-serif)] font-semibold text-[var(--color-text-primary)]">
+                            {name}
+                          </h3>
+                          <p className="text-xs uppercase tracking-wide text-[var(--color-text-tertiary)]">
+                            Host Spotlight
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <p className="text-xs uppercase tracking-wide text-[var(--color-text-tertiary)]">
+                          Why Featured
+                        </p>
+                        <p className="text-sm text-[var(--color-text-primary)] leading-relaxed">{reason}</p>
+                      </div>
+
+                      <div className="pt-1">
+                        <Link href={href} className="text-sm text-[var(--color-text-accent)] hover:underline">
+                          View Profile
+                        </Link>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
           {friends.length === 0 ? (
             <section className="rounded-3xl border border-[var(--color-border-accent)]/40 bg-[var(--color-bg-secondary)] p-8 text-center">
               <h2 className="text-2xl font-[var(--font-family-serif)] font-semibold text-[var(--color-text-primary)] mb-3">
@@ -168,83 +463,7 @@ export default async function FriendsOfTheCollectivePage() {
                     </h2>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {featured.map((friend) => {
-                      const imageUrl = getFriendImageUrl(friend);
-                      return (
-                      <article
-                        key={friend.id}
-                        className="rounded-2xl border border-[var(--color-border-accent)]/40 bg-[var(--color-bg-secondary)] p-6 space-y-4"
-                      >
-                        <div className="space-y-1">
-                          <h3 className="text-xl font-[var(--font-family-serif)] font-semibold text-[var(--color-text-primary)]">
-                            {friend.name}
-                          </h3>
-                          <p className="text-xs tracking-wide uppercase text-[var(--color-text-tertiary)]">
-                            {friend.organizationType || "Community Organization"}
-                            {friend.city ? ` • ${friend.city}` : ""}
-                          </p>
-                        </div>
-                        <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
-                          {friend.shortBlurb}
-                        </p>
-                        {imageUrl ? (
-                          <img
-                            src={imageUrl}
-                            alt={`${friend.name} cover`}
-                            className="w-full h-36 object-cover rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)]"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <div className="w-full h-36 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] flex items-center justify-center">
-                            <span className="text-sm text-[var(--color-text-tertiary)]">
-                              Image coming soon
-                            </span>
-                          </div>
-                        )}
-                        <p className="text-sm text-[var(--color-text-primary)] leading-relaxed">
-                          {friend.whyItMatters}
-                        </p>
-                        {friend.funNote && (
-                          <p className="text-sm italic text-[var(--color-text-secondary)]">
-                            {friend.funNote}
-                          </p>
-                        )}
-                        {friend.tags && friend.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-2">
-                            {friend.tags.map((tag) => (
-                              <span
-                                key={tag}
-                                className="px-2.5 py-1 rounded-full text-xs border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)]"
-                              >
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                        <div className="pt-2 flex items-center justify-between gap-3">
-                          <a
-                            href={friend.websiteUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm text-[var(--color-text-accent)] hover:underline"
-                          >
-                            Visit Site
-                          </a>
-                          <span className="text-xs text-[var(--color-text-tertiary)]">
-                            {hostnameFromUrl(friend.websiteUrl)}
-                          </span>
-                        </div>
-                        <div className="pt-1">
-                          <Link
-                            href="/dashboard/my-organizations"
-                            className="text-xs text-[var(--color-text-tertiary)] hover:text-[var(--color-text-accent)] underline-offset-2 hover:underline"
-                          >
-                            Represent this organization? Claim or update this profile.
-                          </Link>
-                        </div>
-                      </article>
-                      );
-                    })}
+                    {featured.map((friend) => renderFriendCard(friend, true))}
                   </div>
                 </section>
               )}
@@ -255,83 +474,7 @@ export default async function FriendsOfTheCollectivePage() {
                     Community Directory
                   </h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {standard.map((friend) => {
-                      const imageUrl = getFriendImageUrl(friend);
-                      return (
-                      <article
-                        key={friend.id}
-                        className="rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] p-6 space-y-4"
-                      >
-                        <div className="space-y-1">
-                          <h3 className="text-xl font-[var(--font-family-serif)] font-semibold text-[var(--color-text-primary)]">
-                            {friend.name}
-                          </h3>
-                          <p className="text-xs tracking-wide uppercase text-[var(--color-text-tertiary)]">
-                            {friend.organizationType || "Community Organization"}
-                            {friend.city ? ` • ${friend.city}` : ""}
-                          </p>
-                        </div>
-                        <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
-                          {friend.shortBlurb}
-                        </p>
-                        {imageUrl ? (
-                          <img
-                            src={imageUrl}
-                            alt={`${friend.name} cover`}
-                            className="w-full h-36 object-cover rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)]"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <div className="w-full h-36 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] flex items-center justify-center">
-                            <span className="text-sm text-[var(--color-text-tertiary)]">
-                              Image coming soon
-                            </span>
-                          </div>
-                        )}
-                        <p className="text-sm text-[var(--color-text-primary)] leading-relaxed">
-                          {friend.whyItMatters}
-                        </p>
-                        {friend.funNote && (
-                          <p className="text-sm italic text-[var(--color-text-secondary)]">
-                            {friend.funNote}
-                          </p>
-                        )}
-                        {friend.tags && friend.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-2">
-                            {friend.tags.map((tag) => (
-                              <span
-                                key={tag}
-                                className="px-2.5 py-1 rounded-full text-xs border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)]"
-                              >
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                        <div className="pt-2 flex items-center justify-between gap-3">
-                          <a
-                            href={friend.websiteUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm text-[var(--color-text-accent)] hover:underline"
-                          >
-                            Visit Site
-                          </a>
-                          <span className="text-xs text-[var(--color-text-tertiary)]">
-                            {hostnameFromUrl(friend.websiteUrl)}
-                          </span>
-                        </div>
-                        <div className="pt-1">
-                          <Link
-                            href="/dashboard/my-organizations"
-                            className="text-xs text-[var(--color-text-tertiary)] hover:text-[var(--color-text-accent)] underline-offset-2 hover:underline"
-                          >
-                            Represent this organization? Claim or update this profile.
-                          </Link>
-                        </div>
-                      </article>
-                      );
-                    })}
+                    {standard.map((friend) => renderFriendCard(friend, false))}
                   </div>
                 </section>
               )}

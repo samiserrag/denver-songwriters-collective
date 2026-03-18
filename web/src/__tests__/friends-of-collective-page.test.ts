@@ -21,6 +21,9 @@ describe("Friends of the Collective page", () => {
     expect(source).toContain("Friends of the Collective");
     expect(source).toContain("This page celebrates collaborators. It is not a ranking.");
     expect(source).toContain("Suggest an Organization");
+    expect(source).toContain("Featured Host Members");
+    expect(source).toContain("Why Featured");
+    expect(source).toContain("Connected Members");
   });
 
   it("is intentionally unlisted from footer while private", () => {
@@ -33,6 +36,7 @@ describe("Friends of the Collective page", () => {
     expect(source).toContain("FRIENDS_PAGE_PUBLIC");
     expect(source).toContain("enforcePrivateAccessUntilLaunch");
     expect(source).toContain('from("organizations")');
+    expect(source).toContain('from("organization_member_tags")');
     expect(source).toContain("notFound()");
     expect(source).toContain('robots: "noindex, nofollow"');
   });

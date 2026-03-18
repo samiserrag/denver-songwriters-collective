@@ -69,6 +69,11 @@ function getAdminProfileHref(u: Profile): string {
   return `/members/${identifier}`;
 }
 
+function getHostSpotlightReason(u: Profile): string {
+  const maybeReason = (u as Profile & { host_spotlight_reason?: string | null }).host_spotlight_reason;
+  return typeof maybeReason === "string" ? maybeReason : "";
+}
+
 
 // Filter types - flag-based with admin using role
 type FilterType = "all" | "songwriters" | "studios" | "hosts" | "fans" | "admin";
@@ -117,6 +122,17 @@ export default function UserDirectoryTable({
   const [isSavingMedia, setIsSavingMedia] = useState(false);
   const [mediaFieldErrors, setMediaFieldErrors] = useState<Record<string, string>>({});
   const [mediaError, setMediaError] = useState("");
+  const [hostReasonModal, setHostReasonModal] = useState<{
+    open: boolean;
+    user: Profile | null;
+    reason: string;
+  }>({
+    open: false,
+    user: null,
+    reason: "",
+  });
+  const [isSavingHostReason, setIsSavingHostReason] = useState(false);
+  const [hostReasonError, setHostReasonError] = useState("");
 
   // Local state for optimistic UI updates - deleted users are removed immediately
   const [deletedUserIds, setDeletedUserIds] = useState<Set<string>>(new Set());
@@ -389,6 +405,50 @@ export default function UserDirectoryTable({
     }
   };
 
+  const openHostReasonEditor = (user: Profile) => {
+    setHostReasonError("");
+    setHostReasonModal({
+      open: true,
+      user,
+      reason: getHostSpotlightReason(user),
+    });
+  };
+
+  const handleSaveHostReason = async () => {
+    if (!hostReasonModal.user) return;
+
+    setIsSavingHostReason(true);
+    setHostReasonError("");
+
+    try {
+      const response = await fetch(
+        `/api/admin/users/${hostReasonModal.user.id}/host-spotlight-reason`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            host_spotlight_reason: hostReasonModal.reason,
+          }),
+        }
+      );
+
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) {
+        setHostReasonError(payload?.error || "Failed to save host spotlight reason.");
+        return;
+      }
+
+      setHostReasonModal({ open: false, user: null, reason: "" });
+      setActionNotice({ type: "success", text: "Host spotlight reason saved." });
+      router.refresh();
+    } catch (err) {
+      console.error("Save host spotlight reason error:", err);
+      setHostReasonError("Failed to save host spotlight reason.");
+    } finally {
+      setIsSavingHostReason(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Filters */}
@@ -569,6 +629,14 @@ export default function UserDirectoryTable({
                       >
                         Media
                       </button>
+                      {u.is_featured && u.spotlight_type === "host" && (
+                        <button
+                          onClick={() => openHostReasonEditor(u)}
+                          className="text-xs underline text-[var(--color-text-accent)] hover:text-[var(--color-accent-hover)]"
+                        >
+                          Host reason
+                        </button>
+                      )}
 
                       {/* Admin toggle - only visible to super admin */}
                       {isSuperAdmin && u.id !== currentUserId && (
@@ -689,6 +757,54 @@ export default function UserDirectoryTable({
                   setMediaModal({ open: false, user: null, youtube_url: "", spotify_url: "" });
                   setMediaFieldErrors({});
                   setMediaError("");
+                }}
+                className="px-4 py-2 bg-gray-200 dark:bg-[var(--color-bg-tertiary)] hover:bg-gray-300 dark:hover:bg-[var(--color-bg-primary)] text-gray-900 dark:text-[var(--color-text-primary)] rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Host Spotlight Reason Modal */}
+      {hostReasonModal.open && hostReasonModal.user && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
+          <div className="bg-white dark:bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg p-6 max-w-lg w-full mx-4">
+            <h2 className="text-xl font-semibold text-[var(--color-text-primary)] mb-4">
+              Host Spotlight Reason
+            </h2>
+            <p className="text-sm text-[var(--color-text-secondary)] mb-4">
+              {hostReasonModal.user.full_name ?? "Member"}: this appears under
+              &nbsp;&quot;Why Featured&quot; on Friends of the Collective.
+            </p>
+
+            <textarea
+              value={hostReasonModal.reason}
+              onChange={(e) =>
+                setHostReasonModal((prev) => ({ ...prev, reason: e.target.value }))
+              }
+              rows={5}
+              placeholder="Why is this host being featured?"
+              className="w-full px-3 py-2 rounded-lg bg-gray-100 dark:bg-[var(--color-bg-tertiary)] border border-gray-300 dark:border-[var(--color-border-default)] text-gray-900 dark:text-[var(--color-text-primary)]"
+            />
+
+            {hostReasonError && (
+              <p className="mt-3 text-sm text-red-600">{hostReasonError}</p>
+            )}
+
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={handleSaveHostReason}
+                disabled={isSavingHostReason}
+                className="px-4 py-2 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)] rounded-lg transition-colors disabled:opacity-50"
+              >
+                {isSavingHostReason ? "Saving..." : "Save"}
+              </button>
+              <button
+                onClick={() => {
+                  setHostReasonModal({ open: false, user: null, reason: "" });
+                  setHostReasonError("");
                 }}
                 className="px-4 py-2 bg-gray-200 dark:bg-[var(--color-bg-tertiary)] hover:bg-gray-300 dark:hover:bg-[var(--color-bg-primary)] text-gray-900 dark:text-[var(--color-text-primary)] rounded-lg transition-colors"
               >
