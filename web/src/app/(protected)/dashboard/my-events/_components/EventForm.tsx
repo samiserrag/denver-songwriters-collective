@@ -344,10 +344,11 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
 
   // Keep form publish state aligned with server state after Publish/Unpublish actions.
   useEffect(() => {
-    if (event?.is_published === undefined) return;
+    if (typeof event?.is_published !== "boolean") return;
+    const nextIsPublished = event.is_published;
     setFormData(prev => {
-      if (prev.is_published === event.is_published) return prev;
-      return { ...prev, is_published: event.is_published };
+      if (prev.is_published === nextIsPublished) return prev;
+      return { ...prev, is_published: nextIsPublished };
     });
   }, [event?.is_published]);
 
@@ -760,10 +761,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         effectiveDayOfWeek = isRecurring && anchorDate ? weekdayNameFromDateMT(anchorDate) : null;
       }
 
-      const formDataWithoutPublishState = { ...formData };
-      delete formDataWithoutPublishState.is_published;
       const body = {
-        ...formDataWithoutPublishState,
+        ...formData,
         // Override recurrence fields based on series mode
         recurrence_rule: effectiveRecurrenceRule,
         day_of_week: effectiveDayOfWeek,
@@ -771,7 +770,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         // Phase 4.43: capacity is independent of timeslots (RSVP always available)
         capacity: formData.capacity ? parseInt(formData.capacity) : null,
         cover_image_url: mode === "create" && pendingCoverFile ? null : coverImageUrl,
-        ...(mode === "create" ? { is_published: formData.is_published } : {}),
+        // Keep publish state immutable from edit-form saves; publish/unpublish has dedicated control.
+        is_published: mode === "create" ? formData.is_published : undefined,
         // Slot configuration
         has_timeslots: slotConfig.has_timeslots,
         total_slots: slotConfig.has_timeslots ? slotConfig.total_slots : null,
