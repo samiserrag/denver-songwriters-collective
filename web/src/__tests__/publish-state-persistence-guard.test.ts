@@ -14,13 +14,14 @@ describe("Publish state persistence guardrails", () => {
     expect(form).toContain("Keep form publish state aligned with server state");
     expect(form).toContain("event?.is_published");
     expect(form).toContain("setFormData(prev =>");
-    expect(form).toContain("is_published: event.is_published");
+    expect(form).toContain("const nextIsPublished = event.is_published");
+    expect(form).toContain("is_published: nextIsPublished");
   });
 
   it("EventForm does not send is_published in edit PATCH payload", () => {
     const form = read("web/src/app/(protected)/dashboard/my-events/_components/EventForm.tsx");
-    expect(form).toContain("delete formDataWithoutPublishState.is_published");
-    expect(form).toContain('...(mode === "create" ? { is_published: formData.is_published } : {})');
+    expect(form).toContain("Keep publish state immutable from edit-form saves");
+    expect(form).toContain('is_published: mode === "create" ? formData.is_published : undefined');
   });
 
   it("PublishButton guards against persisted-state mismatch and shows explicit error", () => {
@@ -31,4 +32,3 @@ describe("Publish state persistence guardrails", () => {
     expect(button).toContain("Failed to update publish status. Please refresh and try again.");
   });
 });
-
