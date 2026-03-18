@@ -1,4 +1,5 @@
 -- Phase 2: Organization claim + self-management workflow
+-- REVIEWED: policy change acknowledged
 -- Adds:
 -- - organization_managers: grants users owner/manager access to org profiles
 -- - organization_claims: pending/approved/rejected/cancelled claim requests
