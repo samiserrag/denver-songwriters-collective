@@ -42,6 +42,7 @@ export default async function AdminDashboardPage() {
     pendingGalleryRes,
     hostRequestsRes,
     pendingVenueClaimsRes,
+    organizationsRes,
     siteSettings,
   ] = await Promise.all([
     supabase.from("events").select("*", { count: "exact", head: true }),
@@ -53,6 +54,7 @@ export default async function AdminDashboardPage() {
     supabase.from("gallery_images").select("*", { count: "exact", head: true }).eq("is_approved", false),
     supabase.from("host_requests").select("*", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("venue_claims").select("*", { count: "exact", head: true }).eq("status", "pending"),
+    (supabase as any).from("organizations").select("*", { count: "exact", head: true }),
     getSiteSettings(),
   ]);
 
@@ -65,6 +67,7 @@ export default async function AdminDashboardPage() {
   const pendingGallery = (pendingGalleryRes as { count: number | null }).count ?? 0;
   const pendingHostRequests = (hostRequestsRes as { count: number | null }).count ?? 0;
   const pendingVenueClaims = (pendingVenueClaimsRes as { count: number | null }).count ?? 0;
+  const organizationsCount = (organizationsRes as { count: number | null }).count ?? 0;
 
   // Calculate total pending items
   const totalPending = pendingSuggestions + pendingBlog + pendingGallery + pendingHostRequests + pendingVenueClaims;
@@ -228,6 +231,16 @@ export default async function AdminDashboardPage() {
               <div>
                 <span className="text-[var(--color-text-primary)] font-medium">Monthly Highlights</span>
                 <p className="text-sm text-[var(--color-text-secondary)]">Feature content on the homepage</p>
+              </div>
+              <span className="text-[var(--color-text-secondary)] group-hover:text-[var(--color-text-accent)]">→</span>
+            </Link>
+            <Link
+              href="/dashboard/admin/organizations"
+              className="flex items-center justify-between p-3 rounded-lg hover:bg-[var(--color-bg-tertiary)] transition-colors group"
+            >
+              <div>
+                <span className="text-[var(--color-text-primary)] font-medium">Friends Organizations</span>
+                <p className="text-sm text-[var(--color-text-secondary)]">Manage org cards, photos, and visibility ({organizationsCount})</p>
               </div>
               <span className="text-[var(--color-text-secondary)] group-hover:text-[var(--color-text-accent)]">→</span>
             </Link>
