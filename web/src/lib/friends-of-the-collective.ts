@@ -176,6 +176,20 @@ export const FRIENDS_OF_COLLECTIVE: CollectiveFriend[] = [
     featured: false,
     isActive: true,
   },
+  {
+    id: "swallow-hill-music",
+    name: "Swallow Hill Music",
+    websiteUrl: "https://swallowhillmusic.org/about-us/",
+    city: "Denver, CO",
+    organizationType: "Nonprofit Music School & Venue",
+    shortBlurb:
+      "Swallow Hill Music is a Denver nonprofit music school and concert community focused on folk, roots, and acoustic music education and performance.",
+    whyItMatters:
+      "Songwriters can access classes, workshops, and listening-room style performances that support craft growth, community connection, and live opportunities.",
+    tags: ["Songwriting Classes", "Folk", "Acoustic", "Concerts", "Music Education"],
+    featured: false,
+    isActive: true,
+  },
 ];
 
 export function getFriendsOfCollective(): CollectiveFriend[] {
