@@ -25,6 +25,20 @@ function hostnameFromUrl(url: string): string {
   }
 }
 
+function getFriendImageUrl(friend: {
+  coverImageUrl?: string;
+  logoImageUrl?: string;
+  websiteUrl: string;
+}): string | null {
+  if (friend.coverImageUrl) return friend.coverImageUrl;
+  if (friend.logoImageUrl) return friend.logoImageUrl;
+  try {
+    return `https://www.google.com/s2/favicons?sz=256&domain_url=${encodeURIComponent(friend.websiteUrl)}`;
+  } catch {
+    return null;
+  }
+}
+
 export const dynamic = "force-dynamic";
 
 async function enforcePrivateAccessUntilLaunch() {
@@ -154,7 +168,9 @@ export default async function FriendsOfTheCollectivePage() {
                     </h2>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {featured.map((friend) => (
+                    {featured.map((friend) => {
+                      const imageUrl = getFriendImageUrl(friend);
+                      return (
                       <article
                         key={friend.id}
                         className="rounded-2xl border border-[var(--color-border-accent)]/40 bg-[var(--color-bg-secondary)] p-6 space-y-4"
@@ -171,13 +187,19 @@ export default async function FriendsOfTheCollectivePage() {
                         <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
                           {friend.shortBlurb}
                         </p>
-                        {friend.coverImageUrl && (
+                        {imageUrl ? (
                           <img
-                            src={friend.coverImageUrl}
+                            src={imageUrl}
                             alt={`${friend.name} cover`}
-                            className="w-full h-36 object-cover rounded-lg border border-[var(--color-border-default)]"
+                            className="w-full h-36 object-cover rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)]"
                             loading="lazy"
                           />
+                        ) : (
+                          <div className="w-full h-36 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] flex items-center justify-center">
+                            <span className="text-sm text-[var(--color-text-tertiary)]">
+                              Image coming soon
+                            </span>
+                          </div>
                         )}
                         <p className="text-sm text-[var(--color-text-primary)] leading-relaxed">
                           {friend.whyItMatters}
@@ -221,7 +243,8 @@ export default async function FriendsOfTheCollectivePage() {
                           </Link>
                         </div>
                       </article>
-                    ))}
+                      );
+                    })}
                   </div>
                 </section>
               )}
@@ -232,7 +255,9 @@ export default async function FriendsOfTheCollectivePage() {
                     Community Directory
                   </h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {standard.map((friend) => (
+                    {standard.map((friend) => {
+                      const imageUrl = getFriendImageUrl(friend);
+                      return (
                       <article
                         key={friend.id}
                         className="rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] p-6 space-y-4"
@@ -249,13 +274,19 @@ export default async function FriendsOfTheCollectivePage() {
                         <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
                           {friend.shortBlurb}
                         </p>
-                        {friend.coverImageUrl && (
+                        {imageUrl ? (
                           <img
-                            src={friend.coverImageUrl}
+                            src={imageUrl}
                             alt={`${friend.name} cover`}
-                            className="w-full h-36 object-cover rounded-lg border border-[var(--color-border-default)]"
+                            className="w-full h-36 object-cover rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)]"
                             loading="lazy"
                           />
+                        ) : (
+                          <div className="w-full h-36 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] flex items-center justify-center">
+                            <span className="text-sm text-[var(--color-text-tertiary)]">
+                              Image coming soon
+                            </span>
+                          </div>
                         )}
                         <p className="text-sm text-[var(--color-text-primary)] leading-relaxed">
                           {friend.whyItMatters}
@@ -299,7 +330,8 @@ export default async function FriendsOfTheCollectivePage() {
                           </Link>
                         </div>
                       </article>
-                    ))}
+                      );
+                    })}
                   </div>
                 </section>
               )}

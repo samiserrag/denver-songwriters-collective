@@ -84,12 +84,12 @@ export const FRIENDS_OF_COLLECTIVE: CollectiveFriend[] = [
     isActive: true,
   },
   {
-    id: "pink-sofa-hour",
-    name: "Pink Sofa Hour / Pink Sofa Production Syndicate",
+    id: "couched-media",
+    name: "Couched Media",
     websiteUrl: "https://www.pinksofahour.com",
     organizationType: "Nonprofit & Media Production",
     shortBlurb:
-      "Pink Sofa Hour began as a live-streamed YouTube music show and has expanded into the Pink Sofa Production Syndicate (PSPS), a nonprofit offering free booking support and promotional resources to local musicians, alongside Couched Media, its in-house multimedia production arm.",
+      "Couched Media is the in-house multimedia production arm connected to Pink Sofa Hour and the Pink Sofa Production Syndicate (PSPS), supporting local musicians with recording, storytelling, and promotion.",
     whyItMatters:
       "Songwriters receive free booking assistance, promotional resources, audio recording access, and educational content - with all commercial revenue from the production side reinvested into artist support.",
     tags: ["Booking", "Promotion", "Nonprofit", "Recording", "Livestream"],
