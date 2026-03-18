@@ -42,6 +42,7 @@ export default async function AdminDashboardPage() {
     pendingGalleryRes,
     hostRequestsRes,
     pendingVenueClaimsRes,
+    pendingOrganizationClaimsRes,
     organizationsRes,
     siteSettings,
   ] = await Promise.all([
@@ -54,6 +55,7 @@ export default async function AdminDashboardPage() {
     supabase.from("gallery_images").select("*", { count: "exact", head: true }).eq("is_approved", false),
     supabase.from("host_requests").select("*", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("venue_claims").select("*", { count: "exact", head: true }).eq("status", "pending"),
+    (supabase as any).from("organization_claims").select("*", { count: "exact", head: true }).eq("status", "pending"),
     (supabase as any).from("organizations").select("*", { count: "exact", head: true }),
     getSiteSettings(),
   ]);
@@ -67,10 +69,17 @@ export default async function AdminDashboardPage() {
   const pendingGallery = (pendingGalleryRes as { count: number | null }).count ?? 0;
   const pendingHostRequests = (hostRequestsRes as { count: number | null }).count ?? 0;
   const pendingVenueClaims = (pendingVenueClaimsRes as { count: number | null }).count ?? 0;
+  const pendingOrganizationClaims = (pendingOrganizationClaimsRes as { count: number | null }).count ?? 0;
   const organizationsCount = (organizationsRes as { count: number | null }).count ?? 0;
 
   // Calculate total pending items
-  const totalPending = pendingSuggestions + pendingBlog + pendingGallery + pendingHostRequests + pendingVenueClaims;
+  const totalPending =
+    pendingSuggestions +
+    pendingBlog +
+    pendingGallery +
+    pendingHostRequests +
+    pendingVenueClaims +
+    pendingOrganizationClaims;
 
   return (
     <main className="min-h-screen py-12 px-6">
@@ -137,6 +146,15 @@ export default async function AdminDashboardPage() {
                 >
                   <span className="text-[var(--color-text-primary)]">Venue Claims</span>
                   <span className="px-2 py-0.5 bg-amber-500/20 text-amber-600 text-sm rounded-full">{pendingVenueClaims}</span>
+                </Link>
+              )}
+              {pendingOrganizationClaims > 0 && (
+                <Link
+                  href="/dashboard/admin/organization-claims"
+                  className="flex items-center justify-between p-3 rounded-lg bg-[var(--color-bg-secondary)] hover:bg-[var(--color-bg-tertiary)] transition-colors"
+                >
+                  <span className="text-[var(--color-text-primary)]">Organization Claims</span>
+                  <span className="px-2 py-0.5 bg-amber-500/20 text-amber-600 text-sm rounded-full">{pendingOrganizationClaims}</span>
                 </Link>
               )}
               {pendingBlog > 0 && (
@@ -268,6 +286,16 @@ export default async function AdminDashboardPage() {
               <div>
                 <span className="text-[var(--color-text-primary)] font-medium">Venue Claims</span>
                 <p className="text-sm text-[var(--color-text-secondary)]">Review and approve venue ownership claims</p>
+              </div>
+              <span className="text-[var(--color-text-secondary)] group-hover:text-[var(--color-text-accent)]">→</span>
+            </Link>
+            <Link
+              href="/dashboard/admin/organization-claims"
+              className="flex items-center justify-between p-3 rounded-lg hover:bg-[var(--color-bg-tertiary)] transition-colors group"
+            >
+              <div>
+                <span className="text-[var(--color-text-primary)] font-medium">Organization Claims</span>
+                <p className="text-sm text-[var(--color-text-secondary)]">Review and approve organization profile claims</p>
               </div>
               <span className="text-[var(--color-text-secondary)] group-hover:text-[var(--color-text-accent)]">→</span>
             </Link>

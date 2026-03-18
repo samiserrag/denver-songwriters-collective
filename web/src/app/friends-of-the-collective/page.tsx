@@ -212,6 +212,14 @@ export default async function FriendsOfTheCollectivePage() {
                             {hostnameFromUrl(friend.websiteUrl)}
                           </span>
                         </div>
+                        <div className="pt-1">
+                          <Link
+                            href="/dashboard/my-organizations"
+                            className="text-xs text-[var(--color-text-tertiary)] hover:text-[var(--color-text-accent)] underline-offset-2 hover:underline"
+                          >
+                            Represent this organization? Claim or update this profile.
+                          </Link>
+                        </div>
                       </article>
                     ))}
                   </div>
@@ -281,6 +289,14 @@ export default async function FriendsOfTheCollectivePage() {
                           <span className="text-xs text-[var(--color-text-tertiary)]">
                             {hostnameFromUrl(friend.websiteUrl)}
                           </span>
+                        </div>
+                        <div className="pt-1">
+                          <Link
+                            href="/dashboard/my-organizations"
+                            className="text-xs text-[var(--color-text-tertiary)] hover:text-[var(--color-text-accent)] underline-offset-2 hover:underline"
+                          >
+                            Represent this organization? Claim or update this profile.
+                          </Link>
                         </div>
                       </article>
                     ))}

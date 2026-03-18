@@ -1,7 +1,7 @@
 # Friends of the Collective Page
 
 **Date:** March 17, 2026  
-**Status:** Built, populated, and admin-managed (private until launch)  
+**Status:** Built, populated, admin-managed, and claim-enabled (private until launch)  
 **Route:** `/friends-of-the-collective`
 
 ## What Was Added
@@ -17,6 +17,35 @@
   - `web/src/app/api/admin/organizations/[id]/route.ts`
 - Initial organizations populated from curated tab review output and managed in DB.
 - Private-mode guard remains: page is admin-only unless launch flag is enabled.
+
+## Phase 2: Claim + Self-Management
+
+- New migration:
+  - `supabase/migrations/20260317224500_organizations_claims_and_managers.sql`
+- New member dashboard routes:
+  - `web/src/app/(protected)/dashboard/my-organizations/page.tsx`
+  - `web/src/app/(protected)/dashboard/my-organizations/[id]/page.tsx`
+- New member APIs:
+  - `web/src/app/api/organizations/[id]/claim/route.ts`
+  - `web/src/app/api/my-organizations/route.ts`
+  - `web/src/app/api/my-organizations/[id]/route.ts`
+- New admin claim review routes/APIs:
+  - `web/src/app/(protected)/dashboard/admin/organization-claims/page.tsx`
+  - `web/src/app/api/admin/organization-claims/route.ts`
+  - `web/src/app/api/admin/organization-claims/[id]/approve/route.ts`
+  - `web/src/app/api/admin/organization-claims/[id]/reject/route.ts`
+- Navigation updates:
+  - Dashboard sidebar now includes `My Organizations`.
+  - Admin dashboard now includes pending counts + links for `Organization Claims`.
+  - Friends cards include a claim/update CTA that routes to `My Organizations`.
+
+### Workflow Summary
+
+1. Member opens `My Organizations`.
+2. Member submits a claim for an organization profile.
+3. Admin reviews claim at `/dashboard/admin/organization-claims`.
+4. On approval, member gets `owner` access via `organization_managers`.
+5. Member edits profile content/photos from `/dashboard/my-organizations/[id]`.
 
 ## Content Model
 
