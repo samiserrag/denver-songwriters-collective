@@ -13,6 +13,25 @@ type MemberTagInput = {
   tag_reason: string | null;
 };
 
+function isMissingTagSchemaError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const maybe = error as { code?: string; message?: string };
+  const code = maybe.code || "";
+  const message = (maybe.message || "").toLowerCase();
+
+  if (code === "42P01" || code === "PGRST200" || code === "PGRST205") return true;
+  if (!message) return false;
+  if (!message.includes("organization_member_tags") && !message.includes("host_spotlight_reason")) {
+    return false;
+  }
+  return (
+    message.includes("does not exist") ||
+    message.includes("could not find") ||
+    message.includes("relation") ||
+    message.includes("column")
+  );
+}
+
 function normalizeVisibility(value: unknown): OrganizationVisibility {
   if (value === "private" || value === "unlisted" || value === "public") return value;
   return "unlisted";
@@ -84,7 +103,8 @@ async function syncOrganizationMemberTags(
     .eq("organization_id", organizationId);
 
   if (existingError) {
-    throw new Error(existingError.message);
+    if (isMissingTagSchemaError(existingError)) return;
+    throw existingError;
   }
 
   const existing = (existingRows || []) as Array<{ id: string; profile_id: string }>;
@@ -101,7 +121,8 @@ async function syncOrganizationMemberTags(
       .in("id", deleteIds);
 
     if (deleteError) {
-      throw new Error(deleteError.message);
+      if (isMissingTagSchemaError(deleteError)) return;
+      throw deleteError;
     }
   }
 
@@ -119,7 +140,8 @@ async function syncOrganizationMemberTags(
       .upsert(upsertRows, { onConflict: "organization_id,profile_id" });
 
     if (upsertError) {
-      throw new Error(upsertError.message);
+      if (isMissingTagSchemaError(upsertError)) return;
+      throw upsertError;
     }
   }
 }
@@ -163,6 +185,12 @@ async function listOrganizationsWithTags(
     .order("created_at", { ascending: true });
 
   if (tagError) {
+    if (isMissingTagSchemaError(tagError)) {
+      return organizations.map((organization) => ({
+        ...organization,
+        member_tags: [],
+      }));
+    }
     throw new Error(tagError.message);
   }
 
