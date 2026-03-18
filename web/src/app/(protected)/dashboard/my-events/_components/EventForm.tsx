@@ -935,7 +935,13 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     <form onSubmit={handleSubmit} noValidate className="space-y-6">
       <div className="p-4 bg-amber-100 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-500/30 rounded-lg text-amber-900 dark:text-amber-200">
         <p className="font-medium">
-          Important: Save all changes, then click <strong>Publish Event</strong> for this happening to be public.
+          {formData.is_published ? (
+            "Important: Save all changes!"
+          ) : (
+            <>
+              Important: Save all changes, then click <strong>Publish Event</strong> for this happening to be public.
+            </>
+          )}
         </p>
       </div>
 
