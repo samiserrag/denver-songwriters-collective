@@ -47,6 +47,38 @@
 4. On approval, member gets `owner` access via `organization_managers`.
 5. Member edits profile content/photos from `/dashboard/my-organizations/[id]`.
 
+## Phase 3: Team Invite Links + Claim Notifications
+
+- New migration:
+  - `supabase/migrations/20260318030500_organization_invites.sql`
+- New invite APIs:
+  - `web/src/app/api/my-organizations/[id]/invite/route.ts`
+  - `web/src/app/api/my-organizations/[id]/invite/[inviteId]/route.ts`
+  - `web/src/app/api/organization-invites/accept/route.ts`
+- New invite UX:
+  - `web/src/app/(protected)/dashboard/my-organizations/[id]/_components/OrganizationInviteSection.tsx`
+  - `web/src/app/organization-invite/page.tsx`
+- Claim decision emails now sent with preference-aware delivery:
+  - `web/src/lib/email/templates/organizationClaimApproved.ts`
+  - `web/src/lib/email/templates/organizationClaimRejected.ts`
+  - `web/src/lib/notifications/preferences.ts` (`organizationClaimApproved`/`organizationClaimRejected`)
+- Invite creation can optionally auto-email a restricted recipient:
+  - `web/src/lib/email/templates/organizationInvite.ts`
+
+### Invite Workflow Summary
+
+1. Owner/admin (or manager for manager-only access) opens `/dashboard/my-organizations/[id]`.
+2. Creates an invite link with optional email restriction and expiration.
+3. Recipient opens `/organization-invite?token=...` and logs in/signs up if needed.
+4. On acceptance, recipient is granted `manager` or `owner` in `organization_managers`.
+5. Invite creator receives a dashboard notification when the invite is accepted.
+
+### Guardrails
+
+- Non-owner managers cannot create or revoke owner invites.
+- Tokens are stored as SHA-256 hashes only; plaintext token is shown once at creation.
+- Invites enforce expiry, one-time acceptance, revocation, and optional email restriction.
+
 ## Content Model
 
 Each listed organization uses this shape:

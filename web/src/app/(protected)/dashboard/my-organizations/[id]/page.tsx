@@ -3,6 +3,7 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { checkAdminRole } from "@/lib/auth/adminAuth";
 import OrganizationEditForm from "./_components/OrganizationEditForm";
+import OrganizationInviteSection from "./_components/OrganizationInviteSection";
 
 export const dynamic = "force-dynamic";
 
@@ -101,6 +102,14 @@ export default async function EditOrganizationPage({
         </div>
 
         <OrganizationEditForm organization={organization} />
+
+        <div className="mt-8">
+          <OrganizationInviteSection
+            organizationId={organization.id}
+            organizationName={organization.name}
+            canInviteOwner={isAdmin || grant?.role === "owner"}
+          />
+        </div>
       </div>
     </main>
   );

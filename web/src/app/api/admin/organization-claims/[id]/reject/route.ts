@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { checkAdminRole } from "@/lib/auth/adminAuth";
+import { sendEmailWithPreferences } from "@/lib/email/sendWithPreferences";
+import { getOrganizationClaimRejectedEmail } from "@/lib/email/templates/organizationClaimRejected";
 
 export async function POST(
   request: NextRequest,
@@ -28,7 +30,7 @@ export async function POST(
 
     const { data: claim, error: claimError } = await supabase
       .from("organization_claims")
-      .select("id, status")
+      .select("id, status, requester_id, organization_id")
       .eq("id", claimId)
       .single();
 
@@ -56,6 +58,51 @@ export async function POST(
     if (updateError) {
       console.error("[OrganizationClaimReject] Update error:", updateError);
       return NextResponse.json({ error: "Failed to reject claim" }, { status: 500 });
+    }
+
+    try {
+      const [{ data: organization }, { data: requester }] = await Promise.all([
+        supabase
+          .from("organizations")
+          .select("id, name, slug")
+          .eq("id", claim.organization_id)
+          .single(),
+        supabase
+          .from("profiles")
+          .select("id, full_name, email")
+          .eq("id", claim.requester_id)
+          .single(),
+      ]);
+
+      if (organization && requester?.email) {
+        const emailContent = getOrganizationClaimRejectedEmail({
+          userName: requester.full_name,
+          organizationName: organization.name,
+          organizationId: organization.id,
+          organizationSlug: organization.slug,
+          reason: rejectionReason,
+        });
+
+        await sendEmailWithPreferences({
+          supabase,
+          userId: claim.requester_id,
+          templateKey: "organizationClaimRejected",
+          payload: {
+            to: requester.email,
+            subject: emailContent.subject,
+            html: emailContent.html,
+            text: emailContent.text,
+          },
+          notification: {
+            type: "organization_claim",
+            title: `Update on your claim for ${organization.name}`,
+            message: rejectionReason || "Your organization claim was not approved.",
+            link: "/dashboard/my-organizations",
+          },
+        });
+      }
+    } catch (emailError) {
+      console.error("[OrganizationClaimReject] Rejection email error:", emailError);
     }
 
     return NextResponse.json({

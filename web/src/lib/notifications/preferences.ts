@@ -161,6 +161,9 @@ export const EMAIL_CATEGORY_MAP: Record<string, EmailCategory> = {
   // Claim-related templates (venues) - ABC8
   venueClaimApproved: "claim_updates",
   venueClaimRejected: "claim_updates",
+  // Claim-related templates (organizations)
+  organizationClaimApproved: "claim_updates",
+  organizationClaimRejected: "claim_updates",
 
   // Host activity — RSVPs, comments, co-host updates on events the user hosts
   rsvpHostNotification: "host_activity",

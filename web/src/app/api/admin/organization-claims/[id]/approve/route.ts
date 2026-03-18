@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { checkAdminRole } from "@/lib/auth/adminAuth";
+import { sendEmailWithPreferences } from "@/lib/email/sendWithPreferences";
+import { getOrganizationClaimApprovedEmail } from "@/lib/email/templates/organizationClaimApproved";
+import { getOrganizationClaimRejectedEmail } from "@/lib/email/templates/organizationClaimRejected";
 
 export async function POST(
   request: NextRequest,
@@ -59,6 +62,51 @@ export async function POST(
         })
         .eq("id", claimId);
 
+      try {
+        const [{ data: organization }, { data: requester }] = await Promise.all([
+          supabase
+            .from("organizations")
+            .select("id, name, slug")
+            .eq("id", claim.organization_id)
+            .single(),
+          supabase
+            .from("profiles")
+            .select("id, full_name, email")
+            .eq("id", claim.requester_id)
+            .single(),
+        ]);
+
+        if (organization && requester?.email) {
+          const emailContent = getOrganizationClaimRejectedEmail({
+            userName: requester.full_name,
+            organizationName: organization.name,
+            organizationId: organization.id,
+            organizationSlug: organization.slug,
+            reason: "User already has active access to this organization.",
+          });
+
+          await sendEmailWithPreferences({
+            supabase,
+            userId: claim.requester_id,
+            templateKey: "organizationClaimRejected",
+            payload: {
+              to: requester.email,
+              subject: emailContent.subject,
+              html: emailContent.html,
+              text: emailContent.text,
+            },
+            notification: {
+              type: "organization_claim",
+              title: `Update on your claim for ${organization.name}`,
+              message: "User already has active access to this organization.",
+              link: "/dashboard/my-organizations",
+            },
+          });
+        }
+      } catch (emailError) {
+        console.error("[OrganizationClaimApprove] Auto-reject email error:", emailError);
+      }
+
       return NextResponse.json(
         { error: "User already has access. Claim auto-rejected." },
         { status: 409 }
@@ -96,6 +144,51 @@ export async function POST(
         .update({ status: "pending", reviewed_by: null, reviewed_at: null })
         .eq("id", claimId);
       return NextResponse.json({ error: "Failed to grant organization access" }, { status: 500 });
+    }
+
+    try {
+      const [{ data: organization }, { data: requester }] = await Promise.all([
+        supabase
+          .from("organizations")
+          .select("id, name, slug")
+          .eq("id", claim.organization_id)
+          .single(),
+        supabase
+          .from("profiles")
+          .select("id, full_name, email")
+          .eq("id", claim.requester_id)
+          .single(),
+      ]);
+
+      if (organization && requester?.email) {
+        const emailContent = getOrganizationClaimApprovedEmail({
+          userName: requester.full_name,
+          organizationName: organization.name,
+          organizationId: organization.id,
+          organizationSlug: organization.slug,
+          role: "owner",
+        });
+
+        await sendEmailWithPreferences({
+          supabase,
+          userId: claim.requester_id,
+          templateKey: "organizationClaimApproved",
+          payload: {
+            to: requester.email,
+            subject: emailContent.subject,
+            html: emailContent.html,
+            text: emailContent.text,
+          },
+          notification: {
+            type: "organization_claim",
+            title: `You're now an owner of ${organization.name}`,
+            message: "Your organization claim has been approved.",
+            link: "/dashboard/my-organizations",
+          },
+        });
+      }
+    } catch (emailError) {
+      console.error("[OrganizationClaimApprove] Approval email error:", emailError);
     }
 
     return NextResponse.json({
