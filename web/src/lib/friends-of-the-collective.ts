@@ -12,6 +12,7 @@ export interface CollectiveFriend {
   isActive?: boolean;
   logoImageUrl?: string;
   coverImageUrl?: string;
+  galleryImageUrls?: string[];
   funNote?: string;
   sortOrder?: number;
   memberTags?: CollectiveFriendMemberTag[];

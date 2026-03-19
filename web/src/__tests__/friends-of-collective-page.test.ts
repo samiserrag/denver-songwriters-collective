@@ -4,6 +4,7 @@ import path from "path";
 
 describe("Friends of the Collective page", () => {
   const appDir = path.join(__dirname, "../app/friends-of-the-collective/page.tsx");
+  const profilePageDir = path.join(__dirname, "../app/friends-of-the-collective/[slug]/page.tsx");
   const libDir = path.join(__dirname, "../lib/friends-of-the-collective.ts");
   const footerPath = path.join(__dirname, "../components/navigation/footer.tsx");
 
@@ -28,6 +29,11 @@ describe("Friends of the Collective page", () => {
     expect(source).toContain("Blog Posts");
     expect(source).toContain("Gallery Albums");
     expect(source).toContain("Hosted Happenings Series");
+    expect(source).toContain("Default is alphabetical list view.");
+    expect(source).toContain("Cards");
+    expect(source).toContain("List");
+    expect(source).toContain('href="/friends-of-the-collective?view=card"');
+    expect(source).toContain("friendProfileHref");
   });
 
   it("is intentionally unlisted from footer while private", () => {
@@ -44,5 +50,14 @@ describe("Friends of the Collective page", () => {
     expect(source).toContain('from("organization_content_links")');
     expect(source).toContain("notFound()");
     expect(source).toContain('robots: "noindex, nofollow"');
+  });
+
+  it("includes a dedicated friend profile route for richer linked content", () => {
+    const source = fs.readFileSync(profilePageDir, "utf-8");
+    expect(source).toContain("FriendOrganizationProfilePage");
+    expect(source).toContain("Connected Members");
+    expect(source).toContain("Related on CSC");
+    expect(source).toContain("Gallery");
+    expect(source).toContain("Claim or update this organization profile");
   });
 });

@@ -123,6 +123,24 @@
 - Public rendering only surfaces links that are public/published as applicable.
 - Admin can still stage links ahead of publish; hidden/draft content remains admin-visible but not public-visible.
 
+## Phase 6: Default Alphabetical List View + Organization Profile Routes
+
+- Directory UX updates:
+  - `web/src/app/friends-of-the-collective/page.tsx`
+  - Default view is now **alphabetical list**.
+  - Added explicit view toggle: **List** (default) and **Cards** (`?view=card`).
+  - List rows include quick metrics and links to both external site and CSC org profile route.
+- New organization profile route:
+  - `web/src/app/friends-of-the-collective/[slug]/page.tsx`
+  - Dedicated long-form organization page to hold:
+    - profile imagery and gallery photos
+    - connected member cards
+    - linked CSC blog/gallery/event-series content
+    - claim/update CTA
+- Data model updates:
+  - `web/src/lib/friends-of-the-collective.ts` adds optional `galleryImageUrls`.
+  - `web/src/lib/organizations.ts` maps `gallery_image_urls` into friend view output.
+
 ## Content Model
 
 Each listed organization uses this shape:

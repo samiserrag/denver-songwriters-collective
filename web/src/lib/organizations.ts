@@ -114,6 +114,7 @@ export function toFriendView(row: OrganizationRecord): CollectiveFriend {
     isActive: row.is_active,
     logoImageUrl: row.logo_image_url ?? undefined,
     coverImageUrl: row.cover_image_url ?? undefined,
+    galleryImageUrls: row.gallery_image_urls ?? undefined,
     funNote: row.fun_note ?? undefined,
     sortOrder: row.sort_order,
     slug: row.slug,

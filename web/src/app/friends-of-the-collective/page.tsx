@@ -87,6 +87,10 @@ function getFriendImageUrl(friend: {
   }
 }
 
+function friendProfileHref(friend: { slug?: string; id: string }): string {
+  return `/friends-of-the-collective/${friend.slug || friend.id}`;
+}
+
 function isUuidLike(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
@@ -461,14 +465,22 @@ async function loadOrganizationsForPage(isPublicMode: boolean) {
   });
 }
 
-export default async function FriendsOfTheCollectivePage() {
+export default async function FriendsOfTheCollectivePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ view?: string }>;
+}) {
   await enforcePrivateAccessUntilLaunch();
+
+  const resolvedSearchParams = await searchParams;
+  const currentView = resolvedSearchParams.view === "card" ? "card" : "list";
 
   const [friends, featuredHosts] = await Promise.all([
     loadOrganizationsForPage(FRIENDS_PAGE_PUBLIC),
     loadFeaturedHostMembers(),
   ]);
 
+  const alphabetical = [...friends].sort((a, b) => a.name.localeCompare(b.name));
   const featured = friends.filter((friend) => friend.featured);
   const standard = friends.filter((friend) => !friend.featured);
 
@@ -633,14 +645,22 @@ export default async function FriendsOfTheCollectivePage() {
         )}
 
         <div className="pt-2 flex items-center justify-between gap-3">
-          <a
-            href={friend.websiteUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm text-[var(--color-text-accent)] hover:underline"
-          >
-            Visit Site
-          </a>
+          <div className="flex items-center gap-3">
+            <Link
+              href={friendProfileHref(friend)}
+              className="text-sm text-[var(--color-text-accent)] hover:underline"
+            >
+              View Profile
+            </Link>
+            <a
+              href={friend.websiteUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-[var(--color-text-accent)] hover:underline"
+            >
+              Visit Site
+            </a>
+          </div>
           <span className="text-xs text-[var(--color-text-tertiary)]">{hostnameFromUrl(friend.websiteUrl)}</span>
         </div>
 
@@ -765,6 +785,27 @@ export default async function FriendsOfTheCollectivePage() {
             </section>
           )}
 
+          <section className="rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] p-4 md:p-5">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div>
+                <h2 className="text-xl md:text-2xl font-[var(--font-family-serif)] font-semibold text-[var(--color-text-primary)]">
+                  Community Directory
+                </h2>
+                <p className="text-sm text-[var(--color-text-secondary)]">
+                  Default is alphabetical list view. Switch to cards when you want visual browsing.
+                </p>
+              </div>
+              <div className="inline-flex items-center gap-2 rounded-xl border border-[var(--color-border-default)] p-1 bg-[var(--color-bg-tertiary)]">
+                <Button asChild size="sm" variant={currentView === "list" ? "primary" : "ghost"}>
+                  <Link href="/friends-of-the-collective">List</Link>
+                </Button>
+                <Button asChild size="sm" variant={currentView === "card" ? "primary" : "ghost"}>
+                  <Link href="/friends-of-the-collective?view=card">Cards</Link>
+                </Button>
+              </div>
+            </div>
+          </section>
+
           {friends.length === 0 ? (
             <section className="rounded-3xl border border-[var(--color-border-accent)]/40 bg-[var(--color-bg-secondary)] p-8 text-center">
               <h2 className="text-2xl font-[var(--font-family-serif)] font-semibold text-[var(--color-text-primary)] mb-3">
@@ -781,6 +822,69 @@ export default async function FriendsOfTheCollectivePage() {
                   <Link href="/partners">Partnership Opportunities</Link>
                 </Button>
               </div>
+            </section>
+          ) : currentView === "list" ? (
+            <section className="rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] overflow-hidden">
+              <ul className="divide-y divide-[var(--color-border-subtle)]">
+                {alphabetical.map((friend) => {
+                  const relatedCount =
+                    (friend.relatedBlogPosts?.length || 0) +
+                    (friend.relatedGalleryAlbums?.length || 0) +
+                    (friend.relatedEventSeries?.length || 0);
+                  return (
+                    <li key={friend.id} className="p-4 md:p-5">
+                      <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-6">
+                        <div className="min-w-0 flex-1 space-y-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Link
+                              href={friendProfileHref(friend)}
+                              className="text-lg font-[var(--font-family-serif)] font-semibold text-[var(--color-text-primary)] hover:text-[var(--color-text-accent)]"
+                            >
+                              {friend.name}
+                            </Link>
+                            {friend.featured && (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wide border border-[var(--color-border-accent)] text-[var(--color-text-accent)]">
+                                Featured
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs tracking-wide uppercase text-[var(--color-text-tertiary)]">
+                            {friend.organizationType || "Community Organization"}
+                            {friend.city ? ` • ${friend.city}` : ""}
+                          </p>
+                          <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
+                            {friend.shortBlurb}
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap gap-2 text-xs text-[var(--color-text-secondary)]">
+                          <span className="px-2 py-1 rounded-full bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)]">
+                            {friend.memberTags?.length || 0} members
+                          </span>
+                          <span className="px-2 py-1 rounded-full bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)]">
+                            {relatedCount} related items
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3 lg:justify-end">
+                          <Link
+                            href={friendProfileHref(friend)}
+                            className="text-sm text-[var(--color-text-accent)] hover:underline"
+                          >
+                            View Profile
+                          </Link>
+                          <a
+                            href={friend.websiteUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-[var(--color-text-accent)] hover:underline"
+                          >
+                            Visit Site
+                          </a>
+                        </div>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
             </section>
           ) : (
             <>
