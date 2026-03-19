@@ -305,6 +305,9 @@ export default function AttendeeInviteManager({
       <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-1">
         Attendee Invites
       </h3>
+      <p className="text-xs text-[var(--color-text-tertiary)] mb-2">
+        For: {eventTitle}
+      </p>
       <p className="text-sm text-[var(--color-text-secondary)] mb-4">
         {isInviteOnly
           ? "This event is invite-only. Only invited people can see and RSVP to it."

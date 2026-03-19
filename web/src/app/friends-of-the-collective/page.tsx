@@ -497,6 +497,7 @@ export default async function FriendsOfTheCollectivePage() {
         <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">{friend.shortBlurb}</p>
 
         {imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={imageUrl}
             alt={`${friend.name} cover`}
@@ -542,6 +543,7 @@ export default async function FriendsOfTheCollectivePage() {
                   title={tag.tagReason || tag.name}
                 >
                   {tag.avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={tag.avatarUrl}
                       alt={tag.name}
@@ -722,6 +724,7 @@ export default async function FriendsOfTheCollectivePage() {
                     >
                       <div className="flex items-center gap-3">
                         {host.avatar_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
                           <img
                             src={host.avatar_url}
                             alt={name}

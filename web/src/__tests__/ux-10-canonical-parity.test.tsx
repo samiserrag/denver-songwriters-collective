@@ -11,7 +11,13 @@ vi.mock("next/link", () => ({
 }));
 
 vi.mock("next/image", () => ({
-  default: (props: React.ImgHTMLAttributes<HTMLImageElement>) => <img {...props} alt={props.alt ?? ""} />,
+  default: (props: React.ImgHTMLAttributes<HTMLImageElement>) => (
+    <div
+      data-next-image-mock="true"
+      data-src={props.src?.toString() || ""}
+      aria-label={props.alt ?? ""}
+    />
+  ),
 }));
 
 vi.mock("@/components/gallery/GalleryGrid", () => ({

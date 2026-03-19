@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
@@ -281,7 +281,7 @@ export default function AlbumManager({
   const [isLeaving, setIsLeaving] = useState(false);
   const [currentCoverUrl, setCurrentCoverUrl] = useState(album.cover_image_url);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [, setFieldErrors] = useState<Record<string, string>>({});
   const [isModeratingComments, setIsModeratingComments] = useState(false);
   const [images, setImages] = useState(initialImages);
   // Sync images when server re-fetches after router.refresh()

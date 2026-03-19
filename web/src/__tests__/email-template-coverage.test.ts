@@ -53,7 +53,7 @@ describe("Email template preference coverage", () => {
       "digests",
       "invitations",
     ]);
-    for (const [key, category] of Object.entries(EMAIL_CATEGORY_MAP)) {
+    for (const [, category] of Object.entries(EMAIL_CATEGORY_MAP)) {
       expect(validCategories.has(category)).toBe(true);
     }
   });

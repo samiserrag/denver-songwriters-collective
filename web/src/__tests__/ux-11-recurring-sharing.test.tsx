@@ -27,7 +27,13 @@ describe("UX-11 recurring event sharing reliability", () => {
     }));
 
     vi.doMock("next/image", () => ({
-      default: (props: React.ImgHTMLAttributes<HTMLImageElement>) => <img {...props} alt={props.alt ?? ""} />,
+      default: (props: React.ImgHTMLAttributes<HTMLImageElement>) => (
+        <div
+          data-next-image-mock="true"
+          data-src={props.src?.toString() || ""}
+          aria-label={props.alt ?? ""}
+        />
+      ),
     }));
 
     const recurringEvent = {

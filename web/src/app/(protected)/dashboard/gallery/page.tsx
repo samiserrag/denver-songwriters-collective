@@ -134,9 +134,6 @@ export default async function UserGalleryPage() {
     .eq("status", "published")
     .order("event_date", { ascending: false, nullsFirst: false });
 
-  const ownedCount = (ownedAlbums ?? []).length;
-  const collabCount = (collabAlbums ?? []).length;
-
   return (
     <main className="min-h-screen bg-[var(--color-background)] py-12 px-6">
       <div className="max-w-4xl mx-auto">

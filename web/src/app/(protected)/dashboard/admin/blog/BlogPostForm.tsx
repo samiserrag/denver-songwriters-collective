@@ -61,7 +61,7 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>(initialGallery);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [, setFieldErrors] = useState<Record<string, string>>({});
   const [showPreview, setShowPreview] = useState(false);
 
   // Auto-generate slug from title
