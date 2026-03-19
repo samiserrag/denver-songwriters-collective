@@ -18,10 +18,10 @@ vi.mock("@/lib/supabase/server", () => ({
       if (table === "gallery_album_links") {
         return {
           select: () => ({
-            eq: (_col: string, _val: string) => ({
-              eq: (_col2: string, _val2: string) => ({
-                eq: (_col3: string, _val3: string) => ({
-                  eq: (_col4: string, _val4: string) => ({
+            eq: () => ({
+              eq: () => ({
+                eq: () => ({
+                  eq: () => ({
                     maybeSingle: () => ({
                       data: mockCollabLink,
                     }),

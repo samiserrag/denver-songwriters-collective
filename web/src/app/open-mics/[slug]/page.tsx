@@ -39,7 +39,6 @@ export async function generateMetadata({
   }
 
   const venueName = event.venue?.name ?? "Denver";
-  const venueCity = event.venue?.city ?? "Denver";
   const dayText = event.day_of_week ? `${event.day_of_week}s` : "";
   const timeText = event.start_time ? formatTimeToAMPM(event.start_time) : "";
 

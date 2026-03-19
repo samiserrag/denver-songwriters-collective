@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
+import Script from "next/script";
 import { Header, Footer, ShareSiteCtaBar } from "@/components/navigation";
 import { Toaster } from "sonner";
 import { Analytics } from "@vercel/analytics/next";
@@ -206,17 +207,18 @@ export default async function RootLayout({
         <link rel="dns-prefetch" href="https://oipozdbfxyskoscsgbfq.supabase.co" />
 
         {/* Google tag (gtag.js) */}
-        <script async src="https://www.googletagmanager.com/gtag/js?id=G-7D09XHWWS7" />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              gtag('js', new Date());
-              gtag('config', 'G-7D09XHWWS7');
-            `,
-          }}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-7D09XHWWS7"
+          strategy="afterInteractive"
         />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-7D09XHWWS7');
+          `}
+        </Script>
 
         {/*
           Note: The hero image LCP is optimized via next/image with priority prop.
