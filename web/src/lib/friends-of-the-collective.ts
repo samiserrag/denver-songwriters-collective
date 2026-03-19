@@ -33,7 +33,7 @@ export interface CollectiveFriendMemberTag {
 
 export interface CollectiveFriendContentLink {
   id: string;
-  linkType: "blog_post" | "gallery_album" | "event_series";
+  linkType: "blog_post" | "gallery_album" | "event_series" | "event";
   targetId: string;
   sortOrder: number;
   labelOverride?: string;

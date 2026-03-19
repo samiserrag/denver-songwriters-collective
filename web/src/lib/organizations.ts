@@ -1,7 +1,7 @@
 import type { CollectiveFriend, CollectiveFriendMemberTag } from "@/lib/friends-of-the-collective";
 
 export type OrganizationVisibility = "private" | "unlisted" | "public";
-export type OrganizationContentLinkType = "blog_post" | "gallery_album" | "event_series";
+export type OrganizationContentLinkType = "blog_post" | "gallery_album" | "event_series" | "event";
 
 export interface OrganizationRecord {
   id: string;

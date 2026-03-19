@@ -2,13 +2,16 @@ import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/serviceRoleClient";
 import { checkAdminRole } from "@/lib/auth/adminAuth";
+import { SITE_URL } from "@/lib/email/render";
+import { sendEmail } from "@/lib/email/mailer";
+import { getOrganizationMemberTaggedEmail } from "@/lib/email/templates/organizationMemberTagged";
 import type { OrganizationContentLinkType, OrganizationVisibility } from "@/lib/organizations";
 
 const TABLE_NAME = "organizations";
 const TAG_TABLE_NAME = "organization_member_tags";
 const CONTENT_LINK_TABLE_NAME = "organization_content_links";
 
-const CONTENT_LINK_TYPES: OrganizationContentLinkType[] = ["blog_post", "gallery_album", "event_series"];
+const CONTENT_LINK_TYPES: OrganizationContentLinkType[] = ["blog_post", "gallery_album", "event_series", "event"];
 
 type MemberTagInput = {
   profile_id: string;
@@ -21,16 +24,6 @@ type ContentLinkInput = {
   target_id: string;
   sort_order: number;
   label_override: string | null;
-};
-
-type EventSeriesOption = {
-  series_id: string;
-  title: string;
-  slug: string | null;
-  event_id: string;
-  event_date: string | null;
-  is_published: boolean;
-  visibility: string;
 };
 
 function isMissingSchemaError(error: unknown, schemaTokens: string[]): boolean {
@@ -154,18 +147,22 @@ async function syncOrganizationMemberTags(
   organizationId: string,
   memberTags: MemberTagInput[],
   actorUserId: string
-): Promise<void> {
+): Promise<string[]> {
   const { data: existingRows, error: existingError } = await (serviceClient as any)
     .from(TAG_TABLE_NAME)
     .select("id, profile_id")
     .eq("organization_id", organizationId);
 
   if (existingError) {
-    if (isMissingTagSchemaError(existingError)) return;
+    if (isMissingTagSchemaError(existingError)) return [];
     throw existingError;
   }
 
   const existing = (existingRows || []) as Array<{ id: string; profile_id: string }>;
+  const existingProfileIds = new Set(existing.map((row) => row.profile_id));
+  const addedProfileIds = memberTags
+    .map((item) => item.profile_id)
+    .filter((profileId) => !existingProfileIds.has(profileId));
   const incomingIds = new Set(memberTags.map((item) => item.profile_id));
 
   const deleteIds = existing
@@ -179,7 +176,7 @@ async function syncOrganizationMemberTags(
       .in("id", deleteIds);
 
     if (deleteError) {
-      if (isMissingTagSchemaError(deleteError)) return;
+      if (isMissingTagSchemaError(deleteError)) return [];
       throw deleteError;
     }
   }
@@ -198,10 +195,12 @@ async function syncOrganizationMemberTags(
       .upsert(upsertRows, { onConflict: "organization_id,profile_id" });
 
     if (upsertError) {
-      if (isMissingTagSchemaError(upsertError)) return;
+      if (isMissingTagSchemaError(upsertError)) return [];
       throw upsertError;
     }
   }
+
+  return addedProfileIds;
 }
 
 async function syncOrganizationContentLinks(
@@ -379,7 +378,6 @@ async function listMemberOptions(serviceClient: ReturnType<typeof createServiceR
   const { data, error } = await (serviceClient as any)
     .from("profiles")
     .select("id, full_name, slug, avatar_url, role, is_public, is_songwriter, is_host, is_studio, is_fan")
-    .not("full_name", "is", null)
     .order("full_name", { ascending: true });
 
   if (error) {
@@ -410,45 +408,207 @@ async function listGalleryOptions(serviceClient: ReturnType<typeof createService
   return (data || []) as Array<Record<string, unknown>>;
 }
 
-async function listEventSeriesOptions(serviceClient: ReturnType<typeof createServiceRoleClient>) {
+async function listEventOptions(serviceClient: ReturnType<typeof createServiceRoleClient>) {
   const { data, error } = await (serviceClient as any)
     .from("events")
     .select("id, series_id, title, slug, event_date, is_published, visibility")
-    .not("series_id", "is", null)
     .order("event_date", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(error.message);
 
-  const bySeries = new Map<string, EventSeriesOption>();
-  for (const row of (data || []) as Array<Record<string, unknown>>) {
-    const seriesId = normalizeString(row.series_id);
-    if (!seriesId || bySeries.has(seriesId)) continue;
-
-    bySeries.set(seriesId, {
-      series_id: seriesId,
-      title: normalizeString(row.title) || "Untitled series",
+  return ((data || []) as Array<Record<string, unknown>>)
+    .map((row) => ({
+      id: normalizeString(row.id) || "",
+      title: normalizeString(row.title) || "Untitled event",
       slug: normalizeString(row.slug),
-      event_id: normalizeString(row.id) || "",
+      series_id: normalizeString(row.series_id),
       event_date: normalizeString(row.event_date),
       is_published: row.is_published === true,
       visibility: normalizeString(row.visibility) || "private",
-    });
-  }
-
-  return Array.from(bySeries.values())
-    .filter((row) => !!row.event_id)
+    }))
+    .filter((row) => !!row.id)
     .sort((a, b) => a.title.localeCompare(b.title));
 }
 
 async function listContentOptions(serviceClient: ReturnType<typeof createServiceRoleClient>) {
-  const [blogs, galleries, eventSeries] = await Promise.all([
+  const [blogs, galleries, events] = await Promise.all([
     listBlogOptions(serviceClient),
     listGalleryOptions(serviceClient),
-    listEventSeriesOptions(serviceClient),
+    listEventOptions(serviceClient),
   ]);
 
-  return { blogs, galleries, eventSeries };
+  return { blogs, galleries, events };
+}
+
+async function listExistingProfileIds(
+  serviceClient: ReturnType<typeof createServiceRoleClient>,
+  profileIds: string[]
+): Promise<Set<string>> {
+  if (profileIds.length === 0) return new Set<string>();
+
+  const { data, error } = await (serviceClient as any)
+    .from("profiles")
+    .select("id")
+    .in("id", profileIds);
+
+  if (error) throw new Error(error.message);
+
+  return new Set(
+    ((data || []) as Array<Record<string, unknown>>)
+      .map((row) => normalizeString(row.id))
+      .filter((id): id is string => !!id)
+  );
+}
+
+async function collectInvalidContentLinksByExistence(
+  serviceClient: ReturnType<typeof createServiceRoleClient>,
+  contentLinks: ContentLinkInput[]
+): Promise<ContentLinkInput[]> {
+  if (contentLinks.length === 0) return [];
+
+  const blogIds = Array.from(
+    new Set(
+      contentLinks
+        .filter((link) => link.link_type === "blog_post")
+        .map((link) => link.target_id)
+    )
+  );
+  const galleryIds = Array.from(
+    new Set(
+      contentLinks
+        .filter((link) => link.link_type === "gallery_album")
+        .map((link) => link.target_id)
+    )
+  );
+  const eventIds = Array.from(
+    new Set(
+      contentLinks
+        .filter((link) => link.link_type === "event")
+        .map((link) => link.target_id)
+    )
+  );
+  const seriesIds = Array.from(
+    new Set(
+      contentLinks
+        .filter((link) => link.link_type === "event_series")
+        .map((link) => link.target_id)
+    )
+  );
+
+  const [blogsResult, galleriesResult, eventsResult, seriesResult] = await Promise.all([
+    blogIds.length > 0
+      ? (serviceClient as any).from("blog_posts").select("id").in("id", blogIds)
+      : Promise.resolve({ data: [], error: null }),
+    galleryIds.length > 0
+      ? (serviceClient as any).from("gallery_albums").select("id").in("id", galleryIds)
+      : Promise.resolve({ data: [], error: null }),
+    eventIds.length > 0
+      ? (serviceClient as any).from("events").select("id").in("id", eventIds)
+      : Promise.resolve({ data: [], error: null }),
+    seriesIds.length > 0
+      ? (serviceClient as any).from("events").select("series_id").in("series_id", seriesIds)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+
+  if (blogsResult.error) throw new Error(blogsResult.error.message);
+  if (galleriesResult.error) throw new Error(galleriesResult.error.message);
+  if (eventsResult.error) throw new Error(eventsResult.error.message);
+  if (seriesResult.error) throw new Error(seriesResult.error.message);
+
+  const existingBlogIds = new Set(
+    ((blogsResult.data || []) as Array<Record<string, unknown>>)
+      .map((row) => normalizeString(row.id))
+      .filter((id): id is string => !!id)
+  );
+  const existingGalleryIds = new Set(
+    ((galleriesResult.data || []) as Array<Record<string, unknown>>)
+      .map((row) => normalizeString(row.id))
+      .filter((id): id is string => !!id)
+  );
+  const existingEventIds = new Set(
+    ((eventsResult.data || []) as Array<Record<string, unknown>>)
+      .map((row) => normalizeString(row.id))
+      .filter((id): id is string => !!id)
+  );
+  const existingSeriesIds = new Set(
+    ((seriesResult.data || []) as Array<Record<string, unknown>>)
+      .map((row) => normalizeString(row.series_id))
+      .filter((id): id is string => !!id)
+  );
+
+  return contentLinks.filter((link) => {
+    if (link.link_type === "blog_post") return !existingBlogIds.has(link.target_id);
+    if (link.link_type === "gallery_album") return !existingGalleryIds.has(link.target_id);
+    if (link.link_type === "event") return !existingEventIds.has(link.target_id);
+    if (link.link_type === "event_series") return !existingSeriesIds.has(link.target_id);
+    return true;
+  });
+}
+
+async function notifyTaggedMembersAdded(
+  serviceClient: ReturnType<typeof createServiceRoleClient>,
+  organizationId: string,
+  addedProfileIds: string[],
+  actorUserId: string
+) {
+  if (addedProfileIds.length === 0) return;
+
+  try {
+    const [{ data: organization }, { data: actorProfile }, { data: taggedProfiles }] = await Promise.all([
+      (serviceClient as any)
+        .from(TABLE_NAME)
+        .select("name")
+        .eq("id", organizationId)
+        .single(),
+      (serviceClient as any)
+        .from("profiles")
+        .select("full_name, email")
+        .eq("id", actorUserId)
+        .maybeSingle(),
+      (serviceClient as any)
+        .from("profiles")
+        .select("id, full_name, email")
+        .in("id", addedProfileIds),
+    ]);
+
+    const organizationName = normalizeString(organization?.name);
+    if (!organizationName) return;
+
+    const actorName =
+      normalizeString(actorProfile?.full_name) ||
+      normalizeString(actorProfile?.email) ||
+      "A CSC organization manager";
+
+    const directoryUrl = `${SITE_URL}/friends-of-the-collective`;
+    const removeTagUrl = `${SITE_URL}/organization-membership?organizationId=${encodeURIComponent(organizationId)}`;
+
+    await Promise.allSettled(
+      ((taggedProfiles || []) as Array<Record<string, unknown>>).map(async (profile) => {
+        const profileId = normalizeString(profile.id);
+        const to = normalizeString(profile.email);
+        if (!profileId || !to || profileId === actorUserId) return;
+
+        const emailContent = getOrganizationMemberTaggedEmail({
+          recipientName: normalizeString(profile.full_name),
+          organizationName,
+          taggedByName: actorName,
+          directoryUrl,
+          removeTagUrl,
+        });
+
+        await sendEmail({
+          to,
+          subject: emailContent.subject,
+          html: emailContent.html,
+          text: emailContent.text,
+          templateName: "organizationMemberTagged",
+        });
+      })
+    );
+  } catch (error) {
+    console.error("Organization member-tag notification failed:", error);
+  }
 }
 
 export async function GET() {
@@ -525,6 +685,37 @@ export async function POST(request: Request) {
     const contentLinks = normalizeContentLinks(body.content_links);
 
     const serviceClient = createServiceRoleClient();
+
+    if (memberTags.length > 0) {
+      const existingProfileIds = await listExistingProfileIds(
+        serviceClient,
+        memberTags.map((tag) => tag.profile_id)
+      );
+      const missingProfileIds = Array.from(
+        new Set(
+          memberTags
+            .map((tag) => tag.profile_id)
+            .filter((profileId) => !existingProfileIds.has(profileId))
+        )
+      );
+      if (missingProfileIds.length > 0) {
+        return NextResponse.json(
+          { error: "Some member tags reference unknown profiles.", missingProfileIds },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (contentLinks.length > 0) {
+      const invalidLinks = await collectInvalidContentLinksByExistence(serviceClient, contentLinks);
+      if (invalidLinks.length > 0) {
+        return NextResponse.json(
+          { error: "Some related content links reference missing content.", invalidLinks },
+          { status: 400 }
+        );
+      }
+    }
+
     const { data, error } = await (serviceClient as any).from(TABLE_NAME).insert(payload).select().single();
 
     if (error) {
@@ -533,12 +724,14 @@ export async function POST(request: Request) {
     }
 
     try {
+      let addedProfileIds: string[] = [];
       if (memberTags.length > 0) {
-        await syncOrganizationMemberTags(serviceClient, data.id, memberTags, user.id);
+        addedProfileIds = await syncOrganizationMemberTags(serviceClient, data.id, memberTags, user.id);
       }
       if (contentLinks.length > 0) {
         await syncOrganizationContentLinks(serviceClient, data.id, contentLinks, user.id);
       }
+      await notifyTaggedMembersAdded(serviceClient, data.id, addedProfileIds, user.id);
     } catch (syncError) {
       console.error("Organizations POST relation sync error:", syncError);
       await (serviceClient as any).from(TABLE_NAME).delete().eq("id", data.id);

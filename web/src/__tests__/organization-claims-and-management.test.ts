@@ -39,6 +39,7 @@ describe("Organization claim and management workflow", () => {
     const claimApi = read("app/api/organizations/[id]/claim/route.ts");
     const myOrgsApi = read("app/api/my-organizations/route.ts");
     const myOrgItemApi = read("app/api/my-organizations/[id]/route.ts");
+    const membershipApi = read("app/api/organization-membership/route.ts");
     const adminClaimsApi = read("app/api/admin/organization-claims/route.ts");
     const approveApi = read("app/api/admin/organization-claims/[id]/approve/route.ts");
     const rejectApi = read("app/api/admin/organization-claims/[id]/reject/route.ts");
@@ -48,7 +49,15 @@ describe("Organization claim and management workflow", () => {
     expect(myOrgsApi).toContain('from("organization_managers")');
     expect(myOrgsApi).toContain('from("organization_claims")');
     expect(myOrgItemApi).toContain("MANAGER_EDITABLE_FIELDS");
-    expect(myOrgItemApi).toContain('from("organizations")');
+    expect(myOrgItemApi).toContain('const TABLE_NAME = "organizations"');
+    expect(myOrgItemApi).toContain(".from(TABLE_NAME)");
+    expect(myOrgItemApi).toContain("collectInvalidManagerContentLinks");
+    expect(myOrgItemApi).toContain("listExistingProfileIds");
+    expect(myOrgItemApi).toContain("collectInvalidContentLinksByExistence");
+    expect(myOrgItemApi).toContain("Managers can only link blogs, galleries, and events tied to members tagged on this organization.");
+    expect(membershipApi).toContain("export async function GET");
+    expect(membershipApi).toContain("export async function DELETE");
+    expect(membershipApi).toContain("You have been removed from this organization profile.");
     expect(adminClaimsApi).toContain("checkAdminRole");
     expect(approveApi).toContain('from("organization_managers")');
     expect(rejectApi).toContain("rejection_reason");
@@ -57,6 +66,7 @@ describe("Organization claim and management workflow", () => {
   it("adds claim CTA to friends cards", () => {
     const source = read("app/friends-of-the-collective/page.tsx");
     expect(source).toContain("Represent this organization? Claim or update this profile.");
-    expect(source).toContain('href="/dashboard/my-organizations"');
+    expect(source).toContain("claimFeedbackHref");
+    expect(source).toContain("subject: `Claim or update organization profile: ${friend.name}`");
   });
 });

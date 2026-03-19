@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { PageContainer, HeroSection } from "@/components/layout";
 import { Button } from "@/components/ui";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getFriendsOfCollective } from "@/lib/friends-of-the-collective";
 import { createServiceRoleClient } from "@/lib/supabase/serviceRoleClient";
 import {
@@ -14,13 +12,11 @@ import {
   type OrganizationMemberTagProfile,
 } from "@/lib/organizations";
 
-const FRIENDS_PAGE_PUBLIC = process.env.NEXT_PUBLIC_FRIENDS_PAGE_PUBLIC === "true";
-
 export const metadata: Metadata = {
   title: "Friends of the Collective | The Colorado Songwriters Collective",
   description:
     "A growing directory of Colorado organizations, collectives, and community spaces that support songwriters.",
-  robots: "noindex, nofollow",
+  robots: "index, follow",
 };
 
 type FeaturedHostMember = {
@@ -91,6 +87,15 @@ function friendProfileHref(friend: { slug?: string; id: string }): string {
   return `/friends-of-the-collective/${friend.slug || friend.id}`;
 }
 
+function claimFeedbackHref(friend: { slug?: string; id: string; name: string }): string {
+  const params = new URLSearchParams({
+    category: "other",
+    subject: `Claim or update organization profile: ${friend.name}`,
+    pageUrl: friendProfileHref(friend),
+  });
+  return `/feedback?${params.toString()}`;
+}
+
 function isUuidLike(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
@@ -132,25 +137,6 @@ function normalizeProfileRelation(value: unknown): OrganizationMemberTagProfile 
 }
 
 export const dynamic = "force-dynamic";
-
-async function enforcePrivateAccessUntilLaunch() {
-  if (FRIENDS_PAGE_PUBLIC) return;
-
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) notFound();
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile || profile.role !== "admin") notFound();
-}
 
 async function loadFeaturedHostMembers(): Promise<FeaturedHostMember[]> {
   const serviceClient = createServiceRoleClient();
@@ -254,7 +240,10 @@ async function loadOrganizationsForPage(isPublicMode: boolean) {
     const linkType = raw.link_type;
     const targetId = raw.target_id;
     if (
-      (linkType !== "blog_post" && linkType !== "gallery_album" && linkType !== "event_series") ||
+      (linkType !== "blog_post" &&
+        linkType !== "gallery_album" &&
+        linkType !== "event_series" &&
+        linkType !== "event") ||
       typeof targetId !== "string" ||
       targetId.length === 0
     ) {
@@ -306,8 +295,16 @@ async function loadOrganizationsForPage(isPublicMode: boolean) {
         .filter(isUuidLike)
     )
   );
+  const eventIds = Array.from(
+    new Set(
+      allContentLinks
+        .filter((link) => link.link_type === "event")
+        .map((link) => link.target_id)
+        .filter(isUuidLike)
+    )
+  );
 
-  const [blogResult, galleryResult, seriesEventResult] = await Promise.all([
+  const [blogResult, galleryResult, eventResult, seriesEventResult] = await Promise.all([
     blogIds.length > 0
       ? (async () => {
           let blogQuery = (serviceClient as any)
@@ -330,6 +327,18 @@ async function loadOrganizationsForPage(isPublicMode: boolean) {
           return galleryQuery;
         })()
       : Promise.resolve({ data: [], error: null }),
+    eventIds.length > 0
+      ? (async () => {
+          let eventQuery = (serviceClient as any)
+            .from("events")
+            .select("id, slug, series_id, title, event_date, event_type, is_published, visibility")
+            .in("id", eventIds);
+          if (isPublicMode) {
+            eventQuery = eventQuery.eq("is_published", true).eq("visibility", "public");
+          }
+          return eventQuery;
+        })()
+      : Promise.resolve({ data: [], error: null }),
     seriesIds.length > 0
       ? (async () => {
           let seriesQuery = (serviceClient as any)
@@ -346,6 +355,7 @@ async function loadOrganizationsForPage(isPublicMode: boolean) {
 
   if (blogResult.error) console.error("Organization linked blog posts query failed:", blogResult.error);
   if (galleryResult.error) console.error("Organization linked gallery query failed:", galleryResult.error);
+  if (eventResult.error) console.error("Organization linked events query failed:", eventResult.error);
   if (seriesEventResult.error) {
     console.error("Organization linked series query failed:", seriesEventResult.error);
   }
@@ -366,6 +376,24 @@ async function loadOrganizationsForPage(isPublicMode: boolean) {
     const name = typeof row.name === "string" ? row.name : null;
     if (!id || !slug || !name) continue;
     galleryById.set(id, { id, slug, name });
+  }
+
+  const eventById = new Map<string, SeriesEventSummary>();
+  for (const row of ((eventResult.data || []) as Array<Record<string, unknown>>)) {
+    const id = typeof row.id === "string" ? row.id : null;
+    const title = typeof row.title === "string" ? row.title : null;
+    if (!id || !title) continue;
+
+    eventById.set(id, {
+      id,
+      slug: typeof row.slug === "string" ? row.slug : null,
+      series_id: typeof row.series_id === "string" ? row.series_id : null,
+      title,
+      event_date: typeof row.event_date === "string" ? row.event_date : null,
+      event_type: Array.isArray(row.event_type)
+        ? row.event_type.filter((item): item is string => typeof item === "string")
+        : null,
+    });
   }
 
   const eventsBySeries = new Map<string, SeriesEventSummary[]>();
@@ -437,8 +465,19 @@ async function loadOrganizationsForPage(isPublicMode: boolean) {
       .filter((item): item is { id: string; name: string; href: string } => item !== null);
 
     const relatedEventSeries = contentLinks
-      .filter((link) => link.link_type === "event_series")
+      .filter((link) => link.link_type === "event_series" || link.link_type === "event")
       .map((link) => {
+        if (link.link_type === "event") {
+          const event = eventById.get(link.target_id);
+          if (!event) return null;
+          return {
+            seriesId: event.id,
+            title: link.label_override || event.title,
+            href: eventDetailHref(event),
+            nextDate: event.event_date || undefined,
+          };
+        }
+
         const seriesEvents = eventsBySeries.get(link.target_id) || [];
         if (seriesEvents.length === 0) return null;
         const nextUpcoming =
@@ -470,13 +509,11 @@ export default async function FriendsOfTheCollectivePage({
 }: {
   searchParams: Promise<{ view?: string }>;
 }) {
-  await enforcePrivateAccessUntilLaunch();
-
   const resolvedSearchParams = await searchParams;
   const currentView = resolvedSearchParams.view === "card" ? "card" : "list";
 
   const [friends, featuredHosts] = await Promise.all([
-    loadOrganizationsForPage(FRIENDS_PAGE_PUBLIC),
+    loadOrganizationsForPage(true),
     loadFeaturedHostMembers(),
   ]);
 
@@ -509,8 +546,8 @@ export default async function FriendsOfTheCollectivePage({
         <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">{friend.shortBlurb}</p>
 
         {imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
           <div className="w-full rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] p-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={imageUrl}
               alt={`${friend.name} cover`}
@@ -627,7 +664,7 @@ export default async function FriendsOfTheCollectivePage({
             {friend.relatedEventSeries && friend.relatedEventSeries.length > 0 && (
               <div className="space-y-1">
                 <p className="text-[11px] uppercase tracking-wide text-[var(--color-text-tertiary)]">
-                  Hosted Happenings Series
+                  Hosted Happenings
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {friend.relatedEventSeries.map((series) => (
@@ -668,7 +705,7 @@ export default async function FriendsOfTheCollectivePage({
 
         <div className="pt-1">
           <Link
-            href="/dashboard/my-organizations"
+            href={claimFeedbackHref(friend)}
             className="text-xs text-[var(--color-text-tertiary)] hover:text-[var(--color-text-accent)] underline-offset-2 hover:underline"
           >
             Represent this organization? Claim or update this profile.

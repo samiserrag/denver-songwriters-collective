@@ -3,7 +3,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { HeroSection, PageContainer } from "@/components/layout";
 import { Button } from "@/components/ui";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/serviceRoleClient";
 import { getFriendsOfCollective } from "@/lib/friends-of-the-collective";
 import {
@@ -14,12 +13,10 @@ import {
   type OrganizationRecord,
 } from "@/lib/organizations";
 
-const FRIENDS_PAGE_PUBLIC = process.env.NEXT_PUBLIC_FRIENDS_PAGE_PUBLIC === "true";
-
 export const metadata: Metadata = {
   title: "Friend Profile | The Colorado Songwriters Collective",
   description: "Organization profile from Friends of the Collective.",
-  robots: "noindex, nofollow",
+  robots: "index, follow",
 };
 
 type BlogPostSummary = {
@@ -71,6 +68,16 @@ function getFriendImageUrl(friend: {
   }
 }
 
+function claimFeedbackHref(friend: { slug?: string; id: string; name: string }): string {
+  const profilePath = `/friends-of-the-collective/${friend.slug || friend.id}`;
+  const params = new URLSearchParams({
+    category: "other",
+    subject: `Claim or update organization profile: ${friend.name}`,
+    pageUrl: profilePath,
+  });
+  return `/feedback?${params.toString()}`;
+}
+
 function isUuidLike(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
@@ -97,25 +104,6 @@ function normalizeProfileRelation(value: unknown): OrganizationMemberTagProfile 
 
 export const dynamic = "force-dynamic";
 
-async function enforcePrivateAccessUntilLaunch() {
-  if (FRIENDS_PAGE_PUBLIC) return;
-
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) notFound();
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile || profile.role !== "admin") notFound();
-}
-
 async function loadFriendBySlug(slug: string, isPublicMode: boolean) {
   const serviceClient = createServiceRoleClient();
 
@@ -129,7 +117,7 @@ async function loadFriendBySlug(slug: string, isPublicMode: boolean) {
     .limit(1);
 
   if (isPublicMode) {
-    query = query.in("visibility", ["public", "unlisted"]);
+    query = query.eq("visibility", "public");
   }
 
   const { data, error } = await query.maybeSingle();
@@ -139,6 +127,7 @@ async function loadFriendBySlug(slug: string, isPublicMode: boolean) {
   }
 
   if (!data) {
+    if (isPublicMode) return null;
     const fallback = getFriendsOfCollective().find((friend) => friend.id === slug || friend.slug === slug);
     return fallback || null;
   }
@@ -188,7 +177,10 @@ async function loadFriendBySlug(slug: string, isPublicMode: boolean) {
       const linkType = raw.link_type;
       const targetId = raw.target_id;
       if (
-        (linkType !== "blog_post" && linkType !== "gallery_album" && linkType !== "event_series") ||
+        (linkType !== "blog_post" &&
+          linkType !== "gallery_album" &&
+          linkType !== "event_series" &&
+          linkType !== "event") ||
         typeof targetId !== "string" ||
         targetId.length === 0
       ) {
@@ -229,8 +221,16 @@ async function loadFriendBySlug(slug: string, isPublicMode: boolean) {
         .filter(isUuidLike)
     )
   );
+  const eventIds = Array.from(
+    new Set(
+      contentLinks
+        .filter((link) => link.link_type === "event")
+        .map((link) => link.target_id)
+        .filter(isUuidLike)
+    )
+  );
 
-  const [blogResult, galleryResult, seriesEventResult] = await Promise.all([
+  const [blogResult, galleryResult, eventResult, seriesEventResult] = await Promise.all([
     blogIds.length > 0
       ? (async () => {
           let blogQuery = (serviceClient as any)
@@ -251,6 +251,18 @@ async function loadFriendBySlug(slug: string, isPublicMode: boolean) {
             galleryQuery = galleryQuery.eq("is_published", true).eq("is_hidden", false);
           }
           return galleryQuery;
+        })()
+      : Promise.resolve({ data: [], error: null }),
+    eventIds.length > 0
+      ? (async () => {
+          let eventQuery = (serviceClient as any)
+            .from("events")
+            .select("id, slug, series_id, title, event_date, event_type, is_published, visibility")
+            .in("id", eventIds);
+          if (isPublicMode) {
+            eventQuery = eventQuery.eq("is_published", true).eq("visibility", "public");
+          }
+          return eventQuery;
         })()
       : Promise.resolve({ data: [], error: null }),
     seriesIds.length > 0
@@ -283,6 +295,23 @@ async function loadFriendBySlug(slug: string, isPublicMode: boolean) {
     const name = typeof row.name === "string" ? row.name : null;
     if (!id || !rowSlug || !name) continue;
     galleryById.set(id, { id, slug: rowSlug, name });
+  }
+
+  const eventById = new Map<string, SeriesEventSummary>();
+  for (const row of ((eventResult.data || []) as Array<Record<string, unknown>>)) {
+    const id = typeof row.id === "string" ? row.id : null;
+    const title = typeof row.title === "string" ? row.title : null;
+    if (!id || !title) continue;
+
+    eventById.set(id, {
+      id,
+      slug: typeof row.slug === "string" ? row.slug : null,
+      title,
+      event_date: typeof row.event_date === "string" ? row.event_date : null,
+      event_type: Array.isArray(row.event_type)
+        ? row.event_type.filter((item): item is string => typeof item === "string")
+        : null,
+    });
   }
 
   const eventsBySeries = new Map<string, SeriesEventSummary[]>();
@@ -353,8 +382,19 @@ async function loadFriendBySlug(slug: string, isPublicMode: boolean) {
     .filter((item): item is { id: string; name: string; href: string } => item !== null);
 
   const relatedEventSeries = contentLinks
-    .filter((link) => link.link_type === "event_series")
+    .filter((link) => link.link_type === "event_series" || link.link_type === "event")
     .map((link) => {
+      if (link.link_type === "event") {
+        const event = eventById.get(link.target_id);
+        if (!event) return null;
+        return {
+          seriesId: event.id,
+          title: link.label_override || event.title,
+          href: eventDetailHref(event),
+          nextDate: event.event_date || undefined,
+        };
+      }
+
       const seriesEvents = eventsBySeries.get(link.target_id) || [];
       if (seriesEvents.length === 0) return null;
       const nextUpcoming =
@@ -384,10 +424,8 @@ export default async function FriendOrganizationProfilePage({
 }: {
   params: Promise<{ slug: string }>;
 }) {
-  await enforcePrivateAccessUntilLaunch();
-
   const { slug } = await params;
-  const friend = await loadFriendBySlug(slug, FRIENDS_PAGE_PUBLIC);
+  const friend = await loadFriendBySlug(slug, true);
   if (!friend) notFound();
 
   const imageUrl = getFriendImageUrl(friend);
@@ -423,7 +461,7 @@ export default async function FriendOrganizationProfilePage({
                 <img
                   src={imageUrl}
                   alt={`${friend.name} cover`}
-                  className="w-full h-56 object-cover rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)]"
+                  className="w-full h-56 object-contain rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)]"
                   loading="lazy"
                 />
               ) : (
@@ -445,7 +483,7 @@ export default async function FriendOrganizationProfilePage({
                   </a>
                 </Button>
                 <Button asChild variant="secondary" size="sm">
-                  <Link href="/dashboard/my-organizations">
+                  <Link href={claimFeedbackHref(friend)}>
                     Claim or update this organization profile
                   </Link>
                 </Button>
@@ -557,7 +595,7 @@ export default async function FriendOrganizationProfilePage({
               {friend.relatedEventSeries && friend.relatedEventSeries.length > 0 && (
                 <div className="space-y-2">
                   <p className="text-xs uppercase tracking-wide text-[var(--color-text-tertiary)]">
-                    Hosted Happenings Series
+                    Hosted Happenings
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {friend.relatedEventSeries.map((series) => (

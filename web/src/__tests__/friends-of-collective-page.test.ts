@@ -7,6 +7,7 @@ describe("Friends of the Collective page", () => {
   const profilePageDir = path.join(__dirname, "../app/friends-of-the-collective/[slug]/page.tsx");
   const libDir = path.join(__dirname, "../lib/friends-of-the-collective.ts");
   const footerPath = path.join(__dirname, "../components/navigation/footer.tsx");
+  const headerPath = path.join(__dirname, "../components/navigation/header.tsx");
 
   it("defines a shared data contract for organizations", () => {
     const source = fs.readFileSync(libDir, "utf-8");
@@ -28,28 +29,37 @@ describe("Friends of the Collective page", () => {
     expect(source).toContain("Related on CSC");
     expect(source).toContain("Blog Posts");
     expect(source).toContain("Gallery Albums");
-    expect(source).toContain("Hosted Happenings Series");
+    expect(source).toContain("Hosted Happenings");
     expect(source).toContain("Default is alphabetical list view.");
     expect(source).toContain("Cards");
     expect(source).toContain("List");
     expect(source).toContain('href="/friends-of-the-collective?view=card"');
     expect(source).toContain("friendProfileHref");
+    expect(source).toContain("claimFeedbackHref");
+    expect(source).toContain('link_type === "event"');
   });
 
-  it("is intentionally unlisted from footer while private", () => {
+  it("is still intentionally unlisted from footer", () => {
     const source = fs.readFileSync(footerPath, "utf-8");
     expect(source).not.toContain('href="/friends-of-the-collective"');
   });
 
-  it("enforces private mode guard and noindex metadata", () => {
+  it("is publicly indexable and no longer gated to admins", () => {
     const source = fs.readFileSync(appDir, "utf-8");
-    expect(source).toContain("FRIENDS_PAGE_PUBLIC");
-    expect(source).toContain("enforcePrivateAccessUntilLaunch");
     expect(source).toContain('from("organizations")');
     expect(source).toContain('from("organization_member_tags")');
     expect(source).toContain('from("organization_content_links")');
-    expect(source).toContain("notFound()");
-    expect(source).toContain('robots: "noindex, nofollow"');
+    expect(source).toContain('robots: "index, follow"');
+    expect(source).not.toContain("enforcePrivateAccessUntilLaunch");
+    expect(source).not.toContain("NEXT_PUBLIC_FRIENDS_PAGE_PUBLIC");
+  });
+
+  it("adds Friends to the primary nav after Members", () => {
+    const source = fs.readFileSync(headerPath, "utf-8");
+    const membersPos = source.indexOf('{ href: "/members", label: "Members" }');
+    const friendsPos = source.indexOf('{ href: "/friends-of-the-collective", label: "Friends" }');
+    expect(membersPos).toBeGreaterThanOrEqual(0);
+    expect(friendsPos).toBeGreaterThan(membersPos);
   });
 
   it("includes a dedicated friend profile route for richer linked content", () => {
@@ -59,5 +69,8 @@ describe("Friends of the Collective page", () => {
     expect(source).toContain("Related on CSC");
     expect(source).toContain("Gallery");
     expect(source).toContain("Claim or update this organization profile");
+    expect(source).toContain("claimFeedbackHref");
+    expect(source).toContain('query = query.eq("visibility", "public")');
+    expect(source).toContain('link_type === "event"');
   });
 });

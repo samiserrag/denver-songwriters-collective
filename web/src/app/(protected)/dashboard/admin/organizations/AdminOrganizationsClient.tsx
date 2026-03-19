@@ -25,11 +25,11 @@ type GalleryOption = {
   is_hidden: boolean;
 };
 
-type EventSeriesOption = {
-  series_id: string;
+type EventOption = {
+  id: string;
   title: string;
   slug: string | null;
-  event_id: string;
+  series_id: string | null;
   event_date: string | null;
   is_published: boolean;
   visibility: string;
@@ -38,7 +38,7 @@ type EventSeriesOption = {
 type ContentOptions = {
   blogs: BlogOption[];
   galleries: GalleryOption[];
-  eventSeries: EventSeriesOption[];
+  events: EventOption[];
 };
 
 type MemberOption = {
@@ -61,7 +61,7 @@ type OrganizationMemberTagInput = {
 };
 
 type OrganizationContentLinkInput = {
-  link_type: "blog_post" | "gallery_album" | "event_series";
+  link_type: "blog_post" | "gallery_album" | "event_series" | "event";
   target_id: string;
   sort_order: number;
   label_override: string;
@@ -208,10 +208,10 @@ function getGalleryOptionLabel(gallery: GalleryOption): string {
   return `${name} (${slug}) • ${status}`;
 }
 
-function getEventSeriesOptionLabel(series: EventSeriesOption): string {
-  const dateLabel = series.event_date ? ` • ${series.event_date}` : "";
-  const statusLabel = series.is_published && series.visibility === "public" ? "" : " • not public";
-  return `${series.title}${dateLabel}${statusLabel}`;
+function getEventOptionLabel(event: EventOption): string {
+  const dateLabel = event.event_date ? ` • ${event.event_date}` : "";
+  const statusLabel = event.is_published && event.visibility === "public" ? "" : " • not public";
+  return `${event.title}${dateLabel}${statusLabel}`;
 }
 
 export default function AdminOrganizationsClient({ userId }: { userId: string }) {
@@ -220,7 +220,7 @@ export default function AdminOrganizationsClient({ userId }: { userId: string })
   const [contentOptions, setContentOptions] = useState<ContentOptions>({
     blogs: [],
     galleries: [],
-    eventSeries: [],
+    events: [],
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -251,7 +251,7 @@ export default function AdminOrganizationsClient({ userId }: { userId: string })
     if (Array.isArray(data)) {
       setOrganizations(data as OrganizationRecord[]);
       setMemberOptions([]);
-      setContentOptions({ blogs: [], galleries: [], eventSeries: [] });
+      setContentOptions({ blogs: [], galleries: [], events: [] });
       return;
     }
 
@@ -260,7 +260,7 @@ export default function AdminOrganizationsClient({ userId }: { userId: string })
     setContentOptions({
       blogs: (data.contentOptions?.blogs || []) as BlogOption[],
       galleries: (data.contentOptions?.galleries || []) as GalleryOption[],
-      eventSeries: (data.contentOptions?.eventSeries || []) as EventSeriesOption[],
+      events: (data.contentOptions?.events || []) as EventOption[],
     });
   }
 
@@ -475,8 +475,8 @@ export default function AdminOrganizationsClient({ userId }: { userId: string })
     const availableGalleries = contentOptions.galleries.filter(
       (gallery) => !selectedKeys.has(`gallery_album:${gallery.id}`)
     );
-    const availableSeries = contentOptions.eventSeries.filter(
-      (series) => !selectedKeys.has(`event_series:${series.series_id}`)
+    const availableEvents = contentOptions.events.filter(
+      (event) => !selectedKeys.has(`event:${event.id}`)
     );
 
     const findLinkLabel = (link: OrganizationContentLinkInput) => {
@@ -488,8 +488,12 @@ export default function AdminOrganizationsClient({ userId }: { userId: string })
         const gallery = contentOptions.galleries.find((item) => item.id === link.target_id);
         return gallery ? getGalleryOptionLabel(gallery) : `Gallery album ${link.target_id.slice(0, 8)}`;
       }
-      const series = contentOptions.eventSeries.find((item) => item.series_id === link.target_id);
-      return series ? getEventSeriesOptionLabel(series) : `Series ${link.target_id.slice(0, 8)}`;
+      if (link.link_type === "event") {
+        const event = contentOptions.events.find((item) => item.id === link.target_id);
+        return event ? getEventOptionLabel(event) : `Event ${link.target_id.slice(0, 8)}`;
+      }
+      const seriesEvent = contentOptions.events.find((item) => item.series_id === link.target_id);
+      return seriesEvent ? getEventOptionLabel(seriesEvent) : `Series ${link.target_id.slice(0, 8)}`;
     };
 
     return (
@@ -568,7 +572,7 @@ export default function AdminOrganizationsClient({ userId }: { userId: string })
                 content_links: [
                   ...form.content_links,
                   {
-                    link_type: "event_series",
+                    link_type: "event",
                     target_id: targetId,
                     sort_order: (form.content_links.length + 1) * 10,
                     label_override: "",
@@ -578,10 +582,10 @@ export default function AdminOrganizationsClient({ userId }: { userId: string })
             }}
             className="w-full px-3 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
           >
-            <option value="">Add event series...</option>
-            {availableSeries.map((series) => (
-              <option key={series.series_id} value={series.series_id}>
-                {getEventSeriesOptionLabel(series)}
+            <option value="">Add event...</option>
+            {availableEvents.map((event) => (
+              <option key={event.id} value={event.id}>
+                {getEventOptionLabel(event)}
               </option>
             ))}
           </select>

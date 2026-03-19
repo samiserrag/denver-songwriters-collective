@@ -34,7 +34,8 @@ describe("Admin organizations portal", () => {
     expect(source).toContain("Related Content Links");
     expect(source).toContain("Add blog post...");
     expect(source).toContain("Add gallery album...");
-    expect(source).toContain("Add event series...");
+    expect(source).toContain("Add event...");
+    expect(source).toContain('link_type: "event"');
   });
 
   it("admin APIs target organizations table", () => {

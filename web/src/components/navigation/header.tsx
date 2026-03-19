@@ -20,6 +20,7 @@ import type { SiteSocialLink } from "@/lib/site-social-links";
 const navLinks = [
   { href: "/happenings", label: "Happenings" },
   { href: "/members", label: "Members" },
+  { href: "/friends-of-the-collective", label: "Friends" },
   { href: "/gallery", label: "Gallery" },
   { href: "/blog", label: "Blog" },
   { href: "/about", label: "About" },
