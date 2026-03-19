@@ -137,10 +137,17 @@ export function MapView({ pinResult, className }: MapViewProps) {
               return null;
             }
 
-            const childMarkers = layer.getAllChildMarkers() as Array<{ __pinData?: MapPinData }>;
+            const pinByVenueId = new Map<string, MapPinData>();
+            for (const pin of pins) {
+              pinByVenueId.set(pin.venueId, pin);
+            }
+
+            const childMarkers = layer.getAllChildMarkers() as Array<{ options?: { title?: string } }>;
             const pinByVenue = new Map<string, MapPinData>();
             for (const marker of childMarkers) {
-              const markerPin = marker.__pinData;
+              const markerVenueId = marker.options?.title;
+              if (!markerVenueId) continue;
+              const markerPin = pinByVenueId.get(markerVenueId);
               if (markerPin) {
                 pinByVenue.set(markerPin.venueId, markerPin);
               }
@@ -211,15 +218,18 @@ export function MapView({ pinResult, className }: MapViewProps) {
                     onClusterSelect(selection);
                   }
                 }}
+                onMouseOut={() => {
+                  if (!isMobileProp) {
+                    onClusterClose();
+                  }
+                }}
               >
                 {pins.map((pin) => (
                   <Marker
                     key={pin.venueId}
                     position={[pin.latitude, pin.longitude]}
+                    title={pin.venueId}
                     eventHandlers={{
-                      add: (event: any) => {
-                        event.target.__pinData = pin;
-                      },
                       ...(isMobileProp
                         ? {
                             click: () => onMarkerClick(pin),
