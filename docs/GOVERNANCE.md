@@ -327,6 +327,12 @@ Every execution phase must pass these gates before merge:
 cd web && npm run lint && npm run test -- --run && npm run build
 ```
 
+**CLI pre-push command (local reliability):**
+```bash
+cd web && npm run verify:prepush
+```
+This runs lint on `src/`, full tests, and webpack build mode to avoid local Turbopack stalls while still enforcing TypeScript/build correctness before push.
+
 ---
 
 ## No Band-Aids Standard

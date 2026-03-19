@@ -199,7 +199,7 @@ async function loadOrganizationsForPage(isPublicMode: boolean) {
     (serviceClient as any)
       .from("organization_member_tags")
       .select(
-        "id, organization_id, profile_id, sort_order, tag_reason, created_at, profiles(id, slug, full_name, avatar_url, role, is_public, is_songwriter, is_host, is_studio, is_fan)"
+        "id, organization_id, profile_id, sort_order, tag_reason, created_at, profiles!organization_member_tags_profile_id_fkey(id, slug, full_name, avatar_url, role, is_public, is_songwriter, is_host, is_studio, is_fan)"
       )
       .in("organization_id", organizationIds)
       .order("sort_order", { ascending: true })

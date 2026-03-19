@@ -54,9 +54,11 @@ describe("Admin organizations portal", () => {
     expect(source).toContain("const TABLE_NAME = \"organizations\"");
     expect(source).toContain("const TAG_TABLE_NAME = \"organization_member_tags\"");
     expect(source).toContain("const CONTENT_LINK_TABLE_NAME = \"organization_content_links\"");
+    expect(source).toContain("profiles!organization_member_tags_profile_id_fkey(");
     expect(sourceItem).toContain("const TABLE_NAME = \"organizations\"");
     expect(sourceItem).toContain("const TAG_TABLE_NAME = \"organization_member_tags\"");
     expect(sourceItem).toContain("const CONTENT_LINK_TABLE_NAME = \"organization_content_links\"");
+    expect(sourceItem).toContain("profiles!organization_member_tags_profile_id_fkey(");
     expect(source).toContain("checkAdminRole");
     expect(sourceItem).toContain("checkAdminRole");
   });

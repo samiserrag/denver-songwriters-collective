@@ -5,10 +5,12 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:webpack": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest",
-    "test:watch": "vitest --watch"
+    "test:watch": "vitest --watch",
+    "verify:prepush": "NEXT_PUBLIC_SUPABASE_URL=https://example.supabase.co NEXT_PUBLIC_SUPABASE_ANON_KEY=dummy-anon-key-for-build npm run lint -- src && npm run test -- --run && npm run build:webpack"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

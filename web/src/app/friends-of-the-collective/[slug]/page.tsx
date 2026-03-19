@@ -44,9 +44,14 @@ type SeriesEventSummary = SeriesEvent & {
   series_id: string | null;
   visibility: string | null;
   is_published: boolean;
+  is_recurring: boolean;
+  is_free: boolean;
 };
 
-type FriendProfileView = ReturnType<typeof toFriendView> & {
+type FriendProfileView = Omit<
+  ReturnType<typeof toFriendView>,
+  "relatedBlogPosts" | "relatedGalleryAlbums" | "relatedEventSeries"
+> & {
   relatedBlogPosts: Array<{
     id: string;
     title: string;
@@ -172,6 +177,10 @@ async function loadFriendBySlug(slug: string, isPublicMode: boolean): Promise<Fr
         coverImageUrl: null,
         createdAt: null,
       })),
+      relatedEventSeries: (fallback.relatedEventSeries || []).map((series) => ({
+        ...series,
+        nextDate: series.nextDate || undefined,
+      })),
       relatedEventSeriesEntries: [],
     };
   }
@@ -182,7 +191,7 @@ async function loadFriendBySlug(slug: string, isPublicMode: boolean): Promise<Fr
     (serviceClient as any)
       .from("organization_member_tags")
       .select(
-        "id, organization_id, profile_id, sort_order, tag_reason, created_at, profiles(id, slug, full_name, avatar_url, role, is_public, is_songwriter, is_host, is_studio, is_fan)"
+        "id, organization_id, profile_id, sort_order, tag_reason, created_at, profiles!organization_member_tags_profile_id_fkey(id, slug, full_name, avatar_url, role, is_public, is_songwriter, is_host, is_studio, is_fan)"
       )
       .eq("organization_id", organization.id)
       .order("sort_order", { ascending: true })
@@ -400,7 +409,6 @@ async function loadFriendBySlug(slug: string, isPublicMode: boolean): Promise<Fr
         : [],
       day_of_week: typeof row.day_of_week === "string" ? row.day_of_week : null,
       start_time: typeof row.start_time === "string" ? row.start_time : null,
-      end_time: typeof row.end_time === "string" ? row.end_time : null,
       recurrence_rule: typeof row.recurrence_rule === "string" ? row.recurrence_rule : null,
       max_occurrences: typeof row.max_occurrences === "number" ? row.max_occurrences : null,
       custom_dates: Array.isArray(row.custom_dates)
@@ -447,7 +455,6 @@ async function loadFriendBySlug(slug: string, isPublicMode: boolean): Promise<Fr
         : [],
       day_of_week: typeof row.day_of_week === "string" ? row.day_of_week : null,
       start_time: typeof row.start_time === "string" ? row.start_time : null,
-      end_time: typeof row.end_time === "string" ? row.end_time : null,
       recurrence_rule: typeof row.recurrence_rule === "string" ? row.recurrence_rule : null,
       max_occurrences: typeof row.max_occurrences === "number" ? row.max_occurrences : null,
       custom_dates: Array.isArray(row.custom_dates)

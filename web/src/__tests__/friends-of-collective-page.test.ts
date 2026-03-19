@@ -51,6 +51,7 @@ describe("Friends of the Collective page", () => {
     const source = fs.readFileSync(appDir, "utf-8");
     expect(source).toContain('from("organizations")');
     expect(source).toContain('from("organization_member_tags")');
+    expect(source).toContain("profiles!organization_member_tags_profile_id_fkey(");
     expect(source).toContain('from("organization_content_links")');
     expect(source).toContain('robots: "index, follow"');
     expect(source).not.toContain("enforcePrivateAccessUntilLaunch");
@@ -70,6 +71,7 @@ describe("Friends of the Collective page", () => {
     expect(source).toContain("FriendOrganizationProfilePage");
     expect(source).toContain("Connected Members");
     expect(source).toContain("Related on CSC");
+    expect(source).toContain("profiles!organization_member_tags_profile_id_fkey(");
     expect(source).toContain("Gallery");
     expect(source).toContain("SeriesCard");
     expect(source).toContain("card-spotlight");

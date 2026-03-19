@@ -292,7 +292,7 @@ async function listOrganizationsWithRelations(
     (serviceClient as any)
       .from(TAG_TABLE_NAME)
       .select(
-        "id, organization_id, profile_id, sort_order, tag_reason, created_at, profiles(id, full_name, slug, avatar_url, role, is_public, is_songwriter, is_host, is_studio, is_fan)"
+        "id, organization_id, profile_id, sort_order, tag_reason, created_at, profiles!organization_member_tags_profile_id_fkey(id, full_name, slug, avatar_url, role, is_public, is_songwriter, is_host, is_studio, is_fan)"
       )
       .in("organization_id", organizationIds)
       .order("sort_order", { ascending: true })
