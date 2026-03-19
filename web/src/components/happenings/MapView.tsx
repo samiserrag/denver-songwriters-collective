@@ -218,11 +218,6 @@ export function MapView({ pinResult, className }: MapViewProps) {
                     onClusterSelect(selection);
                   }
                 }}
-                onMouseOut={() => {
-                  if (!isMobileProp) {
-                    onClusterClose();
-                  }
-                }}
               >
                 {pins.map((pin) => (
                   <Marker
