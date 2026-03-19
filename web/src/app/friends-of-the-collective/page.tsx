@@ -510,12 +510,14 @@ export default async function FriendsOfTheCollectivePage({
 
         {imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={imageUrl}
-            alt={`${friend.name} cover`}
-            className="w-full h-36 object-cover rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)]"
-            loading="lazy"
-          />
+          <div className="w-full rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] p-2">
+            <img
+              src={imageUrl}
+              alt={`${friend.name} cover`}
+              className="w-full h-auto max-h-72 object-contain"
+              loading="lazy"
+            />
+          </div>
         ) : (
           <div className="w-full h-36 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] flex items-center justify-center">
             <span className="text-sm text-[var(--color-text-tertiary)]">Image coming soon</span>
@@ -842,7 +844,7 @@ export default async function FriendsOfTheCollectivePage({
                               <img
                                 src={rowImageUrl}
                                 alt={`${friend.name} logo or cover`}
-                                className="h-14 w-14 rounded-lg object-cover border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)]"
+                                className="h-14 w-14 rounded-lg object-contain border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)]"
                                 loading="lazy"
                               />
                             ) : (
