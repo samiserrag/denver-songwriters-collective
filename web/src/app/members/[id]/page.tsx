@@ -20,6 +20,7 @@ import Link from "next/link";
 import { MediaEmbedsSection, MusicProfileCard, OrderedMediaEmbeds } from "@/components/media";
 import { isExternalEmbedsEnabled } from "@/lib/featureFlags";
 import { canonicalizeMediaReference, getMusicProfileLinkMeta } from "@/lib/mediaEmbeds";
+import { buildSongLinksDisplay, getSongPlatformInfo } from "@/lib/profile/songLinks";
 
 export const dynamic = "force-dynamic";
 
@@ -582,7 +583,11 @@ export default async function MemberDetailPage({ params }: MemberDetailPageProps
             const musicPlatformLinks = socialLinks.filter(link =>
               ["spotify", "bandcamp", "youtube"].includes(link.type)
             );
-            const hasSongLinks = member.song_links && member.song_links.length > 0;
+            const {
+              featuredSongUrl,
+              additionalSongLinks,
+              hasAnySongLinks,
+            } = buildSongLinksDisplay(member.featured_song_url, member.song_links);
             const hasMusicPlatforms = musicPlatformLinks.length > 0;
             const embeddedUrlKeys = new Set(
               mediaEmbeds
@@ -601,7 +606,7 @@ export default async function MemberDetailPage({ params }: MemberDetailPageProps
                 return true;
               });
 
-            if (!hasSongLinks && !hasMusicPlatforms) return null;
+            if (!hasAnySongLinks && !hasMusicPlatforms) return null;
 
             return (
               <section className="mb-12">
@@ -640,19 +645,38 @@ export default async function MemberDetailPage({ params }: MemberDetailPageProps
                 )}
 
                 {/* Individual song/track links */}
-                {hasSongLinks && (
+                {hasAnySongLinks && (
                   <div className="grid gap-3 max-w-xl">
-                    {member.song_links!.map((link, index) => {
-                      // Determine the platform icon based on URL
-                      const getPlatformInfo = (url: string) => {
-                        if (url.includes("spotify")) return { name: "Spotify", color: "bg-[#1DB954]" };
-                        if (url.includes("soundcloud")) return { name: "SoundCloud", color: "bg-[#FF5500]" };
-                        if (url.includes("youtube") || url.includes("youtu.be")) return { name: "YouTube", color: "bg-[#FF0000]" };
-                        if (url.includes("bandcamp")) return { name: "Bandcamp", color: "bg-[#1DA0C3]" };
-                        if (url.includes("apple")) return { name: "Apple Music", color: "bg-[#FA2D48]" };
-                        return { name: "Listen", color: "bg-[var(--color-accent-muted)]" };
-                      };
-                      const platform = getPlatformInfo(link);
+                    {featuredSongUrl && (
+                      <div className="space-y-1">
+                        <p className="text-xs uppercase tracking-wide text-[var(--color-text-tertiary)]">
+                          Featured Song
+                        </p>
+                        {(() => {
+                          const platform = getSongPlatformInfo(featuredSongUrl);
+                          return (
+                            <Link
+                              href={featuredSongUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={`flex items-center gap-3 px-4 py-3 rounded-lg ${platform.color} hover:opacity-90 text-white transition-opacity ring-2 ring-[var(--color-border-accent)]/60`}
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 3l14 9-14 9V3z" />
+                              </svg>
+                              <span className="font-semibold">{platform.name}</span>
+                              <span className="text-sm text-white/90">Featured</span>
+                              <svg className="w-4 h-4 ml-auto" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                              </svg>
+                            </Link>
+                          );
+                        })()}
+                      </div>
+                    )}
+
+                    {additionalSongLinks.map((link, index) => {
+                      const platform = getSongPlatformInfo(link);
                       return (
                         <Link
                           key={index}

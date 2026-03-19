@@ -6,6 +6,7 @@ import { SocialIcon, TipIcon, buildSocialLinks, buildTipLinks } from "@/componen
 import type { Database } from "@/lib/supabase/database.types";
 import Image from "next/image";
 import Link from "next/link";
+import { buildSongLinksDisplay, getSongPlatformInfo } from "@/lib/profile/songLinks";
 export const dynamic = "force-dynamic";
 
 type DBProfile = Database["public"]["Tables"]["profiles"]["Row"];
@@ -251,21 +252,48 @@ export default async function PerformerDetailPage({ params }: PerformerDetailPag
           )}
 
           {/* Song Links Section */}
-          {performer.song_links && performer.song_links.length > 0 && (
+          {(() => {
+            const {
+              featuredSongUrl,
+              additionalSongLinks,
+              hasAnySongLinks,
+            } = buildSongLinksDisplay(performer.featured_song_url, performer.song_links);
+
+            if (!hasAnySongLinks) return null;
+
+            return (
             <section className="mb-12">
               <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">Listen to My Music</h2>
               <div className="grid gap-3 max-w-xl">
-                {performer.song_links.map((link, index) => {
-                  // Determine the platform icon based on URL
-                  const getPlatformInfo = (url: string) => {
-                    if (url.includes("spotify")) return { name: "Spotify", color: "bg-[#1DB954]" };
-                    if (url.includes("soundcloud")) return { name: "SoundCloud", color: "bg-[#FF5500]" };
-                    if (url.includes("youtube") || url.includes("youtu.be")) return { name: "YouTube", color: "bg-[#FF0000]" };
-                    if (url.includes("bandcamp")) return { name: "Bandcamp", color: "bg-[#1DA0C3]" };
-                    if (url.includes("apple")) return { name: "Apple Music", color: "bg-[#FA2D48]" };
-                    return { name: "Listen", color: "bg-[var(--color-accent-muted)]" };
-                  };
-                  const platform = getPlatformInfo(link);
+                {featuredSongUrl && (
+                  <div className="space-y-1">
+                    <p className="text-xs uppercase tracking-wide text-[var(--color-text-tertiary)]">
+                      Featured Song
+                    </p>
+                    {(() => {
+                      const platform = getSongPlatformInfo(featuredSongUrl);
+                      return (
+                        <Link
+                          href={featuredSongUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`flex items-center gap-3 px-4 py-3 rounded-lg ${platform.color} hover:opacity-90 text-white transition-opacity ring-2 ring-[var(--color-border-accent)]/60`}
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 3l14 9-14 9V3z" />
+                          </svg>
+                          <span className="font-semibold">{platform.name}</span>
+                          <span className="text-sm text-white/90">Featured</span>
+                          <svg className="w-4 h-4 ml-auto" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                        </Link>
+                      );
+                    })()}
+                  </div>
+                )}
+                {additionalSongLinks.map((link, index) => {
+                  const platform = getSongPlatformInfo(link);
                   return (
                     <Link
                       key={index}
@@ -286,7 +314,8 @@ export default async function PerformerDetailPage({ params }: PerformerDetailPag
                 })}
               </div>
             </section>
-          )}
+            );
+          })()}
 
           {/* Tip/Support Section */}
           {tipLinks.length > 0 && (
