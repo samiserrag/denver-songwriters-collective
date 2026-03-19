@@ -36,6 +36,8 @@ describe("Friends of the Collective page", () => {
     expect(source).toContain('href="/friends-of-the-collective?view=card"');
     expect(source).toContain("friendProfileHref");
     expect(source).toContain("claimFeedbackHref");
+    expect(source).toContain("suggestOrganizationFeedbackHref");
+    expect(source).toContain('subject: "Suggest organization for Friends of the Collective"');
     expect(source).toContain('link_type === "event"');
   });
 

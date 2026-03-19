@@ -96,6 +96,15 @@ function claimFeedbackHref(friend: { slug?: string; id: string; name: string }):
   return `/feedback?${params.toString()}`;
 }
 
+function suggestOrganizationFeedbackHref(): string {
+  const params = new URLSearchParams({
+    category: "other",
+    subject: "Suggest organization for Friends of the Collective",
+    pageUrl: "/friends-of-the-collective",
+  });
+  return `/feedback?${params.toString()}`;
+}
+
 function isUuidLike(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
@@ -758,7 +767,7 @@ export default async function FriendsOfTheCollectivePage({
                 Know an organization we should include? Send it to us and we will review it.
               </p>
               <Button asChild variant="secondary" size="sm">
-                <Link href="/feedback">Suggest an Organization</Link>
+                <Link href={suggestOrganizationFeedbackHref()}>Suggest an Organization</Link>
               </Button>
             </div>
           </section>
@@ -855,7 +864,7 @@ export default async function FriendsOfTheCollectivePage({
               </p>
               <div className="flex flex-wrap justify-center gap-3">
                 <Button asChild variant="primary" size="lg">
-                  <Link href="/feedback">Submit Recommendations</Link>
+                  <Link href={suggestOrganizationFeedbackHref()}>Submit Recommendations</Link>
                 </Button>
                 <Button asChild variant="secondary" size="lg">
                   <Link href="/partners">Partnership Opportunities</Link>
