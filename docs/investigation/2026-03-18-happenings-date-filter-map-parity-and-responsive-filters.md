@@ -33,6 +33,10 @@
    - Date controls are presented in a dedicated card with larger touch targets and explicit active-state label.
 7. Map-mode summary now reports map-visible counts (not timeline totals), with explicit excluded count:
    - Example: `24 happenings shown on map across 24 venues · 4 not mappable`.
+8. Map cluster count markers now expose event lists without forcing zoom:
+   - Desktop: hover (or click) a cluster count marker to open a popup with aggregated events.
+   - Mobile: tap a cluster count marker to open the bottom sheet with aggregated events.
+   - Cluster click no longer forces zoom-to-bounds, so discovery can happen directly from cluster lists.
 
 ## Risk and coupling notes
 
@@ -51,12 +55,15 @@
 cd web
 npx eslint src/components/happenings/DateJumpControl.tsx src/components/happenings/StickyControls.tsx src/components/happenings/HappeningsFilters.tsx src/app/happenings/page.tsx
 npm test -- src/__tests__/phase1-0-map-view.test.ts
+npx eslint src/components/happenings/MapView.tsx
+npm test -- src/__tests__/phase1-3-map-mobile-sheet.test.tsx src/__tests__/map-pin-popup.test.tsx
 ```
 
 Outcome:
 
 - ESLint: pass
 - Map view tests: pass (`40/40`)
+- Mobile sheet + popup tests: pass (`34/34`)
 
 ### Browser checks (Playwright, localhost)
 

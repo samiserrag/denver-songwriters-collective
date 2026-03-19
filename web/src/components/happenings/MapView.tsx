@@ -38,6 +38,11 @@ interface MapViewProps {
   className?: string;
 }
 
+interface ClusterSelection {
+  pin: MapPinData;
+  position: [number, number];
+}
+
 /**
  * MapView - Main map component
  *
@@ -47,22 +52,50 @@ interface MapViewProps {
 export function MapView({ pinResult, className }: MapViewProps) {
   const isMobile = useIsMobile();
   const [selectedPin, setSelectedPin] = useState<MapPinData | null>(null);
+  const [selectedCluster, setSelectedCluster] = useState<ClusterSelection | null>(null);
   const [MapComponent, setMapComponent] = useState<React.ComponentType<{
     pins: MapPinData[];
     isMobile: boolean;
     onMarkerClick: (pin: MapPinData) => void;
+    clusterSelection: ClusterSelection | null;
+    onClusterSelect: (selection: ClusterSelection) => void;
+    onClusterClose: () => void;
   }> | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // Marker click handler - stable reference to avoid stale closures
   const handleMarkerClick = useCallback((pin: MapPinData) => {
+    setSelectedCluster(null);
     setSelectedPin(pin);
+  }, []);
+
+  const handleClusterSelect = useCallback((selection: ClusterSelection) => {
+    if (isMobile) {
+      setSelectedCluster(null);
+      setSelectedPin(selection.pin);
+      return;
+    }
+
+    setSelectedCluster(selection);
+  }, [isMobile]);
+
+  const handleClusterClose = useCallback(() => {
+    setSelectedCluster(null);
   }, []);
 
   // Close sheet handler
   const handleCloseSheet = useCallback(() => {
     setSelectedPin(null);
   }, []);
+
+  // If viewport mode changes, clear stale state from the other mode.
+  useEffect(() => {
+    if (isMobile) {
+      setSelectedCluster(null);
+    } else {
+      setSelectedPin(null);
+    }
+  }, [isMobile]);
 
   // Dynamically import Leaflet components (client-side only)
   useEffect(() => {
@@ -87,58 +120,145 @@ export function MapView({ pinResult, className }: MapViewProps) {
           pins,
           isMobile: isMobileProp,
           onMarkerClick,
+          clusterSelection,
+          onClusterSelect,
+          onClusterClose,
         }: {
           pins: MapPinData[];
           isMobile: boolean;
           onMarkerClick: (pin: MapPinData) => void;
-        }) => (
-          <MapContainer
-            center={[MAP_DEFAULTS.CENTER.lat, MAP_DEFAULTS.CENTER.lng]}
-            zoom={MAP_DEFAULTS.ZOOM}
-            className="h-full w-full rounded-xl"
-            scrollWheelZoom={true}
-          >
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            <MarkerClusterGroup
-              chunkedLoading
-              showCoverageOnHover={true}
-              spiderfyOnMaxZoom={true}
-              removeOutsideVisibleBounds={true}
-              maxClusterRadius={60}
+          clusterSelection: ClusterSelection | null;
+          onClusterSelect: (selection: ClusterSelection) => void;
+          onClusterClose: () => void;
+        }) => {
+          const buildClusterSelection = (clusterEvent: any): ClusterSelection | null => {
+            const layer = clusterEvent?.layer;
+            if (!layer || typeof layer.getAllChildMarkers !== "function") {
+              return null;
+            }
+
+            const childMarkers = layer.getAllChildMarkers() as Array<{ __pinData?: MapPinData }>;
+            const pinByVenue = new Map<string, MapPinData>();
+            for (const marker of childMarkers) {
+              const markerPin = marker.__pinData;
+              if (markerPin) {
+                pinByVenue.set(markerPin.venueId, markerPin);
+              }
+            }
+
+            if (pinByVenue.size === 0) {
+              return null;
+            }
+
+            const events = Array.from(pinByVenue.values())
+              .flatMap((pin) => pin.events)
+              .sort((a, b) => {
+                const byDate = a.dateKey.localeCompare(b.dateKey);
+                if (byDate !== 0) return byDate;
+                const byTime = (a.startTime || "").localeCompare(b.startTime || "");
+                if (byTime !== 0) return byTime;
+                return a.title.localeCompare(b.title);
+              });
+
+            const latLng = layer.getLatLng?.();
+            if (!latLng || typeof latLng.lat !== "number" || typeof latLng.lng !== "number") {
+              return null;
+            }
+
+            const happeningCount = events.length;
+            const venueCount = pinByVenue.size;
+            return {
+              pin: {
+                venueId: `cluster-${latLng.lat.toFixed(5)}-${latLng.lng.toFixed(5)}-${happeningCount}`,
+                latitude: latLng.lat,
+                longitude: latLng.lng,
+                venueName: `${happeningCount} nearby happening${happeningCount !== 1 ? "s" : ""} across ${venueCount} venue${venueCount !== 1 ? "s" : ""}`,
+                venueSlug: null,
+                events,
+              },
+              position: [latLng.lat, latLng.lng],
+            };
+          };
+
+          return (
+            <MapContainer
+              center={[MAP_DEFAULTS.CENTER.lat, MAP_DEFAULTS.CENTER.lng]}
+              zoom={MAP_DEFAULTS.ZOOM}
+              className="h-full w-full rounded-xl"
+              scrollWheelZoom={true}
             >
-              {pins.map((pin) => (
-                <Marker
-                  key={pin.venueId}
-                  position={[pin.latitude, pin.longitude]}
-                  eventHandlers={
-                    isMobileProp
-                      ? {
-                          click: () => onMarkerClick(pin),
-                        }
-                      : undefined
-                  }
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              <MarkerClusterGroup
+                chunkedLoading
+                showCoverageOnHover={true}
+                spiderfyOnMaxZoom={true}
+                zoomToBoundsOnClick={false}
+                removeOutsideVisibleBounds={true}
+                maxClusterRadius={60}
+                eventHandlers={{
+                  clustermouseover: (event: any) => {
+                    if (isMobileProp) return;
+                    const selection = buildClusterSelection(event);
+                    if (selection) {
+                      onClusterSelect(selection);
+                    }
+                  },
+                  clusterclick: (event: any) => {
+                    const selection = buildClusterSelection(event);
+                    if (selection) {
+                      onClusterSelect(selection);
+                    }
+                  },
+                } as any}
+              >
+                {pins.map((pin) => (
+                  <Marker
+                    key={pin.venueId}
+                    position={[pin.latitude, pin.longitude]}
+                    eventHandlers={{
+                      add: (event: any) => {
+                        event.target.__pinData = pin;
+                      },
+                      ...(isMobileProp
+                        ? {
+                            click: () => onMarkerClick(pin),
+                          }
+                        : {}),
+                    } as any}
+                  >
+                    <Tooltip direction="top" offset={[0, -20]} opacity={0.9}>
+                      <span className="font-medium">{pin.venueName}</span>
+                      <br />
+                      <span className="text-xs text-gray-500">
+                        {pin.events.length} happening{pin.events.length !== 1 ? "s" : ""}
+                      </span>
+                    </Tooltip>
+                    {/* Only render Popup on desktop - mobile uses bottom sheet */}
+                    {!isMobileProp && (
+                      <Popup>
+                        <MapPinPopup pin={pin} />
+                      </Popup>
+                    )}
+                  </Marker>
+                ))}
+              </MarkerClusterGroup>
+
+              {/* Desktop cluster preview popup (hover/click on count markers) */}
+              {!isMobileProp && clusterSelection && (
+                <Popup
+                  key={clusterSelection.pin.venueId}
+                  position={clusterSelection.position}
+                  eventHandlers={{ remove: onClusterClose }}
                 >
-                  <Tooltip direction="top" offset={[0, -20]} opacity={0.9}>
-                    <span className="font-medium">{pin.venueName}</span>
-                    <br />
-                    <span className="text-xs text-gray-500">
-                      {pin.events.length} happening{pin.events.length !== 1 ? "s" : ""}
-                    </span>
-                  </Tooltip>
-                  {/* Only render Popup on desktop - mobile uses bottom sheet */}
-                  {!isMobileProp && (
-                    <Popup>
-                      <MapPinPopup pin={pin} />
-                    </Popup>
-                  )}
-                </Marker>
-              ))}
-            </MarkerClusterGroup>
-          </MapContainer>
-        );
+                  <MapPinPopup pin={clusterSelection.pin} />
+                </Popup>
+              )}
+            </MapContainer>
+          );
+        };
 
         setMapComponent(() => InnerMap);
       } catch (error) {
@@ -243,6 +363,9 @@ export function MapView({ pinResult, className }: MapViewProps) {
             pins={pinResult.pins}
             isMobile={isMobile}
             onMarkerClick={handleMarkerClick}
+            clusterSelection={selectedCluster}
+            onClusterSelect={handleClusterSelect}
+            onClusterClose={handleClusterClose}
           />
         )}
       </div>
