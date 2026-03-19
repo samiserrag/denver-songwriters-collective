@@ -33,8 +33,14 @@ describe("Admin organizations portal", () => {
     expect(source).toContain("Tagged Members");
     expect(source).toContain("Related Content Links");
     expect(source).toContain("Add blog post...");
+    expect(source).toContain("Add another blog post...");
     expect(source).toContain("Add gallery album...");
+    expect(source).toContain("Add another gallery album...");
     expect(source).toContain("Add event...");
+    expect(source).toContain("Add another event...");
+    expect(source).toContain("content-blog-select-");
+    expect(source).toContain("content-gallery-select-");
+    expect(source).toContain("content-event-select-");
     expect(source).toContain('link_type: "event"');
   });
 

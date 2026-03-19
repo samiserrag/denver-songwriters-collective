@@ -465,6 +465,10 @@ export default function AdminOrganizationsClient({ userId }: { userId: string })
     form: OrganizationFormState,
     setForm: (next: OrganizationFormState) => void
   ) {
+    const blogLinkCount = form.content_links.filter((link) => link.link_type === "blog_post").length;
+    const galleryLinkCount = form.content_links.filter((link) => link.link_type === "gallery_album").length;
+    const eventLinkCount = form.content_links.filter((link) => link.link_type === "event").length;
+
     const selectedKeys = new Set(
       form.content_links.map((link) => `${link.link_type}:${link.target_id}`)
     );
@@ -501,12 +505,13 @@ export default function AdminOrganizationsClient({ userId }: { userId: string })
         <div>
           <h4 className="text-sm font-semibold text-[var(--color-text-primary)]">Related Content Links</h4>
           <p className="text-xs text-[var(--color-text-tertiary)]">
-            Connect this organization to blog posts, gallery albums, and hosted happenings series.
+            Connect this organization to blog posts, gallery albums, and events. You can add multiple of each.
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
           <select
+            key={`content-blog-select-${blogLinkCount}`}
             value=""
             onChange={(e) => {
               const targetId = e.target.value;
@@ -526,7 +531,7 @@ export default function AdminOrganizationsClient({ userId }: { userId: string })
             }}
             className="w-full px-3 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
           >
-            <option value="">Add blog post...</option>
+            <option value="">{blogLinkCount > 0 ? "Add another blog post..." : "Add blog post..."}</option>
             {availableBlogs.map((blog) => (
               <option key={blog.id} value={blog.id}>
                 {getBlogOptionLabel(blog)}
@@ -535,6 +540,7 @@ export default function AdminOrganizationsClient({ userId }: { userId: string })
           </select>
 
           <select
+            key={`content-gallery-select-${galleryLinkCount}`}
             value=""
             onChange={(e) => {
               const targetId = e.target.value;
@@ -554,7 +560,9 @@ export default function AdminOrganizationsClient({ userId }: { userId: string })
             }}
             className="w-full px-3 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
           >
-            <option value="">Add gallery album...</option>
+            <option value="">
+              {galleryLinkCount > 0 ? "Add another gallery album..." : "Add gallery album..."}
+            </option>
             {availableGalleries.map((gallery) => (
               <option key={gallery.id} value={gallery.id}>
                 {getGalleryOptionLabel(gallery)}
@@ -563,6 +571,7 @@ export default function AdminOrganizationsClient({ userId }: { userId: string })
           </select>
 
           <select
+            key={`content-event-select-${eventLinkCount}`}
             value=""
             onChange={(e) => {
               const targetId = e.target.value;
@@ -582,7 +591,7 @@ export default function AdminOrganizationsClient({ userId }: { userId: string })
             }}
             className="w-full px-3 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
           >
-            <option value="">Add event...</option>
+            <option value="">{eventLinkCount > 0 ? "Add another event..." : "Add event..."}</option>
             {availableEvents.map((event) => (
               <option key={event.id} value={event.id}>
                 {getEventOptionLabel(event)}
