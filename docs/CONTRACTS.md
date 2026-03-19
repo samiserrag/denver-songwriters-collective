@@ -132,6 +132,67 @@ See [docs/GOVERNANCE.md](./GOVERNANCE.md) for the full stop-gate workflow.
 
 ---
 
+## Contract: Friends of the Collective Organizations (FRIENDS-ORG-01)
+
+### Public Visibility Contract
+
+- Public Friends directory route (`/friends-of-the-collective`) must list only organizations with:
+1. `is_active = true`
+2. `visibility = 'public'`
+- Public organization profile route (`/friends-of-the-collective/[slug]`) must enforce `visibility = 'public'` (no unlisted fallback in public mode).
+
+### Claim CTA Contract
+
+- "Claim or update this organization profile" CTA on Friends list/cards/profile must link to `/feedback` with prefilled query values:
+1. `category=other`
+2. `subject=Claim or update organization profile: {organization name}`
+3. `pageUrl=/friends-of-the-collective/{slug-or-id}`
+- CTA must not deep-link directly to dashboard management pages for anonymous/public viewers.
+
+### Image Rendering Contract (Friends Surfaces)
+
+- Organization card/profile image rendering on Friends surfaces must preserve full image content (no forced crop):
+1. Use contain-fit behavior (`object-contain`) for Friends card and profile primary image contexts
+2. Use a bounded frame/background so non-matching ratios still render cleanly
+
+### Organization Content Link Types Contract
+
+- Supported link types in `organization_content_links`:
+1. `blog_post`
+2. `gallery_album`
+3. `event_series`
+4. `event`
+- Friends rendering must support both series-level and direct event links.
+
+### Organization Linking Authorization Contract
+
+- **Admin authority:** Admins can tag any valid member profile and link any valid blog/gallery/event/event-series to any organization.
+- **Manager authority:** Organization owners/managers can edit organization profile fields and tagged members for organizations they manage.
+- **Manager content-link scope:** Non-admin managers can only link content tied to currently tagged members on that organization:
+1. Blogs: `blog_posts.author_id` in tagged member IDs
+2. Galleries: `gallery_albums.created_by` in tagged member IDs
+3. Events: hosted/co-hosted by tagged member IDs (accepted host relationships)
+4. Event series: derived from events within the manager-allowed event scope
+- Validation failures must return explicit API errors (4xx) with invalid references; no silent drops.
+
+### Member Tag Notifications + Self-Removal Contract
+
+- When a member is newly tagged on an organization, the system must send a notification email containing:
+1. Organization name
+2. Directory link
+3. A self-removal link to `/organization-membership?organizationId={id}`
+- Tagged members must be able to remove themselves from an organization via authenticated self-service flow.
+
+### Coverage Contract
+
+- Contract tests must cover:
+1. Friends page claim CTA deep-link behavior
+2. Event link support (`event` + `event_series`) on Friends surfaces
+3. Manager-vs-admin linking authority behavior
+4. Member tag self-removal route + API behavior
+
+---
+
 ## Contract: Site Settings Asset URLs
 
 ### Scope

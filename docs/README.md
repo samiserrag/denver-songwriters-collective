@@ -57,4 +57,4 @@ When documents conflict, resolve using this priority:
 
 ---
 
-*Last updated: January 2026*
+*Last updated: March 2026*

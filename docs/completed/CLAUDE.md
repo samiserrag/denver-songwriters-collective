@@ -6,6 +6,38 @@ This file holds the historical implementation log that was previously under the 
 
 ---
 
+### Feature: Organizations Linking Permissions + Friends Public Contracts + Member Self-Removal (March 2026)
+
+**Summary:** Implemented full admin control for organization associations, manager-scoped content-link enforcement, public Friends page alignment, and a member self-removal flow for organization tags.
+
+**What changed:**
+- Admin organizations APIs now support direct event links and enforce explicit existence validation for linked members/content (no silent failures).
+- Manager organizations API (`/api/my-organizations/[id]`) now enforces server-side scope:
+1. Managers can only link blogs/galleries/events/event-series tied to tagged members.
+2. Admins retain unrestricted linking control across all valid records.
+- Friends directory/profile behavior updated:
+1. Public profile route enforces `visibility = 'public'`.
+2. Claim/update CTA now routes to `/feedback` with prefilled subject/page context.
+3. Friends rendering supports both direct `event` and `event_series` organization links.
+4. Friends image presentation uses contain-fit in primary contexts to avoid crop-loss.
+- Added member tag notification template with self-removal link:
+1. `web/src/lib/email/templates/organizationMemberTagged.ts`
+- Added authenticated self-removal flow:
+1. API: `web/src/app/api/organization-membership/route.ts`
+2. Page: `web/src/app/organization-membership/page.tsx`
+- Added migration:
+1. `supabase/migrations/20260319103000_organization_linking_event_type_and_member_self_remove.sql`
+
+**Validation:**
+- Targeted tests passed:
+1. `friends-of-collective-page.test.ts`
+2. `organization-claims-and-management.test.ts`
+3. `admin-organizations-portal.test.ts`
+4. `organization-member-tag-self-removal.test.ts`
+- Lint passed on changed feature files.
+
+---
+
 ### Fix: Event Sharing Preview Cache-Busting + Warm-Up (March 2026)
 
 **Summary:** Hardened social sharing reliability (especially Facebook) by versioning event OG image URLs with `event.updated_at` and warming share preview endpoints after event create/update. This removes the need for manual scraper refresh in most cases and reduces stale preview reuse.
