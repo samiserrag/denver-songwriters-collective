@@ -1,5 +1,6 @@
 -- Friends of the Collective: explicit links from organizations to CSC content
 -- Adds first-class relations for blog posts, gallery albums, and hosted event series.
+-- REVIEWED: policy change acknowledged
 
 CREATE TABLE IF NOT EXISTS public.organization_content_links (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
