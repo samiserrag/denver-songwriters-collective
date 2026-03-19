@@ -198,21 +198,19 @@ export function MapView({ pinResult, className }: MapViewProps) {
                 zoomToBoundsOnClick={false}
                 removeOutsideVisibleBounds={true}
                 maxClusterRadius={60}
-                eventHandlers={{
-                  clustermouseover: (event: any) => {
-                    if (isMobileProp) return;
-                    const selection = buildClusterSelection(event);
-                    if (selection) {
-                      onClusterSelect(selection);
-                    }
-                  },
-                  clusterclick: (event: any) => {
-                    const selection = buildClusterSelection(event);
-                    if (selection) {
-                      onClusterSelect(selection);
-                    }
-                  },
-                } as any}
+                onMouseOver={(event: any) => {
+                  if (isMobileProp) return;
+                  const selection = buildClusterSelection(event);
+                  if (selection) {
+                    onClusterSelect(selection);
+                  }
+                }}
+                onClick={(event: any) => {
+                  const selection = buildClusterSelection(event);
+                  if (selection) {
+                    onClusterSelect(selection);
+                  }
+                }}
               >
                 {pins.map((pin) => (
                   <Marker
