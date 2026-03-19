@@ -235,6 +235,13 @@ export default function AdminOrganizationsClient({ userId }: { userId: string })
     () => organizations.filter((row) => row.visibility === "public").length,
     [organizations]
   );
+  const sortedOrganizations = useMemo(() => {
+    return [...organizations].sort((a, b) => {
+      const left = (a.name || "").trim().toLowerCase();
+      const right = (b.name || "").trim().toLowerCase();
+      return left.localeCompare(right);
+    });
+  }, [organizations]);
 
   async function fetchOrganizations() {
     setError("");
@@ -831,7 +838,7 @@ export default function AdminOrganizationsClient({ userId }: { userId: string })
             </tr>
           </thead>
           <tbody>
-            {organizations.map((row) => (
+            {sortedOrganizations.map((row) => (
               <tr key={row.id} className="border-t border-[var(--color-border-default)]">
                 <td className="px-4 py-3">
                   <p className="text-[var(--color-text-primary)] font-medium">{row.name}</p>
@@ -864,7 +871,7 @@ export default function AdminOrganizationsClient({ userId }: { userId: string })
                 </td>
               </tr>
             ))}
-            {organizations.length === 0 && (
+            {sortedOrganizations.length === 0 && (
               <tr>
                 <td colSpan={5} className="px-4 py-8 text-center text-[var(--color-text-tertiary)]">
                   No organizations yet.
