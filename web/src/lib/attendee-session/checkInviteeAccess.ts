@@ -13,7 +13,6 @@
  * - Invite matches the user (by user_id or cookie invite_id)
  */
 
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServiceRoleClient } from "@/lib/supabase/serviceRoleClient";
 import { readAttendeeCookie } from "./cookie";
 
