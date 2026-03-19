@@ -827,6 +827,7 @@ export default async function FriendsOfTheCollectivePage({
             <section className="rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] overflow-hidden">
               <ul className="divide-y divide-[var(--color-border-subtle)]">
                 {alphabetical.map((friend) => {
+                  const rowImageUrl = getFriendImageUrl(friend);
                   const relatedCount =
                     (friend.relatedBlogPosts?.length || 0) +
                     (friend.relatedGalleryAlbums?.length || 0) +
@@ -834,27 +835,45 @@ export default async function FriendsOfTheCollectivePage({
                   return (
                     <li key={friend.id} className="p-4 md:p-5">
                       <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-6">
-                        <div className="min-w-0 flex-1 space-y-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <Link
-                              href={friendProfileHref(friend)}
-                              className="text-lg font-[var(--font-family-serif)] font-semibold text-[var(--color-text-primary)] hover:text-[var(--color-text-accent)]"
-                            >
-                              {friend.name}
-                            </Link>
-                            {friend.featured && (
-                              <span className="px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wide border border-[var(--color-border-accent)] text-[var(--color-text-accent)]">
-                                Featured
+                        <div className="flex items-start gap-4 min-w-0 flex-1">
+                          <Link href={friendProfileHref(friend)} className="shrink-0">
+                            {rowImageUrl ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={rowImageUrl}
+                                alt={`${friend.name} logo or cover`}
+                                className="h-14 w-14 rounded-lg object-cover border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)]"
+                                loading="lazy"
+                              />
+                            ) : (
+                              <span className="h-14 w-14 rounded-lg bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] text-xs font-semibold text-[var(--color-text-secondary)] flex items-center justify-center">
+                                {getInitials(friend.name)}
                               </span>
                             )}
+                          </Link>
+
+                          <div className="min-w-0 flex-1 space-y-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Link
+                                href={friendProfileHref(friend)}
+                                className="text-lg font-[var(--font-family-serif)] font-semibold text-[var(--color-text-primary)] hover:text-[var(--color-text-accent)]"
+                              >
+                                {friend.name}
+                              </Link>
+                              {friend.featured && (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wide border border-[var(--color-border-accent)] text-[var(--color-text-accent)]">
+                                  Featured
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs tracking-wide uppercase text-[var(--color-text-tertiary)]">
+                              {friend.organizationType || "Community Organization"}
+                              {friend.city ? ` • ${friend.city}` : ""}
+                            </p>
+                            <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
+                              {friend.shortBlurb}
+                            </p>
                           </div>
-                          <p className="text-xs tracking-wide uppercase text-[var(--color-text-tertiary)]">
-                            {friend.organizationType || "Community Organization"}
-                            {friend.city ? ` • ${friend.city}` : ""}
-                          </p>
-                          <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
-                            {friend.shortBlurb}
-                          </p>
                         </div>
                         <div className="flex flex-wrap gap-2 text-xs text-[var(--color-text-secondary)]">
                           <span className="px-2 py-1 rounded-full bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)]">
