@@ -22,6 +22,5 @@ export default async function AdminOrganizationsPage() {
     return <div className="p-8 text-red-500">Access denied - admin only.</div>;
   }
 
-  return <AdminOrganizationsClient />;
+  return <AdminOrganizationsClient userId={user.id} />;
 }
-

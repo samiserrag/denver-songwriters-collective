@@ -141,6 +141,23 @@
   - `web/src/lib/friends-of-the-collective.ts` adds optional `galleryImageUrls`.
   - `web/src/lib/organizations.ts` maps `gallery_image_urls` into friend view output.
 
+## Phase 7: Upload-Managed Organization Photos
+
+- New migration:
+  - `supabase/migrations/20260319093000_organization_images.sql`
+- New schema + policies:
+  - `organization_images` table with soft-delete support.
+  - RLS for organization managers/admins.
+  - Storage policies for `avatars/organizations/{organization_id}/*`.
+- New shared photo manager UI:
+  - `web/src/components/organizations/OrganizationPhotosManager.tsx`
+  - Multiple uploads, cover selection, logo selection, lightbox preview.
+  - First uploaded photo auto-sets as cover when no cover exists.
+- Form updates:
+  - `web/src/app/(protected)/dashboard/admin/organizations/AdminOrganizationsClient.tsx`
+  - `web/src/app/(protected)/dashboard/my-organizations/[id]/_components/OrganizationEditForm.tsx`
+  - Raw image URL inputs were replaced by upload-managed photo controls.
+
 ## Content Model
 
 Each listed organization uses this shape:
@@ -160,9 +177,10 @@ Each listed organization uses this shape:
 
 1. Open `/dashboard/admin/organizations`.
 2. Create or edit an organization.
-3. Add logo/cover image URLs and optional gallery URLs.
-4. Set visibility (`private`, `unlisted`, `public`) and status (`active`).
-5. Save.
+3. Upload one or more photos in the `Photos` section.
+4. Set `Cover` and optionally `Logo` from uploaded photos.
+5. Set visibility (`private`, `unlisted`, `public`) and status (`active`).
+6. Save.
 
 ## Private vs Public Launch
 

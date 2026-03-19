@@ -101,7 +101,7 @@ export default async function EditOrganizationPage({
           </div>
         </div>
 
-        <OrganizationEditForm organization={organization} />
+        <OrganizationEditForm organization={organization} editorUserId={sessionUser.id} />
 
         <div className="mt-8">
           <OrganizationInviteSection

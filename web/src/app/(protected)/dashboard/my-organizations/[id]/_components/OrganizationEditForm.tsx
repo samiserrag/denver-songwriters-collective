@@ -3,11 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  parseGalleryInput,
   parseTagsInput,
-  stringifyGallery,
   stringifyTags,
 } from "@/lib/organizations";
+import { OrganizationPhotosManager } from "@/components/organizations/OrganizationPhotosManager";
 
 interface OrganizationData {
   id: string;
@@ -28,9 +27,10 @@ interface OrganizationData {
 
 interface Props {
   organization: OrganizationData;
+  editorUserId: string;
 }
 
-export default function OrganizationEditForm({ organization }: Props) {
+export default function OrganizationEditForm({ organization, editorUserId }: Props) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +45,7 @@ export default function OrganizationEditForm({ organization }: Props) {
     tags: stringifyTags(organization.tags),
     logo_image_url: organization.logo_image_url || "",
     cover_image_url: organization.cover_image_url || "",
-    gallery_image_urls: stringifyGallery(organization.gallery_image_urls),
+    gallery_image_urls: organization.gallery_image_urls || [],
     fun_note: organization.fun_note || "",
   });
 
@@ -75,7 +75,7 @@ export default function OrganizationEditForm({ organization }: Props) {
         tags: parseTagsInput(formData.tags),
         logo_image_url: formData.logo_image_url.trim(),
         cover_image_url: formData.cover_image_url.trim(),
-        gallery_image_urls: parseGalleryInput(formData.gallery_image_urls),
+        gallery_image_urls: formData.gallery_image_urls,
         fun_note: formData.fun_note.trim(),
       };
 
@@ -283,57 +283,22 @@ export default function OrganizationEditForm({ organization }: Props) {
         <legend className="text-lg font-semibold text-[var(--color-text-primary)] mb-3">
           Images
         </legend>
-
-        <div>
-          <label
-            htmlFor="logo_image_url"
-            className="block text-sm font-medium text-[var(--color-text-primary)] mb-1"
-          >
-            Logo Image URL
-          </label>
-          <input
-            type="url"
-            id="logo_image_url"
-            name="logo_image_url"
-            value={formData.logo_image_url}
-            onChange={handleChange}
-            className="w-full px-3 py-2 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
-          />
-        </div>
-
-        <div>
-          <label
-            htmlFor="cover_image_url"
-            className="block text-sm font-medium text-[var(--color-text-primary)] mb-1"
-          >
-            Cover Image URL
-          </label>
-          <input
-            type="url"
-            id="cover_image_url"
-            name="cover_image_url"
-            value={formData.cover_image_url}
-            onChange={handleChange}
-            className="w-full px-3 py-2 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
-          />
-        </div>
-
-        <div>
-          <label
-            htmlFor="gallery_image_urls"
-            className="block text-sm font-medium text-[var(--color-text-primary)] mb-1"
-          >
-            Gallery Image URLs (one per line)
-          </label>
-          <textarea
-            id="gallery_image_urls"
-            name="gallery_image_urls"
-            value={formData.gallery_image_urls}
-            onChange={handleChange}
-            rows={4}
-            className="w-full px-3 py-2 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] resize-y"
-          />
-        </div>
+        <OrganizationPhotosManager
+          organizationId={organization.id}
+          organizationName={formData.name || organization.name}
+          editorUserId={editorUserId}
+          logoImageUrl={formData.logo_image_url}
+          coverImageUrl={formData.cover_image_url}
+          galleryImageUrls={formData.gallery_image_urls}
+          onChange={(next) =>
+            setFormData((prev) => ({
+              ...prev,
+              logo_image_url: next.logoImageUrl,
+              cover_image_url: next.coverImageUrl,
+              gallery_image_urls: next.galleryImageUrls,
+            }))
+          }
+        />
       </fieldset>
 
       <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border-default)]">

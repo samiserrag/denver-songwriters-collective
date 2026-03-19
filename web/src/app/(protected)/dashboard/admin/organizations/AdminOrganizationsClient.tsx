@@ -3,12 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import type { OrganizationRecord, OrganizationVisibility } from "@/lib/organizations";
 import {
-  parseGalleryInput,
   parseTagsInput,
-  stringifyGallery,
   stringifyTags,
   toSlug,
 } from "@/lib/organizations";
+import { OrganizationPhotosManager } from "@/components/organizations/OrganizationPhotosManager";
 
 type BlogOption = {
   id: string;
@@ -82,7 +81,7 @@ type OrganizationFormState = {
   visibility: OrganizationVisibility;
   logo_image_url: string;
   cover_image_url: string;
-  gallery_image_urls: string;
+  gallery_image_urls: string[];
   fun_note: string;
   sort_order: number;
   member_tags: OrganizationMemberTagInput[];
@@ -104,7 +103,7 @@ function createEmptyForm(): OrganizationFormState {
     visibility: "unlisted",
     logo_image_url: "",
     cover_image_url: "",
-    gallery_image_urls: "",
+    gallery_image_urls: [],
     fun_note: "",
     sort_order: 0,
     member_tags: [],
@@ -143,7 +142,7 @@ function fromRecord(record: OrganizationRecord): OrganizationFormState {
     visibility: record.visibility,
     logo_image_url: record.logo_image_url ?? "",
     cover_image_url: record.cover_image_url ?? "",
-    gallery_image_urls: stringifyGallery(record.gallery_image_urls),
+    gallery_image_urls: record.gallery_image_urls ?? [],
     fun_note: record.fun_note ?? "",
     sort_order: record.sort_order ?? 0,
     member_tags: memberTags,
@@ -166,7 +165,7 @@ function toPayload(form: OrganizationFormState) {
     visibility: form.visibility,
     logo_image_url: form.logo_image_url.trim(),
     cover_image_url: form.cover_image_url.trim(),
-    gallery_image_urls: parseGalleryInput(form.gallery_image_urls),
+    gallery_image_urls: form.gallery_image_urls,
     fun_note: form.fun_note.trim(),
     sort_order: Number(form.sort_order) || 0,
     member_tags: form.member_tags
@@ -215,7 +214,7 @@ function getEventSeriesOptionLabel(series: EventSeriesOption): string {
   return `${series.title}${dateLabel}${statusLabel}`;
 }
 
-export default function AdminOrganizationsClient() {
+export default function AdminOrganizationsClient({ userId }: { userId: string }) {
   const [organizations, setOrganizations] = useState<OrganizationRecord[]>([]);
   const [memberOptions, setMemberOptions] = useState<MemberOption[]>([]);
   const [contentOptions, setContentOptions] = useState<ContentOptions>({
@@ -655,7 +654,8 @@ export default function AdminOrganizationsClient() {
 
   function renderForm(
     form: OrganizationFormState,
-    setForm: (next: OrganizationFormState) => void
+    setForm: (next: OrganizationFormState) => void,
+    organizationId?: string
   ) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -724,26 +724,21 @@ export default function AdminOrganizationsClient() {
           placeholder="Tags (comma-separated)"
           className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)] md:col-span-2"
         />
-        <input
-          type="url"
-          value={form.logo_image_url}
-          onChange={(e) => setForm({ ...form, logo_image_url: e.target.value })}
-          placeholder="Logo Image URL"
-          className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
-        />
-        <input
-          type="url"
-          value={form.cover_image_url}
-          onChange={(e) => setForm({ ...form, cover_image_url: e.target.value })}
-          placeholder="Cover Image URL"
-          className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
-        />
-        <textarea
-          value={form.gallery_image_urls}
-          onChange={(e) => setForm({ ...form, gallery_image_urls: e.target.value })}
-          placeholder="Gallery image URLs (one per line)"
-          rows={3}
-          className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)] md:col-span-2"
+        <OrganizationPhotosManager
+          organizationId={organizationId}
+          organizationName={form.name || "Organization"}
+          editorUserId={userId}
+          logoImageUrl={form.logo_image_url}
+          coverImageUrl={form.cover_image_url}
+          galleryImageUrls={form.gallery_image_urls}
+          onChange={(next) =>
+            setForm({
+              ...form,
+              logo_image_url: next.logoImageUrl,
+              cover_image_url: next.coverImageUrl,
+              gallery_image_urls: next.galleryImageUrls,
+            })
+          }
         />
         <textarea
           value={form.fun_note}
@@ -852,7 +847,7 @@ export default function AdminOrganizationsClient() {
             className="w-full max-w-4xl p-6 bg-[var(--color-bg-primary)] border border-[var(--color-border-default)] rounded-lg max-h-[90vh] overflow-y-auto"
           >
             <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">Edit Organization</h3>
-            {renderForm(editForm, setEditForm)}
+            {renderForm(editForm, setEditForm, editing.id)}
             <div className="mt-4 flex gap-2">
               <button
                 type="submit"
