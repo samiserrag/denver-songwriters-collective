@@ -8,6 +8,7 @@ import { getFriendsOfCollective } from "@/lib/friends-of-the-collective";
 import { createServiceRoleClient } from "@/lib/supabase/serviceRoleClient";
 import {
   toFriendView,
+  type OrganizationContentLinkRecord,
   type OrganizationRecord,
   type OrganizationMemberTagRecord,
   type OrganizationMemberTagProfile,
@@ -34,6 +35,27 @@ type FeaturedHostMember = {
   is_host: boolean | null;
   is_studio: boolean | null;
   is_fan: boolean | null;
+};
+
+type BlogPostSummary = {
+  id: string;
+  slug: string;
+  title: string;
+};
+
+type GalleryAlbumSummary = {
+  id: string;
+  slug: string;
+  name: string;
+};
+
+type SeriesEventSummary = {
+  id: string;
+  slug: string | null;
+  series_id: string | null;
+  title: string;
+  event_date: string | null;
+  event_type: string[] | null;
 };
 
 function hostnameFromUrl(url: string): string {
@@ -63,6 +85,19 @@ function getFriendImageUrl(friend: {
   } catch {
     return null;
   }
+}
+
+function isUuidLike(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
+function eventDetailHref(event: SeriesEventSummary): string {
+  const identifier = event.slug || event.id;
+  const types = Array.isArray(event.event_type) ? event.event_type : [];
+  if (types.includes("open_mic")) {
+    return `/open-mics/${identifier}`;
+  }
+  return `/events/${identifier}`;
 }
 
 function profileHref(profile: {
@@ -161,18 +196,28 @@ async function loadOrganizationsForPage(isPublicMode: boolean) {
   if (organizations.length === 0) return [];
 
   const organizationIds = organizations.map((row) => row.id);
-  const { data: tagRows, error: tagError } = await (serviceClient as any)
-    .from("organization_member_tags")
-    .select(
-      "id, organization_id, profile_id, sort_order, tag_reason, created_at, profiles(id, slug, full_name, avatar_url, role, is_public, is_songwriter, is_host, is_studio, is_fan)"
-    )
-    .in("organization_id", organizationIds)
-    .order("sort_order", { ascending: true })
-    .order("created_at", { ascending: true });
+  const [tagResult, contentLinkResult] = await Promise.all([
+    (serviceClient as any)
+      .from("organization_member_tags")
+      .select(
+        "id, organization_id, profile_id, sort_order, tag_reason, created_at, profiles(id, slug, full_name, avatar_url, role, is_public, is_songwriter, is_host, is_studio, is_fan)"
+      )
+      .in("organization_id", organizationIds)
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true }),
+    (serviceClient as any)
+      .from("organization_content_links")
+      .select("id, organization_id, link_type, target_id, sort_order, label_override, created_at")
+      .in("organization_id", organizationIds)
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true }),
+  ]);
 
-  if (tagError) {
-    console.error("Organization member tags query failed:", tagError);
-  }
+  const { data: tagRows, error: tagError } = tagResult;
+  const { data: contentLinkRows, error: contentLinkError } = contentLinkResult;
+
+  if (tagError) console.error("Organization member tags query failed:", tagError);
+  if (contentLinkError) console.error("Organization content links query failed:", contentLinkError);
 
   const tagsByOrganization = new Map<string, OrganizationMemberTagRecord[]>();
   for (const raw of ((tagRows || []) as Array<Record<string, unknown>>)) {
@@ -197,12 +242,223 @@ async function loadOrganizationsForPage(isPublicMode: boolean) {
     tagsByOrganization.set(organizationId, list);
   }
 
+  const contentLinksByOrganization = new Map<string, OrganizationContentLinkRecord[]>();
+  for (const raw of ((contentLinkRows || []) as Array<Record<string, unknown>>)) {
+    const organizationId = raw.organization_id;
+    if (typeof organizationId !== "string") continue;
+
+    const linkType = raw.link_type;
+    const targetId = raw.target_id;
+    if (
+      (linkType !== "blog_post" && linkType !== "gallery_album" && linkType !== "event_series") ||
+      typeof targetId !== "string" ||
+      targetId.length === 0
+    ) {
+      continue;
+    }
+
+    const link: OrganizationContentLinkRecord = {
+      id: String(raw.id),
+      organization_id: organizationId,
+      link_type: linkType,
+      target_id: targetId,
+      sort_order: Number(raw.sort_order) || 0,
+      label_override: typeof raw.label_override === "string" ? raw.label_override : null,
+    };
+
+    const list = contentLinksByOrganization.get(organizationId) || [];
+    list.push(link);
+    contentLinksByOrganization.set(organizationId, list);
+  }
+
   const withTags = organizations.map((organization) => ({
     ...organization,
     member_tags: tagsByOrganization.get(organization.id) || [],
+    content_links: contentLinksByOrganization.get(organization.id) || [],
   }));
 
-  return withTags.map(toFriendView);
+  const allContentLinks = withTags.flatMap((organization) => organization.content_links || []);
+  const blogIds = Array.from(
+    new Set(
+      allContentLinks
+        .filter((link) => link.link_type === "blog_post")
+        .map((link) => link.target_id)
+        .filter(isUuidLike)
+    )
+  );
+  const galleryIds = Array.from(
+    new Set(
+      allContentLinks
+        .filter((link) => link.link_type === "gallery_album")
+        .map((link) => link.target_id)
+        .filter(isUuidLike)
+    )
+  );
+  const seriesIds = Array.from(
+    new Set(
+      allContentLinks
+        .filter((link) => link.link_type === "event_series")
+        .map((link) => link.target_id)
+        .filter(isUuidLike)
+    )
+  );
+
+  const [blogResult, galleryResult, seriesEventResult] = await Promise.all([
+    blogIds.length > 0
+      ? (async () => {
+          let blogQuery = (serviceClient as any)
+            .from("blog_posts")
+            .select("id, slug, title, is_published")
+            .in("id", blogIds);
+          if (isPublicMode) blogQuery = blogQuery.eq("is_published", true);
+          return blogQuery;
+        })()
+      : Promise.resolve({ data: [], error: null }),
+    galleryIds.length > 0
+      ? (async () => {
+          let galleryQuery = (serviceClient as any)
+            .from("gallery_albums")
+            .select("id, slug, name, is_published, is_hidden")
+            .in("id", galleryIds);
+          if (isPublicMode) {
+            galleryQuery = galleryQuery.eq("is_published", true).eq("is_hidden", false);
+          }
+          return galleryQuery;
+        })()
+      : Promise.resolve({ data: [], error: null }),
+    seriesIds.length > 0
+      ? (async () => {
+          let seriesQuery = (serviceClient as any)
+            .from("events")
+            .select("id, slug, series_id, title, event_date, event_type, is_published, visibility")
+            .in("series_id", seriesIds);
+          if (isPublicMode) {
+            seriesQuery = seriesQuery.eq("is_published", true).eq("visibility", "public");
+          }
+          return seriesQuery;
+        })()
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+
+  if (blogResult.error) console.error("Organization linked blog posts query failed:", blogResult.error);
+  if (galleryResult.error) console.error("Organization linked gallery query failed:", galleryResult.error);
+  if (seriesEventResult.error) {
+    console.error("Organization linked series query failed:", seriesEventResult.error);
+  }
+
+  const blogById = new Map<string, BlogPostSummary>();
+  for (const row of ((blogResult.data || []) as Array<Record<string, unknown>>)) {
+    const id = typeof row.id === "string" ? row.id : null;
+    const slug = typeof row.slug === "string" ? row.slug : null;
+    const title = typeof row.title === "string" ? row.title : null;
+    if (!id || !slug || !title) continue;
+    blogById.set(id, { id, slug, title });
+  }
+
+  const galleryById = new Map<string, GalleryAlbumSummary>();
+  for (const row of ((galleryResult.data || []) as Array<Record<string, unknown>>)) {
+    const id = typeof row.id === "string" ? row.id : null;
+    const slug = typeof row.slug === "string" ? row.slug : null;
+    const name = typeof row.name === "string" ? row.name : null;
+    if (!id || !slug || !name) continue;
+    galleryById.set(id, { id, slug, name });
+  }
+
+  const eventsBySeries = new Map<string, SeriesEventSummary[]>();
+  for (const row of ((seriesEventResult.data || []) as Array<Record<string, unknown>>)) {
+    const seriesId = typeof row.series_id === "string" ? row.series_id : null;
+    const id = typeof row.id === "string" ? row.id : null;
+    const title = typeof row.title === "string" ? row.title : null;
+    if (!seriesId || !id || !title) continue;
+
+    const event: SeriesEventSummary = {
+      id,
+      slug: typeof row.slug === "string" ? row.slug : null,
+      series_id: seriesId,
+      title,
+      event_date: typeof row.event_date === "string" ? row.event_date : null,
+      event_type: Array.isArray(row.event_type)
+        ? row.event_type.filter((item): item is string => typeof item === "string")
+        : null,
+    };
+
+    const list = eventsBySeries.get(seriesId) || [];
+    list.push(event);
+    eventsBySeries.set(seriesId, list);
+  }
+
+  const todayDateKey = new Date().toLocaleDateString("en-CA", { timeZone: "America/Denver" });
+  for (const [seriesId, list] of eventsBySeries.entries()) {
+    eventsBySeries.set(
+      seriesId,
+      [...list].sort((a, b) => {
+        if (!a.event_date && !b.event_date) return 0;
+        if (!a.event_date) return 1;
+        if (!b.event_date) return -1;
+        return a.event_date.localeCompare(b.event_date);
+      })
+    );
+  }
+
+  return withTags.map((organization) => {
+    const base = toFriendView(organization);
+    const contentLinks = [...(organization.content_links || [])].sort(
+      (a, b) => a.sort_order - b.sort_order
+    );
+
+    const relatedBlogPosts = contentLinks
+      .filter((link) => link.link_type === "blog_post")
+      .map((link) => {
+        const blog = blogById.get(link.target_id);
+        if (!blog) return null;
+        return {
+          id: blog.id,
+          title: link.label_override || blog.title,
+          href: `/blog/${blog.slug}`,
+        };
+      })
+      .filter((item): item is { id: string; title: string; href: string } => item !== null);
+
+    const relatedGalleryAlbums = contentLinks
+      .filter((link) => link.link_type === "gallery_album")
+      .map((link) => {
+        const gallery = galleryById.get(link.target_id);
+        if (!gallery) return null;
+        return {
+          id: gallery.id,
+          name: link.label_override || gallery.name,
+          href: `/gallery/${gallery.slug}`,
+        };
+      })
+      .filter((item): item is { id: string; name: string; href: string } => item !== null);
+
+    const relatedEventSeries = contentLinks
+      .filter((link) => link.link_type === "event_series")
+      .map((link) => {
+        const seriesEvents = eventsBySeries.get(link.target_id) || [];
+        if (seriesEvents.length === 0) return null;
+        const nextUpcoming =
+          seriesEvents.find((event) => event.event_date && event.event_date >= todayDateKey) ||
+          seriesEvents[0];
+        return {
+          seriesId: link.target_id,
+          title: link.label_override || nextUpcoming.title,
+          href: eventDetailHref(nextUpcoming),
+          nextDate: nextUpcoming.event_date || undefined,
+        };
+      })
+      .filter(
+        (item): item is { seriesId: string; title: string; href: string; nextDate: string | undefined } =>
+          item !== null
+      );
+
+    return {
+      ...base,
+      relatedBlogPosts,
+      relatedGalleryAlbums,
+      relatedEventSeries,
+    };
+  });
 }
 
 export default async function FriendsOfTheCollectivePage() {
@@ -301,6 +557,76 @@ export default async function FriendsOfTheCollectivePage() {
                 </Link>
               ))}
             </div>
+          </div>
+        )}
+
+        {!!(
+          (friend.relatedBlogPosts && friend.relatedBlogPosts.length > 0) ||
+          (friend.relatedGalleryAlbums && friend.relatedGalleryAlbums.length > 0) ||
+          (friend.relatedEventSeries && friend.relatedEventSeries.length > 0)
+        ) && (
+          <div className="space-y-2">
+            <p className="text-xs uppercase tracking-wide text-[var(--color-text-tertiary)]">
+              Related on CSC
+            </p>
+
+            {friend.relatedBlogPosts && friend.relatedBlogPosts.length > 0 && (
+              <div className="space-y-1">
+                <p className="text-[11px] uppercase tracking-wide text-[var(--color-text-tertiary)]">
+                  Blog Posts
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {friend.relatedBlogPosts.map((post) => (
+                    <Link
+                      key={`${friend.id}-blog-${post.id}`}
+                      href={post.href}
+                      className="inline-flex items-center px-2.5 py-1 rounded-full border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] text-xs text-[var(--color-text-secondary)] hover:border-[var(--color-border-accent)]"
+                    >
+                      {post.title}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {friend.relatedGalleryAlbums && friend.relatedGalleryAlbums.length > 0 && (
+              <div className="space-y-1">
+                <p className="text-[11px] uppercase tracking-wide text-[var(--color-text-tertiary)]">
+                  Gallery Albums
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {friend.relatedGalleryAlbums.map((album) => (
+                    <Link
+                      key={`${friend.id}-gallery-${album.id}`}
+                      href={album.href}
+                      className="inline-flex items-center px-2.5 py-1 rounded-full border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] text-xs text-[var(--color-text-secondary)] hover:border-[var(--color-border-accent)]"
+                    >
+                      {album.name}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {friend.relatedEventSeries && friend.relatedEventSeries.length > 0 && (
+              <div className="space-y-1">
+                <p className="text-[11px] uppercase tracking-wide text-[var(--color-text-tertiary)]">
+                  Hosted Happenings Series
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {friend.relatedEventSeries.map((series) => (
+                    <Link
+                      key={`${friend.id}-series-${series.seriesId}`}
+                      href={series.href}
+                      className="inline-flex items-center px-2.5 py-1 rounded-full border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] text-xs text-[var(--color-text-secondary)] hover:border-[var(--color-border-accent)]"
+                    >
+                      {series.title}
+                      {series.nextDate ? ` · ${series.nextDate}` : ""}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 

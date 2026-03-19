@@ -92,7 +92,36 @@
 - Admin UX updates:
   - Organization admin editor now supports tagged member management per organization.
   - Admin users table includes a `Host reason` editor for spotlighted hosts.
-  - New endpoint: `web/src/app/api/admin/users/[id]/host-spotlight-reason/route.ts`
+- New endpoint: `web/src/app/api/admin/users/[id]/host-spotlight-reason/route.ts`
+
+## Phase 5: Organization Content Linking (Blog, Gallery, Hosted Series)
+
+- New migration:
+  - `supabase/migrations/20260318234500_organization_content_links.sql`
+- New schema:
+  - `organization_content_links` table (organization ↔ `blog_post` / `gallery_album` / `event_series`)
+  - Optional `label_override` and sortable `sort_order` per link
+- Admin API updates:
+  - `web/src/app/api/admin/organizations/route.ts`
+  - `web/src/app/api/admin/organizations/[id]/route.ts`
+  - GET now returns `contentOptions` (`blogs`, `galleries`, `eventSeries`) for editor selectors.
+- Admin UX updates:
+  - `web/src/app/(protected)/dashboard/admin/organizations/AdminOrganizationsClient.tsx`
+  - Edit/create modal now includes `Related Content Links` with selectors for:
+    - blog posts
+    - gallery albums
+    - event series
+- Public page updates:
+  - `web/src/app/friends-of-the-collective/page.tsx`
+  - Cards now show a `Related on CSC` section with direct links to:
+    - Blog Posts
+    - Gallery Albums
+    - Hosted Happenings Series
+
+### Notes
+
+- Public rendering only surfaces links that are public/published as applicable.
+- Admin can still stage links ahead of publish; hidden/draft content remains admin-visible but not public-visible.
 
 ## Content Model
 

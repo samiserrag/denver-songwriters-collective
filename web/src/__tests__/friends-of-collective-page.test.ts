@@ -24,6 +24,10 @@ describe("Friends of the Collective page", () => {
     expect(source).toContain("Featured Host Members");
     expect(source).toContain("Why Featured");
     expect(source).toContain("Connected Members");
+    expect(source).toContain("Related on CSC");
+    expect(source).toContain("Blog Posts");
+    expect(source).toContain("Gallery Albums");
+    expect(source).toContain("Hosted Happenings Series");
   });
 
   it("is intentionally unlisted from footer while private", () => {
@@ -37,6 +41,7 @@ describe("Friends of the Collective page", () => {
     expect(source).toContain("enforcePrivateAccessUntilLaunch");
     expect(source).toContain('from("organizations")');
     expect(source).toContain('from("organization_member_tags")');
+    expect(source).toContain('from("organization_content_links")');
     expect(source).toContain("notFound()");
     expect(source).toContain('robots: "noindex, nofollow"');
   });

@@ -2,10 +2,13 @@ import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/serviceRoleClient";
 import { checkAdminRole } from "@/lib/auth/adminAuth";
-import type { OrganizationVisibility } from "@/lib/organizations";
+import type { OrganizationContentLinkType, OrganizationVisibility } from "@/lib/organizations";
 
 const TABLE_NAME = "organizations";
 const TAG_TABLE_NAME = "organization_member_tags";
+const CONTENT_LINK_TABLE_NAME = "organization_content_links";
+
+const CONTENT_LINK_TYPES: OrganizationContentLinkType[] = ["blog_post", "gallery_album", "event_series"];
 
 type MemberTagInput = {
   profile_id: string;
@@ -13,7 +16,14 @@ type MemberTagInput = {
   tag_reason: string | null;
 };
 
-function isMissingTagSchemaError(error: unknown): boolean {
+type ContentLinkInput = {
+  link_type: OrganizationContentLinkType;
+  target_id: string;
+  sort_order: number;
+  label_override: string | null;
+};
+
+function isMissingSchemaError(error: unknown, schemaTokens: string[]): boolean {
   if (!error || typeof error !== "object") return false;
   const maybe = error as { code?: string; message?: string };
   const code = maybe.code || "";
@@ -21,15 +31,22 @@ function isMissingTagSchemaError(error: unknown): boolean {
 
   if (code === "42P01" || code === "PGRST200" || code === "PGRST205") return true;
   if (!message) return false;
-  if (!message.includes("organization_member_tags") && !message.includes("host_spotlight_reason")) {
-    return false;
-  }
+  if (!schemaTokens.some((token) => message.includes(token))) return false;
+
   return (
     message.includes("does not exist") ||
     message.includes("could not find") ||
     message.includes("relation") ||
     message.includes("column")
   );
+}
+
+function isMissingTagSchemaError(error: unknown): boolean {
+  return isMissingSchemaError(error, ["organization_member_tags", "host_spotlight_reason"]);
+}
+
+function isMissingContentLinkSchemaError(error: unknown): boolean {
+  return isMissingSchemaError(error, ["organization_content_links"]);
 }
 
 function normalizeVisibility(value: unknown): OrganizationVisibility {
@@ -71,6 +88,34 @@ function normalizeMemberTags(value: unknown): MemberTagInput[] {
       profile_id: profileId,
       sort_order: parseSortOrder((item as Record<string, unknown>).sort_order),
       tag_reason: normalizeString((item as Record<string, unknown>).tag_reason),
+    });
+  }
+
+  return Array.from(deduped.values()).sort((a, b) => a.sort_order - b.sort_order);
+}
+
+function normalizeContentLinkType(value: unknown): OrganizationContentLinkType | null {
+  if (typeof value !== "string") return null;
+  return (CONTENT_LINK_TYPES as string[]).includes(value) ? (value as OrganizationContentLinkType) : null;
+}
+
+function normalizeContentLinks(value: unknown): ContentLinkInput[] {
+  if (!Array.isArray(value)) return [];
+
+  const deduped = new Map<string, ContentLinkInput>();
+
+  for (const item of value) {
+    if (!item || typeof item !== "object") continue;
+
+    const linkType = normalizeContentLinkType((item as Record<string, unknown>).link_type);
+    const targetId = normalizeString((item as Record<string, unknown>).target_id);
+    if (!linkType || !targetId) continue;
+
+    deduped.set(`${linkType}:${targetId}`, {
+      link_type: linkType,
+      target_id: targetId,
+      sort_order: parseSortOrder((item as Record<string, unknown>).sort_order),
+      label_override: normalizeString((item as Record<string, unknown>).label_override),
     });
   }
 
@@ -143,7 +188,63 @@ async function syncOrganizationMemberTags(
   }
 }
 
-async function fetchOrganizationWithTags(
+async function syncOrganizationContentLinks(
+  serviceClient: ReturnType<typeof createServiceRoleClient>,
+  organizationId: string,
+  contentLinks: ContentLinkInput[],
+  actorUserId: string
+): Promise<void> {
+  const { data: existingRows, error: existingError } = await (serviceClient as any)
+    .from(CONTENT_LINK_TABLE_NAME)
+    .select("id, link_type, target_id")
+    .eq("organization_id", organizationId);
+
+  if (existingError) {
+    if (isMissingContentLinkSchemaError(existingError)) return;
+    throw existingError;
+  }
+
+  const existing = (existingRows || []) as Array<{ id: string; link_type: string; target_id: string }>;
+  const incomingKeys = new Set(contentLinks.map((item) => `${item.link_type}:${item.target_id}`));
+
+  const deleteIds = existing
+    .filter((row) => !incomingKeys.has(`${row.link_type}:${row.target_id}`))
+    .map((row) => row.id);
+
+  if (deleteIds.length > 0) {
+    const { error: deleteError } = await (serviceClient as any)
+      .from(CONTENT_LINK_TABLE_NAME)
+      .delete()
+      .in("id", deleteIds);
+
+    if (deleteError) {
+      if (isMissingContentLinkSchemaError(deleteError)) return;
+      throw deleteError;
+    }
+  }
+
+  if (contentLinks.length > 0) {
+    const upsertRows = contentLinks.map((link) => ({
+      organization_id: organizationId,
+      link_type: link.link_type,
+      target_id: link.target_id,
+      sort_order: link.sort_order,
+      label_override: link.label_override,
+      created_by: actorUserId,
+    }));
+
+    const { error: upsertError } = await (serviceClient as any)
+      .from(CONTENT_LINK_TABLE_NAME)
+      .upsert(upsertRows, { onConflict: "organization_id,link_type,target_id" });
+
+    if (upsertError) {
+      if (isMissingContentLinkSchemaError(upsertError)) return;
+      throw upsertError;
+    }
+  }
+}
+
+async function fetchOrganizationWithRelations(
   serviceClient: ReturnType<typeof createServiceRoleClient>,
   id: string
 ) {
@@ -157,23 +258,31 @@ async function fetchOrganizationWithTags(
     throw new Error(organizationError.message);
   }
 
-  const { data: tagRows, error: tagError } = await (serviceClient as any)
-    .from(TAG_TABLE_NAME)
-    .select(
-      "id, organization_id, profile_id, sort_order, tag_reason, created_at, profiles(id, full_name, slug, avatar_url, role, is_public, is_songwriter, is_host, is_studio, is_fan)"
-    )
-    .eq("organization_id", id)
-    .order("sort_order", { ascending: true })
-    .order("created_at", { ascending: true });
+  const [tagResult, contentLinkResult] = await Promise.all([
+    (serviceClient as any)
+      .from(TAG_TABLE_NAME)
+      .select(
+        "id, organization_id, profile_id, sort_order, tag_reason, created_at, profiles(id, full_name, slug, avatar_url, role, is_public, is_songwriter, is_host, is_studio, is_fan)"
+      )
+      .eq("organization_id", id)
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true }),
+    (serviceClient as any)
+      .from(CONTENT_LINK_TABLE_NAME)
+      .select("id, organization_id, link_type, target_id, sort_order, label_override, created_at")
+      .eq("organization_id", id)
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true }),
+  ]);
 
-  if (tagError) {
-    if (isMissingTagSchemaError(tagError)) {
-      return {
-        ...(organization as Record<string, unknown>),
-        member_tags: [],
-      };
-    }
+  const { data: tagRows, error: tagError } = tagResult;
+  const { data: contentLinkRows, error: contentLinkError } = contentLinkResult;
+
+  if (tagError && !isMissingTagSchemaError(tagError)) {
     throw new Error(tagError.message);
+  }
+  if (contentLinkError && !isMissingContentLinkSchemaError(contentLinkError)) {
+    throw new Error(contentLinkError.message);
   }
 
   const memberTags = ((tagRows || []) as Array<Record<string, unknown>>)
@@ -191,15 +300,35 @@ async function fetchOrganizationWithTags(
     })
     .filter(Boolean);
 
+  const contentLinks = ((contentLinkRows || []) as Array<Record<string, unknown>>)
+    .map((row) => {
+      const linkType = normalizeContentLinkType(row.link_type);
+      const targetId = normalizeString(row.target_id);
+      if (!linkType || !targetId) return null;
+
+      return {
+        id: row.id,
+        organization_id: row.organization_id,
+        link_type: linkType,
+        target_id: targetId,
+        sort_order: parseSortOrder(row.sort_order),
+        label_override: normalizeString(row.label_override),
+      };
+    })
+    .filter(Boolean);
+
   return {
     ...(organization as Record<string, unknown>),
     member_tags: memberTags,
+    content_links: contentLinks,
   };
 }
 
 async function requireAdmin() {
   const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
 
   const isAdmin = await checkAdminRole(supabase, user.id);
@@ -218,7 +347,7 @@ export async function GET(
 
     const { id } = await params;
     const serviceClient = createServiceRoleClient();
-    const organization = await fetchOrganizationWithTags(serviceClient, id);
+    const organization = await fetchOrganizationWithRelations(serviceClient, id);
 
     return NextResponse.json(organization);
   } catch (err) {
@@ -257,19 +386,18 @@ export async function PATCH(
     if (body.sort_order !== undefined) updates.sort_order = parseSortOrder(body.sort_order);
 
     const memberTagsProvided = body.member_tags !== undefined;
+    const contentLinksProvided = body.content_links !== undefined;
     const memberTags = memberTagsProvided ? normalizeMemberTags(body.member_tags) : [];
+    const contentLinks = contentLinksProvided ? normalizeContentLinks(body.content_links) : [];
 
-    if (Object.keys(updates).length === 0 && !memberTagsProvided) {
+    if (Object.keys(updates).length === 0 && !memberTagsProvided && !contentLinksProvided) {
       return NextResponse.json({ error: "No updates provided" }, { status: 400 });
     }
 
     const serviceClient = createServiceRoleClient();
 
     if (Object.keys(updates).length > 0) {
-      const { error: updateError } = await (serviceClient as any)
-        .from(TABLE_NAME)
-        .update(updates)
-        .eq("id", id);
+      const { error: updateError } = await (serviceClient as any).from(TABLE_NAME).update(updates).eq("id", id);
 
       if (updateError) {
         console.error("Organizations PATCH update error:", updateError);
@@ -289,7 +417,19 @@ export async function PATCH(
       }
     }
 
-    const organization = await fetchOrganizationWithTags(serviceClient, id);
+    if (contentLinksProvided) {
+      try {
+        await syncOrganizationContentLinks(serviceClient, id, contentLinks, auth.user.id);
+      } catch (syncError) {
+        console.error("Organizations PATCH content link sync error:", syncError);
+        return NextResponse.json(
+          { error: syncError instanceof Error ? syncError.message : "Failed to save content links" },
+          { status: 500 }
+        );
+      }
+    }
+
+    const organization = await fetchOrganizationWithRelations(serviceClient, id);
     return NextResponse.json(organization);
   } catch (err) {
     console.error("Organizations PATCH crash:", err);
@@ -307,10 +447,7 @@ export async function DELETE(
 
     const { id } = await params;
     const serviceClient = createServiceRoleClient();
-    const { error } = await (serviceClient as any)
-      .from(TABLE_NAME)
-      .delete()
-      .eq("id", id);
+    const { error } = await (serviceClient as any).from(TABLE_NAME).delete().eq("id", id);
 
     if (error) {
       console.error("Organizations DELETE error:", error);

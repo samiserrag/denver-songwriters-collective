@@ -31,6 +31,10 @@ describe("Admin organizations portal", () => {
     expect(source).toContain("Edit Organization");
     expect(source).toContain("Delete organization");
     expect(source).toContain("Tagged Members");
+    expect(source).toContain("Related Content Links");
+    expect(source).toContain("Add blog post...");
+    expect(source).toContain("Add gallery album...");
+    expect(source).toContain("Add event series...");
   });
 
   it("admin APIs target organizations table", () => {
@@ -38,8 +42,10 @@ describe("Admin organizations portal", () => {
     const sourceItem = fs.readFileSync(apiItemPath, "utf-8");
     expect(source).toContain("const TABLE_NAME = \"organizations\"");
     expect(source).toContain("const TAG_TABLE_NAME = \"organization_member_tags\"");
+    expect(source).toContain("const CONTENT_LINK_TABLE_NAME = \"organization_content_links\"");
     expect(sourceItem).toContain("const TABLE_NAME = \"organizations\"");
     expect(sourceItem).toContain("const TAG_TABLE_NAME = \"organization_member_tags\"");
+    expect(sourceItem).toContain("const CONTENT_LINK_TABLE_NAME = \"organization_content_links\"");
     expect(source).toContain("checkAdminRole");
     expect(sourceItem).toContain("checkAdminRole");
   });

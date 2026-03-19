@@ -10,6 +10,38 @@ import {
   toSlug,
 } from "@/lib/organizations";
 
+type BlogOption = {
+  id: string;
+  slug: string | null;
+  title: string | null;
+  is_published: boolean;
+  published_at: string | null;
+};
+
+type GalleryOption = {
+  id: string;
+  slug: string | null;
+  name: string | null;
+  is_published: boolean;
+  is_hidden: boolean;
+};
+
+type EventSeriesOption = {
+  series_id: string;
+  title: string;
+  slug: string | null;
+  event_id: string;
+  event_date: string | null;
+  is_published: boolean;
+  visibility: string;
+};
+
+type ContentOptions = {
+  blogs: BlogOption[];
+  galleries: GalleryOption[];
+  eventSeries: EventSeriesOption[];
+};
+
 type MemberOption = {
   id: string;
   full_name: string | null;
@@ -27,6 +59,13 @@ type OrganizationMemberTagInput = {
   profile_id: string;
   sort_order: number;
   tag_reason: string;
+};
+
+type OrganizationContentLinkInput = {
+  link_type: "blog_post" | "gallery_album" | "event_series";
+  target_id: string;
+  sort_order: number;
+  label_override: string;
 };
 
 type OrganizationFormState = {
@@ -47,6 +86,7 @@ type OrganizationFormState = {
   fun_note: string;
   sort_order: number;
   member_tags: OrganizationMemberTagInput[];
+  content_links: OrganizationContentLinkInput[];
 };
 
 function createEmptyForm(): OrganizationFormState {
@@ -68,6 +108,7 @@ function createEmptyForm(): OrganizationFormState {
     fun_note: "",
     sort_order: 0,
     member_tags: [],
+    content_links: [],
   };
 }
 
@@ -78,6 +119,14 @@ function fromRecord(record: OrganizationRecord): OrganizationFormState {
       profile_id: tag.profile_id,
       sort_order: tag.sort_order,
       tag_reason: tag.tag_reason || "",
+    }));
+  const contentLinks = [...(record.content_links || [])]
+    .sort((a, b) => a.sort_order - b.sort_order)
+    .map((link) => ({
+      link_type: link.link_type,
+      target_id: link.target_id,
+      sort_order: link.sort_order,
+      label_override: link.label_override || "",
     }));
 
   return {
@@ -98,6 +147,7 @@ function fromRecord(record: OrganizationRecord): OrganizationFormState {
     fun_note: record.fun_note ?? "",
     sort_order: record.sort_order ?? 0,
     member_tags: memberTags,
+    content_links: contentLinks,
   };
 }
 
@@ -126,6 +176,14 @@ function toPayload(form: OrganizationFormState) {
         tag_reason: tag.tag_reason.trim(),
       }))
       .filter((tag) => tag.profile_id),
+    content_links: form.content_links
+      .map((link) => ({
+        link_type: link.link_type,
+        target_id: link.target_id,
+        sort_order: Number(link.sort_order) || 0,
+        label_override: link.label_override.trim(),
+      }))
+      .filter((link) => link.target_id),
   };
 }
 
@@ -138,9 +196,33 @@ function getMemberTypeLabel(member: MemberOption): string {
   return "Member";
 }
 
+function getBlogOptionLabel(blog: BlogOption): string {
+  const title = blog.title || "Untitled blog post";
+  const slug = blog.slug ? `/${blog.slug}` : blog.id.slice(0, 8);
+  return `${title} (${slug})${blog.is_published ? "" : " • draft"}`;
+}
+
+function getGalleryOptionLabel(gallery: GalleryOption): string {
+  const name = gallery.name || "Untitled album";
+  const slug = gallery.slug ? `/${gallery.slug}` : gallery.id.slice(0, 8);
+  const status = gallery.is_hidden ? "hidden" : gallery.is_published ? "published" : "draft";
+  return `${name} (${slug}) • ${status}`;
+}
+
+function getEventSeriesOptionLabel(series: EventSeriesOption): string {
+  const dateLabel = series.event_date ? ` • ${series.event_date}` : "";
+  const statusLabel = series.is_published && series.visibility === "public" ? "" : " • not public";
+  return `${series.title}${dateLabel}${statusLabel}`;
+}
+
 export default function AdminOrganizationsClient() {
   const [organizations, setOrganizations] = useState<OrganizationRecord[]>([]);
   const [memberOptions, setMemberOptions] = useState<MemberOption[]>([]);
+  const [contentOptions, setContentOptions] = useState<ContentOptions>({
+    blogs: [],
+    galleries: [],
+    eventSeries: [],
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -170,11 +252,17 @@ export default function AdminOrganizationsClient() {
     if (Array.isArray(data)) {
       setOrganizations(data as OrganizationRecord[]);
       setMemberOptions([]);
+      setContentOptions({ blogs: [], galleries: [], eventSeries: [] });
       return;
     }
 
     setOrganizations((data.organizations || []) as OrganizationRecord[]);
     setMemberOptions((data.memberOptions || []) as MemberOption[]);
+    setContentOptions({
+      blogs: (data.contentOptions?.blogs || []) as BlogOption[],
+      galleries: (data.contentOptions?.galleries || []) as GalleryOption[],
+      eventSeries: (data.contentOptions?.eventSeries || []) as EventSeriesOption[],
+    });
   }
 
   useEffect(() => {
@@ -374,6 +462,197 @@ export default function AdminOrganizationsClient() {
     );
   }
 
+  function renderContentLinks(
+    form: OrganizationFormState,
+    setForm: (next: OrganizationFormState) => void
+  ) {
+    const selectedKeys = new Set(
+      form.content_links.map((link) => `${link.link_type}:${link.target_id}`)
+    );
+
+    const availableBlogs = contentOptions.blogs.filter(
+      (blog) => !selectedKeys.has(`blog_post:${blog.id}`)
+    );
+    const availableGalleries = contentOptions.galleries.filter(
+      (gallery) => !selectedKeys.has(`gallery_album:${gallery.id}`)
+    );
+    const availableSeries = contentOptions.eventSeries.filter(
+      (series) => !selectedKeys.has(`event_series:${series.series_id}`)
+    );
+
+    const findLinkLabel = (link: OrganizationContentLinkInput) => {
+      if (link.link_type === "blog_post") {
+        const blog = contentOptions.blogs.find((item) => item.id === link.target_id);
+        return blog ? getBlogOptionLabel(blog) : `Blog post ${link.target_id.slice(0, 8)}`;
+      }
+      if (link.link_type === "gallery_album") {
+        const gallery = contentOptions.galleries.find((item) => item.id === link.target_id);
+        return gallery ? getGalleryOptionLabel(gallery) : `Gallery album ${link.target_id.slice(0, 8)}`;
+      }
+      const series = contentOptions.eventSeries.find((item) => item.series_id === link.target_id);
+      return series ? getEventSeriesOptionLabel(series) : `Series ${link.target_id.slice(0, 8)}`;
+    };
+
+    return (
+      <div className="md:col-span-2 space-y-3 rounded-lg border border-[var(--color-border-default)] p-4 bg-[var(--color-bg-tertiary)]/50">
+        <div>
+          <h4 className="text-sm font-semibold text-[var(--color-text-primary)]">Related Content Links</h4>
+          <p className="text-xs text-[var(--color-text-tertiary)]">
+            Connect this organization to blog posts, gallery albums, and hosted happenings series.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+          <select
+            value=""
+            onChange={(e) => {
+              const targetId = e.target.value;
+              if (!targetId) return;
+              setForm({
+                ...form,
+                content_links: [
+                  ...form.content_links,
+                  {
+                    link_type: "blog_post",
+                    target_id: targetId,
+                    sort_order: (form.content_links.length + 1) * 10,
+                    label_override: "",
+                  },
+                ],
+              });
+            }}
+            className="w-full px-3 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
+          >
+            <option value="">Add blog post...</option>
+            {availableBlogs.map((blog) => (
+              <option key={blog.id} value={blog.id}>
+                {getBlogOptionLabel(blog)}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value=""
+            onChange={(e) => {
+              const targetId = e.target.value;
+              if (!targetId) return;
+              setForm({
+                ...form,
+                content_links: [
+                  ...form.content_links,
+                  {
+                    link_type: "gallery_album",
+                    target_id: targetId,
+                    sort_order: (form.content_links.length + 1) * 10,
+                    label_override: "",
+                  },
+                ],
+              });
+            }}
+            className="w-full px-3 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
+          >
+            <option value="">Add gallery album...</option>
+            {availableGalleries.map((gallery) => (
+              <option key={gallery.id} value={gallery.id}>
+                {getGalleryOptionLabel(gallery)}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value=""
+            onChange={(e) => {
+              const targetId = e.target.value;
+              if (!targetId) return;
+              setForm({
+                ...form,
+                content_links: [
+                  ...form.content_links,
+                  {
+                    link_type: "event_series",
+                    target_id: targetId,
+                    sort_order: (form.content_links.length + 1) * 10,
+                    label_override: "",
+                  },
+                ],
+              });
+            }}
+            className="w-full px-3 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
+          >
+            <option value="">Add event series...</option>
+            {availableSeries.map((series) => (
+              <option key={series.series_id} value={series.series_id}>
+                {getEventSeriesOptionLabel(series)}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {form.content_links.length > 0 ? (
+          <div className="space-y-2">
+            {form.content_links.map((link, index) => (
+              <div
+                key={`${link.link_type}:${link.target_id}`}
+                className="rounded border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] p-3"
+              >
+                <div className="flex items-center justify-between gap-3 mb-2">
+                  <p className="text-sm text-[var(--color-text-primary)] font-medium">
+                    {findLinkLabel(link)}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setForm({
+                        ...form,
+                        content_links: form.content_links.filter((_, idx) => idx !== index),
+                      })
+                    }
+                    className="text-xs text-red-500 hover:text-red-400"
+                  >
+                    Remove
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <input
+                    type="number"
+                    value={link.sort_order}
+                    onChange={(e) => {
+                      const sortOrder = parseInt(e.target.value || "0", 10) || 0;
+                      setForm({
+                        ...form,
+                        content_links: form.content_links.map((item, idx) =>
+                          idx === index ? { ...item, sort_order: sortOrder } : item
+                        ),
+                      });
+                    }}
+                    placeholder="Sort order"
+                    className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
+                  />
+                  <input
+                    type="text"
+                    value={link.label_override}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        content_links: form.content_links.map((item, idx) =>
+                          idx === index ? { ...item, label_override: e.target.value } : item
+                        ),
+                      })
+                    }
+                    placeholder="Optional custom label"
+                    className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-xs text-[var(--color-text-tertiary)]">No content links yet.</p>
+        )}
+      </div>
+    );
+  }
+
   function renderForm(
     form: OrganizationFormState,
     setForm: (next: OrganizationFormState) => void
@@ -507,6 +786,7 @@ export default function AdminOrganizationsClient() {
         </label>
 
         {renderMemberTags(form, setForm)}
+        {renderContentLinks(form, setForm)}
       </div>
     );
   }
@@ -619,6 +899,7 @@ export default function AdminOrganizationsClient() {
                   {row.is_active ? "active" : "inactive"}
                   {row.featured ? " · featured" : ""}
                   {(row.member_tags?.length || 0) > 0 ? ` · ${row.member_tags?.length} tagged` : ""}
+                  {(row.content_links?.length || 0) > 0 ? ` · ${row.content_links?.length} links` : ""}
                 </td>
                 <td className="px-4 py-3 text-sm text-[var(--color-text-secondary)]">{row.sort_order ?? 0}</td>
                 <td className="px-4 py-3">

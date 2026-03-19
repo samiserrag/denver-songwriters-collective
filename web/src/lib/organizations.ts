@@ -1,6 +1,7 @@
 import type { CollectiveFriend, CollectiveFriendMemberTag } from "@/lib/friends-of-the-collective";
 
 export type OrganizationVisibility = "private" | "unlisted" | "public";
+export type OrganizationContentLinkType = "blog_post" | "gallery_album" | "event_series";
 
 export interface OrganizationRecord {
   id: string;
@@ -21,6 +22,7 @@ export interface OrganizationRecord {
   fun_note: string | null;
   sort_order: number;
   member_tags?: OrganizationMemberTagRecord[] | null;
+  content_links?: OrganizationContentLinkRecord[] | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -45,6 +47,15 @@ export interface OrganizationMemberTagProfile {
   is_host: boolean | null;
   is_studio: boolean | null;
   is_fan: boolean | null;
+}
+
+export interface OrganizationContentLinkRecord {
+  id: string;
+  organization_id: string;
+  link_type: OrganizationContentLinkType;
+  target_id: string;
+  sort_order: number;
+  label_override: string | null;
 }
 
 function buildProfileHref(profile: OrganizationMemberTagProfile): string {
@@ -74,6 +85,21 @@ function mapMemberTags(tags: OrganizationMemberTagRecord[] | null | undefined): 
     });
 }
 
+function mapContentLinks(contentLinks: OrganizationContentLinkRecord[] | null | undefined) {
+  if (!contentLinks || contentLinks.length === 0) return [];
+
+  return contentLinks
+    .filter((link) => !!link.target_id)
+    .sort((a, b) => a.sort_order - b.sort_order)
+    .map((link) => ({
+      id: link.id,
+      linkType: link.link_type,
+      targetId: link.target_id,
+      sortOrder: link.sort_order ?? 0,
+      labelOverride: link.label_override ?? undefined,
+    }));
+}
+
 export function toFriendView(row: OrganizationRecord): CollectiveFriend {
   return {
     id: row.slug,
@@ -92,6 +118,7 @@ export function toFriendView(row: OrganizationRecord): CollectiveFriend {
     sortOrder: row.sort_order,
     slug: row.slug,
     memberTags: mapMemberTags(row.member_tags),
+    contentLinks: mapContentLinks(row.content_links),
   };
 }
 

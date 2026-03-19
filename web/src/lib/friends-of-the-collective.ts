@@ -15,6 +15,10 @@ export interface CollectiveFriend {
   funNote?: string;
   sortOrder?: number;
   memberTags?: CollectiveFriendMemberTag[];
+  contentLinks?: CollectiveFriendContentLink[];
+  relatedBlogPosts?: CollectiveFriendBlogLink[];
+  relatedGalleryAlbums?: CollectiveFriendGalleryLink[];
+  relatedEventSeries?: CollectiveFriendSeriesLink[];
 }
 
 export interface CollectiveFriendMemberTag {
@@ -24,6 +28,33 @@ export interface CollectiveFriendMemberTag {
   profileUrl: string;
   sortOrder: number;
   tagReason?: string;
+}
+
+export interface CollectiveFriendContentLink {
+  id: string;
+  linkType: "blog_post" | "gallery_album" | "event_series";
+  targetId: string;
+  sortOrder: number;
+  labelOverride?: string;
+}
+
+export interface CollectiveFriendBlogLink {
+  id: string;
+  title: string;
+  href: string;
+}
+
+export interface CollectiveFriendGalleryLink {
+  id: string;
+  name: string;
+  href: string;
+}
+
+export interface CollectiveFriendSeriesLink {
+  seriesId: string;
+  title: string;
+  href: string;
+  nextDate?: string;
 }
 
 /**
