@@ -37,6 +37,7 @@ describe("Friends of the Collective page", () => {
     expect(source).toContain("friendProfileHref");
     expect(source).toContain("claimFeedbackHref");
     expect(source).toContain("suggestOrganizationFeedbackHref");
+    expect(source).toContain('category: "feature"');
     expect(source).toContain('subject: "Suggest organization for Friends of the Collective"');
     expect(source).toContain('link_type === "event"');
   });
@@ -70,8 +71,11 @@ describe("Friends of the Collective page", () => {
     expect(source).toContain("Connected Members");
     expect(source).toContain("Related on CSC");
     expect(source).toContain("Gallery");
+    expect(source).toContain("SeriesCard");
+    expect(source).toContain("card-spotlight");
     expect(source).toContain("Claim or update this organization profile");
     expect(source).toContain("claimFeedbackHref");
+    expect(source).toContain('category: "feature"');
     expect(source).toContain('eventQuery = eventQuery.eq("is_published", true)');
     expect(source).not.toContain('eventQuery = eventQuery.eq("is_published", true).eq("visibility", "public")');
     expect(source).not.toContain("link.label_override ||");

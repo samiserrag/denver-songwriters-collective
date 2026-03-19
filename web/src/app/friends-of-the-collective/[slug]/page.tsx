@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { HeroSection, PageContainer } from "@/components/layout";
 import { Button } from "@/components/ui";
+import { SeriesCard, type SeriesEvent } from "@/components/happenings/SeriesCard";
+import { addDaysDenver, getTodayDenver, groupEventsAsSeriesView, type SeriesEntry } from "@/lib/events/nextOccurrence";
 import { createServiceRoleClient } from "@/lib/supabase/serviceRoleClient";
 import { getFriendsOfCollective } from "@/lib/friends-of-the-collective";
 import {
@@ -23,20 +26,45 @@ type BlogPostSummary = {
   id: string;
   slug: string;
   title: string;
+  excerpt: string | null;
+  cover_image_url: string | null;
+  published_at: string | null;
+  tags: string[];
 };
 
 type GalleryAlbumSummary = {
   id: string;
   slug: string;
   name: string;
+  cover_image_url: string | null;
+  created_at: string | null;
 };
 
-type SeriesEventSummary = {
-  id: string;
-  slug: string | null;
-  title: string;
-  event_date: string | null;
-  event_type: string[] | null;
+type SeriesEventSummary = SeriesEvent & {
+  series_id: string | null;
+  visibility: string | null;
+  is_published: boolean;
+};
+
+type FriendProfileView = ReturnType<typeof toFriendView> & {
+  relatedBlogPosts: Array<{
+    id: string;
+    title: string;
+    href: string;
+    excerpt: string | null;
+    coverImageUrl: string | null;
+    publishedAt: string | null;
+    tags: string[];
+  }>;
+  relatedGalleryAlbums: Array<{
+    id: string;
+    name: string;
+    href: string;
+    coverImageUrl: string | null;
+    createdAt: string | null;
+  }>;
+  relatedEventSeries: Array<{ seriesId: string; title: string; href: string; nextDate: string | undefined }>;
+  relatedEventSeriesEntries: Array<SeriesEntry<SeriesEvent>>;
 };
 
 function hostnameFromUrl(url: string): string {
@@ -71,7 +99,7 @@ function getFriendImageUrl(friend: {
 function claimFeedbackHref(friend: { slug?: string; id: string; name: string }): string {
   const profilePath = `/friends-of-the-collective/${friend.slug || friend.id}`;
   const params = new URLSearchParams({
-    category: "other",
+    category: "feature",
     subject: `Claim or update organization profile: ${friend.name}`,
     pageUrl: profilePath,
   });
@@ -104,7 +132,7 @@ function normalizeProfileRelation(value: unknown): OrganizationMemberTagProfile 
 
 export const dynamic = "force-dynamic";
 
-async function loadFriendBySlug(slug: string, isPublicMode: boolean) {
+async function loadFriendBySlug(slug: string, isPublicMode: boolean): Promise<FriendProfileView | null> {
   const serviceClient = createServiceRoleClient();
 
   let query = (serviceClient as any)
@@ -129,7 +157,23 @@ async function loadFriendBySlug(slug: string, isPublicMode: boolean) {
   if (!data) {
     if (isPublicMode) return null;
     const fallback = getFriendsOfCollective().find((friend) => friend.id === slug || friend.slug === slug);
-    return fallback || null;
+    if (!fallback) return null;
+    return {
+      ...fallback,
+      relatedBlogPosts: (fallback.relatedBlogPosts || []).map((post) => ({
+        ...post,
+        excerpt: null,
+        coverImageUrl: null,
+        publishedAt: null,
+        tags: [],
+      })),
+      relatedGalleryAlbums: (fallback.relatedGalleryAlbums || []).map((album) => ({
+        ...album,
+        coverImageUrl: null,
+        createdAt: null,
+      })),
+      relatedEventSeriesEntries: [],
+    };
   }
 
   const organization = data as OrganizationRecord;
@@ -235,7 +279,7 @@ async function loadFriendBySlug(slug: string, isPublicMode: boolean) {
       ? (async () => {
           let blogQuery = (serviceClient as any)
             .from("blog_posts")
-            .select("id, slug, title, is_published")
+            .select("id, slug, title, excerpt, cover_image_url, published_at, tags, is_published")
             .in("id", blogIds);
           if (isPublicMode) blogQuery = blogQuery.eq("is_published", true);
           return blogQuery;
@@ -245,7 +289,7 @@ async function loadFriendBySlug(slug: string, isPublicMode: boolean) {
       ? (async () => {
           let galleryQuery = (serviceClient as any)
             .from("gallery_albums")
-            .select("id, slug, name, is_published, is_hidden")
+            .select("id, slug, name, cover_image_url, created_at, is_published, is_hidden")
             .in("id", galleryIds);
           if (isPublicMode) {
             galleryQuery = galleryQuery.eq("is_published", true).eq("is_hidden", false);
@@ -257,7 +301,9 @@ async function loadFriendBySlug(slug: string, isPublicMode: boolean) {
       ? (async () => {
           let eventQuery = (serviceClient as any)
             .from("events")
-            .select("id, slug, series_id, title, event_date, event_type, is_published, visibility")
+            .select(
+              "id, slug, series_id, title, event_date, event_type, day_of_week, start_time, end_time, recurrence_rule, max_occurrences, custom_dates, is_recurring, status, cover_image_url, is_dsc_event, is_free, last_verified_at, verified_by, source, host_id, location_mode, venue_id, venue_name, venue_address, is_published, visibility"
+            )
             .in("id", eventIds);
           if (isPublicMode) {
             eventQuery = eventQuery.eq("is_published", true);
@@ -269,7 +315,9 @@ async function loadFriendBySlug(slug: string, isPublicMode: boolean) {
       ? (async () => {
           let seriesQuery = (serviceClient as any)
             .from("events")
-            .select("id, slug, series_id, title, event_date, event_type, is_published, visibility")
+            .select(
+              "id, slug, series_id, title, event_date, event_type, day_of_week, start_time, end_time, recurrence_rule, max_occurrences, custom_dates, is_recurring, status, cover_image_url, is_dsc_event, is_free, last_verified_at, verified_by, source, host_id, location_mode, venue_id, venue_name, venue_address, is_published, visibility"
+            )
             .in("series_id", seriesIds);
           if (isPublicMode) {
             seriesQuery = seriesQuery.eq("is_published", true);
@@ -285,7 +333,15 @@ async function loadFriendBySlug(slug: string, isPublicMode: boolean) {
     const rowSlug = typeof row.slug === "string" ? row.slug : null;
     const title = typeof row.title === "string" ? row.title : null;
     if (!id || !rowSlug || !title) continue;
-    blogById.set(id, { id, slug: rowSlug, title });
+    blogById.set(id, {
+      id,
+      slug: rowSlug,
+      title,
+      excerpt: typeof row.excerpt === "string" ? row.excerpt : null,
+      cover_image_url: typeof row.cover_image_url === "string" ? row.cover_image_url : null,
+      published_at: typeof row.published_at === "string" ? row.published_at : null,
+      tags: Array.isArray(row.tags) ? row.tags.filter((item): item is string => typeof item === "string") : [],
+    });
   }
 
   const galleryById = new Map<string, GalleryAlbumSummary>();
@@ -294,7 +350,37 @@ async function loadFriendBySlug(slug: string, isPublicMode: boolean) {
     const rowSlug = typeof row.slug === "string" ? row.slug : null;
     const name = typeof row.name === "string" ? row.name : null;
     if (!id || !rowSlug || !name) continue;
-    galleryById.set(id, { id, slug: rowSlug, name });
+    galleryById.set(id, {
+      id,
+      slug: rowSlug,
+      name,
+      cover_image_url: typeof row.cover_image_url === "string" ? row.cover_image_url : null,
+      created_at: typeof row.created_at === "string" ? row.created_at : null,
+    });
+  }
+
+  const galleryIdsNeedingCover = Array.from(galleryById.values())
+    .filter((gallery) => !gallery.cover_image_url)
+    .map((gallery) => gallery.id);
+  const galleryFallbackCoverById = new Map<string, string>();
+  if (galleryIdsNeedingCover.length > 0) {
+    const { data: galleryImageRows } = await (serviceClient as any)
+      .from("gallery_images")
+      .select("album_id, image_url, sort_order, created_at")
+      .in("album_id", galleryIdsNeedingCover)
+      .eq("is_approved", true)
+      .eq("is_hidden", false)
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: false });
+
+    for (const row of ((galleryImageRows || []) as Array<Record<string, unknown>>)) {
+      const albumId = typeof row.album_id === "string" ? row.album_id : null;
+      const imageUrl = typeof row.image_url === "string" ? row.image_url : null;
+      if (!albumId || !imageUrl) continue;
+      if (!galleryFallbackCoverById.has(albumId)) {
+        galleryFallbackCoverById.set(albumId, imageUrl);
+      }
+    }
   }
 
   const eventById = new Map<string, SeriesEventSummary>();
@@ -306,11 +392,40 @@ async function loadFriendBySlug(slug: string, isPublicMode: boolean) {
     eventById.set(id, {
       id,
       slug: typeof row.slug === "string" ? row.slug : null,
+      series_id: typeof row.series_id === "string" ? row.series_id : null,
       title,
       event_date: typeof row.event_date === "string" ? row.event_date : null,
       event_type: Array.isArray(row.event_type)
         ? row.event_type.filter((item): item is string => typeof item === "string")
+        : [],
+      day_of_week: typeof row.day_of_week === "string" ? row.day_of_week : null,
+      start_time: typeof row.start_time === "string" ? row.start_time : null,
+      end_time: typeof row.end_time === "string" ? row.end_time : null,
+      recurrence_rule: typeof row.recurrence_rule === "string" ? row.recurrence_rule : null,
+      max_occurrences: typeof row.max_occurrences === "number" ? row.max_occurrences : null,
+      custom_dates: Array.isArray(row.custom_dates)
+        ? row.custom_dates.filter((item): item is string => typeof item === "string")
         : null,
+      is_recurring: row.is_recurring === true,
+      status: typeof row.status === "string" ? row.status : null,
+      cover_image_url: typeof row.cover_image_url === "string" ? row.cover_image_url : null,
+      is_dsc_event: row.is_dsc_event === true,
+      is_free: row.is_free === true,
+      last_verified_at: typeof row.last_verified_at === "string" ? row.last_verified_at : null,
+      verified_by: typeof row.verified_by === "string" ? row.verified_by : null,
+      source: typeof row.source === "string" ? row.source : null,
+      host_id: typeof row.host_id === "string" ? row.host_id : null,
+      location_mode:
+        row.location_mode === "venue" ||
+        row.location_mode === "online" ||
+        row.location_mode === "hybrid"
+          ? row.location_mode
+          : null,
+      venue_id: typeof row.venue_id === "string" ? row.venue_id : null,
+      venue_name: typeof row.venue_name === "string" ? row.venue_name : null,
+      venue_address: typeof row.venue_address === "string" ? row.venue_address : null,
+      is_published: row.is_published === true,
+      visibility: typeof row.visibility === "string" ? row.visibility : null,
     });
   }
 
@@ -324,11 +439,40 @@ async function loadFriendBySlug(slug: string, isPublicMode: boolean) {
     const event: SeriesEventSummary = {
       id,
       slug: typeof row.slug === "string" ? row.slug : null,
+      series_id: seriesId,
       title,
       event_date: typeof row.event_date === "string" ? row.event_date : null,
       event_type: Array.isArray(row.event_type)
         ? row.event_type.filter((item): item is string => typeof item === "string")
+        : [],
+      day_of_week: typeof row.day_of_week === "string" ? row.day_of_week : null,
+      start_time: typeof row.start_time === "string" ? row.start_time : null,
+      end_time: typeof row.end_time === "string" ? row.end_time : null,
+      recurrence_rule: typeof row.recurrence_rule === "string" ? row.recurrence_rule : null,
+      max_occurrences: typeof row.max_occurrences === "number" ? row.max_occurrences : null,
+      custom_dates: Array.isArray(row.custom_dates)
+        ? row.custom_dates.filter((item): item is string => typeof item === "string")
         : null,
+      is_recurring: row.is_recurring === true,
+      status: typeof row.status === "string" ? row.status : null,
+      cover_image_url: typeof row.cover_image_url === "string" ? row.cover_image_url : null,
+      is_dsc_event: row.is_dsc_event === true,
+      is_free: row.is_free === true,
+      last_verified_at: typeof row.last_verified_at === "string" ? row.last_verified_at : null,
+      verified_by: typeof row.verified_by === "string" ? row.verified_by : null,
+      source: typeof row.source === "string" ? row.source : null,
+      host_id: typeof row.host_id === "string" ? row.host_id : null,
+      location_mode:
+        row.location_mode === "venue" ||
+        row.location_mode === "online" ||
+        row.location_mode === "hybrid"
+          ? row.location_mode
+          : null,
+      venue_id: typeof row.venue_id === "string" ? row.venue_id : null,
+      venue_name: typeof row.venue_name === "string" ? row.venue_name : null,
+      venue_address: typeof row.venue_address === "string" ? row.venue_address : null,
+      is_published: row.is_published === true,
+      visibility: typeof row.visibility === "string" ? row.visibility : null,
     };
 
     const list = eventsBySeries.get(seriesId) || [];
@@ -336,7 +480,7 @@ async function loadFriendBySlug(slug: string, isPublicMode: boolean) {
     eventsBySeries.set(seriesId, list);
   }
 
-  const todayDateKey = new Date().toLocaleDateString("en-CA", { timeZone: "America/Denver" });
+  const todayDateKey = getTodayDenver();
   for (const [seriesId, list] of eventsBySeries.entries()) {
     eventsBySeries.set(
       seriesId,
@@ -364,9 +508,23 @@ async function loadFriendBySlug(slug: string, isPublicMode: boolean) {
         id: blog.id,
         title: blog.title,
         href: `/blog/${blog.slug}`,
+        excerpt: blog.excerpt,
+        coverImageUrl: blog.cover_image_url,
+        publishedAt: blog.published_at,
+        tags: blog.tags,
       };
     })
-    .filter((item): item is { id: string; title: string; href: string } => item !== null);
+    .filter(
+      (item): item is {
+        id: string;
+        title: string;
+        href: string;
+        excerpt: string | null;
+        coverImageUrl: string | null;
+        publishedAt: string | null;
+        tags: string[];
+      } => item !== null
+    );
 
   const relatedGalleryAlbums = contentLinks
     .filter((link) => link.link_type === "gallery_album")
@@ -377,16 +535,32 @@ async function loadFriendBySlug(slug: string, isPublicMode: boolean) {
         id: gallery.id,
         name: gallery.name,
         href: `/gallery/${gallery.slug}`,
+        coverImageUrl: gallery.cover_image_url || galleryFallbackCoverById.get(gallery.id) || null,
+        createdAt: gallery.created_at,
       };
     })
-    .filter((item): item is { id: string; name: string; href: string } => item !== null);
+    .filter(
+      (item): item is {
+        id: string;
+        name: string;
+        href: string;
+        coverImageUrl: string | null;
+        createdAt: string | null;
+      } => item !== null
+    );
 
+  const selectedEventsForCards: SeriesEvent[] = [];
+  const selectedEventIds = new Set<string>();
   const relatedEventSeries = contentLinks
     .filter((link) => link.link_type === "event_series" || link.link_type === "event")
     .map((link) => {
       if (link.link_type === "event") {
         const event = eventById.get(link.target_id);
         if (!event) return null;
+        if (!selectedEventIds.has(event.id)) {
+          selectedEventIds.add(event.id);
+          selectedEventsForCards.push(event);
+        }
         return {
           seriesId: event.id,
           title: event.title,
@@ -399,6 +573,10 @@ async function loadFriendBySlug(slug: string, isPublicMode: boolean) {
       if (seriesEvents.length === 0) return null;
       const nextUpcoming =
         seriesEvents.find((event) => event.event_date && event.event_date >= todayDateKey) || seriesEvents[0];
+      if (!selectedEventIds.has(nextUpcoming.id)) {
+        selectedEventIds.add(nextUpcoming.id);
+        selectedEventsForCards.push(nextUpcoming);
+      }
       return {
         seriesId: link.target_id,
         title: nextUpcoming.title,
@@ -410,12 +588,17 @@ async function loadFriendBySlug(slug: string, isPublicMode: boolean) {
       (item): item is { seriesId: string; title: string; href: string; nextDate: string | undefined } =>
         item !== null
     );
+  const { series: relatedEventSeriesEntries } = groupEventsAsSeriesView(selectedEventsForCards, {
+    startKey: todayDateKey,
+    endKey: addDaysDenver(todayDateKey, 90),
+  });
 
   return {
     ...base,
     relatedBlogPosts,
     relatedGalleryAlbums,
     relatedEventSeries,
+    relatedEventSeriesEntries,
   };
 }
 
@@ -551,61 +734,153 @@ export default async function FriendOrganizationProfilePage({
           {!!(
             (friend.relatedBlogPosts && friend.relatedBlogPosts.length > 0) ||
             (friend.relatedGalleryAlbums && friend.relatedGalleryAlbums.length > 0) ||
-            (friend.relatedEventSeries && friend.relatedEventSeries.length > 0)
+            (friend.relatedEventSeriesEntries && friend.relatedEventSeriesEntries.length > 0)
           ) && (
-            <section className="rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] p-6 space-y-5">
+            <section className="rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] p-6 space-y-8">
               <h2 className="text-xl font-[var(--font-family-serif)] font-semibold text-[var(--color-text-primary)]">
                 Related on CSC
               </h2>
 
-              {friend.relatedBlogPosts && friend.relatedBlogPosts.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-xs uppercase tracking-wide text-[var(--color-text-tertiary)]">Blog Posts</p>
-                  <div className="flex flex-wrap gap-2">
-                    {friend.relatedBlogPosts.map((post) => (
-                      <Link
-                        key={`${friend.id}-blog-${post.id}`}
-                        href={post.href}
-                        className="inline-flex items-center px-2.5 py-1 rounded-full border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] text-xs text-[var(--color-text-secondary)] hover:border-[var(--color-border-accent)]"
-                      >
-                        {post.title}
-                      </Link>
+              {friend.relatedEventSeriesEntries && friend.relatedEventSeriesEntries.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-medium text-[var(--color-text-primary)] mb-3">Hosted Happenings</h3>
+                  <div className="space-y-3">
+                    {friend.relatedEventSeriesEntries.map((entry) => (
+                      <SeriesCard key={`${friend.id}-series-card-${entry.event.id}`} series={entry} />
                     ))}
                   </div>
                 </div>
               )}
 
               {friend.relatedGalleryAlbums && friend.relatedGalleryAlbums.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-xs uppercase tracking-wide text-[var(--color-text-tertiary)]">Gallery Albums</p>
-                  <div className="flex flex-wrap gap-2">
+                <div>
+                  <h3 className="text-lg font-medium text-[var(--color-text-primary)] mb-3">Gallery Albums</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                     {friend.relatedGalleryAlbums.map((album) => (
                       <Link
                         key={`${friend.id}-gallery-${album.id}`}
                         href={album.href}
-                        className="inline-flex items-center px-2.5 py-1 rounded-full border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] text-xs text-[var(--color-text-secondary)] hover:border-[var(--color-border-accent)]"
+                        className="group block rounded-lg overflow-hidden border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] hover:border-[var(--color-border-accent)] transition-colors"
                       >
-                        {album.name}
+                        <div className="relative aspect-[4/3] w-full bg-[var(--color-bg-tertiary)]">
+                          {album.coverImageUrl ? (
+                            <Image
+                              src={album.coverImageUrl}
+                              alt={album.name}
+                              fill
+                              sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
+                              className="object-cover"
+                            />
+                          ) : (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <svg
+                                className="w-10 h-10 text-[var(--color-text-tertiary)]"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={1.5}
+                                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                                />
+                              </svg>
+                            </div>
+                          )}
+                        </div>
+                        <div className="p-3">
+                          <h4 className="font-medium text-[var(--color-text-primary)] group-hover:text-[var(--color-text-accent)] transition-colors truncate">
+                            {album.name}
+                          </h4>
+                          <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
+                            {album.createdAt
+                              ? new Date(album.createdAt).toLocaleDateString("en-US", {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                })
+                              : "Published album"}
+                          </p>
+                        </div>
                       </Link>
                     ))}
                   </div>
                 </div>
               )}
 
-              {friend.relatedEventSeries && friend.relatedEventSeries.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-xs uppercase tracking-wide text-[var(--color-text-tertiary)]">
-                    Hosted Happenings
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {friend.relatedEventSeries.map((series) => (
+              {friend.relatedBlogPosts && friend.relatedBlogPosts.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-medium text-[var(--color-text-primary)] mb-3">Blog Posts</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    {friend.relatedBlogPosts.map((post) => (
                       <Link
-                        key={`${friend.id}-series-${series.seriesId}`}
-                        href={series.href}
-                        className="inline-flex items-center px-2.5 py-1 rounded-full border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] text-xs text-[var(--color-text-secondary)] hover:border-[var(--color-border-accent)]"
+                        key={`${friend.id}-blog-${post.id}`}
+                        href={post.href}
+                        className="block group focus-visible:outline-none"
                       >
-                        {series.title}
-                        {series.nextDate ? ` · ${series.nextDate}` : ""}
+                        <article className="h-full overflow-hidden card-spotlight transition-shadow transition-colors duration-200 ease-out hover:shadow-md hover:border-[var(--color-accent-primary)]/30 group-focus-visible:ring-2 group-focus-visible:ring-[var(--color-accent-primary)]/30 group-focus-visible:ring-offset-2 group-focus-visible:ring-offset-[var(--color-bg-primary)]">
+                          <div className="relative aspect-[4/3] overflow-hidden">
+                            {post.coverImageUrl ? (
+                              <Image
+                                src={post.coverImageUrl}
+                                alt={post.title}
+                                fill
+                                sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
+                                className="object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gradient-to-br from-[var(--color-accent-primary)]/20 to-[var(--color-bg-tertiary)] flex items-center justify-center">
+                                <svg
+                                  className="w-12 h-12 text-[var(--color-text-accent)]/50"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={1.5}
+                                    d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"
+                                  />
+                                </svg>
+                              </div>
+                            )}
+                            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                          </div>
+
+                          <div className="p-4 space-y-2 text-center">
+                            {post.tags.length > 0 && (
+                              <div className="flex flex-wrap justify-center gap-1.5">
+                                {post.tags.slice(0, 2).map((tag) => (
+                                  <span
+                                    key={`${post.id}-tag-${tag}`}
+                                    className="text-sm tracking-wide px-2 py-0.5 rounded-full bg-[var(--color-accent-primary)]/10 text-[var(--color-text-accent)]"
+                                  >
+                                    {tag}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                            <h4 className="text-lg font-[var(--font-family-serif)] font-semibold text-[var(--color-text-primary)] tracking-tight group-hover:text-[var(--color-text-accent)] transition-colors line-clamp-2">
+                              {post.title}
+                            </h4>
+                            {post.excerpt && (
+                              <p className="text-sm text-[var(--color-text-secondary)] line-clamp-2">
+                                {post.excerpt}
+                              </p>
+                            )}
+                            <p className="text-xs text-[var(--color-text-tertiary)] pt-1">
+                              {post.publishedAt
+                                ? new Date(post.publishedAt).toLocaleDateString("en-US", {
+                                    month: "short",
+                                    day: "numeric",
+                                    year: "numeric",
+                                  })
+                                : "Published post"}
+                            </p>
+                          </div>
+                        </article>
                       </Link>
                     ))}
                   </div>

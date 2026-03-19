@@ -31,6 +31,9 @@ describe("Admin organizations portal", () => {
     expect(source).toContain("Edit Organization");
     expect(source).toContain("Delete organization");
     expect(source).toContain("Tagged Members");
+    expect(source).toContain("Add another tagged member...");
+    expect(source).toContain("Only public member profiles show on public pages.");
+    expect(source).not.toContain("Optional short reason");
     expect(source).toContain("Related Content Links");
     expect(source).toContain("Add blog post...");
     expect(source).toContain("Add another blog post...");

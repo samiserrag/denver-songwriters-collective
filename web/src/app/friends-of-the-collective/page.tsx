@@ -89,7 +89,7 @@ function friendProfileHref(friend: { slug?: string; id: string }): string {
 
 function claimFeedbackHref(friend: { slug?: string; id: string; name: string }): string {
   const params = new URLSearchParams({
-    category: "other",
+    category: "feature",
     subject: `Claim or update organization profile: ${friend.name}`,
     pageUrl: friendProfileHref(friend),
   });
@@ -98,7 +98,7 @@ function claimFeedbackHref(friend: { slug?: string; id: string; name: string }):
 
 function suggestOrganizationFeedbackHref(): string {
   const params = new URLSearchParams({
-    category: "other",
+    category: "feature",
     subject: "Suggest organization for Friends of the Collective",
     pageUrl: "/friends-of-the-collective",
   });

@@ -56,8 +56,6 @@ type MemberOption = {
 
 type OrganizationMemberTagInput = {
   profile_id: string;
-  sort_order: number;
-  tag_reason: string;
 };
 
 type OrganizationContentLinkInput = {
@@ -116,8 +114,6 @@ function fromRecord(record: OrganizationRecord): OrganizationFormState {
     .sort((a, b) => a.sort_order - b.sort_order)
     .map((tag) => ({
       profile_id: tag.profile_id,
-      sort_order: tag.sort_order,
-      tag_reason: tag.tag_reason || "",
     }));
   const contentLinks = [...(record.content_links || [])]
     .sort((a, b) => a.sort_order - b.sort_order)
@@ -169,10 +165,10 @@ function toPayload(form: OrganizationFormState) {
     fun_note: form.fun_note.trim(),
     sort_order: Number(form.sort_order) || 0,
     member_tags: form.member_tags
-      .map((tag) => ({
+      .map((tag, index) => ({
         profile_id: tag.profile_id,
-        sort_order: Number(tag.sort_order) || 0,
-        tag_reason: tag.tag_reason.trim(),
+        sort_order: (index + 1) * 10,
+        tag_reason: "",
       }))
       .filter((tag) => tag.profile_id),
     content_links: form.content_links
@@ -350,6 +346,7 @@ export default function AdminOrganizationsClient({ userId }: { userId: string })
     form: OrganizationFormState,
     setForm: (next: OrganizationFormState) => void
   ) {
+    const memberTagCount = form.member_tags.length;
     const selectedIds = new Set(form.member_tags.map((tag) => tag.profile_id));
     const availableMembers = memberOptions.filter((member) => !selectedIds.has(member.id));
 
@@ -358,11 +355,12 @@ export default function AdminOrganizationsClient({ userId }: { userId: string })
         <div>
           <h4 className="text-sm font-semibold text-[var(--color-text-primary)]">Tagged Members</h4>
           <p className="text-xs text-[var(--color-text-tertiary)]">
-            Add linked members to show as pill links on this organization card.
+            Add members connected to this organization. Only public member profiles show on public pages.
           </p>
         </div>
 
         <select
+          key={`member-tag-select-${memberTagCount}`}
           value=""
           onChange={(e) => {
             const profileId = e.target.value;
@@ -373,15 +371,15 @@ export default function AdminOrganizationsClient({ userId }: { userId: string })
                 ...form.member_tags,
                 {
                   profile_id: profileId,
-                  sort_order: (form.member_tags.length + 1) * 10,
-                  tag_reason: "",
                 },
               ],
             });
           }}
           className="w-full px-3 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
         >
-          <option value="">Add tagged member...</option>
+          <option value="">
+            {memberTagCount > 0 ? "Add another tagged member..." : "Add tagged member..."}
+          </option>
           {availableMembers.map((member) => (
             <option key={member.id} value={member.id}>
               {(member.full_name || "Unnamed member") +
@@ -401,7 +399,7 @@ export default function AdminOrganizationsClient({ userId }: { userId: string })
                   key={tag.profile_id}
                   className="rounded border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] p-3"
                 >
-                  <div className="flex items-center justify-between gap-3 mb-2">
+                  <div className="flex items-center justify-between gap-3">
                     <p className="text-sm text-[var(--color-text-primary)] font-medium">
                       {member?.full_name || "Unknown member"}
                     </p>
@@ -417,38 +415,6 @@ export default function AdminOrganizationsClient({ userId }: { userId: string })
                     >
                       Remove
                     </button>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    <input
-                      type="number"
-                      value={tag.sort_order}
-                      onChange={(e) => {
-                        const sortOrder = parseInt(e.target.value || "0", 10) || 0;
-                        setForm({
-                          ...form,
-                          member_tags: form.member_tags.map((item, idx) =>
-                            idx === index ? { ...item, sort_order: sortOrder } : item
-                          ),
-                        });
-                      }}
-                      placeholder="Sort order"
-                      className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
-                    />
-                    <input
-                      type="text"
-                      value={tag.tag_reason}
-                      onChange={(e) => {
-                        setForm({
-                          ...form,
-                          member_tags: form.member_tags.map((item, idx) =>
-                            idx === index ? { ...item, tag_reason: e.target.value } : item
-                          ),
-                        });
-                      }}
-                      placeholder="Optional short reason"
-                      className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
-                    />
                   </div>
                 </div>
               );
