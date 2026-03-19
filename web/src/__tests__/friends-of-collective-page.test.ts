@@ -72,7 +72,9 @@ describe("Friends of the Collective page", () => {
     expect(source).toContain("Gallery");
     expect(source).toContain("Claim or update this organization profile");
     expect(source).toContain("claimFeedbackHref");
-    expect(source).toContain('query = query.eq("visibility", "public")');
+    expect(source).toContain('eventQuery = eventQuery.eq("is_published", true)');
+    expect(source).not.toContain('eventQuery = eventQuery.eq("is_published", true).eq("visibility", "public")');
+    expect(source).not.toContain("link.label_override ||");
     expect(source).toContain('link_type === "event"');
   });
 });

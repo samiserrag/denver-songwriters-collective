@@ -260,7 +260,7 @@ async function loadFriendBySlug(slug: string, isPublicMode: boolean) {
             .select("id, slug, series_id, title, event_date, event_type, is_published, visibility")
             .in("id", eventIds);
           if (isPublicMode) {
-            eventQuery = eventQuery.eq("is_published", true).eq("visibility", "public");
+            eventQuery = eventQuery.eq("is_published", true);
           }
           return eventQuery;
         })()
@@ -272,7 +272,7 @@ async function loadFriendBySlug(slug: string, isPublicMode: boolean) {
             .select("id, slug, series_id, title, event_date, event_type, is_published, visibility")
             .in("series_id", seriesIds);
           if (isPublicMode) {
-            seriesQuery = seriesQuery.eq("is_published", true).eq("visibility", "public");
+            seriesQuery = seriesQuery.eq("is_published", true);
           }
           return seriesQuery;
         })()
@@ -362,7 +362,7 @@ async function loadFriendBySlug(slug: string, isPublicMode: boolean) {
       if (!blog) return null;
       return {
         id: blog.id,
-        title: link.label_override || blog.title,
+        title: blog.title,
         href: `/blog/${blog.slug}`,
       };
     })
@@ -375,7 +375,7 @@ async function loadFriendBySlug(slug: string, isPublicMode: boolean) {
       if (!gallery) return null;
       return {
         id: gallery.id,
-        name: link.label_override || gallery.name,
+        name: gallery.name,
         href: `/gallery/${gallery.slug}`,
       };
     })
@@ -389,7 +389,7 @@ async function loadFriendBySlug(slug: string, isPublicMode: boolean) {
         if (!event) return null;
         return {
           seriesId: event.id,
-          title: link.label_override || event.title,
+          title: event.title,
           href: eventDetailHref(event),
           nextDate: event.event_date || undefined,
         };
@@ -401,7 +401,7 @@ async function loadFriendBySlug(slug: string, isPublicMode: boolean) {
         seriesEvents.find((event) => event.event_date && event.event_date >= todayDateKey) || seriesEvents[0];
       return {
         seriesId: link.target_id,
-        title: link.label_override || nextUpcoming.title,
+        title: nextUpcoming.title,
         href: eventDetailHref(nextUpcoming),
         nextDate: nextUpcoming.event_date || undefined,
       };

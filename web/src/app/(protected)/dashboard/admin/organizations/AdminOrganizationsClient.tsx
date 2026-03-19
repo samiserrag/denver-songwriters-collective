@@ -176,11 +176,11 @@ function toPayload(form: OrganizationFormState) {
       }))
       .filter((tag) => tag.profile_id),
     content_links: form.content_links
-      .map((link) => ({
+      .map((link, index) => ({
         link_type: link.link_type,
         target_id: link.target_id,
-        sort_order: Number(link.sort_order) || 0,
-        label_override: link.label_override.trim(),
+        sort_order: (index + 1) * 10,
+        label_override: "",
       }))
       .filter((link) => link.target_id),
   };
@@ -505,7 +505,7 @@ export default function AdminOrganizationsClient({ userId }: { userId: string })
         <div>
           <h4 className="text-sm font-semibold text-[var(--color-text-primary)]">Related Content Links</h4>
           <p className="text-xs text-[var(--color-text-tertiary)]">
-            Connect this organization to blog posts, gallery albums, and events. You can add multiple of each.
+            Connect this organization to blog posts, gallery albums, and events. Add as many as you need.
           </p>
         </div>
 
@@ -623,37 +623,6 @@ export default function AdminOrganizationsClient({ userId }: { userId: string })
                   >
                     Remove
                   </button>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  <input
-                    type="number"
-                    value={link.sort_order}
-                    onChange={(e) => {
-                      const sortOrder = parseInt(e.target.value || "0", 10) || 0;
-                      setForm({
-                        ...form,
-                        content_links: form.content_links.map((item, idx) =>
-                          idx === index ? { ...item, sort_order: sortOrder } : item
-                        ),
-                      });
-                    }}
-                    placeholder="Sort order"
-                    className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
-                  />
-                  <input
-                    type="text"
-                    value={link.label_override}
-                    onChange={(e) =>
-                      setForm({
-                        ...form,
-                        content_links: form.content_links.map((item, idx) =>
-                          idx === index ? { ...item, label_override: e.target.value } : item
-                        ),
-                      })
-                    }
-                    placeholder="Optional custom label"
-                    className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
-                  />
                 </div>
               </div>
             ))}

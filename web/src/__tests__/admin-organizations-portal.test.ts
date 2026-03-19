@@ -41,6 +41,7 @@ describe("Admin organizations portal", () => {
     expect(source).toContain("content-blog-select-");
     expect(source).toContain("content-gallery-select-");
     expect(source).toContain("content-event-select-");
+    expect(source).not.toContain("Optional custom label");
     expect(source).toContain('link_type: "event"');
   });
 
