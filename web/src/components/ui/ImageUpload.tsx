@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import ReactCrop, { type Crop, centerCrop, makeAspectCrop } from 'react-image-crop';
+import ReactCrop, { type PercentCrop, centerCrop, makeAspectCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import { Upload, X, Camera, Loader2 } from 'lucide-react';
 
@@ -13,7 +13,7 @@ function CropPreview({
   shape,
 }: {
   image: HTMLImageElement;
-  crop: Crop;
+  crop: PercentCrop;
   aspectRatio: number;
   shape: 'circle' | 'square';
 }) {
@@ -72,7 +72,7 @@ function centerAspectCrop(
   mediaWidth: number,
   mediaHeight: number,
   aspect: number
-): Crop {
+): PercentCrop {
   return centerCrop(
     makeAspectCrop(
       {
@@ -101,8 +101,8 @@ export function ImageUpload({
 }: ImageUploadProps) {
   const [dragActive, setDragActive] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [crop, setCrop] = useState<Crop>();
-  const [completedCrop, setCompletedCrop] = useState<Crop>();
+  const [crop, setCrop] = useState<PercentCrop>();
+  const [completedCrop, setCompletedCrop] = useState<PercentCrop>();
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showCropper, setShowCropper] = useState(false);
@@ -176,8 +176,8 @@ export function ImageUpload({
   }, [initialFile, handleFile]);
 
   const onImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
-    const { width, height } = e.currentTarget;
-    setCrop(centerAspectCrop(width, height, aspectRatio));
+    const { naturalWidth, naturalHeight } = e.currentTarget;
+    setCrop(centerAspectCrop(naturalWidth, naturalHeight, aspectRatio));
   }, [aspectRatio]);
 
   const getCroppedImage = useCallback(async (): Promise<File | null> => {
@@ -188,28 +188,34 @@ export function ImageUpload({
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
 
-    const scaleX = image.naturalWidth / image.width;
-    const scaleY = image.naturalHeight / image.height;
-
     const pixelCrop = {
-      x: (completedCrop.x / 100) * image.width * scaleX,
-      y: (completedCrop.y / 100) * image.height * scaleY,
-      width: (completedCrop.width / 100) * image.width * scaleX,
-      height: (completedCrop.height / 100) * image.height * scaleY,
+      x: (completedCrop.x / 100) * image.naturalWidth,
+      y: (completedCrop.y / 100) * image.naturalHeight,
+      width: (completedCrop.width / 100) * image.naturalWidth,
+      height: (completedCrop.height / 100) * image.naturalHeight,
+    };
+
+    const clampedX = Math.max(0, Math.min(pixelCrop.x, image.naturalWidth - 1));
+    const clampedY = Math.max(0, Math.min(pixelCrop.y, image.naturalHeight - 1));
+    const clampedCrop = {
+      x: clampedX,
+      y: clampedY,
+      width: Math.max(1, Math.min(pixelCrop.width, image.naturalWidth - clampedX)),
+      height: Math.max(1, Math.min(pixelCrop.height, image.naturalHeight - clampedY)),
     };
 
     // Output size - max 1200px wide for all images, 800px for avatars (1:1)
-    const isSquare = Math.abs(pixelCrop.width - pixelCrop.height) < 1;
+    const isSquare = Math.abs(clampedCrop.width - clampedCrop.height) < 1;
     const maxDimension = isSquare ? 800 : 1200;
     let outputWidth: number;
     let outputHeight: number;
 
-    if (pixelCrop.width >= pixelCrop.height) {
-      outputWidth = Math.min(maxDimension, pixelCrop.width);
-      outputHeight = outputWidth / (pixelCrop.width / pixelCrop.height);
+    if (clampedCrop.width >= clampedCrop.height) {
+      outputWidth = Math.min(maxDimension, clampedCrop.width);
+      outputHeight = outputWidth / (clampedCrop.width / clampedCrop.height);
     } else {
-      outputHeight = Math.min(maxDimension, pixelCrop.height);
-      outputWidth = outputHeight * (pixelCrop.width / pixelCrop.height);
+      outputHeight = Math.min(maxDimension, clampedCrop.height);
+      outputWidth = outputHeight * (clampedCrop.width / clampedCrop.height);
     }
 
     canvas.width = Math.round(outputWidth);
@@ -217,10 +223,10 @@ export function ImageUpload({
 
     ctx.drawImage(
       image,
-      pixelCrop.x,
-      pixelCrop.y,
-      pixelCrop.width,
-      pixelCrop.height,
+      clampedCrop.x,
+      clampedCrop.y,
+      clampedCrop.width,
+      clampedCrop.height,
       0,
       0,
       canvas.width,
