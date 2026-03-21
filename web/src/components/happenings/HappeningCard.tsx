@@ -189,9 +189,9 @@ interface DateInfo {
 /**
  * Get date display info using the canonical computeNextOccurrence logic.
  *
- * IMPORTANT: This uses computeNextOccurrence to determine isTonight/isTomorrow,
+ * IMPORTANT: This uses computeNextOccurrence to determine same-day/next-day badges,
  * which correctly handles monthly ordinal recurrence (e.g., "3rd Wednesday").
- * A 5th Wednesday will NOT show TONIGHT for a 3WE event.
+ * A 5th Wednesday will NOT show TODAY for a 3WE event.
  *
  * @param event - The event to compute date info for
  * @param precomputedOccurrence - Optional pre-computed occurrence from parent
@@ -222,11 +222,11 @@ function getDateInfo(
   // Check if the occurrence is in the past
   const isPast = occurrence.date < todayKey;
 
-  // Phase 4.17.6: Only show TONIGHT/TOMORROW for confident schedules
+  // Phase 4.17.6: Only show TODAY/TOMORROW for confident schedules
   // Events with unknown schedules should not display misleading temporal badges
   if (occurrence.isConfident) {
     if (occurrence.isToday) {
-      return { label: "TONIGHT", isTonight: true, isTomorrow: false, isPast: false, isUnknown: false, occurrence };
+      return { label: "TODAY", isTonight: true, isTomorrow: false, isPast: false, isUnknown: false, occurrence };
     }
     if (occurrence.isTomorrow) {
       return { label: "TOMORROW", isTonight: false, isTomorrow: true, isPast: false, isUnknown: false, occurrence };
