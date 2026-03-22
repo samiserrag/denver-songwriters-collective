@@ -395,6 +395,8 @@ describe("Phase 4.42k: Event Creation Fixes", () => {
       location_mode: string;
       venue_id: string | null;
       custom_location_name: string;
+      custom_city: string;
+      custom_state: string;
       online_url: string;
     }, locationSelectionMode: string): string[] {
       const missingFields: string[] = [];
@@ -413,8 +415,9 @@ describe("Phase 4.42k: Event Creation Fixes", () => {
         if (locationSelectionMode === "venue" && !formData.venue_id) {
           missingFields.push("Venue");
         }
-        if (locationSelectionMode === "custom" && !formData.custom_location_name.trim()) {
-          missingFields.push("Location Name");
+        const hasCityState = !!(formData.custom_city.trim() && formData.custom_state.trim());
+        if (locationSelectionMode === "custom" && !formData.custom_location_name.trim() && !hasCityState) {
+          missingFields.push("Location Name or City + State");
         }
       }
 
@@ -433,6 +436,8 @@ describe("Phase 4.42k: Event Creation Fixes", () => {
         location_mode: "venue",
         venue_id: "venue-id",
         custom_location_name: "",
+        custom_city: "",
+        custom_state: "",
         online_url: "",
       }, "venue");
 
@@ -447,6 +452,8 @@ describe("Phase 4.42k: Event Creation Fixes", () => {
         location_mode: "venue",
         venue_id: "venue-id",
         custom_location_name: "",
+        custom_city: "",
+        custom_state: "",
         online_url: "",
       }, "venue");
 
@@ -461,6 +468,8 @@ describe("Phase 4.42k: Event Creation Fixes", () => {
         location_mode: "venue",
         venue_id: "venue-id",
         custom_location_name: "",
+        custom_city: "",
+        custom_state: "",
         online_url: "",
       }, "venue");
 
@@ -475,13 +484,15 @@ describe("Phase 4.42k: Event Creation Fixes", () => {
         location_mode: "venue",
         venue_id: null,
         custom_location_name: "",
+        custom_city: "",
+        custom_state: "",
         online_url: "",
       }, "venue");
 
       expect(result).toContain("Venue");
     });
 
-    it("should detect missing location name in custom mode", () => {
+    it("should detect missing location identifier in custom mode", () => {
       const result = validateFormFields({
         title: "Test Event",
         day_of_week: "Monday",
@@ -489,10 +500,12 @@ describe("Phase 4.42k: Event Creation Fixes", () => {
         location_mode: "venue",
         venue_id: null,
         custom_location_name: "",
+        custom_city: "",
+        custom_state: "",
         online_url: "",
       }, "custom");
 
-      expect(result).toContain("Location Name");
+      expect(result).toContain("Location Name or City + State");
     });
 
     it("should detect missing online URL for online events", () => {
@@ -503,6 +516,8 @@ describe("Phase 4.42k: Event Creation Fixes", () => {
         location_mode: "online",
         venue_id: null,
         custom_location_name: "",
+        custom_city: "",
+        custom_state: "",
         online_url: "",
       }, "venue");
 
@@ -517,6 +532,8 @@ describe("Phase 4.42k: Event Creation Fixes", () => {
         location_mode: "hybrid",
         venue_id: "venue-id",
         custom_location_name: "",
+        custom_city: "",
+        custom_state: "",
         online_url: "",
       }, "venue");
 
@@ -531,6 +548,8 @@ describe("Phase 4.42k: Event Creation Fixes", () => {
         location_mode: "venue",
         venue_id: "venue-id",
         custom_location_name: "",
+        custom_city: "",
+        custom_state: "",
         online_url: "",
       }, "venue");
 
@@ -545,8 +564,26 @@ describe("Phase 4.42k: Event Creation Fixes", () => {
         location_mode: "online",
         venue_id: null,
         custom_location_name: "",
+        custom_city: "",
+        custom_state: "",
         online_url: "https://zoom.us/j/123456",
       }, "venue");
+
+      expect(result).toHaveLength(0);
+    });
+
+    it("should pass custom mode with city and state only", () => {
+      const result = validateFormFields({
+        title: "Test Event",
+        day_of_week: "Monday",
+        start_time: "19:00:00",
+        location_mode: "venue",
+        venue_id: null,
+        custom_location_name: "",
+        custom_city: "Denver",
+        custom_state: "CO",
+        online_url: "",
+      }, "custom");
 
       expect(result).toHaveLength(0);
     });

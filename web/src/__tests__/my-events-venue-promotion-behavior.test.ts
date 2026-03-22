@@ -249,4 +249,27 @@ describe("POST /api/my-events venue auto-promotion behavior", () => {
     expect(capturedEventInsertPayloads[0].venue_id).toBe("venue-canonical-1");
     expect(capturedEventInsertPayloads[0].location_mode).toBe("venue");
   });
+
+  it("accepts city/state-only custom locations without promoting to a canonical venue", async () => {
+    const request = new Request("http://localhost/api/my-events", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        title: "City State Only Event",
+        event_type: ["open_mic"],
+        start_time: "19:00",
+        start_date: "2026-03-09",
+        location_mode: "venue",
+        custom_city: "Denver",
+        custom_state: "CO",
+      }),
+    });
+
+    const response = await POST(request);
+    expect(response.status).toBe(200);
+    expect(capturedEventInsertPayloads).toHaveLength(1);
+    expect(capturedEventInsertPayloads[0].venue_id).toBeNull();
+    expect(capturedEventInsertPayloads[0].custom_location_name).toBe("Denver, CO");
+    expect(capturedCanonicalVenueInserts).toHaveLength(0);
+  });
 });

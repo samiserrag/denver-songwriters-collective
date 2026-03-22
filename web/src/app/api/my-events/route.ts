@@ -405,10 +405,23 @@ export async function POST(request: Request) {
   // Phase 4.0: Determine location selection mode
   // User can either select a venue OR provide a custom location (mutually exclusive)
   let hasVenue = !!body.venue_id;
-  let hasCustomLocation = !!body.custom_location_name;
+  const customLocationNameInput =
+    typeof body.custom_location_name === "string" ? body.custom_location_name.trim() : "";
+  const customCityInput =
+    typeof body.custom_city === "string" ? body.custom_city.trim() : "";
+  const customStateInput =
+    typeof body.custom_state === "string" ? body.custom_state.trim() : "";
+  const inferredCustomLocationName =
+    customLocationNameInput || (customCityInput && customStateInput ? `${customCityInput}, ${customStateInput}` : "");
+  let hasCustomLocation = inferredCustomLocationName.length > 0;
+  const hasExplicitCustomLocationName = customLocationNameInput.length > 0;
   const requestedLocationMode = body.location_mode;
   const hasOnlineUrlForHybrid =
     typeof body.online_url === "string" && body.online_url.trim().length > 0;
+
+  if (!customLocationNameInput && inferredCustomLocationName) {
+    body.custom_location_name = inferredCustomLocationName;
+  }
 
   // Phase 10.1: Auto-promote conversational custom locations to canonical venues.
   // If a create request has custom location details but no venue_id, attempt to:
@@ -418,16 +431,14 @@ export async function POST(request: Request) {
   if (
     !hasVenue &&
     hasCustomLocation &&
+    hasExplicitCustomLocationName &&
     (body.location_mode === "venue" || body.location_mode === "hybrid" || !body.location_mode)
   ) {
-    const customName =
-      typeof body.custom_location_name === "string" ? body.custom_location_name.trim() : "";
+    const customName = customLocationNameInput;
     const customAddress =
       typeof body.custom_address === "string" ? body.custom_address.trim() : "";
-    const customCity =
-      typeof body.custom_city === "string" ? body.custom_city.trim() : "";
-    const customState =
-      typeof body.custom_state === "string" ? body.custom_state.trim() : "";
+    const customCity = customCityInput;
+    const customState = customStateInput;
 
     if (customName) {
       // 1) Reuse existing canonical venue by name (case-insensitive), but only
@@ -601,13 +612,19 @@ export async function POST(request: Request) {
     venueName = null;
     venueAddress = null;
     customLocationFields = {
-      custom_location_name: body.custom_location_name,
-      custom_address: body.custom_address || null,
-      custom_city: body.custom_city || null,
-      custom_state: body.custom_state || null,
+      custom_location_name: inferredCustomLocationName || null,
+      custom_address:
+        typeof body.custom_address === "string"
+          ? body.custom_address.trim() || null
+          : null,
+      custom_city: customCityInput || null,
+      custom_state: customStateInput || null,
       custom_latitude: body.custom_latitude || null,
       custom_longitude: body.custom_longitude || null,
-      location_notes: body.location_notes || null,
+      location_notes:
+        typeof body.location_notes === "string"
+          ? body.location_notes.trim() || null
+          : null,
     };
   }
 

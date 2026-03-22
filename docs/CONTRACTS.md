@@ -890,6 +890,42 @@ Open Mics link must use `/happenings?type=open_mic`, not `/open-mics`.
 
 ---
 
+## Contract: In-Person Location Minimums (EVENTS-LOC-01)
+
+**Scope:**
+- `web/src/app/(protected)/dashboard/my-events/_components/EventForm.tsx`
+- `web/src/app/api/my-events/route.ts`
+- `web/src/app/api/my-events/[id]/route.ts`
+
+### Input Validity Rule
+
+For `location_mode = 'venue'` or `location_mode = 'hybrid'`, a physical location is valid when **exactly one path** is used:
+1. `venue_id` is set, OR
+2. custom location is set via either:
+   - `custom_location_name`, OR
+   - `custom_city` + `custom_state` (name/address optional)
+
+`venue_id` and custom location fields remain mutually exclusive.
+
+### City/State-Only Custom Location Rule
+
+When `custom_location_name` is blank but both `custom_city` and `custom_state` are present:
+1. Form validation must pass (no hard requirement for a location name).
+2. Create/PATCH APIs must persist the location as custom (not as venue).
+3. The system must derive `custom_location_name = "{custom_city}, {custom_state}"` before persistence.
+
+### Venue Promotion Safety Rule
+
+Canonical venue auto-promotion is allowed only when an **explicit custom location name** is provided.  
+City/state-only custom locations must not trigger canonical venue auto-promotion.
+
+### Coverage
+
+- `web/src/__tests__/phase4-42k-event-creation-fixes.test.ts`
+- `web/src/__tests__/my-events-venue-promotion-behavior.test.ts`
+
+---
+
 ## Contract: Conversational Event Draft/Confirm (EVENTS-NL-01)
 
 > **Track Status:** February 2026 — In implementation (preview only)

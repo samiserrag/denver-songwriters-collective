@@ -165,6 +165,23 @@ function isPlaceholderValue(value: string | null | undefined): boolean {
   return normalized === "" || normalized === "tbd" || normalized === "unknown";
 }
 
+function deriveCustomLocationName(
+  name: string | null | undefined,
+  city: string | null | undefined,
+  state: string | null | undefined
+): string | null {
+  const trimmedName = typeof name === "string" ? name.trim() : "";
+  if (trimmedName) return trimmedName;
+
+  const trimmedCity = typeof city === "string" ? city.trim() : "";
+  const trimmedState = typeof state === "string" ? state.trim() : "";
+  if (trimmedCity && trimmedState) {
+    return `${trimmedCity}, ${trimmedState}`;
+  }
+
+  return null;
+}
+
 interface EventFormProps {
   mode: "create" | "edit";
   venues: Venue[];
@@ -433,8 +450,12 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
 
   // Get location name for preview
   const getPreviewLocation = (): string => {
-    if (locationSelectionMode === "custom" && formData.custom_location_name) {
-      return formData.custom_location_name;
+    if (locationSelectionMode === "custom") {
+      return deriveCustomLocationName(
+        formData.custom_location_name,
+        formData.custom_city,
+        formData.custom_state
+      ) || "";
     }
     if (locationSelectionMode === "venue" && formData.venue_id) {
       const venue = venues.find(v => v.id === formData.venue_id);
@@ -474,7 +495,13 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
       venue_name: locationSelectionMode === "venue" ? selectedVenue?.name || undefined : undefined,
       location_mode: formData.location_mode as "venue" | "online" | "hybrid" | undefined,
       online_url: formData.online_url || undefined,
-      custom_location_name: locationSelectionMode === "custom" ? formData.custom_location_name || undefined : undefined,
+      custom_location_name: locationSelectionMode === "custom"
+        ? deriveCustomLocationName(
+          formData.custom_location_name,
+          formData.custom_city,
+          formData.custom_state
+        ) || undefined
+        : undefined,
       is_free: formData.is_free,
       cost_label: formData.cost_label || undefined,
       age_policy: formData.age_policy || undefined,
@@ -499,6 +526,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     formData.location_mode,
     formData.online_url,
     formData.custom_location_name,
+    formData.custom_city,
+    formData.custom_state,
     formData.is_free,
     formData.cost_label,
     formData.age_policy,
@@ -594,8 +623,15 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
       if (locationSelectionMode === "venue" && !formData.venue_id) {
         missingFields.push("Venue");
       }
-      if (locationSelectionMode === "custom" && !formData.custom_location_name.trim()) {
-        missingFields.push("Location Name");
+      if (
+        locationSelectionMode === "custom" &&
+        !deriveCustomLocationName(
+          formData.custom_location_name,
+          formData.custom_city,
+          formData.custom_state
+        )
+      ) {
+        missingFields.push("Location Name or City + State");
       }
     }
 
@@ -640,6 +676,23 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
       if (occurrenceMode && occurrenceDateKey && occurrenceEventId) {
         // Build override_patch as diff of changed fields vs base event
         const overridePatch: Record<string, unknown> = {};
+        const resolvedCustomLocationName =
+          locationSelectionMode === "custom"
+            ? deriveCustomLocationName(
+              formData.custom_location_name,
+              formData.custom_city,
+              formData.custom_state
+            )
+            : null;
+        const normalizedCustomAddress = locationSelectionMode === "custom"
+          ? formData.custom_address.trim() || null
+          : null;
+        const normalizedCustomCity = locationSelectionMode === "custom"
+          ? formData.custom_city.trim() || null
+          : null;
+        const normalizedCustomState = locationSelectionMode === "custom"
+          ? formData.custom_state.trim() || null
+          : null;
 
         // Compare each allowlisted field against the base event
         if (formData.title.trim() !== (event?.title || "")) overridePatch.title = formData.title.trim();
@@ -652,17 +705,17 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
           overridePatch.venue_id = locationSelectionMode === "venue" ? formData.venue_id || null : null;
         }
         if (formData.location_mode !== (event?.location_mode || "venue")) overridePatch.location_mode = formData.location_mode;
-        if ((locationSelectionMode === "custom" ? formData.custom_location_name.trim() : "") !== (event?.custom_location_name || "")) {
-          overridePatch.custom_location_name = locationSelectionMode === "custom" ? formData.custom_location_name.trim() || null : null;
+        if ((resolvedCustomLocationName || "") !== (event?.custom_location_name || "")) {
+          overridePatch.custom_location_name = resolvedCustomLocationName;
         }
-        if ((locationSelectionMode === "custom" ? formData.custom_address.trim() : "") !== (event?.custom_address || "")) {
-          overridePatch.custom_address = locationSelectionMode === "custom" ? formData.custom_address.trim() || null : null;
+        if ((normalizedCustomAddress || "") !== (event?.custom_address || "")) {
+          overridePatch.custom_address = normalizedCustomAddress;
         }
-        if ((locationSelectionMode === "custom" ? formData.custom_city.trim() : "") !== (event?.custom_city || "")) {
-          overridePatch.custom_city = locationSelectionMode === "custom" ? formData.custom_city.trim() || null : null;
+        if ((normalizedCustomCity || "") !== (event?.custom_city || "")) {
+          overridePatch.custom_city = normalizedCustomCity;
         }
-        if ((locationSelectionMode === "custom" ? formData.custom_state.trim() : "") !== (event?.custom_state || "")) {
-          overridePatch.custom_state = locationSelectionMode === "custom" ? formData.custom_state.trim() || null : null;
+        if ((normalizedCustomState || "") !== (event?.custom_state || "")) {
+          overridePatch.custom_state = normalizedCustomState;
         }
         if (formData.online_url !== (event?.online_url || "")) overridePatch.online_url = formData.online_url || null;
         if (formData.location_notes.trim() !== (event?.location_notes || "")) overridePatch.location_notes = formData.location_notes.trim() || null;
@@ -718,6 +771,23 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         : `/api/my-events/${event?.id}`;
 
       const method = mode === "create" ? "POST" : "PATCH";
+      const resolvedCustomLocationName =
+        locationSelectionMode === "custom"
+          ? deriveCustomLocationName(
+            formData.custom_location_name,
+            formData.custom_city,
+            formData.custom_state
+          )
+          : null;
+      const normalizedCustomAddress = locationSelectionMode === "custom"
+        ? formData.custom_address.trim() || null
+        : null;
+      const normalizedCustomCity = locationSelectionMode === "custom"
+        ? formData.custom_city.trim() || null
+        : null;
+      const normalizedCustomState = locationSelectionMode === "custom"
+        ? formData.custom_state.trim() || null
+        : null;
 
       // Determine recurrence settings
       let effectiveRecurrenceRule: string | null = null;
@@ -806,10 +876,10 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         // Phase 4.0: Location selection mode and custom location fields
         location_selection_mode: locationSelectionMode,
         venue_id: locationSelectionMode === "venue" ? formData.venue_id : null,
-        custom_location_name: locationSelectionMode === "custom" ? (formData.custom_location_name.trim() || null) : null,
-        custom_address: locationSelectionMode === "custom" ? (formData.custom_address.trim() || null) : null,
-        custom_city: locationSelectionMode === "custom" ? (formData.custom_city.trim() || null) : null,
-        custom_state: locationSelectionMode === "custom" ? (formData.custom_state.trim() || null) : null,
+        custom_location_name: resolvedCustomLocationName,
+        custom_address: normalizedCustomAddress,
+        custom_city: normalizedCustomCity,
+        custom_state: normalizedCustomState,
         custom_latitude: locationSelectionMode === "custom" && formData.custom_latitude ? parseFloat(formData.custom_latitude) : null,
         custom_longitude: locationSelectionMode === "custom" && formData.custom_longitude ? parseFloat(formData.custom_longitude) : null,
         location_notes: formData.location_notes.trim() || null,
@@ -2058,17 +2128,19 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
 
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    <span className="text-red-500">Location Name</span>
-                    <span className="ml-1 text-red-400 text-xs font-normal">*Required</span>
+                    <span className="text-[var(--color-text-secondary)]">Location Name</span>
+                    <span className="font-normal ml-1 text-[var(--color-text-secondary)]">(optional)</span>
                   </label>
                   <input
                     type="text"
                     placeholder="e.g., Back room at Joe's Coffee"
                     value={formData.custom_location_name}
                     onChange={(e) => updateField("custom_location_name", e.target.value)}
-                    required
                     className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
                   />
+                  <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
+                    Leave blank if this is a non-specific location and you only know city/state.
+                  </p>
                 </div>
 
                 <div>

@@ -311,7 +311,15 @@ export async function PATCH(
 
   // Phase 4.0: Handle mutual exclusivity of venue_id and custom_location_name
   const hasVenue = !!body.venue_id;
-  const hasCustomLocation = !!body.custom_location_name;
+  const customLocationNameInput =
+    typeof body.custom_location_name === "string" ? body.custom_location_name.trim() : "";
+  const customCityInput =
+    typeof body.custom_city === "string" ? body.custom_city.trim() : "";
+  const customStateInput =
+    typeof body.custom_state === "string" ? body.custom_state.trim() : "";
+  const inferredCustomLocationName =
+    customLocationNameInput || (customCityInput && customStateInput ? `${customCityInput}, ${customStateInput}` : "");
+  const hasCustomLocation = inferredCustomLocationName.length > 0;
 
   // Validate mutual exclusivity
   if (hasVenue && hasCustomLocation) {
@@ -456,13 +464,19 @@ export async function PATCH(
     updates.venue_id = null;
     updates.venue_name = null;
     updates.venue_address = null;
-    updates.custom_location_name = body.custom_location_name;
-    updates.custom_address = body.custom_address || null;
-    updates.custom_city = body.custom_city || null;
-    updates.custom_state = body.custom_state || null;
+    updates.custom_location_name = inferredCustomLocationName;
+    updates.custom_address =
+      typeof body.custom_address === "string"
+        ? body.custom_address.trim() || null
+        : null;
+    updates.custom_city = customCityInput || null;
+    updates.custom_state = customStateInput || null;
     updates.custom_latitude = body.custom_latitude || null;
     updates.custom_longitude = body.custom_longitude || null;
-    updates.location_notes = body.location_notes || null;
+    updates.location_notes =
+      typeof body.location_notes === "string"
+        ? body.location_notes.trim() || null
+        : null;
   } else if (body.venue_id === null) {
     // Explicit venue clearing without custom location (for online-only events)
     updates.venue_id = null;
