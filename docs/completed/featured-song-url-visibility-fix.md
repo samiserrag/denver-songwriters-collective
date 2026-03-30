@@ -6,6 +6,11 @@ Date: 2026-03-19
 
 Fixed a profile rendering gap where `featured_song_url` was saved from onboarding/dashboard, but not displayed on public profile pages.
 
+## March 2026 Follow-up
+
+- Public profile pages now also auto-embed embeddable links from `featured_song_url` and `song_links` (YouTube/Spotify and Bandcamp EmbeddedPlayer URLs) with safe link fallback for non-embeddable URLs.
+- This behavior is retroactive for all existing profile records because embed detection runs at render time.
+
 ## Root Cause
 
 - Write path existed (`/api/profile`) and dashboard copy promised public visibility.

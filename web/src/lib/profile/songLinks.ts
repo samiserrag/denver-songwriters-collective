@@ -1,4 +1,8 @@
-import { canonicalizeMediaReference } from "@/lib/mediaEmbeds";
+import {
+  canonicalizeMediaReference,
+  classifyUrl,
+  getMediaEmbedIframeMeta,
+} from "@/lib/mediaEmbeds";
 
 export type SongPlatformInfo = {
   name: string;
@@ -10,6 +14,16 @@ export type SongLinksDisplay = {
   additionalSongLinks: string[];
   hasAnySongLinks: boolean;
 };
+
+export type SongLinkEmbedMeta =
+  | {
+      provider: "youtube" | "spotify";
+      iframe: ReturnType<typeof getMediaEmbedIframeMeta>;
+    }
+  | {
+      provider: "bandcamp";
+      src: string;
+    };
 
 export function getSongPlatformInfo(url: string): SongPlatformInfo {
   const value = url.toLowerCase();
@@ -53,4 +67,35 @@ export function buildSongLinksDisplay(
     additionalSongLinks,
     hasAnySongLinks: Boolean(normalizedFeatured) || additionalSongLinks.length > 0,
   };
+}
+
+export function getSongLinkEmbedMeta(url: string): SongLinkEmbedMeta | null {
+  const trimmed = url.trim();
+  if (!trimmed) return null;
+
+  try {
+    const classified = classifyUrl(trimmed);
+    if (!classified.embed_url) return null;
+
+    if (classified.provider === "youtube" || classified.provider === "spotify") {
+      return {
+        provider: classified.provider,
+        iframe: getMediaEmbedIframeMeta(classified.embed_url),
+      };
+    }
+
+    if (
+      classified.provider === "bandcamp" &&
+      classified.embed_url.includes("bandcamp.com/EmbeddedPlayer")
+    ) {
+      return {
+        provider: "bandcamp",
+        src: classified.embed_url,
+      };
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
 }

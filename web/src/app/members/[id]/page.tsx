@@ -20,7 +20,7 @@ import Link from "next/link";
 import { MediaEmbedsSection, MusicProfileCard, OrderedMediaEmbeds } from "@/components/media";
 import { isExternalEmbedsEnabled } from "@/lib/featureFlags";
 import { canonicalizeMediaReference, getMusicProfileLinkMeta } from "@/lib/mediaEmbeds";
-import { buildSongLinksDisplay, getSongPlatformInfo } from "@/lib/profile/songLinks";
+import { buildSongLinksDisplay, getSongLinkEmbedMeta, getSongPlatformInfo } from "@/lib/profile/songLinks";
 
 export const dynamic = "force-dynamic";
 
@@ -653,6 +653,58 @@ export default async function MemberDetailPage({ params }: MemberDetailPageProps
                           Featured Song
                         </p>
                         {(() => {
+                          const embedMeta = getSongLinkEmbedMeta(featuredSongUrl);
+                          if (embedMeta?.provider === "bandcamp") {
+                            return (
+                              <div className="rounded-xl overflow-hidden border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)]">
+                                <iframe
+                                  src={embedMeta.src}
+                                  title="Bandcamp player"
+                                  loading="lazy"
+                                  sandbox="allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox"
+                                  referrerPolicy="strict-origin-when-cross-origin"
+                                  className="block w-full border-0"
+                                  height={120}
+                                />
+                              </div>
+                            );
+                          }
+
+                          if (embedMeta?.provider === "youtube") {
+                            return (
+                              <div className="rounded-xl overflow-hidden border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)]">
+                                <div className="relative w-full pt-[56.25%]">
+                                  <iframe
+                                    src={embedMeta.iframe.src}
+                                    title={embedMeta.iframe.title}
+                                    loading="lazy"
+                                    allow={embedMeta.iframe.allow}
+                                    allowFullScreen
+                                    referrerPolicy="strict-origin-when-cross-origin"
+                                    className="absolute inset-0 h-full w-full border-0"
+                                  />
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          if (embedMeta?.provider === "spotify") {
+                            const spotifyHeight = embedMeta.iframe.kind === "track" ? 152 : 352;
+                            return (
+                              <div className="rounded-xl overflow-hidden border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)]">
+                                <iframe
+                                  src={embedMeta.iframe.src}
+                                  title={embedMeta.iframe.title}
+                                  loading="lazy"
+                                  allow={embedMeta.iframe.allow}
+                                  referrerPolicy="strict-origin-when-cross-origin"
+                                  className="block w-full border-0"
+                                  height={spotifyHeight}
+                                />
+                              </div>
+                            );
+                          }
+
                           const platform = getSongPlatformInfo(featuredSongUrl);
                           return (
                             <Link
@@ -675,11 +727,72 @@ export default async function MemberDetailPage({ params }: MemberDetailPageProps
                       </div>
                     )}
 
-                    {additionalSongLinks.map((link, index) => {
+                    {additionalSongLinks.map((link) => {
+                      const embedMeta = getSongLinkEmbedMeta(link);
+                      if (embedMeta?.provider === "bandcamp") {
+                        return (
+                          <div
+                            key={link}
+                            className="rounded-xl overflow-hidden border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)]"
+                          >
+                            <iframe
+                              src={embedMeta.src}
+                              title="Bandcamp player"
+                              loading="lazy"
+                              sandbox="allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox"
+                              referrerPolicy="strict-origin-when-cross-origin"
+                              className="block w-full border-0"
+                              height={120}
+                            />
+                          </div>
+                        );
+                      }
+
+                      if (embedMeta?.provider === "youtube") {
+                        return (
+                          <div
+                            key={link}
+                            className="rounded-xl overflow-hidden border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)]"
+                          >
+                            <div className="relative w-full pt-[56.25%]">
+                              <iframe
+                                src={embedMeta.iframe.src}
+                                title={embedMeta.iframe.title}
+                                loading="lazy"
+                                allow={embedMeta.iframe.allow}
+                                allowFullScreen
+                                referrerPolicy="strict-origin-when-cross-origin"
+                                className="absolute inset-0 h-full w-full border-0"
+                              />
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      if (embedMeta?.provider === "spotify") {
+                        const spotifyHeight = embedMeta.iframe.kind === "track" ? 152 : 352;
+                        return (
+                          <div
+                            key={link}
+                            className="rounded-xl overflow-hidden border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)]"
+                          >
+                            <iframe
+                              src={embedMeta.iframe.src}
+                              title={embedMeta.iframe.title}
+                              loading="lazy"
+                              allow={embedMeta.iframe.allow}
+                              referrerPolicy="strict-origin-when-cross-origin"
+                              className="block w-full border-0"
+                              height={spotifyHeight}
+                            />
+                          </div>
+                        );
+                      }
+
                       const platform = getSongPlatformInfo(link);
                       return (
                         <Link
-                          key={index}
+                          key={link}
                           href={link}
                           target="_blank"
                           rel="noopener noreferrer"

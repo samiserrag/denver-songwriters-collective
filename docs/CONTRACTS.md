@@ -221,6 +221,33 @@ See [docs/GOVERNANCE.md](./GOVERNANCE.md) for the full stop-gate workflow.
 
 ---
 
+## Contract: Profile Song Links Auto-Embed (PROFILE-MUSIC-02)
+
+### Scope
+
+- Applies to public profile detail pages:
+1. `/songwriters/[id]`
+2. `/members/[id]`
+3. `/performers/[id]`
+
+### Rendering Contract
+
+- In "Listen to My Music", any valid embeddable content URL in `featured_song_url` or `song_links[]` must render as an inline player automatically.
+- Supported auto-embed sources:
+1. YouTube video/playlist links
+2. Spotify track/playlist/album/show/episode links
+3. Bandcamp `EmbeddedPlayer` URLs
+- Non-embeddable URLs must still render as outbound link cards/buttons (no hard failure).
+- Existing saved profile data must be interpreted at render time; no migration or per-user backfill is required.
+
+### Coverage Contract
+
+- Tests must verify:
+1. Embeddable YouTube and Spotify links map to canonical embed hosts
+2. Non-embeddable profile links (e.g., YouTube channel URLs) fall back safely to non-embed rendering
+
+---
+
 ## Contract: Community Invite & Referral Attribution (Phase 7B.1)
 
 ### Scope Contract

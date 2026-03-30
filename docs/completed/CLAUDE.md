@@ -6,6 +6,34 @@ This file holds the historical implementation log that was previously under the 
 
 ---
 
+### Fix: Retroactive Auto-Embed for Profile Song Links (March 2026)
+
+**Summary:** Updated public profile music sections to automatically embed playable links from `featured_song_url` and `song_links[]`, so members do not need to separately manage media embed fields for common YouTube/Spotify cases. This is retroactive for existing profiles because rendering now classifies current saved URLs at request time.
+
+**What changed:**
+- Added shared helper `getSongLinkEmbedMeta()` to classify a song link as embeddable (YouTube/Spotify/Bandcamp EmbeddedPlayer) vs non-embeddable fallback.
+- Updated all three public profile surfaces to render inline players when embeddable:
+1. `/songwriters/[id]`
+2. `/members/[id]`
+3. `/performers/[id]`
+- Kept safe fallback behavior for non-embeddable links (channel/profile/external URLs still render as outbound links).
+- Added focused tests for new helper behavior and canonical embed URL mapping.
+- Updated `docs/CONTRACTS.md` with `PROFILE-MUSIC-02` contract.
+
+**Files changed:**
+- `web/src/lib/profile/songLinks.ts`
+- `web/src/app/songwriters/[id]/page.tsx`
+- `web/src/app/members/[id]/page.tsx`
+- `web/src/app/performers/[id]/page.tsx`
+- `web/src/__tests__/featured-song-links.test.ts`
+- `docs/CONTRACTS.md`
+
+**Validation:**
+- `cd web && npm run lint -- src/lib/profile/songLinks.ts src/app/songwriters/[id]/page.tsx src/app/members/[id]/page.tsx src/app/performers/[id]/page.tsx src/__tests__/featured-song-links.test.ts`
+- `cd web && TMPDIR="$PWD/.tmp" npm run test -- --run src/__tests__/featured-song-links.test.ts`
+
+---
+
 ### Feature: Organizations Linking Permissions + Friends Public Contracts + Member Self-Removal (March 2026)
 
 **Summary:** Implemented full admin control for organization associations, manager-scoped content-link enforcement, public Friends page alignment, and a member self-removal flow for organization tags.
