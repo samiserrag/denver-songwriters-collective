@@ -96,10 +96,22 @@ When adding a new permanent venue:
 - Cover image: saved locally + flagged for manual upload
 - Category selected (Music for songwriter/music events)
 
+## Pre-flight check (run at start of every session)
+Before navigating to any domain, verify Chrome MCP is working:
+1. Call `tabs_context_mcp` with `createIfEmpty: true`
+2. Try navigating to `https://coloradosongwriterscollective.org` first (before any other domain)
+3. If you get "Navigation to this domain is not allowed":
+   - Check `~/.claude/chrome/chrome-native-host` — does the version path exist?
+   - Compare against `ls ~/.local/share/claude/versions/`
+   - If stale, apply the dynamic wrapper fix (see `event-ops-lessons.md` § "Chrome MCP Navigation fix")
+   - Ask user to quit Chrome fully (Cmd+Q) and reopen, then start a new conversation
+   - Also check if Playwright/Codex is attached to Chrome (banner: "Playwright MCP Bridge started debugging this browser") — if so, close it first
+
 ## Known limitations
 - Cover image cannot be programmatically uploaded to CSC from external sources (browser security). Always save locally and tell me to drag-drop it manually.
 - Chrome MCP `zoom` action crashes the extension — never use it.
 - Chrome MCP `upload_image` tool loses screenshot IDs across extension restarts.
+- Chrome native host wrapper can break after Claude Code upgrades — see pre-flight check above.
 
 ## Final output to me (strict format)
 1. Result: CREATED / NEEDS_CLARIFICATION / FAILED

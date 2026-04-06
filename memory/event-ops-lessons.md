@@ -15,6 +15,52 @@ Source: `web/src/lib/events/eventTypeContract.ts`
 - **Cross-origin image transfer** is blocked by browser security. Cannot fetch Instagram images from CSC page, cannot use BroadcastChannel cross-origin, cannot serve via localhost HTTP (mixed content blocking on HTTPS pages).
 - **Clipboard write** is denied on Instagram (permission policy).
 
+## Chrome MCP "Navigation to this domain is not allowed" — diagnosis & fix
+
+This error means the Chrome extension's native bridge cannot communicate with Claude Code. The most common cause is a **stale version path** in the native host wrapper script.
+
+### Root cause
+Claude Code upgrades install new versions under `~/.local/share/claude/versions/` and delete old ones. The native host wrapper at `~/.claude/chrome/chrome-native-host` hardcodes a specific version path. After an upgrade, the old binary is gone and the bridge silently fails, causing ALL domains to be rejected.
+
+### Quick diagnosis checklist
+1. **Check the wrapper script:**
+   ```bash
+   cat ~/.claude/chrome/chrome-native-host
+   ```
+   Look at the `exec` line — does the version path actually exist?
+
+2. **Check available versions:**
+   ```bash
+   ls ~/.local/share/claude/versions/
+   ```
+
+3. **If the version in the wrapper doesn't exist** — that's the problem.
+
+### Fix
+The wrapper has been patched to auto-resolve the latest version dynamically (no hardcoded path). If it ever gets overwritten by a Claude Code update back to a hardcoded path, re-apply this fix:
+
+```sh
+cat > ~/.claude/chrome/chrome-native-host << 'WRAPPER'
+#!/bin/sh
+VERSIONS_DIR="$HOME/.local/share/claude/versions"
+LATEST=$(ls -v "$VERSIONS_DIR" 2>/dev/null | tail -n 1)
+if [ -z "$LATEST" ]; then
+  echo '{"error":"No Claude Code version found"}' >&2
+  exit 1
+fi
+exec "$VERSIONS_DIR/$LATEST" --chrome-native-host
+WRAPPER
+chmod +x ~/.claude/chrome/chrome-native-host
+```
+
+### After fixing
+- Fully quit Chrome (Cmd+Q) and reopen it.
+- Start a new Claude Code conversation.
+
+### Other causes of this error
+- **Playwright/Codex conflict**: If Codex is using Playwright to debug the same Chrome instance, the extension's `turnApprovedDomains` set can get poisoned. The extension's `follow_a_plan` permission mode locks navigation to only explicitly approved domains for that session. Close Playwright/Codex, quit Chrome, and restart.
+- **Extension permission mode**: The extension stores `lastPermissionModePreference` in local storage. If set to `"follow_a_plan"` or `"allow_for_site"` instead of `"skip_all_permission_checks"`, domain access is more restrictive. Check the extension's sidepanel settings.
+
 ## Cover image upload — what works
 - Extract image from Instagram via canvas: `drawImage()` on a `<canvas>`, then `canvas.toDataURL()` — this works because Instagram serves images from same-origin CDN.
 - Save locally via bash using the extracted data URL or direct CDN URL download.
