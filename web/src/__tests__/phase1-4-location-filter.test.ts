@@ -16,16 +16,47 @@
  * 10. Venues outside radius are excluded
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import {
   normalizeRadiusMiles,
   normalizeCity,
   normalizeZip,
+  normalizeUsZip5,
   haversineDistanceMiles,
   computeBoundingBox,
+  getLocationFilteredVenues,
   VALID_RADII,
   DEFAULT_RADIUS,
 } from "@/lib/happenings/locationFilter";
+
+function createSupabaseMock(responses: Array<{ data: unknown; error: unknown }>) {
+  let idx = 0;
+
+  const createBuilder = (response: { data: unknown; error: unknown }) => {
+    const builder: any = {
+      eq: () => builder,
+      ilike: () => builder,
+      not: () => builder,
+      gte: () => builder,
+      lte: () => builder,
+      then: (resolve: (value: { data: unknown; error: unknown }) => unknown, reject?: (reason: unknown) => unknown) =>
+        Promise.resolve(response).then(resolve, reject),
+      catch: (reject: (reason: unknown) => unknown) => Promise.resolve(response).catch(reject),
+      finally: (handler: () => void) => Promise.resolve(response).finally(handler),
+    };
+    return builder;
+  };
+
+  return {
+    from: () => ({
+      select: () => {
+        const response = responses[idx] ?? { data: [], error: null };
+        idx += 1;
+        return createBuilder(response);
+      },
+    }),
+  } as any;
+}
 
 describe("Phase 1.4: Location Filter", () => {
   describe("normalizeRadiusMiles", () => {
@@ -119,6 +150,22 @@ describe("Phase 1.4: Location Filter", () => {
       // The filter just normalizes, doesn't validate
       expect(normalizeZip("80202")).toBe("80202");
       expect(normalizeZip("80202-1234")).toBe("80202-1234");
+    });
+  });
+
+  describe("normalizeUsZip5", () => {
+    it("accepts 5-digit ZIPs", () => {
+      expect(normalizeUsZip5("80202")).toBe("80202");
+    });
+
+    it("accepts ZIP+4 and returns first 5 digits", () => {
+      expect(normalizeUsZip5("80202-1234")).toBe("80202");
+    });
+
+    it("returns undefined for invalid ZIP formats", () => {
+      expect(normalizeUsZip5("ABCDE")).toBeUndefined();
+      expect(normalizeUsZip5("1234")).toBeUndefined();
+      expect(normalizeUsZip5("123456")).toBeUndefined();
     });
   });
 
@@ -260,5 +307,120 @@ describe("Phase 1.4: UI Integration Contracts", () => {
     it("Map view respects location filter", () => {
       expect(true).toBe(true);
     });
+  });
+});
+
+describe("Phase 1.4: ZIP fallback behavior", () => {
+  it("returns invalid_zip when ZIP format is invalid", async () => {
+    const result = await getLocationFilteredVenues(createSupabaseMock([]), {
+      zip: "12AB",
+      radiusMiles: 25,
+    });
+
+    expect(result.mode).toBe("zip");
+    expect(result.emptyReason).toBe("invalid_zip");
+    expect(result.includedVenueIds).toEqual([]);
+  });
+
+  it("geocodes ZIP when exact ZIP venues are missing and includes nearby venues", async () => {
+    const originalFetch = global.fetch;
+    const originalKey = process.env.GOOGLE_GEOCODING_API_KEY;
+    try {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          status: "OK",
+          results: [{ geometry: { location: { lat: 39.5807, lng: -104.8852 } } }],
+        }),
+      }) as any;
+
+      const supabase = createSupabaseMock([
+        { data: [], error: null }, // exact ZIP query
+        {
+          data: [
+            { id: "nearby-1", latitude: 39.60, longitude: -104.90 },
+            { id: "far-1", latitude: 40.30, longitude: -105.30 },
+          ],
+          error: null,
+        }, // nearby query
+      ]);
+
+      process.env.GOOGLE_GEOCODING_API_KEY = "test-key";
+
+      const result = await getLocationFilteredVenues(supabase, {
+        zip: "80112",
+        radiusMiles: 25,
+      });
+
+      expect(result.emptyReason).toBeNull();
+      expect(result.exactMatchCount).toBe(0);
+      expect(result.includedVenueIds).toEqual(["nearby-1"]);
+      expect(result.nearbyCount).toBe(1);
+      expect(result.centroid).toEqual({ lat: 39.5807, lng: -104.8852 });
+    } finally {
+      global.fetch = originalFetch;
+      if (originalKey) {
+        process.env.GOOGLE_GEOCODING_API_KEY = originalKey;
+      } else {
+        delete process.env.GOOGLE_GEOCODING_API_KEY;
+      }
+    }
+  });
+
+  it("returns zip_lookup_failed when geocoding key is missing", async () => {
+    const originalKey = process.env.GOOGLE_GEOCODING_API_KEY;
+    const originalMapsKey = process.env.GOOGLE_MAPS_API_KEY;
+    delete process.env.GOOGLE_GEOCODING_API_KEY;
+    delete process.env.GOOGLE_MAPS_API_KEY;
+
+    const result = await getLocationFilteredVenues(
+      createSupabaseMock([{ data: [], error: null }]),
+      { zip: "80113", radiusMiles: 25 }
+    );
+
+    expect(result.emptyReason).toBe("zip_lookup_failed");
+    expect(result.includedVenueIds).toEqual([]);
+
+    if (originalKey) {
+      process.env.GOOGLE_GEOCODING_API_KEY = originalKey;
+    } else {
+      delete process.env.GOOGLE_GEOCODING_API_KEY;
+    }
+    if (originalMapsKey) {
+      process.env.GOOGLE_MAPS_API_KEY = originalMapsKey;
+    } else {
+      delete process.env.GOOGLE_MAPS_API_KEY;
+    }
+  });
+
+  it("returns invalid_zip when geocoder returns ZERO_RESULTS", async () => {
+    const originalFetch = global.fetch;
+    const originalKey = process.env.GOOGLE_GEOCODING_API_KEY;
+    try {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          status: "ZERO_RESULTS",
+          results: [],
+        }),
+      }) as any;
+
+      process.env.GOOGLE_GEOCODING_API_KEY = "test-key";
+
+      const result = await getLocationFilteredVenues(
+        createSupabaseMock([{ data: [], error: null }]),
+        { zip: "99998", radiusMiles: 25 }
+      );
+
+      expect(result.emptyReason).toBe("invalid_zip");
+      expect(result.includedVenueIds).toEqual([]);
+    } finally {
+      global.fetch = originalFetch;
+      if (originalKey) {
+        process.env.GOOGLE_GEOCODING_API_KEY = originalKey;
+      } else {
+        delete process.env.GOOGLE_GEOCODING_API_KEY;
+      }
+    }
   });
 });

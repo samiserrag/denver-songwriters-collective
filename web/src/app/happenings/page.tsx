@@ -660,6 +660,18 @@ export default async function HappeningsPage({
     // Location filter active but no venues found
     if (hasLocationFilter && locationFilterResult?.emptyReason) {
       if (zipParam) {
+        if (locationFilterResult.emptyReason === "invalid_zip") {
+          return {
+            headline: `Invalid ZIP code: ${zipParam}`,
+            detail: "Use a valid US ZIP code (5 digits or ZIP+4)."
+          };
+        }
+        if (locationFilterResult.emptyReason === "zip_lookup_failed") {
+          return {
+            headline: `Could not locate ZIP ${zipParam} right now`,
+            detail: "Please try again in a moment, or try a nearby ZIP."
+          };
+        }
         return {
           headline: `No venues found for ZIP ${zipParam}`,
           detail: "Try a nearby ZIP or a larger radius."

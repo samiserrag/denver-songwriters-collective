@@ -2,7 +2,7 @@
  * Phase 1.4: Location Filter for Happenings
  *
  * Provides city/ZIP-based filtering with radius-based "nearby" expansion.
- * Uses venue lat/lng data only (no external geocoding).
+ * Uses venue lat/lng data and ZIP centroid geocoding fallback.
  *
  * Key concepts:
  * - Centroid: average lat/lng of exact-match venues WITH coordinates
@@ -29,7 +29,7 @@ export interface LocationFilterResult {
   /** Count of nearby venues (excluding exact matches) */
   nearbyCount: number;
   /** Reason for empty result, or null if venues found */
-  emptyReason: "no_venues" | "no_coords" | null;
+  emptyReason: "no_venues" | "no_coords" | "invalid_zip" | "zip_lookup_failed" | null;
   /** Which filter mode was used */
   mode: "zip" | "city" | null;
   /** Normalized input values */
@@ -154,6 +154,134 @@ interface VenueWithCoords {
   longitude: number | null;
 }
 
+interface GoogleGeocodingResponse {
+  status: string;
+  results?: Array<{
+    geometry?: {
+      location?: {
+        lat: number;
+        lng: number;
+      };
+    };
+  }>;
+}
+
+type ZipCentroidLookupResult =
+  | { ok: true; centroid: { lat: number; lng: number } }
+  | { ok: false; reason: "invalid_zip" | "zip_lookup_failed" };
+
+interface ZipCentroidCacheEntry {
+  expiresAt: number;
+  result: ZipCentroidLookupResult;
+}
+
+const GEOCODING_API_URL = "https://maps.googleapis.com/maps/api/geocode/json";
+const ZIP_LOOKUP_SUCCESS_CACHE_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
+const ZIP_LOOKUP_FAILURE_CACHE_MS = 1000 * 60 * 60; // 1 hour
+const zipCentroidCache = new Map<string, ZipCentroidCacheEntry>();
+
+/**
+ * Normalize ZIP input to canonical US 5-digit ZIP.
+ * Accepts ZIP+4, returns first 5 digits.
+ */
+export function normalizeUsZip5(input?: string): string | undefined {
+  const normalized = normalizeZip(input);
+  if (!normalized) return undefined;
+
+  const match = normalized.match(/^(\d{5})(?:-\d{4})?$/);
+  if (!match) return undefined;
+
+  return match[1];
+}
+
+async function lookupZipCentroid(zip5: string): Promise<ZipCentroidLookupResult> {
+  const cached = zipCentroidCache.get(zip5);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.result;
+  }
+  if (cached) {
+    zipCentroidCache.delete(zip5);
+  }
+
+  const apiKey = process.env.GOOGLE_GEOCODING_API_KEY || process.env.GOOGLE_MAPS_API_KEY;
+  if (!apiKey) {
+    const failure: ZipCentroidLookupResult = {
+      ok: false,
+      reason: "zip_lookup_failed",
+    };
+    zipCentroidCache.set(zip5, {
+      expiresAt: Date.now() + ZIP_LOOKUP_FAILURE_CACHE_MS,
+      result: failure,
+    });
+    return failure;
+  }
+
+  try {
+    const url = new URL(GEOCODING_API_URL);
+    url.searchParams.append("components", `postal_code:${zip5}|country:US`);
+    url.searchParams.append("key", apiKey);
+
+    const response = await fetch(url.toString());
+    if (!response.ok) {
+      const failure: ZipCentroidLookupResult = {
+        ok: false,
+        reason: "zip_lookup_failed",
+      };
+      zipCentroidCache.set(zip5, {
+        expiresAt: Date.now() + ZIP_LOOKUP_FAILURE_CACHE_MS,
+        result: failure,
+      });
+      return failure;
+    }
+
+    const data: GoogleGeocodingResponse = await response.json();
+    if (data.status === "ZERO_RESULTS") {
+      const failure: ZipCentroidLookupResult = {
+        ok: false,
+        reason: "invalid_zip",
+      };
+      zipCentroidCache.set(zip5, {
+        expiresAt: Date.now() + ZIP_LOOKUP_FAILURE_CACHE_MS,
+        result: failure,
+      });
+      return failure;
+    }
+
+    const location = data.results?.[0]?.geometry?.location;
+    if (data.status === "OK" && location) {
+      const success: ZipCentroidLookupResult = {
+        ok: true,
+        centroid: { lat: location.lat, lng: location.lng },
+      };
+      zipCentroidCache.set(zip5, {
+        expiresAt: Date.now() + ZIP_LOOKUP_SUCCESS_CACHE_MS,
+        result: success,
+      });
+      return success;
+    }
+
+    const failure: ZipCentroidLookupResult = {
+      ok: false,
+      reason: "zip_lookup_failed",
+    };
+    zipCentroidCache.set(zip5, {
+      expiresAt: Date.now() + ZIP_LOOKUP_FAILURE_CACHE_MS,
+      result: failure,
+    });
+    return failure;
+  } catch {
+    const failure: ZipCentroidLookupResult = {
+      ok: false,
+      reason: "zip_lookup_failed",
+    };
+    zipCentroidCache.set(zip5, {
+      expiresAt: Date.now() + ZIP_LOOKUP_FAILURE_CACHE_MS,
+      result: failure,
+    });
+    return failure;
+  }
+}
+
 /**
  * Get location-filtered venue IDs based on city or ZIP with radius.
  *
@@ -172,11 +300,13 @@ export async function getLocationFilteredVenues(
   }
 ): Promise<LocationFilterResult> {
   const radiusMiles = normalizeRadiusMiles(String(params.radiusMiles ?? ""));
-  const normalizedZip = normalizeZip(params.zip);
+  const normalizedZipInput = normalizeZip(params.zip);
+  const normalizedZip5 = normalizeUsZip5(params.zip);
   const normalizedCity = normalizeCity(params.city);
+  const zipRequested = Boolean(normalizedZipInput);
 
   // ZIP wins over city
-  const mode: "zip" | "city" | null = normalizedZip
+  const mode: "zip" | "city" | null = zipRequested
     ? "zip"
     : normalizedCity
       ? "city"
@@ -196,13 +326,31 @@ export async function getLocationFilteredVenues(
     };
   }
 
+  // ZIP provided but invalid format (must be 5 digits or ZIP+4)
+  if (mode === "zip" && !normalizedZip5) {
+    return {
+      includedVenueIds: [],
+      exactMatchVenueIds: [],
+      centroid: null,
+      exactMatchCount: 0,
+      nearbyCount: 0,
+      emptyReason: "invalid_zip",
+      mode,
+      normalized: {
+        zip: normalizedZipInput,
+        city: normalizedCity,
+        radiusMiles,
+      },
+    };
+  }
+
   // Step 1: Query exact-match venues
   let exactMatchQuery = supabase
     .from("venues")
     .select("id, latitude, longitude");
 
   if (mode === "zip") {
-    exactMatchQuery = exactMatchQuery.eq("zip", normalizedZip!);
+    exactMatchQuery = exactMatchQuery.eq("zip", normalizedZip5!);
   } else {
     // Case-insensitive city match using ilike for exact match
     exactMatchQuery = exactMatchQuery.ilike("city", normalizedCity!);
@@ -221,7 +369,7 @@ export async function getLocationFilteredVenues(
       emptyReason: "no_venues",
       mode,
       normalized: {
-        zip: normalizedZip,
+        zip: normalizedZipInput,
         city: normalizedCity,
         radiusMiles,
       },
@@ -230,8 +378,8 @@ export async function getLocationFilteredVenues(
 
   const exactMatchVenues = (exactMatches || []) as VenueWithCoords[];
 
-  // No venues match the zip/city
-  if (exactMatchVenues.length === 0) {
+  // No venues match the city (ZIP may still fall back to geocoding)
+  if (exactMatchVenues.length === 0 && mode === "city") {
     return {
       includedVenueIds: [],
       exactMatchVenueIds: [],
@@ -241,7 +389,7 @@ export async function getLocationFilteredVenues(
       emptyReason: "no_venues",
       mode,
       normalized: {
-        zip: normalizedZip,
+        zip: normalizedZipInput,
         city: normalizedCity,
         radiusMiles,
       },
@@ -249,46 +397,71 @@ export async function getLocationFilteredVenues(
   }
 
   const exactMatchIds = exactMatchVenues.map((v) => v.id);
+  const exactMatchCount = exactMatchVenues.length;
+  let centroid: { lat: number; lng: number } | null = null;
 
-  // Step 2: Compute centroid from venues WITH coords
-  const venuesWithCoords = exactMatchVenues.filter(
-    (v) => v.latitude !== null && v.longitude !== null
-  );
+  if (exactMatchVenues.length === 0 && mode === "zip") {
+    const zipLookup = await lookupZipCentroid(normalizedZip5!);
+    if (!zipLookup.ok) {
+      return {
+        includedVenueIds: [],
+        exactMatchVenueIds: [],
+        centroid: null,
+        exactMatchCount: 0,
+        nearbyCount: 0,
+        emptyReason: zipLookup.reason,
+        mode,
+        normalized: {
+          zip: normalizedZip5,
+          city: normalizedCity,
+          radiusMiles,
+        },
+      };
+    }
 
-  if (venuesWithCoords.length === 0) {
-    // Venues exist but none have coords - can't compute centroid or nearby
-    return {
-      includedVenueIds: exactMatchIds,
-      exactMatchVenueIds: exactMatchIds,
-      centroid: null,
-      exactMatchCount: exactMatchVenues.length,
-      nearbyCount: 0,
-      emptyReason: "no_coords",
-      mode,
-      normalized: {
-        zip: normalizedZip,
-        city: normalizedCity,
-        radiusMiles,
-      },
-    };
+    centroid = zipLookup.centroid;
   }
 
-  // Compute centroid
-  const sumLat = venuesWithCoords.reduce((sum, v) => sum + v.latitude!, 0);
-  const sumLng = venuesWithCoords.reduce((sum, v) => sum + v.longitude!, 0);
-  const centroid = {
-    lat: sumLat / venuesWithCoords.length,
-    lng: sumLng / venuesWithCoords.length,
-  };
+  // Step 2: Compute centroid from venues WITH coords
+  if (!centroid) {
+    const venuesWithCoords = exactMatchVenues.filter(
+      (v) => v.latitude !== null && v.longitude !== null
+    );
+
+    if (venuesWithCoords.length === 0) {
+      // Venues exist but none have coords - can't compute centroid or nearby
+      return {
+        includedVenueIds: exactMatchIds,
+        exactMatchVenueIds: exactMatchIds,
+        centroid: null,
+        exactMatchCount,
+        nearbyCount: 0,
+        emptyReason: "no_coords",
+        mode,
+        normalized: {
+          zip: normalizedZip5 ?? normalizedZipInput,
+          city: normalizedCity,
+          radiusMiles,
+        },
+      };
+    }
+
+    // Compute centroid from exact-match venues
+    const sumLat = venuesWithCoords.reduce((sum, v) => sum + v.latitude!, 0);
+    const sumLng = venuesWithCoords.reduce((sum, v) => sum + v.longitude!, 0);
+    centroid = {
+      lat: sumLat / venuesWithCoords.length,
+      lng: sumLng / venuesWithCoords.length,
+    };
+  }
 
   // Step 3: Query nearby venues within radius using bounding box + Haversine
   const bbox = computeBoundingBox(centroid.lat, centroid.lng, radiusMiles);
 
   // Query candidates in bounding box (excluding exact matches to avoid duplicates)
-  const { data: nearbyCandidates, error: nearbyError } = await supabase
+  let nearbyQuery = supabase
     .from("venues")
     .select("id, latitude, longitude")
-    .not("id", "in", `(${exactMatchIds.join(",")})`)
     .not("latitude", "is", null)
     .not("longitude", "is", null)
     .gte("latitude", bbox.latMin)
@@ -296,19 +469,43 @@ export async function getLocationFilteredVenues(
     .gte("longitude", bbox.lngMin)
     .lte("longitude", bbox.lngMax);
 
+  if (exactMatchIds.length > 0) {
+    nearbyQuery = nearbyQuery.not("id", "in", `(${exactMatchIds.join(",")})`);
+  }
+
+  const { data: nearbyCandidates, error: nearbyError } = await nearbyQuery;
+
   if (nearbyError) {
     console.error("[locationFilter] Nearby query error:", nearbyError);
-    // Still return exact matches even if nearby query fails
+    // Still return exact matches even if nearby query fails.
+    // If no exact matches exist (ZIP geocode fallback path), return empty result.
+    if (exactMatchIds.length === 0) {
+      return {
+        includedVenueIds: [],
+        exactMatchVenueIds: [],
+        centroid,
+        exactMatchCount,
+        nearbyCount: 0,
+        emptyReason: "no_venues",
+        mode,
+        normalized: {
+          zip: normalizedZip5 ?? normalizedZipInput,
+          city: normalizedCity,
+          radiusMiles,
+        },
+      };
+    }
+
     return {
       includedVenueIds: exactMatchIds,
       exactMatchVenueIds: exactMatchIds,
       centroid,
-      exactMatchCount: exactMatchVenues.length,
+      exactMatchCount,
       nearbyCount: 0,
       emptyReason: null,
       mode,
       normalized: {
-        zip: normalizedZip,
+        zip: normalizedZip5 ?? normalizedZipInput,
         city: normalizedCity,
         radiusMiles,
       },
@@ -333,16 +530,34 @@ export async function getLocationFilteredVenues(
   // Union of exact matches + nearby
   const includedVenueIds = [...new Set([...exactMatchIds, ...nearbyIds])];
 
+  // ZIP geocoded successfully but no venues found in radius
+  if (includedVenueIds.length === 0) {
+    return {
+      includedVenueIds: [],
+      exactMatchVenueIds: exactMatchIds,
+      centroid,
+      exactMatchCount,
+      nearbyCount: 0,
+      emptyReason: "no_venues",
+      mode,
+      normalized: {
+        zip: normalizedZip5 ?? normalizedZipInput,
+        city: normalizedCity,
+        radiusMiles,
+      },
+    };
+  }
+
   return {
     includedVenueIds,
     exactMatchVenueIds: exactMatchIds,
     centroid,
-    exactMatchCount: exactMatchVenues.length,
+    exactMatchCount,
     nearbyCount: nearbyIds.length,
     emptyReason: null,
     mode,
     normalized: {
-      zip: normalizedZip,
+      zip: normalizedZip5 ?? normalizedZipInput,
       city: normalizedCity,
       radiusMiles,
     },
