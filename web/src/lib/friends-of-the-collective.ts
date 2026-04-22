@@ -222,6 +222,20 @@ export const FRIENDS_OF_COLLECTIVE: CollectiveFriend[] = [
     featured: false,
     isActive: true,
   },
+  {
+    id: "musician-therapy-studio",
+    name: "Musician Therapy Studio",
+    websiteUrl: "https://musiciantherapy.com",
+    city: "Colorado (Statewide Telehealth)",
+    organizationType: "Licensed Mental Health Practice",
+    shortBlurb:
+      "Musician Therapy Studio is a Colorado-based therapy practice specializing in mental health support for musicians and music-industry professionals, with a primary focus on performers and songwriters.",
+    whyItMatters:
+      "Songwriters and performers can access a Colorado-licensed therapist who understands music-specific stressors and offers statewide telehealth support for adults.",
+    tags: ["Mental Health", "Therapy", "Telehealth", "Performers", "Songwriters"],
+    featured: false,
+    isActive: true,
+  },
 ];
 
 export function getFriendsOfCollective(): CollectiveFriend[] {
