@@ -63,6 +63,45 @@ supabase db reset
 
 Run the safest command first (`status`, `list`, `lint`) before mutating operations.
 
+### Supabase in Codex Sandbox: DNS/Network Fallback (Apr 22, 2026)
+
+In this repo, remote Supabase database access may be partially available in sandbox:
+
+- `supabase migration list --db-url "$DATABASE_URL"` can succeed
+- `supabase migration up` / `supabase db push` can fail with host resolution errors
+- `db.<project-ref>.supabase.co` may resolve only to IPv6 (`AAAA`) from this environment
+
+If migration apply fails in CLI, use this fallback sequence:
+
+```bash
+# 1) Load env
+set -a; source web/.env.local; set +a
+
+# 2) Discover DB host and IPv6
+DB_HOST=$(printf "%s" "$DATABASE_URL" | sed -E 's#^[^@]*@([^:/?]+).*$#\1#')
+IPV6=$(nslookup -type=AAAA "$DB_HOST" | awk '/has AAAA address/ {print $NF; exit}')
+IPV6_URL="${DATABASE_URL/$DB_HOST/[$IPV6]}"
+
+# 3) Apply one migration directly (MODE B)
+psql "$IPV6_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/<timestamp>_<name>.sql
+
+# 4) Record migration version
+psql "$IPV6_URL" -v ON_ERROR_STOP=1 -c \
+  "insert into supabase_migrations.schema_migrations(version)
+   values ('<timestamp>')
+   on conflict (version) do nothing;"
+
+# 5) Verify expected row/schema
+psql "$IPV6_URL" -v ON_ERROR_STOP=1 -c \
+  "select version from supabase_migrations.schema_migrations where version = '<timestamp>';"
+```
+
+If direct DB access is still blocked, use Supabase SQL Editor (browser) as the manual fallback and include exact evidence in report:
+
+- SQL executed (migration + history insert)
+- verification query result
+- timestamp and environment notes
+
 ## Browser Validation: Claude in Chrome MCP
 
 Use Claude + Chrome MCP for browser-side validation when workflows require real UI state, including:

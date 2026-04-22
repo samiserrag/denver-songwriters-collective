@@ -97,18 +97,42 @@ git push origin main
 
 #### Sandbox DNS/Network Limitation Fallback (Standard)
 
-When running `psql` from the agent sandbox, you may see transient network resolution failures such as:
+In Codex sandbox environments, DB connectivity may be split:
 
-```text
-could not translate host name "db.<project-ref>.supabase.co" to address
+- `supabase migration list --db-url "$DATABASE_URL"` may succeed
+- `supabase migration up` / `supabase db push` may fail with host lookup or connect errors
+- `db.<project-ref>.supabase.co` may be IPv6-only from the sandbox resolver
+
+Treat this as environment limitation, not migration logic failure. Use this fallback path:
+
+```bash
+# Load env
+set -a; source web/.env.local; set +a
+
+# Resolve DB host -> IPv6 and build bracketed URL
+DB_HOST=$(printf "%s" "$DATABASE_URL" | sed -E 's#^[^@]*@([^:/?]+).*$#\1#')
+IPV6=$(nslookup -type=AAAA "$DB_HOST" | awk '/has AAAA address/ {print $NF; exit}')
+IPV6_URL="${DATABASE_URL/$DB_HOST/[$IPV6]}"
+
+# Apply migration directly
+psql "$IPV6_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/<YYYYMMDDHHMMSS>_migration_name.sql
+
+# Record migration version
+psql "$IPV6_URL" -v ON_ERROR_STOP=1 -c \
+  "INSERT INTO supabase_migrations.schema_migrations(version)
+   VALUES ('<YYYYMMDDHHMMSS>')
+   ON CONFLICT (version) DO NOTHING;"
+
+# Verify
+psql "$IPV6_URL" -v ON_ERROR_STOP=1 -P pager=off -c \
+  "SELECT version FROM supabase_migrations.schema_migrations WHERE version = '<YYYYMMDDHHMMSS>';"
 ```
 
-If this occurs:
-1. Re-run the exact `psql` command with elevated execution permissions.
-2. Continue MODE B steps (`-f migration`, insert into `schema_migrations`, verification queries).
-3. Include one line in the execution report: "Direct DB commands required elevated execution due sandbox DNS/network limits."
+If direct DB access is still blocked, use Supabase SQL Editor as manual fallback (or browser automation if requested), run the same SQL, and report:
 
-This is an execution-environment limitation, not a migration logic failure.
+1. exact SQL executed
+2. verification query output
+3. reason CLI apply path was unavailable
 
 #### Rollback File Placement (added 2026-02-18, per incident postmortem)
 
