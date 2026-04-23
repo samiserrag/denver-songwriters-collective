@@ -9,20 +9,20 @@ interface LogoProps {
 
 function ThemeLogoMark({ className = "" }: { className?: string }) {
   return (
-    <span className={`relative inline-flex overflow-hidden rounded-xl ${className}`} aria-hidden="true">
+    <span className={`csc-logo-shell relative inline-flex overflow-hidden rounded-xl ${className}`} aria-hidden="true">
       <Image
         src="/images/logos/csc-night-theme.png"
         alt=""
         width={1024}
         height={1024}
-        className="csc-logo-night absolute inset-0 h-full w-full object-cover"
+        className="csc-logo-image csc-logo-night absolute inset-0 h-full w-full object-cover"
       />
       <Image
         src="/images/logos/csc-sunrise-theme.png"
         alt=""
         width={1024}
         height={1024}
-        className="csc-logo-sunrise absolute inset-0 h-full w-full object-cover"
+        className="csc-logo-image csc-logo-sunrise absolute inset-0 h-full w-full object-cover"
       />
     </span>
   );

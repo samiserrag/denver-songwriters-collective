@@ -385,6 +385,17 @@ body > footer {
 }
 
 /* Theme-specific brand marks */
+.csc-logo-shell {
+  background: #f86611;
+}
+
+.csc-logo-image {
+  inset: 1.5px !important;
+  width: calc(100% - 3px) !important;
+  height: calc(100% - 3px) !important;
+  border-radius: 0.65rem;
+}
+
 .csc-logo-night {
   display: none;
 }
@@ -392,11 +403,19 @@ body > footer {
   display: block;
 }
 
+:root[data-theme="night"] .csc-logo-shell {
+  background: #06142c;
+}
+
 :root[data-theme="night"] .csc-logo-night {
   display: block;
 }
 :root[data-theme="night"] .csc-logo-sunrise {
   display: none;
+}
+
+:root[data-theme="sunrise"] .csc-logo-shell {
+  background: #f86611;
 }
 
 :root[data-theme="sunrise"] .csc-logo-night {
@@ -408,6 +427,10 @@ body > footer {
 
 /* Auto theme (no explicit data-theme): follow OS preference */
 @media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .csc-logo-shell {
+    background: #06142c;
+  }
+
   :root:not([data-theme]) .csc-logo-night {
     display: block;
   }
