@@ -1,9 +1,31 @@
 import Link from "next/link";
+import Image from "next/image";
 
 interface LogoProps {
   variant?: "full" | "short" | "icon";
   className?: string;
   inverse?: boolean;
+}
+
+function ThemeLogoMark({ className = "" }: { className?: string }) {
+  return (
+    <span className={`relative inline-flex overflow-hidden rounded-xl ${className}`} aria-hidden="true">
+      <Image
+        src="/images/logos/csc-night-theme.png"
+        alt=""
+        width={1024}
+        height={1024}
+        className="csc-logo-night absolute inset-0 h-full w-full object-cover"
+      />
+      <Image
+        src="/images/logos/csc-sunrise-theme.png"
+        alt=""
+        width={1024}
+        height={1024}
+        className="csc-logo-sunrise absolute inset-0 h-full w-full object-cover"
+      />
+    </span>
+  );
 }
 
 export default function Logo({ variant = "full", className = "", inverse = false }: LogoProps) {
@@ -12,30 +34,24 @@ export default function Logo({ variant = "full", className = "", inverse = false
 
   if (variant === "icon") {
     return (
-      <Link href="/" className={`flex items-center ${className}`}>
-        <div className="w-10 h-10 bg-gradient-to-br from-[var(--color-accent-primary)] to-[var(--color-accent-hover)] rounded-lg flex items-center justify-center shadow-lg">
-          <span className="text-[var(--color-bg-primary)] font-bold text-lg font-display">C</span>
-        </div>
+      <Link href="/" className={`flex items-center ${className}`} aria-label="The Colorado Songwriters Collective home">
+        <ThemeLogoMark className="h-10 w-10 shadow-lg" />
       </Link>
     );
   }
 
   if (variant === "short") {
     return (
-      <Link href="/" className={`flex items-center gap-2 ${className}`}>
-        <div className="w-8 h-8 bg-gradient-to-br from-[var(--color-accent-primary)] to-[var(--color-accent-hover)] rounded-lg flex items-center justify-center">
-          <span className="text-[var(--color-bg-primary)] font-bold text-sm">CSC</span>
-        </div>
+      <Link href="/" className={`flex items-center gap-2 ${className}`} aria-label="The Colorado Songwriters Collective home">
+        <ThemeLogoMark className="h-8 w-8" />
         <span className={`font-display text-xl ${textPrimary}`}>CSC</span>
       </Link>
     );
   }
 
   return (
-    <Link href="/" className={`flex items-center gap-3 ${className}`}>
-      <div className="w-10 h-10 bg-gradient-to-br from-[var(--color-accent-primary)] to-[var(--color-accent-hover)] rounded-lg flex items-center justify-center shadow-lg">
-        <span className="text-[var(--color-bg-primary)] font-bold text-sm">CSC</span>
-      </div>
+    <Link href="/" className={`flex items-center gap-3 ${className}`} aria-label="The Colorado Songwriters Collective home">
+      <ThemeLogoMark className="h-10 w-10 shadow-lg" />
       <div className="flex flex-col">
         <span className={`font-display text-base 2xl:text-lg ${textPrimary} leading-tight`}>The Colorado Songwriters</span>
         <span className={`text-xs ${textAccent} tracking-widest uppercase`}>Collective</span>

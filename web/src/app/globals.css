@@ -384,5 +384,38 @@ body > footer {
   color: #000000 !important;
 }
 
+/* Theme-specific brand marks */
+.csc-logo-night {
+  display: none;
+}
+.csc-logo-sunrise {
+  display: block;
+}
+
+:root[data-theme="night"] .csc-logo-night {
+  display: block;
+}
+:root[data-theme="night"] .csc-logo-sunrise {
+  display: none;
+}
+
+:root[data-theme="sunrise"] .csc-logo-night {
+  display: none;
+}
+:root[data-theme="sunrise"] .csc-logo-sunrise {
+  display: block;
+}
+
+/* Auto theme (no explicit data-theme): follow OS preference */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .csc-logo-night {
+    display: block;
+  }
+
+  :root:not([data-theme]) .csc-logo-sunrise {
+    display: none;
+  }
+}
+
 /* Theme presets - must load after base tokens */
 @import "./themes/presets.css";
