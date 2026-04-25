@@ -135,16 +135,16 @@ export function DateJumpControl({
 
   return (
     <div className={cn(
-      "rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] p-3 sm:p-4 space-y-3",
+      "rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] p-3 sm:p-4 space-y-3",
       className
     )}>
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-medium text-[var(--color-text-primary)]">Date Filter</p>
-          <p className="text-xs text-[var(--color-text-tertiary)]">Use quick jumps or choose a specific day.</p>
+          <p className="text-sm text-[var(--color-text-tertiary)]">Use quick jumps or choose a specific day.</p>
         </div>
         {activeDateKey && (
-          <span className="inline-flex items-center rounded-full border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] px-2.5 py-1 text-xs text-[var(--color-text-secondary)]">
+          <span className="inline-flex items-center rounded-full border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] px-2.5 py-1 text-sm text-[var(--color-text-secondary)]">
             Active: {formatDateForPill(activeDateKey)}
           </span>
         )}

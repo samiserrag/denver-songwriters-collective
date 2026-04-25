@@ -28,6 +28,26 @@
 
 import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import {
+  BookOpen,
+  CalendarDays,
+  ChevronDown as ChevronDownIcon,
+  Clock,
+  Filter as FilterIcon,
+  Guitar,
+  Heart,
+  Laugh,
+  MapPin as MapPinIcon,
+  Mic as MicIcon,
+  Music,
+  PenLine,
+  Search as SearchIcon,
+  SlidersHorizontal,
+  Star,
+  Tag as TagIcon,
+  X as XIcon,
+  Zap,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -38,65 +58,6 @@ import {
   upsertUserSavedHappeningsFilters,
   type SavedHappeningsFilters,
 } from "@/lib/happenings/savedFilters";
-
-// SVG Icons (sparse use only)
-function SearchIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-    </svg>
-  );
-}
-
-function MapPinIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-    </svg>
-  );
-}
-
-function TagIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-    </svg>
-  );
-}
-
-function MicIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-    </svg>
-  );
-}
-
-function ChevronDownIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-    </svg>
-  );
-}
-
-function XIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-    </svg>
-  );
-}
-
-// Filter icon for collapsed section
-function FilterIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-    </svg>
-  );
-}
 
 // Filter option types - human-readable labels
 const TIME_OPTIONS = [
@@ -595,6 +556,51 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
     activeFilterSummary.push(`Near ${city}`);
   }
 
+  const primaryQuickFilters = [
+    { type: "open_mic", label: "Open Mics", icon: MicIcon, isActive: isOpenMicsActive },
+    { type: "csc", label: "CSC", icon: Star, isActive: isCscActive },
+    { type: "favorites", label: "Favorites", icon: Heart, isActive: isFavoritesActive },
+  ] as const;
+
+  const typeQuickFilters = [
+    { type: "showcase", label: "Showcases", icon: Star, isActive: isShowcaseActive },
+    { type: "gig", label: "Gigs", icon: Music, isActive: isGigActive },
+    { type: "workshop", label: "Workshops", icon: BookOpen, isActive: isWorkshopActive },
+    { type: "jam_session", label: "Jams", icon: Guitar, isActive: isJamSessionsActive },
+    { type: "poetry", label: "Poetry", icon: PenLine, isActive: isPoetryActive },
+    { type: "blues", label: "Blues", icon: Guitar, isActive: isBluesActive },
+  ] as const;
+
+  const overflowQuickFilters = [
+    { type: "irish", label: "Irish", icon: Music, isActive: isIrishActive },
+    { type: "bluegrass", label: "Bluegrass", icon: Music, isActive: isBluegrassActive },
+    { type: "comedy", label: "Comedy", icon: Laugh, isActive: isComedyActive },
+  ] as const;
+
+  const handleQuickFilterClick = (
+    filter: (typeof primaryQuickFilters)[number] | (typeof typeQuickFilters)[number] | (typeof overflowQuickFilters)[number]
+  ) => {
+    if (filter.type === "csc") {
+      if (filter.isActive) {
+        updateFilter("csc", null);
+      } else {
+        router.push(buildUrl({ csc: "1", type: null }));
+      }
+      return;
+    }
+
+    if (filter.type === "favorites") {
+      updateFilter("favorites", filter.isActive ? null : "1");
+      return;
+    }
+
+    if (filter.isActive) {
+      updateFilter("type", null);
+    } else {
+      router.push(buildUrl({ type: filter.type, csc: null }));
+    }
+  };
+
   const hasExplicitFilterParams = Boolean(
     q ||
       type ||
@@ -659,71 +665,47 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
         ? "border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)]"
         : "border-[var(--color-border-default)] text-[var(--color-text-tertiary)]";
 
+  const renderQuickFilter = (
+    filter: (typeof primaryQuickFilters)[number] | (typeof typeQuickFilters)[number] | (typeof overflowQuickFilters)[number],
+    variant: "primary" | "secondary" = "secondary"
+  ) => {
+    const Icon = filter.icon;
+
+    return (
+      <button
+        key={filter.type}
+        onClick={() => handleQuickFilterClick(filter)}
+        className={cn(
+          "inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium transition-colors",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-primary)]/40",
+          variant === "primary" ? "sm:min-w-[132px]" : "sm:min-w-[112px]",
+          filter.isActive
+            ? "border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] shadow-sm"
+            : "border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] hover:border-[var(--color-border-accent)]"
+        )}
+        aria-pressed={filter.isActive}
+      >
+        <Icon className="h-4 w-4" aria-hidden="true" />
+        <span>{filter.label}</span>
+      </button>
+    );
+  };
+
   return (
     <div className={cn("space-y-4", className)}>
-      {/* Quick Filter Cards - engaging buttons with emoji icons in flexible wrap layout */}
-      <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 snap-x sm:mx-0 sm:px-0 sm:overflow-visible sm:flex-wrap sm:pb-0 sm:gap-3">
-        {/* Type filter buttons with emojis from EVENT_TYPE_CONFIG */}
-        {([
-          { type: "open_mic", label: "Open Mics", emoji: "🎤", isActive: isOpenMicsActive },
-          { type: "csc", label: "CSC", emoji: "⭐", isActive: isCscActive },
-          { type: "favorites", label: "Favorites", emoji: "★", isActive: isFavoritesActive },
-          { type: "showcase", label: "Showcases", emoji: "🎭", isActive: isShowcaseActive },
-          { type: "gig", label: "Gigs", emoji: "🎵", isActive: isGigActive },
-          { type: "workshop", label: "Workshops", emoji: "📚", isActive: isWorkshopActive },
-          { type: "jam_session", label: "Jams", emoji: "🎸", isActive: isJamSessionsActive },
-          { type: "poetry", label: "Poetry", emoji: "✒️", isActive: isPoetryActive },
-          { type: "irish", label: "Irish", emoji: "☘️", isActive: isIrishActive },
-          { type: "blues", label: "Blues", emoji: "🎸", isActive: isBluesActive },
-          { type: "bluegrass", label: "Bluegrass", emoji: "🪕", isActive: isBluegrassActive },
-          { type: "comedy", label: "Comedy", emoji: "😂", isActive: isComedyActive },
-        ] as const).map((filter) => (
-          <button
-            key={filter.type}
-            onClick={() => {
-              if (filter.type === "csc") {
-                if (filter.isActive) {
-                  updateFilter("csc", null);
-                } else {
-                  router.push(buildUrl({ csc: "1", type: null }));
-                }
-              } else if (filter.type === "favorites") {
-                updateFilter("favorites", filter.isActive ? null : "1");
-              } else {
-                if (filter.isActive) {
-                  updateFilter("type", null);
-                } else {
-                  router.push(buildUrl({ type: filter.type, csc: null }));
-                }
-              }
-            }}
-            className={cn(
-              "shrink-0 min-w-[108px] sm:min-w-[120px] sm:flex-1 py-2.5 sm:py-3 px-3 rounded-xl text-center font-medium transition-all snap-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-primary)]/40",
-              filter.isActive
-                ? "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] shadow-lg"
-                : "bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] border border-[var(--color-border-default)] hover:border-[var(--color-accent-primary)] hover:shadow-md"
-            )}
-          >
-            <span className="text-lg sm:text-xl block mb-0.5">{filter.emoji}</span>
-            <span className="text-xs sm:text-sm">{filter.label}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* Search - polished */}
       <div className="relative">
         <input
           type="text"
-          placeholder="Search by venue, artist, or keyword..."
+          placeholder="Search venue, artist, or keyword"
           value={searchInput}
           onChange={handleSearchChange}
-          className="w-full px-4 py-3 pl-11 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-xl text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-accent-primary)] focus:ring-2 focus:ring-[var(--color-accent-primary)]/20 transition-all"
+          className="h-12 w-full rounded-lg border border-[var(--color-border-input)] bg-[var(--color-bg-input)] px-4 py-3 pl-11 text-base text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] transition-colors focus:border-[var(--color-accent-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]/20"
         />
-        <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--color-text-secondary)]" />
+        <SearchIcon className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[var(--color-text-secondary)]" />
         {searchInput && (
           <button
             onClick={clearSearch}
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]"
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--color-text-tertiary)] transition-colors hover:text-[var(--color-text-primary)]"
             aria-label="Clear search"
           >
             <XIcon className="w-5 h-5" />
@@ -731,201 +713,107 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
         )}
       </div>
 
-      {/* Phase 1.41: Location Filter Row - Always visible (moved outside <details>) */}
-      <div className="rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] p-3 sm:p-4 space-y-3">
-        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-          <label className="text-sm font-medium text-[var(--color-text-secondary)]">Location</label>
-          <p className="text-xs text-[var(--color-text-tertiary)]">Use city or ZIP to focus nearby results.</p>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-          <div className="space-y-1">
-            <input
-              type="text"
-              placeholder="City (e.g. Denver)"
-              value={cityInput}
-              onChange={handleCityChange}
-              disabled={Boolean(zip)}
-              className={cn(
-                "w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-accent-primary)]",
-                zip && "opacity-50 cursor-not-allowed"
-              )}
-            />
-          </div>
-          <div className="space-y-1">
-            <input
-              type="text"
-              placeholder="ZIP code"
-              value={zipInput}
-              onChange={handleZipChange}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-accent-primary)]"
-            />
-          </div>
-          <div className="space-y-1">
-            <select
-              value={radius}
-              onChange={handleRadiusChange}
-              disabled={!city && !zip}
-              className={cn(
-                "w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent-primary)]",
-                !city && !zip && "opacity-50 cursor-not-allowed"
-              )}
-            >
-              {RADIUS_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-        {zip && city && (
-          <p className="text-xs text-[var(--color-text-tertiary)]">
-            ZIP code takes precedence over city
-          </p>
-        )}
-      </div>
+      <div className="grid grid-cols-1 gap-2 md:grid-cols-[minmax(0,1fr)_minmax(10rem,0.7fr)_minmax(8rem,0.55fr)_minmax(8rem,0.55fr)]">
+        <label className="relative">
+          <span className="sr-only">City</span>
+          <MapPinIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-text-secondary)]" aria-hidden="true" />
+          <input
+            type="text"
+            placeholder="Denver area"
+            value={cityInput}
+            onChange={handleCityChange}
+            disabled={Boolean(zip)}
+            className={cn(
+              "h-10 w-full rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] px-3 py-2 pl-9 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:border-[var(--color-accent-primary)] focus:outline-none",
+              zip && "cursor-not-allowed opacity-50"
+            )}
+          />
+        </label>
 
-      <div className="rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)]">
-        <div className="p-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <button
-            type="button"
-            onClick={() => setSavedPanelOpen((v) => !v)}
-            className="w-full sm:w-auto text-left flex items-center justify-between gap-3"
-            aria-expanded={savedPanelOpen}
-            disabled={savedLoading}
+        <label>
+          <span className="sr-only">ZIP code</span>
+          <input
+            type="text"
+            placeholder="ZIP code"
+            value={zipInput}
+            onChange={handleZipChange}
+            className="h-10 w-full rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:border-[var(--color-accent-primary)] focus:outline-none"
+          />
+        </label>
+
+        <label>
+          <span className="sr-only">Radius</span>
+          <select
+            value={radius}
+            onChange={handleRadiusChange}
+            disabled={!city && !zip}
+            className={cn(
+              "h-10 w-full rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent-primary)] focus:outline-none",
+              !city && !zip && "cursor-not-allowed opacity-50"
+            )}
           >
-            <span className="flex items-center gap-2">
-              <FilterIcon className="w-4 h-4 text-[var(--color-text-secondary)]" />
-              <span className="text-sm font-medium text-[var(--color-text-primary)]">
-                Saved Filters
-              </span>
-              <span className={cn(
-                "text-xs px-2 py-0.5 rounded-full border",
-                savedStatusColor
-              )}>
-                {savedStatusLabel}
-              </span>
-            </span>
-            <ChevronDownIcon
-              className={cn(
-                "w-4 h-4 text-[var(--color-text-secondary)] transition-transform",
-                savedPanelOpen && "rotate-180"
-              )}
-            />
-          </button>
-          {!savedLoading && userId && hasSavedFilters && (
-            <button
-              type="button"
-              onClick={applySavedFilters}
-              disabled={savedSaving}
-              className="w-full sm:w-auto px-3 py-1.5 text-xs rounded-lg bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] hover:opacity-90 transition disabled:opacity-50"
-            >
-              Apply Saved
-            </button>
-          )}
-        </div>
-        {savedPanelOpen && !savedLoading && (
-          <div className="border-t border-[var(--color-border-default)] p-3 space-y-3">
-            {userId ? (
-              <>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <button
-                    type="button"
-                    onClick={saveCurrentFilters}
-                    disabled={savedSaving}
-                    className="px-3 py-2 text-xs rounded-lg border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-accent)] transition-colors disabled:opacity-50"
-                  >
-                    Save Current Filters
-                  </button>
-                  <button
-                    type="button"
-                    onClick={applySavedFilters}
-                    disabled={savedSaving || !hasSavedFilters}
-                    className="px-3 py-2 text-xs rounded-lg bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] hover:opacity-90 transition disabled:opacity-50"
-                  >
-                    Apply Saved Filters
-                  </button>
-                  <button
-                    type="button"
-                    onClick={clearSavedFilters}
-                    disabled={savedSaving}
-                    className="px-3 py-2 text-xs rounded-lg border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-accent)] transition-colors disabled:opacity-50"
-                  >
-                    Reset Saved
-                  </button>
-                </div>
+            {RADIUS_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
 
-                <div className="rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] p-3 space-y-2">
-                  <p className="text-xs font-medium text-[var(--color-text-primary)]">Recall mode</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setSavedRecallMode(false)}
-                      disabled={savedSaving}
-                      className={cn(
-                        "flex items-center justify-center gap-1.5 px-3 py-2 text-xs rounded-lg border transition-colors",
-                        !savedAutoApply
-                          ? "bg-[var(--color-accent-primary)] border-[var(--color-accent-primary)] text-[var(--color-text-on-accent)]"
-                          : "border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
-                      )}
-                    >
-                      <span aria-hidden="true">👆</span>
-                      One-click Apply
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSavedRecallMode(true)}
-                      disabled={savedSaving}
-                      className={cn(
-                        "flex items-center justify-center gap-1.5 px-3 py-2 text-xs rounded-lg border transition-colors",
-                        savedAutoApply
-                          ? "bg-[var(--color-accent-primary)] border-[var(--color-accent-primary)] text-[var(--color-text-on-accent)]"
-                          : "border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
-                      )}
-                    >
-                      <span aria-hidden="true">⚡</span>
-                      Auto-open
-                    </button>
-                  </div>
-                  <p className="text-xs text-[var(--color-text-tertiary)]">
-                    One-click lets you choose when to apply. Auto-open applies saved filters automatically when this page loads without URL filters.
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--color-text-tertiary)]">
-                  <span>Need full setup controls?</span>
-                  <a
-                    href="/dashboard/settings"
-                    className="text-[var(--color-accent-primary)] hover:underline"
-                  >
-                    Open Dashboard Settings
-                  </a>
-                </div>
-              </>
-            ) : (
-              <p className="text-xs text-[var(--color-text-tertiary)]">
-                Sign in to save filters once, then apply with one tap or auto-open each visit.
-              </p>
-            )}
-            <p className="text-xs text-[var(--color-text-tertiary)]">
-              Weekly digest personalization uses your saved type, day, cost, and location filters. If Favorites is enabled, favorites are always included.
-            </p>
-            {savedMessage && (
-              <p className="text-xs text-[var(--color-text-secondary)]">{savedMessage}</p>
-            )}
-          </div>
-        )}
+        <label className="relative">
+          <span className="sr-only">When</span>
+          <Clock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-text-secondary)]" aria-hidden="true" />
+          <select
+            value={time}
+            onChange={(e) => updateFilter("time", e.target.value === "upcoming" ? null : e.target.value)}
+            className="h-10 w-full rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] px-3 py-2 pl-9 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent-primary)] focus:outline-none"
+          >
+            {TIME_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
-      {/* Collapsed Filters - Progressive Disclosure */}
-      <details className="group rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)]">
-        <summary className="cursor-pointer px-4 py-3 flex items-center justify-between list-none">
+      {zip && city && (
+        <p className="text-sm text-[var(--color-text-tertiary)]">
+          ZIP code takes precedence over city.
+        </p>
+      )}
+
+      <div className="space-y-2">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+          {primaryQuickFilters.map((filter) => renderQuickFilter(filter, "primary"))}
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+          {typeQuickFilters.map((filter) => renderQuickFilter(filter))}
+
+          <details className="group relative">
+            <summary className="inline-flex min-h-10 cursor-pointer list-none items-center justify-center gap-2 rounded-md border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] px-3 py-2 text-sm font-medium text-[var(--color-text-primary)] transition-colors hover:border-[var(--color-border-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-primary)]/40">
+              <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
+              More
+              <ChevronDownIcon className="h-4 w-4 transition-transform group-open:rotate-180" aria-hidden="true" />
+            </summary>
+            <div className="absolute left-0 z-20 mt-2 min-w-48 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] p-2 shadow-lg">
+              <div className="grid gap-2">
+                {overflowQuickFilters.map((filter) => renderQuickFilter(filter))}
+              </div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <details className="group rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)]">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3">
           <div className="flex items-center gap-2">
             <FilterIcon className="w-4 h-4 text-[var(--color-text-secondary)]" />
             <span className="text-sm font-medium text-[var(--color-text-primary)]">
-              Filters
+              More filters
               {advancedFilterCount > 0 && (
-                <span className="ml-1.5 px-1.5 py-0.5 text-xs rounded-full bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)]">
+                <span className="ml-1.5 rounded-full bg-[var(--color-accent-primary)] px-2 py-0.5 text-sm text-[var(--color-text-on-accent)]">
                   {advancedFilterCount}
                 </span>
               )}
@@ -936,13 +824,15 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
               </span>
             )}
           </div>
-          <ChevronDownIcon className="w-5 h-5 text-[var(--color-text-secondary)] transition-transform group-open:rotate-180" />
+          <ChevronDownIcon className="h-5 w-5 text-[var(--color-text-secondary)] transition-transform group-open:rotate-180" />
         </summary>
 
-        <div className="px-4 pb-4 pt-2 space-y-4 border-t border-[var(--color-border-default)]">
-          {/* Days */}
+        <div className="space-y-4 border-t border-[var(--color-border-default)] px-4 pb-4 pt-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-[var(--color-text-secondary)]">Days</label>
+            <label className="inline-flex items-center gap-2 text-sm font-medium text-[var(--color-text-secondary)]">
+              <CalendarDays className="h-4 w-4" aria-hidden="true" />
+              Days
+            </label>
             <div className="flex flex-wrap gap-1.5 sm:gap-2">
               {DAY_OPTIONS.map((day) => (
                 <button
@@ -962,25 +852,9 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
             </div>
           </div>
 
-          {/* When + Type + Cost Row */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-[var(--color-text-secondary)]">When</label>
-              <select
-                value={time}
-                onChange={(e) => updateFilter("time", e.target.value === "upcoming" ? null : e.target.value)}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent-primary)]"
-              >
-                {TIME_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-[var(--color-text-secondary)]">Type</label>
+              <label className="text-sm font-medium text-[var(--color-text-secondary)]">Type</label>
               <select
                 value={type}
                 onChange={(e) => updateFilter("type", e.target.value || null)}
@@ -995,7 +869,7 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-[var(--color-text-secondary)]">Cost</label>
+              <label className="text-sm font-medium text-[var(--color-text-secondary)]">Cost</label>
               <select
                 value={cost}
                 onChange={(e) => updateFilter("cost", e.target.value || null)}
@@ -1008,14 +882,145 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
                 ))}
               </select>
             </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-[var(--color-text-secondary)]">Format</label>
+              <select
+                value={location}
+                onChange={(e) => updateFilter("location", e.target.value || null)}
+                className="w-full rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent-primary)] focus:outline-none"
+              >
+                {LOCATION_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-[var(--color-text-secondary)]">Verification</label>
+              <select
+                value={verify}
+                onChange={(e) => updateFilter("verify", e.target.value || null)}
+                className="w-full rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent-primary)] focus:outline-none"
+              >
+                {VERIFY_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
-          {/* Clear all button */}
+          <div className="rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)]">
+            <button
+              type="button"
+              onClick={() => setSavedPanelOpen((v) => !v)}
+              className="flex w-full items-center justify-between gap-3 px-3 py-3 text-left"
+              aria-expanded={savedPanelOpen}
+              disabled={savedLoading}
+            >
+              <span className="flex items-center gap-2">
+                <Zap className="h-4 w-4 text-[var(--color-text-secondary)]" aria-hidden="true" />
+                <span className="text-sm font-medium text-[var(--color-text-primary)]">
+                  Saved filters
+                </span>
+                <span className={cn("rounded-full border px-2 py-0.5 text-sm", savedStatusColor)}>
+                  {savedStatusLabel}
+                </span>
+              </span>
+              <ChevronDownIcon
+                className={cn(
+                  "h-4 w-4 text-[var(--color-text-secondary)] transition-transform",
+                  savedPanelOpen && "rotate-180"
+                )}
+              />
+            </button>
+
+            {savedPanelOpen && !savedLoading && (
+              <div className="space-y-3 border-t border-[var(--color-border-default)] p-3">
+                {userId ? (
+                  <>
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                      <button
+                        type="button"
+                        onClick={saveCurrentFilters}
+                        disabled={savedSaving}
+                        className="rounded-lg border border-[var(--color-border-default)] px-3 py-2 text-sm text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-border-accent)] hover:text-[var(--color-text-primary)] disabled:opacity-50"
+                      >
+                        Save current
+                      </button>
+                      <button
+                        type="button"
+                        onClick={applySavedFilters}
+                        disabled={savedSaving || !hasSavedFilters}
+                        className="rounded-lg bg-[var(--color-accent-primary)] px-3 py-2 text-sm text-[var(--color-text-on-accent)] transition disabled:opacity-50"
+                      >
+                        Apply saved
+                      </button>
+                      <button
+                        type="button"
+                        onClick={clearSavedFilters}
+                        disabled={savedSaving}
+                        className="rounded-lg border border-[var(--color-border-default)] px-3 py-2 text-sm text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-border-accent)] hover:text-[var(--color-text-primary)] disabled:opacity-50"
+                      >
+                        Reset saved
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      <button
+                        type="button"
+                        onClick={() => setSavedRecallMode(false)}
+                        disabled={savedSaving}
+                        className={cn(
+                          "flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors",
+                          !savedAutoApply
+                            ? "border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)]"
+                            : "border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                        )}
+                      >
+                        <FilterIcon className="h-4 w-4" aria-hidden="true" />
+                        One-click apply
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSavedRecallMode(true)}
+                        disabled={savedSaving}
+                        className={cn(
+                          "flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors",
+                          savedAutoApply
+                            ? "border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)]"
+                            : "border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                        )}
+                      >
+                        <Zap className="h-4 w-4" aria-hidden="true" />
+                        Auto-open
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-sm text-[var(--color-text-tertiary)]">
+                    Sign in to save filters once, then apply them with one tap.
+                  </p>
+                )}
+                <p className="text-sm text-[var(--color-text-tertiary)]">
+                  Weekly digest personalization uses saved type, day, cost, and location filters.
+                </p>
+                {savedMessage && (
+                  <p className="text-sm text-[var(--color-text-secondary)]">{savedMessage}</p>
+                )}
+              </div>
+            )}
+          </div>
+
           {(activeFilters.length > 0 || selectedDays.length > 0) && (
-            <div className="flex justify-end pt-2">
+            <div className="flex justify-end">
               <button
                 onClick={clearAll}
-                className="inline-flex items-center justify-center px-3 py-2 rounded-lg border border-[var(--color-border-default)] text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-accent)] transition-colors"
+                className="inline-flex items-center justify-center rounded-lg border border-[var(--color-border-default)] px-3 py-2 text-sm text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-border-accent)] hover:text-[var(--color-text-primary)]"
               >
                 Clear all filters
               </button>
@@ -1024,13 +1029,12 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
         </div>
       </details>
 
-      {/* Active filter pills - compact, below collapsed section */}
       {activeFilters.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
           {activeFilters.map((filter) => (
             <span
               key={filter.key}
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] text-sm border border-[var(--color-border-default)]"
+              className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] px-2.5 py-1 text-sm text-[var(--color-text-primary)]"
             >
               {filter.icon}
               {filter.label}
@@ -1053,10 +1057,10 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
                   }
                   updateFilter(filter.key, null);
                 }}
-                className="ml-0.5 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors"
+                className="ml-0.5 text-[var(--color-text-tertiary)] transition-colors hover:text-[var(--color-text-primary)]"
                 aria-label={`Remove ${filter.label} filter`}
               >
-                <XIcon className="w-3 h-3" />
+                <XIcon className="h-3 w-3" />
               </button>
             </span>
           ))}

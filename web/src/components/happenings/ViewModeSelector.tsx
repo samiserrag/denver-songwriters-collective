@@ -15,6 +15,7 @@
 
 import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { CalendarDays, Map, Repeat2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type HappeningsViewMode = "timeline" | "series" | "map";
@@ -38,153 +39,49 @@ export function ViewModeSelector({ viewMode, className }: ViewModeSelectorProps)
     router.push(`/happenings?${params.toString()}`, { scroll: false });
   };
 
+  const modes = [
+    {
+      id: "timeline",
+      label: "Timeline",
+      icon: CalendarDays,
+    },
+    {
+      id: "series",
+      label: "Series",
+      icon: Repeat2,
+    },
+    {
+      id: "map",
+      label: "Map",
+      icon: Map,
+    },
+  ] as const;
+
   return (
-    <div className={cn("space-y-3", className)}>
-      <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
-        How would you like to browse?
-      </h2>
+    <div className={cn("w-full", className)} aria-label="Browse mode">
+      <div className="grid grid-cols-3 gap-1 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] p-1">
+        {modes.map((mode) => {
+          const Icon = mode.icon;
+          const isActive = viewMode === mode.id;
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {/* Timeline Card */}
-        <button
-          onClick={() => setViewMode("timeline")}
-          className={cn(
-            "relative p-6 rounded-2xl text-left transition-all duration-300",
-            "border-2",
-            viewMode === "timeline"
-              ? "card-spotlight border-[var(--color-accent-primary)] shadow-[var(--shadow-card-hover)]"
-              : "bg-[var(--color-bg-secondary)] border-[var(--color-border-default)] hover:border-[var(--color-accent-primary)]/50 hover:shadow-[var(--shadow-card)]"
-          )}
-          aria-pressed={viewMode === "timeline"}
-        >
-          {/* Active indicator glow */}
-          {viewMode === "timeline" && (
-            <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[var(--color-accent-primary)]/10 to-transparent pointer-events-none" />
-          )}
-
-          <div className="relative z-10 flex flex-col gap-3">
-            <div
+          return (
+            <button
+              key={mode.id}
+              onClick={() => setViewMode(mode.id)}
               className={cn(
-                "w-12 h-12 rounded-xl flex items-center justify-center text-2xl",
-                viewMode === "timeline"
-                  ? "bg-[var(--color-accent-primary)]"
-                  : "bg-[var(--color-bg-tertiary)]"
+                "inline-flex min-h-10 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-primary)]/40",
+                isActive
+                  ? "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] shadow-sm"
+                  : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)] hover:text-[var(--color-text-primary)]"
               )}
+              aria-pressed={isActive}
             >
-              📅
-            </div>
-
-            <div>
-              <h3
-                className={cn(
-                  "text-lg font-bold",
-                  viewMode === "timeline"
-                    ? "text-[var(--color-text-accent)]"
-                    : "text-[var(--color-text-primary)]"
-                )}
-              >
-                Timeline
-              </h3>
-              <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-                See what&apos;s happening each day this week and beyond
-              </p>
-            </div>
-          </div>
-        </button>
-
-        {/* Series Card */}
-        <button
-          onClick={() => setViewMode("series")}
-          className={cn(
-            "relative p-6 rounded-2xl text-left transition-all duration-300",
-            "border-2",
-            viewMode === "series"
-              ? "card-spotlight border-[var(--color-accent-primary)] shadow-[var(--shadow-card-hover)]"
-              : "bg-[var(--color-bg-secondary)] border-[var(--color-border-default)] hover:border-[var(--color-accent-primary)]/50 hover:shadow-[var(--shadow-card)]"
-          )}
-          aria-pressed={viewMode === "series"}
-        >
-          {/* Active indicator glow */}
-          {viewMode === "series" && (
-            <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[var(--color-accent-primary)]/10 to-transparent pointer-events-none" />
-          )}
-
-          <div className="relative z-10 flex flex-col gap-3">
-            <div
-              className={cn(
-                "w-12 h-12 rounded-xl flex items-center justify-center text-2xl",
-                viewMode === "series"
-                  ? "bg-[var(--color-accent-primary)]"
-                  : "bg-[var(--color-bg-tertiary)]"
-              )}
-            >
-              🔄
-            </div>
-
-            <div>
-              <h3
-                className={cn(
-                  "text-lg font-bold",
-                  viewMode === "series"
-                    ? "text-[var(--color-text-accent)]"
-                    : "text-[var(--color-text-primary)]"
-                )}
-              >
-                By Series
-              </h3>
-              <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-                Find recurring happenings that fit your schedule
-              </p>
-            </div>
-          </div>
-        </button>
-
-        {/* Map Card (Phase 1.0) */}
-        <button
-          onClick={() => setViewMode("map")}
-          className={cn(
-            "relative p-6 rounded-2xl text-left transition-all duration-300",
-            "border-2",
-            viewMode === "map"
-              ? "card-spotlight border-[var(--color-accent-primary)] shadow-[var(--shadow-card-hover)]"
-              : "bg-[var(--color-bg-secondary)] border-[var(--color-border-default)] hover:border-[var(--color-accent-primary)]/50 hover:shadow-[var(--shadow-card)]"
-          )}
-          aria-pressed={viewMode === "map"}
-        >
-          {/* Active indicator glow */}
-          {viewMode === "map" && (
-            <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[var(--color-accent-primary)]/10 to-transparent pointer-events-none" />
-          )}
-
-          <div className="relative z-10 flex flex-col gap-3">
-            <div
-              className={cn(
-                "w-12 h-12 rounded-xl flex items-center justify-center text-2xl",
-                viewMode === "map"
-                  ? "bg-[var(--color-accent-primary)]"
-                  : "bg-[var(--color-bg-tertiary)]"
-              )}
-            >
-              🗺️
-            </div>
-
-            <div>
-              <h3
-                className={cn(
-                  "text-lg font-bold",
-                  viewMode === "map"
-                    ? "text-[var(--color-text-accent)]"
-                    : "text-[var(--color-text-primary)]"
-                )}
-              >
-                Map
-              </h3>
-              <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-                Discover happenings near you on the map
-              </p>
-            </div>
-          </div>
-        </button>
+              <Icon className="h-4 w-4" aria-hidden="true" />
+              <span>{mode.label}</span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

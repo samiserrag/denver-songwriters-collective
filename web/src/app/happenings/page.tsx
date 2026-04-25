@@ -826,64 +826,19 @@ export default async function HappeningsPage({
   return (
     <>
       {showHero && (
-        <HeroSection minHeight="sm" showVignette showBottomFade>
+        <HeroSection minHeight="xs" showVignette showBottomFade>
           <div className="text-center px-4 py-6">
             <h1 className="text-4xl md:text-5xl font-[var(--font-family-display)] font-bold text-white tracking-tight drop-shadow-lg">
               Happenings
             </h1>
             <p className="text-lg text-white/80 mt-2 drop-shadow">
-              Open mics, events, and shows in the Denver music community
+              Open mics, workshops, showcases, jams, and community shows around Denver
             </p>
           </div>
         </HeroSection>
       )}
 
       <PageContainer className={showHero ? "" : "pt-8"}>
-        {/* Beta warning banner - refined, dismissible per session */}
-        <BetaBanner className="mb-4" />
-
-        {/* Community CTA - condensed */}
-        <div className="mb-4 p-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-center">
-          <div className="flex flex-wrap gap-2 justify-center items-center">
-            <span className="text-[var(--color-text-secondary)] text-sm">
-              Help keep this directory accurate:
-            </span>
-            {typeFilter === "open_mic" ? (
-              <Link
-                href="/dashboard/my-events/new"
-                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] text-sm font-medium hover:opacity-90 transition"
-              >
-                + Add Open Mic
-              </Link>
-            ) : (
-              <Link
-                href="/dashboard/my-events/new"
-                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] text-sm font-medium hover:opacity-90 transition"
-              >
-                + Add Happening
-              </Link>
-            )}
-            <Link
-              href="/submit-open-mic"
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[var(--color-border-default)] text-[var(--color-text-secondary)] text-sm hover:border-[var(--color-border-accent)] hover:text-[var(--color-text-primary)] transition"
-            >
-              Correction
-            </Link>
-            <Link
-              href="/invite"
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[var(--color-border-default)] text-[var(--color-text-secondary)] text-sm hover:border-[var(--color-border-accent)] hover:text-[var(--color-text-primary)] transition"
-            >
-              {INVITE_CTA_LABEL}
-            </Link>
-          </div>
-          <p className="text-xs text-[var(--color-text-tertiary)] mt-2">
-            Do you host one of these happenings?{" "}
-            <span className="text-[var(--color-text-secondary)]">
-              Click on it to claim it as host and manage it on our platform.
-            </span>
-          </p>
-        </div>
-
         {/* Page header with title */}
         {!showHero && pageTitle && (
           <h1 className="text-2xl md:text-3xl font-[var(--font-family-display)] font-bold text-[var(--color-text-primary)] mb-3">
@@ -987,6 +942,46 @@ export default async function HappeningsPage({
           )}
         </div>
 
+        <div className="mb-4 space-y-2">
+          <BetaBanner />
+          <div className="rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] px-3 py-3">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <p className="text-sm text-[var(--color-text-secondary)]">
+                Help keep the directory accurate. Hosts can claim listings from event pages.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {typeFilter === "open_mic" ? (
+                  <Link
+                    href="/dashboard/my-events/new"
+                    className="inline-flex min-h-9 items-center gap-1 rounded-md bg-[var(--color-accent-primary)] px-3 py-2 text-sm font-medium text-[var(--color-text-on-accent)] transition hover:opacity-90"
+                  >
+                    + Add Open Mic
+                  </Link>
+                ) : (
+                  <Link
+                    href="/dashboard/my-events/new"
+                    className="inline-flex min-h-9 items-center gap-1 rounded-md bg-[var(--color-accent-primary)] px-3 py-2 text-sm font-medium text-[var(--color-text-on-accent)] transition hover:opacity-90"
+                  >
+                    + Add Happening
+                  </Link>
+                )}
+                <Link
+                  href="/submit-open-mic"
+                  className="inline-flex min-h-9 items-center gap-1 rounded-md border border-[var(--color-border-default)] px-3 py-2 text-sm text-[var(--color-text-secondary)] transition hover:border-[var(--color-border-accent)] hover:text-[var(--color-text-primary)]"
+                >
+                  Send correction
+                </Link>
+                <Link
+                  href="/invite"
+                  className="inline-flex min-h-9 items-center gap-1 rounded-md border border-[var(--color-border-default)] px-3 py-2 text-sm text-[var(--color-text-secondary)] transition hover:border-[var(--color-border-accent)] hover:text-[var(--color-text-primary)]"
+                >
+                  {INVITE_CTA_LABEL}
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Phase 4.54/1.0: Conditional rendering based on view mode */}
         {viewMode === "map" ? (
           /* Map View - geographic pins (Phase 1.0) */
@@ -1066,11 +1061,11 @@ export default async function HappeningsPage({
                     cancelledCount={cancelledForDate.length}
                     cancelledChildren={
                       cancelledForDate.length > 0
-                        ? cancelledForDate.map((entry: EventOccurrenceEntry<any>) => {
+                        ? cancelledForDate.map((entry: EventOccurrenceEntry<any>, index: number) => {
                             const cardDate = entry.displayDate || entry.dateKey;
                             return (
                               <HappeningsCard
-                                key={`${entry.event.id}-${entry.dateKey}-cancelled`}
+                                key={`${entry.event.id}-${entry.dateKey}-cancelled-${index}`}
                                 event={entry.event}
                                 searchQuery={searchQuery}
                                 debugDates={debugDates}
@@ -1091,12 +1086,12 @@ export default async function HappeningsPage({
                         : undefined
                     }
                   >
-                    {entriesForDate.map((entry: EventOccurrenceEntry<any>) => {
+                    {entriesForDate.map((entry: EventOccurrenceEntry<any>, index: number) => {
                       // Use displayDate for rescheduled occurrences (shows new date on card)
                       const cardDate = entry.displayDate || entry.dateKey;
                       return (
                         <HappeningsCard
-                          key={`${entry.event.id}-${entry.dateKey}`}
+                          key={`${entry.event.id}-${entry.dateKey}-${index}`}
                           event={entry.event}
                           searchQuery={searchQuery}
                           debugDates={debugDates}
@@ -1156,11 +1151,11 @@ export default async function HappeningsPage({
                   isCancelled
                   description="These occurrences have been cancelled. They may be rescheduled in the future."
                 >
-                  {otherCancelledOccurrences.map((entry: EventOccurrenceEntry<any>) => {
+                  {otherCancelledOccurrences.map((entry: EventOccurrenceEntry<any>, index: number) => {
                     const cardDate = entry.displayDate || entry.dateKey;
                     return (
                       <HappeningsCard
-                        key={`${entry.event.id}-${entry.dateKey}-cancelled`}
+                        key={`${entry.event.id}-${entry.dateKey}-cancelled-${index}`}
                         event={entry.event}
                         searchQuery={searchQuery}
                         debugDates={debugDates}

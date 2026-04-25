@@ -12,11 +12,15 @@ interface ShareSiteCtaBarProps {
 export function ShareSiteCtaBar({ position }: ShareSiteCtaBarProps) {
   const pathname = usePathname();
   const isDashboardRoute = pathname?.startsWith("/dashboard");
+  const hideTopOnDiscovery = position === "top" && pathname?.startsWith("/happenings");
 
   return (
     <section
       aria-label={`Share site call to action ${position}`}
-      className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-secondary)]"
+      className={cn(
+        "border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-secondary)]",
+        hideTopOnDiscovery && "hidden"
+      )}
     >
       <div className={cn(
         "mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:flex-row lg:px-8",

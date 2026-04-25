@@ -71,17 +71,28 @@ export function StickyControls({ todayKey, windowStartKey, windowEndKey, timeFil
     <div
       className={cn(
         // Phase 4.38: Removed sticky positioning - filters scroll with content
-        "py-3 space-y-6",
+        "py-3 space-y-4",
         className
       )}
     >
-      {/* Phase 4.55: Hero-level View Mode Selector */}
-      <Suspense fallback={<div className="h-32 bg-[var(--color-bg-secondary)] rounded-2xl animate-pulse" />}>
-        <ViewModeSelector viewMode={viewMode} />
-      </Suspense>
+      <section className="rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-primary)] p-4 shadow-[var(--shadow-card)] sm:p-5">
+        <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">
+              Find a happening
+            </h2>
+            <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+              Search by who, where, when, or what kind of night you want.
+            </p>
+          </div>
+          <Suspense fallback={<div className="h-12 rounded-lg bg-[var(--color-bg-secondary)]" />}>
+            <ViewModeSelector viewMode={viewMode} className="lg:max-w-sm" />
+          </Suspense>
+        </div>
 
-      {/* Filter bar: defer until mounted to preserve hydration safety */}
-      {showFilters ? <HappeningsFilters /> : <HappeningsFiltersShell />}
+        {/* Filter bar: defer until mounted to preserve hydration safety */}
+        {showFilters ? <HappeningsFilters /> : <HappeningsFiltersShell />}
+      </section>
 
       {/* Date Jump Control + Cancelled Toggle Row */}
       <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -107,7 +118,7 @@ export function StickyControls({ todayKey, windowStartKey, windowEndKey, timeFil
             )}
             aria-pressed={showCancelled}
           >
-            <span className="text-xs">
+            <span aria-hidden="true">
               {showCancelled ? "✕" : "○"}
             </span>
             {cancelledCount} cancelled

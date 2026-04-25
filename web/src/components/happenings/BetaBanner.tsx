@@ -39,17 +39,17 @@ export function BetaBanner({ className }: BetaBannerProps) {
   return (
     <div
       className={cn(
-        "flex items-center justify-between gap-3 px-3 py-2 rounded-lg",
-        "bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700",
+        "flex items-center justify-between gap-3 rounded-lg border px-3 py-2",
+        "border-[var(--pill-border-warning)] bg-[var(--pill-bg-warning)]",
         className
       )}
     >
-      <p className="text-sm text-amber-800 dark:text-amber-300">
-        <strong className="text-amber-900 dark:text-amber-200">Beta:</strong> Schedules are community-submitted. Please verify with venues.
+      <p className="text-sm text-[var(--pill-fg-warning)]">
+        <strong>Beta:</strong> Schedules are community-submitted. Please verify with venues.
       </p>
       <button
         onClick={handleDismiss}
-        className="shrink-0 text-amber-700 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-200 transition-colors text-sm"
+        className="shrink-0 text-sm text-[var(--pill-fg-warning)] transition-colors hover:text-[var(--color-text-primary)]"
         aria-label="Dismiss beta notice"
       >
         Dismiss
