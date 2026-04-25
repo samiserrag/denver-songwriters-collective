@@ -98,13 +98,34 @@ export default async function EditEventPage({
 
   // Check authorization
   // Phase 4.42e: Also allow event owner (host_id) to edit, not just event_hosts entries
-  const userHost = hostsWithProfiles.find(
+  let userHost = hostsWithProfiles.find(
     (h) => h.user_id === sessionUser.id && h.invitation_status === "accepted"
   );
   const isEventOwner = event.host_id === sessionUser.id;
 
   if (!isAdmin && !userHost && !isEventOwner) {
     redirect("/dashboard");
+  }
+
+  // Legacy data: events.host_id was set without a matching event_hosts row.
+  // Synthesize the entry so the primary host shows up in the Co-hosts UI and
+  // gets the "Leave Event" button. The 20260425 backfill migration fills these
+  // in at the data layer; this is a defensive fallback for any future drift.
+  if (isEventOwner && !userHost && event.host_id) {
+    const ownerProfile = await supabase
+      .from("profiles")
+      .select("id, full_name, avatar_url")
+      .eq("id", event.host_id)
+      .maybeSingle();
+    const synthesized: EventHost = {
+      id: `synthetic-${event.host_id}`,
+      user_id: event.host_id,
+      role: "host",
+      invitation_status: "accepted",
+      user: ownerProfile.data ?? undefined,
+    };
+    hostsWithProfiles = [synthesized, ...hostsWithProfiles];
+    userHost = synthesized;
   }
 
   // Fetch venues for the selector
