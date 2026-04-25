@@ -32,6 +32,7 @@ const SPOTIFY_HOSTS = new Set(["open.spotify.com", "www.open.spotify.com"]);
 const BANDCAMP_HOSTS = new Set(["bandcamp.com", "www.bandcamp.com"]);
 
 const YOUTUBE_ID_RE = /^[A-Za-z0-9_-]{6,}$/;
+const YOUTUBE_CHANNEL_ID_RE = /^UC[A-Za-z0-9_-]{20,}$/;
 const SPOTIFY_ID_RE = /^[A-Za-z0-9]{8,}$/;
 
 /**
@@ -126,6 +127,11 @@ function assertId(id: string, re: RegExp, label: string, field?: MediaFieldName)
   return id;
 }
 
+function getYouTubeUploadsPlaylistId(channelId: string, field?: MediaFieldName): string {
+  const id = assertId(channelId, YOUTUBE_CHANNEL_ID_RE, "YouTube channel", field);
+  return `UU${id.slice(2)}`;
+}
+
 function normalizeYouTubeUrl(inputUrl: URL, field?: MediaFieldName): NormalizedMediaEmbed {
   const host = inputUrl.hostname.toLowerCase();
   if (!YOUTUBE_HOSTS.has(host)) {
@@ -133,6 +139,7 @@ function normalizeYouTubeUrl(inputUrl: URL, field?: MediaFieldName): NormalizedM
   }
 
   const path = inputUrl.pathname.replace(/\/+$/, "");
+  const segments = path.split("/").filter(Boolean);
   let kind: MediaEmbedKind;
   let normalized_url: string;
 
@@ -174,9 +181,13 @@ function normalizeYouTubeUrl(inputUrl: URL, field?: MediaFieldName): NormalizedM
     const id = assertId(path.replace("/embed/", ""), YOUTUBE_ID_RE, "YouTube video", field);
     kind = "video";
     normalized_url = `https://www.youtube-nocookie.com/embed/${id}`;
+  } else if (segments[0] === "channel" && segments[1]) {
+    const uploadsPlaylistId = getYouTubeUploadsPlaylistId(segments[1], field);
+    kind = "playlist";
+    normalized_url = `https://www.youtube-nocookie.com/embed/videoseries?list=${encodeURIComponent(uploadsPlaylistId)}`;
   } else {
     throw new MediaEmbedValidationError(
-      "Unsupported YouTube URL. Use youtu.be, youtube.com/watch, youtube.com/playlist, or youtube.com/embed links.",
+      "Unsupported YouTube URL. Use youtu.be, youtube.com/watch, youtube.com/playlist, youtube.com/channel, or youtube.com/embed links.",
       field
     );
   }

@@ -44,6 +44,19 @@ describe("media embed rendering", () => {
     expect(getByText("Open on YouTube")).toBeTruthy();
   });
 
+  it("renders YouTube channel profile URLs as native uploads playlist embeds", () => {
+    const { container } = render(
+      <MediaEmbedsSection
+        youtubeUrl="https://www.youtube.com/channel/UC7LteDIZYaYTnTueJyrR-dg"
+      />
+    );
+
+    const html = container.innerHTML;
+    expect(html).toContain("www.youtube-nocookie.com/embed/videoseries?list=UU7LteDIZYaYTnTueJyrR-dg");
+    expect(html).toContain("YouTube playlist player");
+    expect(html).not.toContain("Open on YouTube");
+  });
+
   it("dedupes Spotify artist profile URLs against existing ordered embeds", () => {
     const { container } = render(
       <MediaEmbedsSection

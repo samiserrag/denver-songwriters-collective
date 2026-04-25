@@ -21,6 +21,7 @@ import { MediaEmbedsSection, MusicProfileCard, OrderedMediaEmbeds } from "@/comp
 import { isExternalEmbedsEnabled } from "@/lib/featureFlags";
 import { canonicalizeMediaReference, getMusicProfileLinkMeta } from "@/lib/mediaEmbeds";
 import { buildSongLinksDisplay, getSongLinkEmbedMeta, getSongPlatformInfo } from "@/lib/profile/songLinks";
+import { resolveYouTubeProfileEmbedUrl } from "@/lib/youtubeProfileEmbeds";
 
 export const dynamic = "force-dynamic";
 
@@ -387,6 +388,9 @@ export default async function MemberDetailPage({ params }: MemberDetailPageProps
   // Determine if collaboration section should show (only for songwriter or host)
   const showCollabSection = hasSongwriter || hasHost;
   const embedsEnabled = isExternalEmbedsEnabled();
+  const resolvedYouTubeProfileUrl = embedsEnabled
+    ? (await resolveYouTubeProfileEmbedUrl(member.youtube_url)) ?? member.youtube_url
+    : member.youtube_url;
 
   return (
     <>
@@ -622,7 +626,7 @@ export default async function MemberDetailPage({ params }: MemberDetailPageProps
 
                 {embedsEnabled ? (
                   <MediaEmbedsSection
-                    youtubeUrl={member.youtube_url}
+                    youtubeUrl={resolvedYouTubeProfileUrl}
                     spotifyUrl={member.spotify_url}
                     bandcampUrl={member.bandcamp_url}
                     heading="Music Profiles"

@@ -23,6 +23,7 @@ import { MediaEmbedsSection, MusicProfileCard, OrderedMediaEmbeds } from "@/comp
 import { isExternalEmbedsEnabled } from "@/lib/featureFlags";
 import { canonicalizeMediaReference, getMusicProfileLinkMeta } from "@/lib/mediaEmbeds";
 import { buildSongLinksDisplay, getSongLinkEmbedMeta, getSongPlatformInfo } from "@/lib/profile/songLinks";
+import { resolveYouTubeProfileEmbedUrl } from "@/lib/youtubeProfileEmbeds";
 export const dynamic = "force-dynamic";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://denver-songwriters-collective.vercel.app";
@@ -461,6 +462,9 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
     role: songwriter.role ?? undefined,
   };
   const embedsEnabled = isExternalEmbedsEnabled();
+  const resolvedYouTubeProfileUrl = embedsEnabled
+    ? (await resolveYouTubeProfileEmbedUrl(songwriter.youtube_url)) ?? songwriter.youtube_url
+    : songwriter.youtube_url;
 
   return (
     <>
@@ -694,7 +698,7 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
 
                 {embedsEnabled ? (
                   <MediaEmbedsSection
-                    youtubeUrl={songwriter.youtube_url}
+                    youtubeUrl={resolvedYouTubeProfileUrl}
                     spotifyUrl={songwriter.spotify_url}
                     bandcampUrl={songwriter.bandcamp_url}
                     heading="Music Profiles"

@@ -26,6 +26,18 @@ describe("media embed normalization", () => {
     });
   });
 
+  it("normalizes YouTube channel links to the channel uploads playlist embed", () => {
+    const result = normalizeMediaEmbedUrl("https://www.youtube.com/channel/UC7LteDIZYaYTnTueJyrR-dg", {
+      expectedProvider: "youtube",
+    });
+
+    expect(result).toEqual({
+      provider: "youtube",
+      kind: "playlist",
+      normalized_url: "https://www.youtube-nocookie.com/embed/videoseries?list=UU7LteDIZYaYTnTueJyrR-dg",
+    });
+  });
+
   it("normalizes Spotify playlist and track links to embed URLs", () => {
     const playlist = normalizeMediaEmbedUrl("https://open.spotify.com/playlist/37i9dQZF1DX0XUsuxWHRQd", {
       expectedProvider: "spotify",
