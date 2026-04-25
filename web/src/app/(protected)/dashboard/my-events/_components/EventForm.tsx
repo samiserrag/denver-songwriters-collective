@@ -1,7 +1,21 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import {
+  ArrowLeft,
+  CalendarDays,
+  CheckCircle2,
+  Eye,
+  Image as ImageIcon,
+  ListChecks,
+  MapPin,
+  Save,
+  Sparkles,
+  Tags,
+  Users,
+  Wand2,
+} from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { ImageUpload } from "@/components/ui/ImageUpload";
 import { uploadCoverForEvent, softDeleteCoverImageRow } from "@/lib/events/uploadCoverForEvent";
@@ -46,6 +60,68 @@ function DateDayIndicator({ dateValue }: { dateValue: string }) {
     <span className="ml-2 text-sm font-medium text-[var(--color-accent-primary)]">
       {dayName}
     </span>
+  );
+}
+
+type SectionTone = "blue" | "indigo" | "green" | "amber" | "neutral";
+
+const sectionToneClasses: Record<SectionTone, string> = {
+  blue: "border-l-sky-500 bg-sky-500/[0.04]",
+  indigo: "border-l-indigo-500 bg-indigo-500/[0.04]",
+  green: "border-l-emerald-500 bg-emerald-500/[0.04]",
+  amber: "border-l-amber-500 bg-amber-500/[0.05]",
+  neutral: "border-l-[var(--color-border-accent)] bg-[var(--color-bg-primary)]",
+};
+
+function RequiredBadge() {
+  return (
+    <span className="ml-2 rounded-full border border-red-500/30 bg-red-500/10 px-2 py-0.5 text-xs font-medium text-red-600 dark:text-red-300">
+      Required
+    </span>
+  );
+}
+
+function OptionalBadge() {
+  return (
+    <span className="ml-2 rounded-full border border-[var(--color-border-default)] px-2 py-0.5 text-xs font-normal text-[var(--color-text-tertiary)]">
+      Optional
+    </span>
+  );
+}
+
+function SectionPanel({
+  id,
+  icon,
+  title,
+  description,
+  tone = "neutral",
+  children,
+}: {
+  id: string;
+  icon: ReactNode;
+  title: string;
+  description?: string;
+  tone?: SectionTone;
+  children: ReactNode;
+}) {
+  return (
+    <section
+      id={id}
+      className={`rounded-xl border border-[var(--color-border-default)] border-l-4 p-4 shadow-sm sm:p-5 ${sectionToneClasses[tone]}`}
+    >
+      <div className="mb-4 flex items-start gap-3">
+        <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] text-[var(--color-text-accent)]">
+          {icon}
+        </span>
+        <div>
+          <h2 className="text-base font-semibold text-[var(--color-text-primary)]">{title}</h2>
+          {description && (
+            <p className="mt-1 text-sm text-[var(--color-text-secondary)]">{description}</p>
+          )}
+        </div>
+      </div>
+      <div className="space-y-4">{children}</div>
+    </section>
   );
 }
 
@@ -279,7 +355,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
 
 
   // Phase 4.44c: Advanced section collapse state (expanded by default)
-  const [showAdvanced, setShowAdvanced] = useState(true);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   // Phase 5.06: Track original day_of_week for edit mode monthly series warning
   // This is used to show a persistent warning when the user changes the anchor date
@@ -1012,22 +1088,110 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     });
   };
 
+  const requiredChecks = [
+    { id: "type", label: "Event type", done: occurrenceMode || formData.event_type.length > 0 },
+    { id: "title", label: "Title", done: Boolean(formData.title.trim()) },
+    {
+      id: "date",
+      label: occurrenceMode ? "Occurrence date" : formData.series_mode === "single" ? "Event date" : "Anchor date",
+      done: occurrenceMode ? Boolean(occurrenceDate) : Boolean(effectiveAnchorDate),
+    },
+    { id: "time", label: "Start time", done: Boolean(formData.start_time) },
+    {
+      id: "location",
+      label: formData.location_mode === "online" ? "Online URL" : "Location",
+      done: formData.location_mode === "online"
+        ? Boolean(formData.online_url)
+        : locationSelectionMode === "venue"
+          ? Boolean(formData.venue_id)
+          : Boolean(deriveCustomLocationName(formData.custom_location_name, formData.custom_city, formData.custom_state)),
+    },
+    {
+      id: "custom-dates",
+      label: "Custom dates",
+      done: formData.series_mode !== "custom" || customDates.length > 0,
+    },
+  ];
+  const missingRequiredItems = requiredChecks.filter((item) => !item.done);
+  const completedRequiredCount = requiredChecks.length - missingRequiredItems.length;
+  const completionPercent = Math.round((completedRequiredCount / requiredChecks.length) * 100);
+  const formModeLabel = occurrenceMode
+    ? "Occurrence edit"
+    : mode === "create"
+      ? "New happening"
+      : "Event details";
+  const statusLabel = occurrenceMode
+    ? "Date override"
+    : formData.is_published
+      ? "Published"
+      : "Draft";
+  const saveButtonLabel = loading
+    ? "Saving..."
+    : occurrenceMode
+      ? "Save occurrence"
+      : mode === "create"
+        ? "Create happening"
+        : "Save changes";
+  const selectedLocationLabel = getPreviewLocation() || (formData.location_mode === "online" ? "Online" : "No location yet");
+
   return (
-    <form onSubmit={handleSubmit} noValidate className="space-y-6">
-      <div className="p-4 bg-amber-100 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-500/30 rounded-lg text-amber-900 dark:text-amber-200">
-        <p className="font-medium">
-          {formData.is_published ? (
-            "Important: Save all changes!"
-          ) : (
-            <>
-              Important: Save all changes, then click <strong>Publish Event</strong> for this happening to be public.
-            </>
-          )}
-        </p>
+    <form onSubmit={handleSubmit} noValidate className="space-y-5">
+      <div className="rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-primary)] p-4 shadow-sm">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0">
+            <button
+              type="button"
+              onClick={() => router.push("/dashboard/my-events")}
+              className="mb-2 inline-flex items-center gap-1.5 text-sm text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
+            >
+              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+              My Happenings
+            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-xl font-semibold text-[var(--color-text-primary)]">
+                {mode === "create" ? "Create happening" : occurrenceMode ? "Edit occurrence" : "Edit happening"}
+              </h1>
+              <span className="rounded-full border border-[var(--color-border-default)] px-2.5 py-1 text-sm text-[var(--color-text-secondary)]">
+                {formModeLabel}
+              </span>
+              <span className={`rounded-full border px-2.5 py-1 text-sm font-medium ${
+                formData.is_published
+                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                  : "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+              }`}>
+                {statusLabel}
+              </span>
+            </div>
+            <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
+              Complete the required setup, review the listing preview, then save. Publishing is handled separately from draft edits.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <button
+              type="submit"
+              disabled={loading}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[var(--color-accent-primary)] px-5 py-2.5 text-sm font-semibold text-[var(--color-text-on-accent)] transition-colors hover:bg-[var(--color-accent-hover)] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Save className="h-4 w-4" aria-hidden="true" />
+              {saveButtonLabel}
+            </button>
+            {mode === "edit" && (
+              <button
+                type="button"
+                onClick={() => router.push("/dashboard/my-events")}
+                className="inline-flex min-h-11 items-center justify-center rounded-lg border border-[var(--color-border-default)] px-4 py-2.5 text-sm font-medium text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-border-accent)] hover:text-[var(--color-text-primary)]"
+                aria-label="Back without saving (does not cancel event)"
+              >
+                Back without saving
+              </button>
+            )}
+          </div>
+        </div>
       </div>
 
       {error && (
-        <div className="p-4 bg-red-100 dark:bg-red-500/10 border border-red-300 dark:border-red-500/30 rounded-lg text-red-800 dark:text-red-600">
+        <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-red-700 dark:text-red-300">
           <p className="font-medium">{error}</p>
           {errorDetails?.details && (
             <p className="mt-1 text-sm">{errorDetails.details}</p>
@@ -1035,7 +1199,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
           {errorDetails?.actionUrl && (
             <a
               href={errorDetails.actionUrl}
-              className="mt-2 inline-block text-sm underline hover:no-underline font-medium"
+              className="mt-2 inline-block text-sm font-medium underline hover:no-underline"
             >
               {errorDetails.actionLabel || "Take action"} →
             </a>
@@ -1044,39 +1208,60 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
       )}
 
       {success && (
-        <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg text-green-600">
+        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-emerald-700 dark:text-emerald-300">
           {success}
         </div>
       )}
 
-      {/* ============ SAVE BUTTON (sticky top bar) ============ */}
-      <div className="sticky top-0 z-20 -mx-6 px-6 py-3 bg-[var(--color-bg-secondary)] border-b border-[var(--color-border-default)] flex items-center gap-4">
-        <button
-          type="submit"
-          disabled={loading}
-          className="px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)] font-semibold rounded-lg transition-colors disabled:opacity-50"
-        >
-          {loading ? "Saving..." : occurrenceMode ? "Save Occurrence" : mode === "create" ? "Create Happening" : "Save Changes"}
-        </button>
-        {mode === "edit" && (
-          <button
-            type="button"
-            onClick={() => router.push("/dashboard/my-events")}
-            className="px-6 py-3 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)] rounded-lg transition-colors"
-            aria-label="Back without saving (does not cancel event)"
-          >
-            Back without saving
-          </button>
-        )}
-      </div>
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[12rem_minmax(0,1fr)_22rem]">
+        <aside className="hidden xl:block">
+          <nav className="sticky top-4 space-y-2 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] p-3">
+            {[
+              { href: "#event-type", label: "Basics", icon: Tags, done: formData.event_type.length > 0 && Boolean(formData.title.trim()) },
+              { href: "#schedule", label: "Schedule", icon: CalendarDays, done: Boolean(effectiveAnchorDate && formData.start_time) },
+              { href: "#location", label: "Location", icon: MapPin, done: missingRequiredItems.every((item) => item.id !== "location") },
+              { href: "#signup", label: "Signup", icon: Users, done: true },
+              { href: "#media", label: "Media", icon: ImageIcon, done: true },
+              { href: "#advanced", label: "Advanced", icon: Sparkles, done: !showAdvanced },
+            ].map((item) => {
+              const Icon = item.icon;
+              return (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  className="flex items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-tertiary)] hover:text-[var(--color-text-primary)]"
+                >
+                  <span className="inline-flex items-center gap-2">
+                    <Icon className="h-4 w-4" aria-hidden="true" />
+                    {item.label}
+                  </span>
+                  {item.done ? (
+                    <CheckCircle2 className="h-4 w-4 text-emerald-500" aria-hidden="true" />
+                  ) : (
+                    <span className="h-2 w-2 rounded-full bg-amber-500" aria-hidden="true" />
+                  )}
+                </a>
+              );
+            })}
+          </nav>
+        </aside>
 
-      {/* ============ SECTION 1: EVENT TYPE ============ */}
-      {/* Phase 4.44c: Intent-first - What kind of event is this? */}
-      {/* Hidden in occurrence mode (event_type is series-level) */}
-      {!occurrenceMode && <div>
+        <div className="min-w-0 space-y-5">
+
+          {/* ============ SECTION 1: EVENT TYPE ============ */}
+          {/* Phase 4.44c: Intent-first - What kind of event is this? */}
+          {/* Hidden in occurrence mode (event_type is series-level) */}
+          {!occurrenceMode && <SectionPanel
+            id="event-type"
+            icon={<Wand2 className="h-4 w-4" aria-hidden="true" />}
+            title="Required setup"
+            description="Start with the basics people use to understand and find this happening."
+            tone="blue"
+          >
+        <div>
         <label className="block text-sm font-medium mb-2">
-          <span className="text-red-500">Event Type</span>
-          <span className="ml-1 text-red-400 text-xs font-normal">*Required</span>
+          <span className="text-[var(--color-text-primary)]">Event Type</span>
+          <RequiredBadge />
         </label>
         <p className="mb-2 text-xs text-[var(--color-text-secondary)]">
           Choose one or more event types. Using multiple types helps people find your happening faster.
@@ -1104,8 +1289,16 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
           ))}
         </div>
         <p className="mt-2 text-sm text-[var(--color-text-secondary)]">{selectedTypeConfig.description}</p>
-      </div>}
+        </div>
+      </SectionPanel>}
 
+          <SectionPanel
+            id="details"
+            icon={<ListChecks className="h-4 w-4" aria-hidden="true" />}
+            title="Listing identity"
+            description="Name the happening and add lightweight discovery tags."
+            tone="blue"
+          >
       {/* ============ SECTION 1b: CATEGORIES ============ */}
       {/* Multi-select checkboxes for categorizing the happening */}
       <div>
@@ -1135,8 +1328,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
       {/* ============ SECTION 2: TITLE ============ */}
       <div>
         <label className="block text-sm font-medium mb-2">
-          <span className="text-red-500">Event Title</span>
-          <span className="ml-1 text-red-400 text-xs font-normal">*Required</span>
+          <span className="text-[var(--color-text-primary)]">Event Title</span>
+          <RequiredBadge />
         </label>
         <input
           type="text"
@@ -1147,7 +1340,15 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
           className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
         />
       </div>
+          </SectionPanel>
 
+          <SectionPanel
+            id="schedule"
+            icon={<CalendarDays className="h-4 w-4" aria-hidden="true" />}
+            title="Schedule"
+            description="Set the public date, start time, and recurrence pattern."
+            tone="indigo"
+          >
       {/* ============ SECTION 3: SCHEDULE ============ */}
       {/* Phase 4.44c: When is this event? */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -1178,8 +1379,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         )}
         <div>
           <label className="block text-sm font-medium mb-2">
-            <span className="text-red-500">Start Time</span>
-            <span className="ml-1 text-red-400 text-xs font-normal">*Required</span>
+            <span className="text-[var(--color-text-primary)]">Start Time</span>
+            <RequiredBadge />
           </label>
           <TimePicker
             value={formData.start_time}
@@ -1190,7 +1391,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         </div>
         <div>
           <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-            End Time <span className="font-normal">(optional)</span>
+            End Time <OptionalBadge />
           </label>
           <TimePicker
             value={formData.end_time}
@@ -1201,7 +1402,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         {/* Signup Time - prominently displayed for in-person signup time at venue */}
         <div>
           <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-            Signup Time <span className="font-normal">(optional)</span>
+            Signup Time <OptionalBadge />
           </label>
           <TimePicker
             value={formData.signup_time}
@@ -1622,8 +1823,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
           {formData.series_mode === "single" && (
             <div>
               <label className="block text-sm font-medium mb-2">
-                <span className="text-red-500">Event Date</span>
-                <span className="ml-1 text-red-400 text-xs font-normal">*Required</span>
+                <span className="text-[var(--color-text-primary)]">Event Date</span>
+                <RequiredBadge />
                 <DateDayIndicator dateValue={formData.start_date} />
               </label>
               <input
@@ -1647,8 +1848,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
             <>
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  <span className="text-red-500">Anchor Date (First Event)</span>
-                  <span className="ml-1 text-red-400 text-xs font-normal">*Required</span>
+                  <span className="text-[var(--color-text-primary)]">Anchor Date (First Event)</span>
+                  <RequiredBadge />
                   <DateDayIndicator dateValue={formData.start_date} />
                 </label>
                 <input
@@ -1816,8 +2017,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">
-                    <span className="text-red-500">Anchor Date (First Event)</span>
-                    <span className="ml-1 text-red-400 text-xs font-normal">*Required</span>
+                    <span className="text-[var(--color-text-primary)]">Anchor Date (First Event)</span>
+                    <RequiredBadge />
                     <DateDayIndicator dateValue={formData.start_date} />
                   </label>
                   <input
@@ -1985,9 +2186,17 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
           )}
         </div>
       )}
+          </SectionPanel>
 
       {/* ============ SECTION 4: LOCATION ============ */}
       {/* Phase 4.44c: Where is this event? */}
+          <SectionPanel
+            id="location"
+            icon={<MapPin className="h-4 w-4" aria-hidden="true" />}
+            title="Location"
+            description="Choose where people should go, or add the online link for virtual and hybrid happenings."
+            tone="green"
+          >
       <div className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
@@ -2007,8 +2216,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         {(formData.location_mode === "online" || formData.location_mode === "hybrid") && (
           <div>
             <label className="block text-sm font-medium mb-2">
-              <span className="text-red-500">Online URL</span>
-              <span className="ml-1 text-red-400 text-xs font-normal">*Required</span>
+              <span className="text-[var(--color-text-primary)]">Online URL</span>
+              <RequiredBadge />
             </label>
             <input
               type="url"
@@ -2232,12 +2441,20 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
           </>
         )}
       </div>
+          </SectionPanel>
 
       {/* ============ SECTION 5: DESCRIPTION + COVER IMAGE ============ */}
       {/* Phase 4.44c: Add details about the event */}
+          <SectionPanel
+            id="media"
+            icon={<ImageIcon className="h-4 w-4" aria-hidden="true" />}
+            title="Media and listing copy"
+            description="Add the public description, cover image, and listening or video links."
+            tone="neutral"
+          >
       <div>
         <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-          Description <span className="font-normal">(optional)</span>
+          Description <OptionalBadge />
         </label>
         <textarea
           value={formData.description}
@@ -2251,7 +2468,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
       <div>
         <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
           Cover Image
-          <span className="text-[var(--color-text-secondary)] font-normal ml-1">(optional)</span>
+          <OptionalBadge />
         </label>
         <div className="max-w-xs">
           <ImageUpload
@@ -2281,7 +2498,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
       {/* ============ MEDIA EMBEDS ============ */}
       <div>
         <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-          Media Links <span className="font-normal text-[var(--color-text-tertiary)]">(optional)</span>
+          Media Links <OptionalBadge />
         </label>
         {occurrenceMode && (
           <p className="text-xs text-amber-600 dark:text-amber-400 mb-2">
@@ -2290,9 +2507,17 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         )}
         <MediaEmbedsEditor value={mediaEmbedUrls} onChange={setMediaEmbedUrls} />
       </div>
+          </SectionPanel>
 
       {/* ============ SECTION 6: ATTENDANCE & SIGNUP ============ */}
       {/* Phase 4.44c: Who can attend and how do performers sign up? */}
+          <SectionPanel
+            id="signup"
+            icon={<Users className="h-4 w-4" aria-hidden="true" />}
+            title="Signup and attendance"
+            description="Control capacity, performer slots, and how people claim a spot."
+            tone="amber"
+          >
       <SlotConfigSection
         eventType={formData.event_type}
         config={slotConfig}
@@ -2317,16 +2542,18 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
           </p>
         </div>
       )}
+          </SectionPanel>
 
       {/* ============ SECTION 7: ADVANCED OPTIONS (Collapsed by default) ============ */}
       {/* Phase 4.44c: Progressive disclosure - less common options */}
-      <div className="border border-[var(--color-border-default)] rounded-lg overflow-hidden">
+          <section id="advanced" className="overflow-hidden rounded-xl border border-[var(--color-border-default)] border-l-4 border-l-[var(--color-border-accent)] bg-[var(--color-bg-primary)] shadow-sm">
         <button
           type="button"
           onClick={() => setShowAdvanced(!showAdvanced)}
           className="w-full px-4 py-3 flex items-center justify-between bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-secondary)] transition-colors"
         >
-          <span className="text-sm font-medium text-[var(--color-text-primary)]">
+          <span className="inline-flex items-center gap-2 text-sm font-medium text-[var(--color-text-primary)]">
+            <Sparkles className="h-4 w-4 text-[var(--color-text-accent)]" aria-hidden="true" />
             Advanced Options
           </span>
           <svg
@@ -2526,76 +2753,121 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
             </div>
           </div>
         )}
-      </div>
-
-      {/* ============ LIVE PREVIEW SECTION ============ */}
-      {/* Hidden in occurrence mode */}
-      {!occurrenceMode && (
-        <>
-          <div className="p-4 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg">
-            <h3 className="text-sm font-semibold text-[var(--color-text-primary)] mb-4">
-              Preview
-            </h3>
-
-            {/* Card Preview */}
-            <div className="mb-6">
-              <p className="text-sm text-[var(--color-text-secondary)] mb-2">
-                How your happening will appear in listings:
-              </p>
-              <div className="pointer-events-none select-none" aria-hidden="true">
-                <HappeningCard
-                  event={previewEvent}
-                  variant="list"
-                />
-              </div>
-            </div>
-
-            {/* Detail Header Preview */}
-            <div>
-              <p className="text-sm text-[var(--color-text-secondary)] mb-2">
-                Happening detail page header:
-              </p>
-              <div className="p-4 bg-[var(--color-bg-secondary)] rounded-lg border border-[var(--color-border-default)]">
-                <h2 className="text-xl font-semibold text-[var(--color-text-primary)] mb-2">
-                  {formData.title || "Event Title"}
-                </h2>
-                <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-[var(--color-text-secondary)]">
-                  {derivedAnchorDayOfWeek && (
-                    <span>{derivedAnchorDayOfWeek}s</span>
-                  )}
-                  {formData.start_time && (
-                    <span>{formatTimeToAMPM(formData.start_time)}</span>
-                  )}
-                  {getPreviewLocation() && (
-                    <span>{getPreviewLocation()}</span>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
+          </section>
 
           {/* ============ SAVE BUTTON (bottom of form) ============ */}
-          <div className="flex items-center gap-4 pt-4 border-t border-[var(--color-border-default)]">
+          <div className="flex flex-col gap-3 border-t border-[var(--color-border-default)] pt-4 sm:flex-row sm:items-center">
             <button
               type="submit"
               disabled={loading}
-              className="px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)] font-semibold rounded-lg transition-colors disabled:opacity-50"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[var(--color-accent-primary)] px-6 py-3 font-semibold text-[var(--color-text-on-accent)] transition-colors hover:bg-[var(--color-accent-hover)] disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {loading ? "Saving..." : occurrenceMode ? "Save Occurrence" : mode === "create" ? "Create Happening" : "Save Changes"}
+              <Save className="h-4 w-4" aria-hidden="true" />
+              {saveButtonLabel}
             </button>
             {mode === "edit" && (
               <button
                 type="button"
                 onClick={() => router.push("/dashboard/my-events")}
-                className="px-6 py-3 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)] rounded-lg transition-colors"
+                className="inline-flex min-h-11 items-center justify-center rounded-lg px-6 py-3 text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-secondary)] hover:text-[var(--color-text-primary)]"
                 aria-label="Back without saving (does not cancel event)"
               >
                 Back without saving
               </button>
             )}
           </div>
-        </>
-      )}
+
+        </div>
+
+        {!occurrenceMode && (
+          <aside className="xl:sticky xl:top-4 xl:self-start">
+            <div className="space-y-4">
+              <section className="rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-primary)] p-4 shadow-sm">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div>
+                    <h3 className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--color-text-primary)]">
+                      <Eye className="h-4 w-4 text-[var(--color-text-accent)]" aria-hidden="true" />
+                      Live listing preview
+                    </h3>
+                    <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
+                      This is how people scan the happening in lists.
+                    </p>
+                  </div>
+                </div>
+                <div className="pointer-events-none select-none" aria-hidden="true">
+                  <HappeningCard
+                    event={previewEvent}
+                    variant="list"
+                  />
+                </div>
+                <dl className="mt-4 space-y-2 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] p-3 text-sm">
+                  <div>
+                    <dt className="text-xs font-medium uppercase tracking-wide text-[var(--color-text-tertiary)]">Title</dt>
+                    <dd className="mt-0.5 text-[var(--color-text-primary)]">{formData.title || "Untitled happening"}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-medium uppercase tracking-wide text-[var(--color-text-tertiary)]">When</dt>
+                    <dd className="mt-0.5 text-[var(--color-text-primary)]">
+                      {[derivedAnchorDayOfWeek ? `${derivedAnchorDayOfWeek}s` : null, formData.start_time ? formatTimeToAMPM(formData.start_time) : null].filter(Boolean).join(" · ") || "Date and time not set"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-medium uppercase tracking-wide text-[var(--color-text-tertiary)]">Where</dt>
+                    <dd className="mt-0.5 text-[var(--color-text-primary)]">{selectedLocationLabel}</dd>
+                  </div>
+                </dl>
+              </section>
+
+              <section className="rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] p-4 shadow-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--color-text-primary)]">
+                    <ListChecks className="h-4 w-4 text-[var(--color-text-accent)]" aria-hidden="true" />
+                    Required setup
+                  </h3>
+                  <span className="text-sm font-semibold text-[var(--color-text-primary)]">{completionPercent}%</span>
+                </div>
+                <div className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--color-bg-tertiary)]">
+                  <div
+                    className="h-full rounded-full bg-[var(--color-accent-primary)] transition-all"
+                    style={{ width: `${completionPercent}%` }}
+                  />
+                </div>
+                <ul className="mt-4 space-y-2">
+                  {requiredChecks.map((item) => (
+                    <li key={item.id} className="flex items-center justify-between gap-3 text-sm">
+                      <span className={item.done ? "text-[var(--color-text-primary)]" : "text-[var(--color-text-secondary)]"}>
+                        {item.label}
+                      </span>
+                      {item.done ? (
+                        <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" aria-hidden="true" />
+                      ) : (
+                        <span className="h-2 w-2 shrink-0 rounded-full bg-amber-500" aria-hidden="true" />
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+
+              <section className="rounded-xl border border-[var(--color-border-accent)] bg-[var(--color-accent-primary)]/10 p-4 shadow-sm">
+                <h3 className="text-sm font-semibold text-[var(--color-text-primary)]">
+                  Ready to save?
+                </h3>
+                <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+                  Saving updates the draft or published listing. Missing required fields will be called out before the change goes through.
+                </p>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-[var(--color-accent-primary)] px-4 py-2.5 text-sm font-semibold text-[var(--color-text-on-accent)] transition-colors hover:bg-[var(--color-accent-hover)] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <Save className="h-4 w-4" aria-hidden="true" />
+                  {saveButtonLabel}
+                </button>
+              </section>
+            </div>
+          </aside>
+        )}
+      </div>
     </form>
   );
 }
