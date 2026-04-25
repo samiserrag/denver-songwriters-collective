@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PageContainer, HeroSection } from "@/components/layout";
 import { SongwriterAvatar } from "@/components/songwriters";
-import { SocialIcon, TipIcon, buildSocialLinks, buildTipLinks, PhotoGallery, PrivateSectionBanner } from "@/components/profile";
+import { SocialIcon, TipIcon, buildSocialLinks, buildTipLinks, getSocialBrandPillClasses, PhotoGallery, PrivateSectionBanner } from "@/components/profile";
 import { ProfileComments } from "@/components/comments";
 import { RoleBadges } from "@/components/members";
 import { SeriesCard, type SeriesEvent } from "@/components/happenings/SeriesCard";
@@ -488,33 +488,38 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
             </h1>
 
             {/* Identity badges - consistent order: Songwriter → Happenings Host → Venue Manager → Fan */}
-            <RoleBadges flags={roleBadgeFlags} mode="row" size="md" className="justify-center mb-4" />
+            <RoleBadges flags={roleBadgeFlags} mode="row" size="md" variant="solid" className="justify-center" />
+          </div>
+        </PageContainer>
+      </HeroSection>
 
-            {/* Social Links - only render section if links exist */}
+      <PageContainer>
+        {/* Social Links + Owner CTAs - moved below the hero so they sit on the theme background and stand out */}
+        {(socialLinks.length > 0 || isOwner) && (
+          <div className="flex flex-col items-center gap-4 pt-8">
             {socialLinks.length > 0 && (
-              <div className="flex flex-wrap justify-center gap-3 mb-6">
+              <div className="flex flex-wrap justify-center gap-3">
                 {socialLinks.map((link) => (
                   <Link
                     key={link.type}
                     href={link.url!}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--color-accent-muted)] hover:bg-[var(--color-border-accent)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
+                    className={getSocialBrandPillClasses(link.type)}
                     title={link.label}
                   >
                     <SocialIcon type={link.type} />
-                    <span className="text-sm font-medium">{link.label}</span>
+                    <span>{link.label}</span>
                   </Link>
                 ))}
               </div>
             )}
 
-            {/* Owner-only CTAs */}
             {isOwner && (
-              <div className="flex flex-wrap justify-center gap-3 mt-4" data-testid="owner-ctas">
+              <div className="flex flex-wrap justify-center gap-3" data-testid="owner-ctas">
                 <Link
                   href="/dashboard/profile"
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] hover:bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors text-sm font-medium"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] shadow-sm hover:bg-[var(--color-bg-tertiary)] hover:border-[var(--color-border-accent)] transition-colors text-sm font-medium"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -523,7 +528,7 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
                 </Link>
                 <Link
                   href="/dashboard/profile#photos"
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] hover:bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors text-sm font-medium"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] shadow-sm hover:bg-[var(--color-bg-tertiary)] hover:border-[var(--color-border-accent)] transition-colors text-sm font-medium"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -533,10 +538,8 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
               </div>
             )}
           </div>
-        </PageContainer>
-      </HeroSection>
+        )}
 
-      <PageContainer>
         <div className="py-12 max-w-4xl mx-auto">
           {/* 1. Bio Section - always show with empty state */}
           <section className="mb-12" data-testid="bio-section">

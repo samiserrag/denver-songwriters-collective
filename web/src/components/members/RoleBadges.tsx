@@ -19,6 +19,7 @@ interface RoleBadgeConfig {
   key: string;
   label: string;
   className: string;
+  solidClassName: string;
 }
 
 /**
@@ -35,6 +36,7 @@ export function getRoleBadges(flags: RoleBadgeFlags): RoleBadgeConfig[] {
       key: "songwriter",
       label: "Songwriter",
       className: "bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] border-[var(--color-border-accent)]/30",
+      solidClassName: "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] border-[var(--color-accent-primary)] shadow-md",
     });
   }
 
@@ -45,6 +47,7 @@ export function getRoleBadges(flags: RoleBadgeFlags): RoleBadgeConfig[] {
       key: "host",
       label: "Happenings Host",
       className: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+      solidClassName: "bg-emerald-600 text-white border-emerald-600 shadow-md",
     });
   }
 
@@ -54,6 +57,7 @@ export function getRoleBadges(flags: RoleBadgeFlags): RoleBadgeConfig[] {
       key: "venue-manager",
       label: "Venue Manager",
       className: "bg-purple-500/20 text-purple-400 border-purple-500/30",
+      solidClassName: "bg-purple-600 text-white border-purple-600 shadow-md",
     });
   }
 
@@ -64,6 +68,7 @@ export function getRoleBadges(flags: RoleBadgeFlags): RoleBadgeConfig[] {
       key: "fan",
       label: "Fan",
       className: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+      solidClassName: "bg-blue-600 text-white border-blue-600 shadow-md",
     });
   }
 
@@ -127,6 +132,8 @@ interface RoleBadgesProps {
   mode?: "row" | "single";
   /** Size variant for badges */
   size?: "sm" | "md";
+  /** Visual variant: "muted" (default, low-opacity tints for cards/lists) or "solid" (full-opacity high-contrast for hero/photo backgrounds) */
+  variant?: "muted" | "solid";
   className?: string;
 }
 
@@ -134,10 +141,11 @@ interface RoleBadgesProps {
  * Shared component for displaying role badges consistently across all surfaces.
  *
  * Usage:
- * - Detail pages: <RoleBadges flags={...} mode="row" /> (shows all badges)
+ * - Detail page heroes: <RoleBadges flags={...} mode="row" variant="solid" /> (high-contrast over photo)
+ * - Cards/lists: <RoleBadges flags={...} mode="row" /> (muted default)
  * - Card overlays: <RoleBadges flags={...} mode="single" /> (shows primary badge)
  */
-export function RoleBadges({ flags, mode = "row", size = "md", className }: RoleBadgesProps) {
+export function RoleBadges({ flags, mode = "row", size = "md", variant = "muted", className }: RoleBadgesProps) {
   const sizeClasses = size === "sm"
     ? "px-2 py-0.5 text-sm"
     : "px-3 py-1 text-sm";
@@ -173,7 +181,7 @@ export function RoleBadges({ flags, mode = "row", size = "md", className }: Role
           className={cn(
             sizeClasses,
             "font-medium rounded-full border",
-            badge.className
+            variant === "solid" ? badge.solidClassName : badge.className
           )}
         >
           {badge.label}

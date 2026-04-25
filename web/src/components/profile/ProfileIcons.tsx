@@ -144,6 +144,38 @@ export function normalizeSocialUrl(
   }
 }
 
+/**
+ * Brand-colored pill classes for social link buttons. Applied on profile pages
+ * so each link reads as the platform it links to (Spotify green, YouTube red,
+ * Instagram gradient, etc.) rather than a generic theme-neutral pill.
+ *
+ * Returns a fully-formed className string including background, text color,
+ * border, and hover state. Falls back to a theme-aware pill for platforms
+ * without a strong brand color (e.g. Website).
+ */
+export function getSocialBrandPillClasses(type: string): string {
+  const base = "inline-flex items-center gap-2 px-4 py-2.5 rounded-lg shadow-md hover:shadow-lg border transition-all text-sm font-medium";
+  switch (type) {
+    case "spotify":
+      return `${base} bg-[#1DB954] text-white border-[#1DB954] hover:bg-[#1ed760]`;
+    case "bandcamp":
+      return `${base} bg-[#1DA0C3] text-white border-[#1DA0C3] hover:bg-[#26B5DA]`;
+    case "youtube":
+      return `${base} bg-[#FF0000] text-white border-[#FF0000] hover:bg-[#CC0000]`;
+    case "instagram":
+      return `${base} bg-[linear-gradient(45deg,#FEDA75_0%,#FA7E1E_25%,#D62976_50%,#962FBF_75%,#4F5BD5_100%)] text-white border-transparent hover:brightness-110`;
+    case "tiktok":
+      return `${base} bg-black text-white border-black hover:bg-zinc-800`;
+    case "twitter":
+      return `${base} bg-black text-white border-black hover:bg-zinc-800`;
+    case "facebook":
+      return `${base} bg-[#1877F2] text-white border-[#1877F2] hover:bg-[#0866d4]`;
+    case "website":
+    default:
+      return `${base} bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] border-[var(--color-border-default)] hover:bg-[var(--color-bg-tertiary)] hover:border-[var(--color-border-accent)]`;
+  }
+}
+
 // Helper to build social links array from profile data
 // Order: Musician-centric priority (Spotify → Bandcamp → YouTube → Instagram → TikTok → Website → Twitter/X)
 export function buildSocialLinks(profile: {
