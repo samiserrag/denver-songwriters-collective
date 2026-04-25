@@ -15,7 +15,6 @@ import * as React from "react";
 import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { DateJumpControl } from "./DateJumpControl";
 import { ViewModeSelector, type HappeningsViewMode } from "./ViewModeSelector";
 import { HappeningsFilters } from "./HappeningsFilters";
 
@@ -91,23 +90,21 @@ export function StickyControls({ todayKey, windowStartKey, windowEndKey, timeFil
         </div>
 
         {/* Filter bar: defer until mounted to preserve hydration safety */}
-        {showFilters ? <HappeningsFilters /> : <HappeningsFiltersShell />}
-      </section>
-
-      {/* Date Jump Control + Cancelled Toggle Row */}
-      <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <Suspense fallback={null}>
-          <DateJumpControl
+        {showFilters ? (
+          <HappeningsFilters
             todayKey={todayKey}
             windowStartKey={windowStartKey}
             windowEndKey={windowEndKey}
             timeFilter={timeFilter}
-            className="w-full"
           />
-        </Suspense>
+        ) : (
+          <HappeningsFiltersShell />
+        )}
+      </section>
 
-        {/* Phase 4.21: Show Cancelled Toggle - only show in timeline mode */}
-        {viewMode === "timeline" && cancelledCount > 0 && (
+      {/* Phase 4.21: Show Cancelled Toggle - only show in timeline mode */}
+      {viewMode === "timeline" && cancelledCount > 0 && (
+        <div className="flex justify-end">
           <button
             onClick={toggleShowCancelled}
             className={cn(
@@ -123,8 +120,8 @@ export function StickyControls({ todayKey, windowStartKey, windowEndKey, timeFil
             </span>
             {cancelledCount} cancelled
           </button>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

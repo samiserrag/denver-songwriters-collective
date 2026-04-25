@@ -122,10 +122,58 @@ const RADIUS_OPTIONS = [
 ] as const;
 
 interface HappeningsFiltersProps {
+  /** Today's date key (YYYY-MM-DD in Denver timezone) */
+  todayKey: string;
+  /** Start of the current window (YYYY-MM-DD) */
+  windowStartKey: string;
+  /** End of the current window (YYYY-MM-DD) */
+  windowEndKey: string;
+  /** Current server-side time filter fallback */
+  timeFilter: string;
   className?: string;
 }
 
-export function HappeningsFilters({ className }: HappeningsFiltersProps) {
+function isDateKey(value: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
+function addDays(dateKey: string, days: number): string {
+  const date = new Date(`${dateKey}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(date.getUTCDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function formatDateRange(startKey: string, endKey: string): string {
+  const start = new Date(`${startKey}T12:00:00Z`);
+  const end = new Date(`${endKey}T12:00:00Z`);
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  });
+  return `${formatter.format(start)} - ${formatter.format(end)}`;
+}
+
+function formatDateForPill(dateKey: string): string {
+  const date = new Date(`${dateKey}T12:00:00Z`);
+  return new Intl.DateTimeFormat("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  }).format(date);
+}
+
+export function HappeningsFilters({
+  todayKey,
+  windowStartKey,
+  windowEndKey,
+  timeFilter,
+  className,
+}: HappeningsFiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = React.useMemo(() => createClient(), []);
@@ -173,6 +221,18 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
   const [savedMessage, setSavedMessage] = React.useState<string | null>(null);
   const [savedPanelOpen, setSavedPanelOpen] = React.useState(false);
   const hasAttemptedAutoApply = React.useRef(false);
+  const effectiveTime = time || timeFilter || "upcoming";
+  const isPastMode = effectiveTime === "past";
+  const tomorrowKey = React.useMemo(() => addDays(todayKey, 1), [todayKey]);
+  const activeDateKey = isDateKey(dateFilter) ? dateFilter : "";
+  const [dateWarningMessage, setDateWarningMessage] = React.useState<string | null>(null);
+  const [pickerDate, setPickerDate] = React.useState(
+    activeDateKey || (isPastMode ? windowEndKey : todayKey)
+  );
+
+  React.useEffect(() => {
+    setPickerDate(activeDateKey || (isPastMode ? windowEndKey : todayKey));
+  }, [activeDateKey, isPastMode, windowEndKey, todayKey]);
 
   // Sync search input when URL changes externally (e.g., browser back/forward)
   // Skip sync if we initiated the change to avoid erasing user's typing
@@ -270,6 +330,48 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
     router.push(buildUrl({ [key]: value }));
   }, [router, buildUrl]);
 
+  const navigateWithDate = React.useCallback((dateKey?: string) => {
+    router.push(buildUrl({ date: dateKey || null }), { scroll: false });
+  }, [buildUrl, router]);
+
+  const setDateFilter = React.useCallback((dateKey: string) => {
+    if (!isDateKey(dateKey)) {
+      setDateWarningMessage("Please choose a valid date.");
+      return;
+    }
+    if (dateKey < windowStartKey || dateKey > windowEndKey) {
+      setDateWarningMessage(`Not in current range (${formatDateRange(windowStartKey, windowEndKey)})`);
+      return;
+    }
+    setDateWarningMessage(null);
+    navigateWithDate(dateKey);
+  }, [navigateWithDate, windowEndKey, windowStartKey]);
+
+  const handleToday = () => {
+    if (isPastMode) {
+      setDateWarningMessage("Today and tomorrow are unavailable in Past mode.");
+      return;
+    }
+    setDateFilter(todayKey);
+  };
+
+  const handleTomorrow = () => {
+    if (isPastMode) {
+      setDateWarningMessage("Today and tomorrow are unavailable in Past mode.");
+      return;
+    }
+    setDateFilter(tomorrowKey);
+  };
+
+  const handleJumpToDate = () => {
+    setDateFilter(pickerDate);
+  };
+
+  const clearDateFilter = () => {
+    setDateWarningMessage(null);
+    navigateWithDate(undefined);
+  };
+
   // Handle search with debounce
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -297,6 +399,7 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
     setSearchInput("");
     setCityInput("");
     setZipInput("");
+    setDateWarningMessage(null);
     router.push("/happenings");
   };
 
@@ -547,7 +650,6 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
   if (cost === "paid") activeFilterSummary.push("Paid");
   if (time === "past") activeFilterSummary.push("Past");
   if (time === "all") activeFilterSummary.push("All time");
-  if (dateFilter) activeFilterSummary.push(`On ${dateFilter}`);
   if (favoritesOnly) activeFilterSummary.push("Favorites");
   // Phase 1.4: Location summary (ZIP wins over city)
   if (zip) {
@@ -637,7 +739,6 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
   // Count active filters (excluding quick filters and search)
   const advancedFilterCount = [
     selectedDays.length > 0,
-    dateFilter,
     time !== "upcoming" && time !== "",
     type && !isOpenMicsActive && !isShowcaseActive && !isGigActive && !isWorkshopActive && !isJamSessionsActive && !isPoetryActive && !isIrishActive && !isBluesActive && !isBluegrassActive && !isComedyActive,
     location,
@@ -783,6 +884,98 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
         </p>
       )}
 
+      <div className="rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] p-3">
+        <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(8rem,0.65fr)_auto_minmax(14rem,1fr)] xl:items-end">
+          <div>
+            <label className="inline-flex items-center gap-2 text-sm font-medium text-[var(--color-text-primary)]">
+              <CalendarDays className="h-4 w-4 text-[var(--color-text-secondary)]" aria-hidden="true" />
+              Date
+            </label>
+            <p className="mt-1 text-sm text-[var(--color-text-tertiary)]">
+              Jump to a busy night or pick a specific day.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+            <button
+              type="button"
+              onClick={handleToday}
+              disabled={isPastMode}
+              className={cn(
+                "rounded-md border px-3 py-2 text-sm font-medium transition-colors",
+                activeDateKey === todayKey
+                  ? "border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/15 text-[var(--color-text-primary)]"
+                  : "border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-accent)] hover:text-[var(--color-text-primary)]",
+                isPastMode && "cursor-not-allowed opacity-50 hover:border-[var(--color-border-default)] hover:text-[var(--color-text-secondary)]"
+              )}
+            >
+              Today
+            </button>
+
+            <button
+              type="button"
+              onClick={handleTomorrow}
+              disabled={isPastMode}
+              className={cn(
+                "rounded-md border px-3 py-2 text-sm font-medium transition-colors",
+                activeDateKey === tomorrowKey
+                  ? "border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/15 text-[var(--color-text-primary)]"
+                  : "border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-accent)] hover:text-[var(--color-text-primary)]",
+                isPastMode && "cursor-not-allowed opacity-50 hover:border-[var(--color-border-default)] hover:text-[var(--color-text-secondary)]"
+              )}
+            >
+              Tomorrow
+            </button>
+
+            {activeDateKey && (
+              <button
+                type="button"
+                onClick={clearDateFilter}
+                className="col-span-2 rounded-md border border-[var(--color-border-default)] px-3 py-2 text-sm font-medium text-[var(--color-text-tertiary)] transition-colors hover:border-[var(--color-border-accent)] hover:text-[var(--color-text-secondary)] sm:col-auto"
+              >
+                Clear date
+              </button>
+            )}
+          </div>
+
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+            <label className="sr-only" htmlFor="happenings-date-filter">Jump to date</label>
+            <input
+              id="happenings-date-filter"
+              type="date"
+              value={pickerDate}
+              min={windowStartKey}
+              max={windowEndKey}
+              onChange={(e) => {
+                setPickerDate(e.target.value);
+                setDateWarningMessage(null);
+              }}
+              className="h-10 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] px-3 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]/30"
+            />
+            <button
+              type="button"
+              onClick={handleJumpToDate}
+              className="h-10 rounded-lg border border-[var(--color-border-default)] px-3 text-sm font-medium text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-border-accent)] hover:text-[var(--color-text-primary)]"
+            >
+              Apply
+            </button>
+          </div>
+        </div>
+
+        {(activeDateKey || dateWarningMessage) && (
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {activeDateKey && (
+              <span className="inline-flex items-center rounded-full border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] px-2.5 py-1 text-sm text-[var(--color-text-secondary)]">
+                Showing {formatDateForPill(activeDateKey)}
+              </span>
+            )}
+            {dateWarningMessage && (
+              <p className="text-sm text-amber-400">{dateWarningMessage}</p>
+            )}
+          </div>
+        )}
+      </div>
+
       <div className="space-y-2">
         <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
           {primaryQuickFilters.map((filter) => renderQuickFilter(filter, "primary"))}
@@ -791,7 +984,11 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
         <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
           {typeQuickFilters.map((filter) => renderQuickFilter(filter))}
 
-          <details className="group relative">
+          <div className="hidden md:contents">
+            {overflowQuickFilters.map((filter) => renderQuickFilter(filter))}
+          </div>
+
+          <details className="group relative md:hidden">
             <summary className="inline-flex min-h-10 cursor-pointer list-none items-center justify-center gap-2 rounded-md border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] px-3 py-2 text-sm font-medium text-[var(--color-text-primary)] transition-colors hover:border-[var(--color-border-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-primary)]/40">
               <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
               More
@@ -943,6 +1140,10 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
               <div className="space-y-3 border-t border-[var(--color-border-default)] p-3">
                 {userId ? (
                   <>
+                    <p className="text-sm text-[var(--color-text-secondary)]">
+                      Save current stores your type, day, cost, and location filters. Apply saved restores that setup later. Auto-open applies it automatically when you arrive without URL filters.
+                    </p>
+
                     <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                       <button
                         type="button"
@@ -950,7 +1151,7 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
                         disabled={savedSaving}
                         className="rounded-lg border border-[var(--color-border-default)] px-3 py-2 text-sm text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-border-accent)] hover:text-[var(--color-text-primary)] disabled:opacity-50"
                       >
-                        Save current
+                        Save current view
                       </button>
                       <button
                         type="button"
@@ -958,7 +1159,7 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
                         disabled={savedSaving || !hasSavedFilters}
                         className="rounded-lg bg-[var(--color-accent-primary)] px-3 py-2 text-sm text-[var(--color-text-on-accent)] transition disabled:opacity-50"
                       >
-                        Apply saved
+                        Apply saved view
                       </button>
                       <button
                         type="button"
@@ -966,7 +1167,7 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
                         disabled={savedSaving}
                         className="rounded-lg border border-[var(--color-border-default)] px-3 py-2 text-sm text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-border-accent)] hover:text-[var(--color-text-primary)] disabled:opacity-50"
                       >
-                        Reset saved
+                        Reset saved view
                       </button>
                     </div>
 

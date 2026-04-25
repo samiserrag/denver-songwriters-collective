@@ -13,22 +13,21 @@ describe('HappeningsFilters Component', () => {
   const componentContent = fs.readFileSync(componentPath, 'utf-8');
 
   describe('Design Tone (Phase 4.2 correction)', () => {
-    it('should use emoji icons on quick filter buttons', () => {
-      // Quick filter buttons use emoji icons for visual consistency with digest emails
-      expect(componentContent).toContain('emoji: "🎤"'); // Open Mics
-      expect(componentContent).toContain('emoji: "🎭"'); // Shows
-      expect(componentContent).toContain('emoji: "🎸"'); // Jams / Blues
-      expect(componentContent).toContain('emoji: "✒️"'); // Poetry
-      expect(componentContent).toContain('emoji: "☘️"'); // Irish
-      expect(componentContent).toContain('emoji: "🪕"'); // Bluegrass
-      expect(componentContent).toContain('emoji: "😂"'); // Comedy
+    it('should use lucide icons on quick filter buttons', () => {
+      // Quick filter buttons use the shared icon library for visual consistency.
+      expect(componentContent).toContain('Mic as MicIcon');
+      expect(componentContent).toContain('BookOpen');
+      expect(componentContent).toContain('Guitar');
+      expect(componentContent).toContain('PenLine');
+      expect(componentContent).toContain('Laugh');
+      expect(componentContent).not.toContain('emoji: "🎤"');
     });
 
-    it('should use SVG icons for utility elements', () => {
-      // Utility icons (search, filters, etc.) still use SVGs
-      expect(componentContent).toContain('function SearchIcon');
-      expect(componentContent).toContain('function MapPinIcon');
-      expect(componentContent).toContain('function TagIcon');
+    it('should use lucide icons for utility elements', () => {
+      // Utility icons (search, filters, etc.) come from lucide-react.
+      expect(componentContent).toContain('Search as SearchIcon');
+      expect(componentContent).toContain('MapPin as MapPinIcon');
+      expect(componentContent).toContain('Tag as TagIcon');
     });
 
     it('should use human-readable labels, not snake_case', () => {
@@ -131,9 +130,22 @@ describe('HappeningsFilters Component', () => {
     });
 
     it('should have collapsible Filters section', () => {
-      // Phase 4.55: Renamed from "More filters" to "Filters" with progressive disclosure
-      expect(componentContent).toContain('Collapsed Filters - Progressive Disclosure');
+      // Phase 4.55: More filters uses progressive disclosure.
+      expect(componentContent).toContain('More filters');
       expect(componentContent).toContain('<details');
+    });
+
+    it('should expose high-use date controls in the main discovery panel', () => {
+      expect(componentContent).toContain('Jump to a busy night or pick a specific day.');
+      expect(componentContent).toContain('setDateFilter');
+      expect(componentContent).toContain('happenings-date-filter');
+    });
+
+    it('should explain saved filters before the saved filter actions', () => {
+      expect(componentContent).toContain('Save current stores your type, day, cost, and location filters.');
+      expect(componentContent).toContain('Save current view');
+      expect(componentContent).toContain('Apply saved view');
+      expect(componentContent).toContain('Reset saved view');
     });
   });
 });
