@@ -5,6 +5,9 @@ on:
     branches: [ main ]
   pull_request:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   tripwire:
     runs-on: ubuntu-latest
@@ -26,8 +29,12 @@ jobs:
         with:
           version: latest
 
-      - name: Start Supabase (local)
-        run: supabase start
+      - name: Start Supabase (local Postgres only)
+        run: |
+          set -euo pipefail
+          supabase start \
+            --ignore-health-check \
+            --exclude gotrue,realtime,storage-api,imgproxy,kong,mailpit,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
 
       - name: Reset DB (apply migrations)
         run: supabase db reset
@@ -54,8 +61,9 @@ jobs:
           echo '```' >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload tripwire log
-        if: always()
+        if: always() && hashFiles('web/tripwire.log') != ''
         uses: actions/upload-artifact@v4
         with:
           name: supabase-rls-tripwire-log
           path: web/tripwire.log
+          if-no-files-found: ignore
