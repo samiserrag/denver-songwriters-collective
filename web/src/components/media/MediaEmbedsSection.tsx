@@ -2,11 +2,8 @@ import {
   canonicalizeMediaReference,
   classifyUrl,
   getMediaEmbedIframeMeta,
-  getMusicProfileLinkMeta,
   normalizeMediaEmbedUrl,
 } from "@/lib/mediaEmbeds";
-import { MusicProfileCard } from "./MusicProfileCard";
-import type { MusicProfileLinkMeta } from "@/lib/mediaEmbeds";
 
 interface MediaEmbedsSectionProps {
   youtubeUrl?: string | null;
@@ -17,19 +14,6 @@ interface MediaEmbedsSectionProps {
   hideHeadingWhenOnlyEmbeds?: boolean;
   className?: string;
   excludedReferences?: string[];
-  bandcampProfileMeta?: MusicProfileLinkMeta | null;
-}
-
-function safeFallbackHref(value: string | null | undefined): string | null {
-  const raw = value?.trim();
-  if (!raw) return null;
-  try {
-    const parsed = new URL(raw);
-    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
-    return parsed.toString();
-  } catch {
-    return null;
-  }
 }
 
 export function MediaEmbedsSection({
@@ -41,7 +25,6 @@ export function MediaEmbedsSection({
   hideHeadingWhenOnlyEmbeds = false,
   className,
   excludedReferences = [],
-  bandcampProfileMeta,
 }: MediaEmbedsSectionProps) {
   const seen = new Set<string>();
 
@@ -53,18 +36,16 @@ export function MediaEmbedsSection({
   const entries: Array<{
     key: "youtube" | "spotify" | "bandcamp";
     meta?: ReturnType<typeof getMediaEmbedIframeMeta>;
-    profileMeta?: ReturnType<typeof getMusicProfileLinkMeta>;
     fallbackHref?: string;
   }> = [];
 
   function pushDeduped(entry: {
     key: "youtube" | "spotify" | "bandcamp";
     meta?: ReturnType<typeof getMediaEmbedIframeMeta>;
-    profileMeta?: ReturnType<typeof getMusicProfileLinkMeta>;
     fallbackHref?: string;
   }) {
     const candidate =
-      entry.meta?.src ?? entry.profileMeta?.href ?? entry.fallbackHref ?? null;
+      entry.meta?.src ?? entry.fallbackHref ?? null;
     if (!candidate) return;
     const key = canonicalizeMediaReference(candidate);
     if (!key || seen.has(key)) return;
@@ -82,13 +63,7 @@ export function MediaEmbedsSection({
         });
       }
     } catch {
-      const profileMeta = getMusicProfileLinkMeta(youtubeUrl);
-      if (profileMeta) {
-        pushDeduped({ key: "youtube", profileMeta });
-      } else {
-        const fallbackHref = safeFallbackHref(youtubeUrl);
-        if (fallbackHref) pushDeduped({ key: "youtube", fallbackHref });
-      }
+      // Unresolved YouTube handles/channels intentionally do not render as cards.
     }
   }
 
@@ -102,13 +77,7 @@ export function MediaEmbedsSection({
         });
       }
     } catch {
-      const profileMeta = getMusicProfileLinkMeta(spotifyUrl);
-      if (profileMeta) {
-        pushDeduped({ key: "spotify", profileMeta });
-      } else {
-        const fallbackHref = safeFallbackHref(spotifyUrl);
-        if (fallbackHref) pushDeduped({ key: "spotify", fallbackHref });
-      }
+      // Unsupported Spotify URLs, such as user profiles, do not have native embeds.
     }
   }
 
@@ -120,29 +89,14 @@ export function MediaEmbedsSection({
           key: "bandcamp",
           fallbackHref: classified.embed_url,
         });
-      } else {
-        const profileMeta = bandcampProfileMeta ?? getMusicProfileLinkMeta(bandcampUrl);
-        if (profileMeta) {
-          pushDeduped({ key: "bandcamp", profileMeta });
-        } else {
-          const fallbackHref = safeFallbackHref(bandcampUrl);
-          if (fallbackHref) pushDeduped({ key: "bandcamp", fallbackHref });
-        }
       }
     } catch {
-      const profileMeta = bandcampProfileMeta ?? getMusicProfileLinkMeta(bandcampUrl);
-      if (profileMeta) {
-        pushDeduped({ key: "bandcamp", profileMeta });
-      } else {
-        const fallbackHref = safeFallbackHref(bandcampUrl);
-        if (fallbackHref) pushDeduped({ key: "bandcamp", fallbackHref });
-      }
+      // Plain Bandcamp artist pages do not expose a native iframe URL.
     }
   }
 
   if (entries.length === 0) return null;
 
-  const hasProfileCards = entries.some((entry) => Boolean(entry.profileMeta));
   const hasEmbeds = entries.some(
     (entry) =>
       Boolean(entry.meta) ||
@@ -151,9 +105,9 @@ export function MediaEmbedsSection({
   const showHeading = Boolean(
     heading &&
     heading.trim().length > 0 &&
-    !(hideHeadingWhenOnlyEmbeds && hasEmbeds && !hasProfileCards)
+    !(hideHeadingWhenOnlyEmbeds && hasEmbeds)
   );
-  const showDescription = Boolean(description && hasProfileCards);
+  const showDescription = Boolean(description && showHeading);
 
   return (
     <section className={className}>
@@ -167,15 +121,6 @@ export function MediaEmbedsSection({
       ) : null}
       <div className="space-y-4">
         {entries.map((entry) => {
-          if (entry.profileMeta) {
-            return (
-              <MusicProfileCard
-                key={`${entry.key}-profile`}
-                meta={entry.profileMeta}
-              />
-            );
-          }
-
           if (entry.key === "bandcamp" && entry.fallbackHref?.includes("bandcamp.com/EmbeddedPlayer")) {
             return (
               <div
@@ -195,27 +140,7 @@ export function MediaEmbedsSection({
             );
           }
 
-          if (!entry.meta) {
-            return (
-              <a
-                key={`${entry.key}-fallback`}
-                href={entry.fallbackHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] px-4 py-3 text-[var(--color-link)] hover:border-[var(--color-border-accent)]/50"
-              >
-                <span>
-                  Open{" "}
-                  {entry.key === "youtube"
-                    ? "YouTube"
-                    : entry.key === "spotify"
-                      ? "Spotify"
-                      : "Bandcamp"}
-                </span>
-                <span aria-hidden>↗</span>
-              </a>
-            );
-          }
+          if (!entry.meta) return null;
 
           const isYouTube = entry.meta.provider === "youtube";
           const spotifyHeight = entry.meta.kind === "track" ? 152 : 352;

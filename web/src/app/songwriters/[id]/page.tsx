@@ -19,10 +19,8 @@ import { splitHostedHappenings } from "@/lib/profile/splitHostedHappenings";
 import Link from "next/link";
 import Image from "next/image";
 import { QrShareBlock } from "@/components/shared/QrShareBlock";
-import { MediaEmbedsSection, MusicProfileCard, OrderedMediaEmbeds } from "@/components/media";
+import { MediaEmbedsSection, OrderedMediaEmbeds } from "@/components/media";
 import { isExternalEmbedsEnabled } from "@/lib/featureFlags";
-import { resolveBandcampProfileLinkMeta } from "@/lib/bandcampProfilePreviews";
-import { canonicalizeMediaReference, getMusicProfileLinkMeta } from "@/lib/mediaEmbeds";
 import { buildSongLinksDisplay, getSongLinkEmbedMeta, getSongPlatformInfo } from "@/lib/profile/songLinks";
 import { resolveYouTubeProfileEmbedUrl } from "@/lib/youtubeProfileEmbeds";
 export const dynamic = "force-dynamic";
@@ -466,9 +464,6 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
   const resolvedYouTubeProfileUrl = embedsEnabled
     ? (await resolveYouTubeProfileEmbedUrl(songwriter.youtube_url)) ?? songwriter.youtube_url
     : songwriter.youtube_url;
-  const bandcampProfileMeta = embedsEnabled
-    ? await resolveBandcampProfileLinkMeta(songwriter.bandcamp_url)
-    : null;
 
   return (
     <>
@@ -672,22 +667,6 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
               hasAnySongLinks,
             } = buildSongLinksDisplay(songwriter.featured_song_url, songwriter.song_links);
             const hasMusicPlatforms = musicPlatformLinks.length > 0;
-            const embeddedUrlKeys = new Set(
-              mediaEmbeds
-                .map((embed) => canonicalizeMediaReference(embed.url))
-                .filter((value): value is string => Boolean(value))
-                .map((value) => value.toLowerCase())
-            );
-            const cardDedupe = new Set<string>();
-            const musicProfileCards = musicPlatformLinks
-              .map((link) => getMusicProfileLinkMeta(link.url))
-              .filter((meta): meta is NonNullable<typeof meta> => Boolean(meta))
-              .filter((meta) => {
-                const key = meta.dedupe_key.toLowerCase();
-                if (embeddedUrlKeys.has(key) || cardDedupe.has(key)) return false;
-                cardDedupe.add(key);
-                return true;
-              });
 
             if (!hasAnySongLinks && !hasMusicPlatforms) return null;
 
@@ -713,21 +692,8 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
                     hideHeadingWhenOnlyEmbeds
                     className="mb-6"
                     excludedReferences={mediaEmbeds.map((embed) => embed.url)}
-                    bandcampProfileMeta={bandcampProfileMeta}
                   />
                 ) : null}
-
-                {/* Music profile cards (shown alongside explicit embeds, de-duped by URL) */}
-                {!embedsEnabled && musicProfileCards.length > 0 && (
-                  <div className="mb-6 space-y-3">
-                    <h3 className="font-[var(--font-family-serif)] text-xl text-[var(--color-text-primary)]">
-                      Music Profiles
-                    </h3>
-                    {musicProfileCards.map((meta) => (
-                      <MusicProfileCard key={meta.dedupe_key} meta={meta} />
-                    ))}
-                  </div>
-                )}
 
                 {/* Individual song/track links */}
                 {hasAnySongLinks && (
