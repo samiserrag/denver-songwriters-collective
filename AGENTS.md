@@ -1,6 +1,17 @@
 # Agent Operations Guide
 
-This file is the operational handbook for AI/code agents working in this repository.
+This file is the operational handbook and default orientation document for AI/code agents working in this repository.
+
+## Start Here
+
+When Sami says "Read AGENTS.md", every new agent should treat this file as the first stop for repo bearings, collaboration expectations, and environment-specific workarounds. Read this file before planning substantial work, then follow the linked canonical docs only as deeply as the task requires.
+
+Use this file to quickly learn:
+
+- who has approval authority and how stop-gates work
+- how Sami prefers scoped investigation, evidence, and execution
+- which repo-specific commands avoid known Codex sandbox problems
+- when browser, Supabase, Axiom, GitHub, or production validation is expected
 
 ## Canonical Authority
 
@@ -141,6 +152,30 @@ Use Claude + Chrome MCP for browser-side validation when workflows require real 
 - Post-change smoke checks where CLI output is insufficient
 
 Capture concrete evidence (screen state, route, action, outcome) in your summary.
+
+### Browser QA With Local Dev Servers
+
+Codex sandboxed shell commands may be blocked from starting local dev servers with errors like:
+
+```text
+Error: listen EPERM: operation not permitted 0.0.0.0:3000
+Error: listen EPERM: operation not permitted 127.0.0.1:3001
+```
+
+When browser QA needs a local Next.js server and Codex cannot bind/listen, prompt Sami to start the server outside Codex in a normal terminal:
+
+```bash
+cd /Users/samiserrag/Documents/GitHub/denver-songwriters-collective/web
+npm run dev -- -H 127.0.0.1 -p 3001
+```
+
+Then use browser tools against:
+
+```text
+http://127.0.0.1:3001
+```
+
+This is the preferred fallback for visual QA. Do not treat the Codex `listen EPERM` as an app failure unless the same command fails in Sami's normal terminal.
 
 ## Email Asset Note
 

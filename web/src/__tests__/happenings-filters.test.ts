@@ -141,11 +141,18 @@ describe('HappeningsFilters Component', () => {
       expect(componentContent).toContain('happenings-date-filter');
     });
 
-    it('should explain saved filters before the saved filter actions', () => {
-      expect(componentContent).toContain('Save current stores your type, day, cost, and location filters.');
-      expect(componentContent).toContain('Save current view');
-      expect(componentContent).toContain('Apply saved view');
-      expect(componentContent).toContain('Reset saved view');
+    it('should expose saved setup outside advanced filters with clear actions', () => {
+      expect(componentContent).toContain('Saved setup');
+      expect(componentContent).toContain('Saved setup stores your type, day, cost, favorites, CSC, and location choices.');
+      expect(componentContent).toContain('Apply saved setup');
+      expect(componentContent).toContain('Manual apply');
+      expect(componentContent).toContain('Auto-open on arrival');
+
+      const savedSetupIndex = componentContent.indexOf('Saved setup');
+      const moreFiltersIndex = componentContent.indexOf('More filters');
+      expect(savedSetupIndex).toBeGreaterThan(-1);
+      expect(moreFiltersIndex).toBeGreaterThan(-1);
+      expect(savedSetupIndex).toBeLessThan(moreFiltersIndex);
     });
   });
 });
