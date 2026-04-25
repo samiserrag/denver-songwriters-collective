@@ -79,4 +79,27 @@ describe("media embed rendering", () => {
     expect(html).not.toContain("<iframe");
     expect(getByText("Open on Bandcamp")).toBeTruthy();
   });
+
+  it("renders enriched bandcamp profile cards when metadata is available", () => {
+    const { container, getByText } = render(
+      <MediaEmbedsSection
+        bandcampUrl="https://testartist.bandcamp.com"
+        bandcampProfileMeta={{
+          provider: "bandcamp",
+          href: "https://testartist.bandcamp.com/",
+          dedupe_key: "https://testartist.bandcamp.com/",
+          headline: "Test Artist",
+          supportingText: "songs from Colorado",
+          ctaLabel: "Listen on Bandcamp",
+          thumbnailUrl: "https://f4.bcbits.com/img/a123.jpg",
+        }}
+      />
+    );
+
+    const image = container.querySelector("img");
+    expect(image?.getAttribute("src")).toBe("https://f4.bcbits.com/img/a123.jpg");
+    expect(getByText("Test Artist")).toBeTruthy();
+    expect(getByText("songs from Colorado")).toBeTruthy();
+    expect(getByText("Listen on Bandcamp")).toBeTruthy();
+  });
 });

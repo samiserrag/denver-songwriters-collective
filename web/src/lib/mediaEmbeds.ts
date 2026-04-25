@@ -337,6 +337,7 @@ export interface MusicProfileLinkMeta {
   headline: string;
   supportingText: string;
   ctaLabel: string;
+  thumbnailUrl?: string | null;
 }
 
 function canonicalizeHttpUrl(raw: string): string | null {

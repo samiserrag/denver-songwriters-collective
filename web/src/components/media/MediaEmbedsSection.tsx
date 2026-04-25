@@ -6,6 +6,7 @@ import {
   normalizeMediaEmbedUrl,
 } from "@/lib/mediaEmbeds";
 import { MusicProfileCard } from "./MusicProfileCard";
+import type { MusicProfileLinkMeta } from "@/lib/mediaEmbeds";
 
 interface MediaEmbedsSectionProps {
   youtubeUrl?: string | null;
@@ -16,6 +17,7 @@ interface MediaEmbedsSectionProps {
   hideHeadingWhenOnlyEmbeds?: boolean;
   className?: string;
   excludedReferences?: string[];
+  bandcampProfileMeta?: MusicProfileLinkMeta | null;
 }
 
 function safeFallbackHref(value: string | null | undefined): string | null {
@@ -39,6 +41,7 @@ export function MediaEmbedsSection({
   hideHeadingWhenOnlyEmbeds = false,
   className,
   excludedReferences = [],
+  bandcampProfileMeta,
 }: MediaEmbedsSectionProps) {
   const seen = new Set<string>();
 
@@ -118,7 +121,7 @@ export function MediaEmbedsSection({
           fallbackHref: classified.embed_url,
         });
       } else {
-        const profileMeta = getMusicProfileLinkMeta(bandcampUrl);
+        const profileMeta = bandcampProfileMeta ?? getMusicProfileLinkMeta(bandcampUrl);
         if (profileMeta) {
           pushDeduped({ key: "bandcamp", profileMeta });
         } else {
@@ -127,7 +130,7 @@ export function MediaEmbedsSection({
         }
       }
     } catch {
-      const profileMeta = getMusicProfileLinkMeta(bandcampUrl);
+      const profileMeta = bandcampProfileMeta ?? getMusicProfileLinkMeta(bandcampUrl);
       if (profileMeta) {
         pushDeduped({ key: "bandcamp", profileMeta });
       } else {

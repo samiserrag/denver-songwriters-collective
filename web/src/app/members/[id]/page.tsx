@@ -19,6 +19,7 @@ import type { Database } from "@/lib/supabase/database.types";
 import Link from "next/link";
 import { MediaEmbedsSection, MusicProfileCard, OrderedMediaEmbeds } from "@/components/media";
 import { isExternalEmbedsEnabled } from "@/lib/featureFlags";
+import { resolveBandcampProfileLinkMeta } from "@/lib/bandcampProfilePreviews";
 import { canonicalizeMediaReference, getMusicProfileLinkMeta } from "@/lib/mediaEmbeds";
 import { buildSongLinksDisplay, getSongLinkEmbedMeta, getSongPlatformInfo } from "@/lib/profile/songLinks";
 import { resolveYouTubeProfileEmbedUrl } from "@/lib/youtubeProfileEmbeds";
@@ -391,6 +392,9 @@ export default async function MemberDetailPage({ params }: MemberDetailPageProps
   const resolvedYouTubeProfileUrl = embedsEnabled
     ? (await resolveYouTubeProfileEmbedUrl(member.youtube_url)) ?? member.youtube_url
     : member.youtube_url;
+  const bandcampProfileMeta = embedsEnabled
+    ? await resolveBandcampProfileLinkMeta(member.bandcamp_url)
+    : null;
 
   return (
     <>
@@ -637,6 +641,7 @@ export default async function MemberDetailPage({ params }: MemberDetailPageProps
                     hideHeadingWhenOnlyEmbeds
                     className="mb-6"
                     excludedReferences={mediaEmbeds.map((embed) => embed.url)}
+                    bandcampProfileMeta={bandcampProfileMeta}
                   />
                 ) : null}
 
