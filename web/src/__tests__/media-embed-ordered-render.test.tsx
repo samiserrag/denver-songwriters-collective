@@ -16,6 +16,18 @@ describe("OrderedMediaEmbeds rendering", () => {
     expect(iframes[1].getAttribute("src")).toContain("spotify.com");
   });
 
+  it("renders Spotify artist embeds with artist-specific iframe title", () => {
+    const embeds = [
+      { id: "1", url: "https://open.spotify.com/artist/2CIMQHirSU0MQqyYHq0eOx", provider: "spotify", kind: "audio", position: 0 },
+    ];
+
+    const { container } = render(<OrderedMediaEmbeds embeds={embeds} />);
+    const iframe = container.querySelector("iframe");
+    expect(iframe?.getAttribute("src")).toBe("https://open.spotify.com/embed/artist/2CIMQHirSU0MQqyYHq0eOx");
+    expect(iframe?.getAttribute("title")).toBe("Spotify artist embed");
+  });
+
+
   it("renders external URLs as safe outbound cards with rel noopener noreferrer", () => {
     const embeds = [
       { id: "1", url: "https://soundcloud.com/artist/track", provider: "external", kind: "external", position: 0 },

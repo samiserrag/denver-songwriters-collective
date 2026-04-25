@@ -46,6 +46,18 @@ describe("media embed normalization", () => {
     });
   });
 
+  it("normalizes Spotify artist profile links to artist embed URLs", () => {
+    const artist = normalizeMediaEmbedUrl("https://open.spotify.com/artist/2CIMQHirSU0MQqyYHq0eOx", {
+      expectedProvider: "spotify",
+    });
+
+    expect(artist).toEqual({
+      provider: "spotify",
+      kind: "artist",
+      normalized_url: "https://open.spotify.com/embed/artist/2CIMQHirSU0MQqyYHq0eOx",
+    });
+  });
+
   it("rejects invalid hostnames", () => {
     expect(() =>
       normalizeMediaEmbedUrl("https://evil.example.com/watch?v=abc123", { expectedProvider: "youtube" })

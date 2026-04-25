@@ -23,6 +23,17 @@ const IMPORT_FIELDS: Array<keyof MusicProfileImportInput> = [
   "bandcamp_url",
 ];
 
+function isSpotifyArtistProfileUrl(raw: string): boolean {
+  try {
+    const parsed = new URL(raw);
+    const host = parsed.hostname.toLowerCase().replace(/^www\./, "");
+    const segments = parsed.pathname.split("/").filter(Boolean);
+    return host === "open.spotify.com" && segments[0] === "artist" && Boolean(segments[1]);
+  } catch {
+    return false;
+  }
+}
+
 export function getEmbeddableMediaImportsFromMusicProfiles(
   input: MusicProfileImportInput,
   existingUrls: string[]
@@ -39,6 +50,15 @@ export function getEmbeddableMediaImportsFromMusicProfiles(
   for (const field of IMPORT_FIELDS) {
     const raw = input[field]?.trim();
     if (!raw) continue;
+
+    if (field === "spotify_url" && isSpotifyArtistProfileUrl(raw)) {
+      warnings.push({
+        field,
+        url: raw,
+        reason: "Spotify artist profiles render directly from Music Profiles and do not need to be imported.",
+      });
+      continue;
+    }
 
     try {
       const classified = classifyUrl(raw);
@@ -78,4 +98,3 @@ export function getEmbeddableMediaImportsFromMusicProfiles(
 
   return { importableUrls, warnings };
 }
-

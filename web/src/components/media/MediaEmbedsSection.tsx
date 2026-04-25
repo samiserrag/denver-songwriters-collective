@@ -15,6 +15,7 @@ interface MediaEmbedsSectionProps {
   description?: string;
   hideHeadingWhenOnlyEmbeds?: boolean;
   className?: string;
+  excludedReferences?: string[];
 }
 
 function safeFallbackHref(value: string | null | undefined): string | null {
@@ -37,8 +38,14 @@ export function MediaEmbedsSection({
   description,
   hideHeadingWhenOnlyEmbeds = false,
   className,
+  excludedReferences = [],
 }: MediaEmbedsSectionProps) {
   const seen = new Set<string>();
+
+  for (const reference of excludedReferences) {
+    const key = canonicalizeMediaReference(reference);
+    if (key) seen.add(key);
+  }
 
   const entries: Array<{
     key: "youtube" | "spotify" | "bandcamp";

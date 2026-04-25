@@ -29,7 +29,7 @@ describe("media embed rendering", () => {
     expect(html).not.toContain("<script");
   });
 
-  it("renders a profile card for non-embeddable music profile URLs", () => {
+  it("renders Spotify artist profile URLs as native embeds and keeps YouTube profile URLs as cards", () => {
     const { container, getByText } = render(
       <MediaEmbedsSection
         youtubeUrl="https://youtube.com/@marilynwalker"
@@ -39,9 +39,20 @@ describe("media embed rendering", () => {
 
     const html = container.innerHTML;
     expect(html).not.toContain("youtube-nocookie.com/embed");
-    expect(html).not.toContain("open.spotify.com/embed");
+    expect(html).toContain("open.spotify.com/embed/artist/2CIMQHirSU0MQqyYHq0eOx");
+    expect(html).toContain("Spotify artist embed");
     expect(getByText("Open on YouTube")).toBeTruthy();
-    expect(getByText("Open on Spotify")).toBeTruthy();
+  });
+
+  it("dedupes Spotify artist profile URLs against existing ordered embeds", () => {
+    const { container } = render(
+      <MediaEmbedsSection
+        spotifyUrl="https://open.spotify.com/artist/2CIMQHirSU0MQqyYHq0eOx"
+        excludedReferences={["https://open.spotify.com/embed/artist/2CIMQHirSU0MQqyYHq0eOx"]}
+      />
+    );
+
+    expect(container.innerHTML).toBe("");
   });
 
   it("renders bandcamp profile links as profile cards", () => {

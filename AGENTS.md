@@ -31,6 +31,36 @@ For non-trivial work:
 
 ## Tooling Expectations (Use Frequently)
 
+### Codex Vitest / TypeScript Workarounds
+
+In Codex sandbox sessions, Vitest's default isolation mode may fail before tests load with:
+
+```text
+EPERM: operation not permitted, mkdir '.../web/.tmp/<random>/client'
+```
+
+Use this command shape for focused Vitest runs:
+
+```bash
+cd web
+CODEX_CI= TMPDIR="$PWD/.tmp" npm run test -- --run --pool=threads --isolate=false <test files>
+```
+
+This is a sandbox workaround, not a test behavior change. `--pool=threads --isolate=false` avoids the denied temp `client` directory path and still runs Vitest.
+
+For TypeScript checks, avoid sandbox writes to `tsconfig.tsbuildinfo`:
+
+```bash
+cd web
+npx tsc --noEmit --incremental false
+```
+
+If TypeScript reports duplicate generated `.next/types/routes.d*.ts` identifiers, remove the generated `.next` directory first:
+
+```bash
+rm -rf web/.next
+```
+
 ### Axiom CLI
 
 Use Axiom often for production log and query validation during investigation and post-change verification.

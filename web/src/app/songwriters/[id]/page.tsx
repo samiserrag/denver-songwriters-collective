@@ -685,27 +685,28 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
                 <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">Listen to My Music</h2>
 
                 {embedsEnabled && mediaEmbeds.length > 0 ? (
-                  <div className="mb-6">
-                    <OrderedMediaEmbeds
-                      embeds={mediaEmbeds}
-                      heading={null}
-                    />
-                  </div>
-                ) : embedsEnabled ? (
-                  <div className="mb-6">
-                    <MediaEmbedsSection
-                      youtubeUrl={songwriter.youtube_url}
-                      spotifyUrl={songwriter.spotify_url}
-                      bandcampUrl={songwriter.bandcamp_url}
-                      heading="Music Profiles"
-                      description="These are artist and channel pages."
-                      hideHeadingWhenOnlyEmbeds
-                    />
-                  </div>
+                  <OrderedMediaEmbeds
+                    embeds={mediaEmbeds}
+                    heading={null}
+                    className="mb-6"
+                  />
+                ) : null}
+
+                {embedsEnabled ? (
+                  <MediaEmbedsSection
+                    youtubeUrl={songwriter.youtube_url}
+                    spotifyUrl={songwriter.spotify_url}
+                    bandcampUrl={songwriter.bandcamp_url}
+                    heading="Music Profiles"
+                    description="These are artist and channel pages."
+                    hideHeadingWhenOnlyEmbeds
+                    className="mb-6"
+                    excludedReferences={mediaEmbeds.map((embed) => embed.url)}
+                  />
                 ) : null}
 
                 {/* Music profile cards (shown alongside explicit embeds, de-duped by URL) */}
-                {(!embedsEnabled || mediaEmbeds.length > 0) && musicProfileCards.length > 0 && (
+                {!embedsEnabled && musicProfileCards.length > 0 && (
                   <div className="mb-6 space-y-3">
                     <h3 className="font-[var(--font-family-serif)] text-xl text-[var(--color-text-primary)]">
                       Music Profiles

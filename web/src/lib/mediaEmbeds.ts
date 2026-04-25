@@ -5,6 +5,7 @@ export type MediaEmbedKind =
   | "playlist"
   | "track"
   | "album"
+  | "artist"
   | "episode"
   | "show";
 
@@ -209,8 +210,8 @@ function normalizeSpotifyUrl(inputUrl: URL, field?: MediaFieldName): NormalizedM
     id = second;
   }
 
-  if (!["track", "playlist", "album", "show", "episode"].includes(kind)) {
-    throw new MediaEmbedValidationError("Spotify URL must be a track, playlist, album, show, or episode.", field);
+  if (!["track", "playlist", "album", "artist", "show", "episode"].includes(kind)) {
+    throw new MediaEmbedValidationError("Spotify URL must be a track, playlist, album, artist, show, or episode.", field);
   }
 
   const resourceId = assertId(id, SPOTIFY_ID_RE, `Spotify ${kind}`, field);
@@ -290,7 +291,7 @@ export function getMediaEmbedIframeMeta(normalizedUrl: string): MediaEmbedIframe
     provider: "spotify",
     kind: normalized.kind,
     src: normalized.normalized_url,
-    title: `Spotify ${normalized.kind} player`,
+    title: normalized.kind === "artist" ? "Spotify artist embed" : `Spotify ${normalized.kind} player`,
     providerLabel: "Spotify",
     allow: "autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture",
   };
@@ -423,6 +424,14 @@ export function getMusicProfileLinkMeta(raw: string | null | undefined): MusicPr
 
   if (SPOTIFY_HOSTS.has(host)) {
     if (!segments[0] || !segments[1]) return null;
+
+    try {
+      const normalized = normalizeSpotifyUrl(parsed);
+      if (normalized.kind === "artist") return null;
+    } catch {
+      // Fall through to profile-card handling for non-embeddable Spotify URLs.
+    }
+
     if (segments[0] !== "artist" && segments[0] !== "user") return null;
 
     const isArtist = segments[0] === "artist";
