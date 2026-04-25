@@ -4,3 +4,5 @@ export { MediaEmbedsSection } from "./MediaEmbedsSection";
 export { MediaEmbedsEditor } from "./MediaEmbedsEditor";
 export { OrderedMediaEmbeds } from "./OrderedMediaEmbeds";
 export { MusicProfileCard } from "./MusicProfileCard";
+export { SongLinkEmbed } from "./SongLinkEmbed";
+export { UnsupportedMusicLinksNotice } from "./UnsupportedMusicLinksNotice";

@@ -276,6 +276,14 @@ describe("CSP frame-src includes bandcamp", () => {
     );
     expect(source).toContain("bandcamp.com");
   });
+
+  it("next.config.ts frame-src includes ReverbNation", () => {
+    const source = fs.readFileSync(
+      path.join(ROOT, "../next.config.ts"),
+      "utf-8"
+    );
+    expect(source).toContain("reverbnation.com");
+  });
 });
 
 // ---------------------------------------------------------------------------

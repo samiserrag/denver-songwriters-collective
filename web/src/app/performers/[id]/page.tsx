@@ -6,7 +6,12 @@ import { SocialIcon, TipIcon, buildSocialLinks, buildTipLinks } from "@/componen
 import type { Database } from "@/lib/supabase/database.types";
 import Image from "next/image";
 import Link from "next/link";
-import { buildSongLinksDisplay, getSongLinkEmbedMeta, getSongPlatformInfo } from "@/lib/profile/songLinks";
+import { SongLinkEmbed, UnsupportedMusicLinksNotice } from "@/components/media";
+import {
+  buildSongLinkEmbedMap,
+  buildSongLinksDisplay,
+  getUnsupportedSongLinks,
+} from "@/lib/profile/songLinks";
 export const dynamic = "force-dynamic";
 
 type DBProfile = Database["public"]["Tables"]["profiles"]["Row"];
@@ -32,6 +37,8 @@ export default async function PerformerDetailPage({ params }: PerformerDetailPag
   }
 
   const performer = profile as DBProfile;
+  const { data: { user: sessionUser } } = await supabase.auth.getUser();
+  const isOwner = sessionUser?.id === performer.id;
 
   // Query galleries linked to this performer via gallery_album_links (creator + collaborator)
   // with legacy fallback to created_by for albums not yet backfilled
@@ -91,6 +98,9 @@ export default async function PerformerDetailPage({ params }: PerformerDetailPag
   // Build social and tip links using shared helpers
   const socialLinks = buildSocialLinks(performer);
   const tipLinks = buildTipLinks(performer);
+  const songLinksDisplay = buildSongLinksDisplay(performer.featured_song_url, performer.song_links);
+  const songLinkEmbedMap = await buildSongLinkEmbedMap(performer.featured_song_url, performer.song_links);
+  const unsupportedMusicLinks = isOwner ? getUnsupportedSongLinks(songLinksDisplay, songLinkEmbedMap) : [];
 
   return (
     <>
@@ -256,175 +266,32 @@ export default async function PerformerDetailPage({ params }: PerformerDetailPag
             const {
               featuredSongUrl,
               additionalSongLinks,
-              hasAnySongLinks,
-            } = buildSongLinksDisplay(performer.featured_song_url, performer.song_links);
+            } = songLinksDisplay;
+            const hasRenderableSongLinks = songLinkEmbedMap.size > 0;
+            const hasOwnerUnsupportedLinks = unsupportedMusicLinks.length > 0;
 
-            if (!hasAnySongLinks) return null;
+            if (!hasRenderableSongLinks && !hasOwnerUnsupportedLinks) return null;
 
             return (
             <section className="mb-12">
               <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">Listen to My Music</h2>
               <div className="grid gap-3 max-w-xl">
-                {featuredSongUrl && (
+                {featuredSongUrl && songLinkEmbedMap.has(featuredSongUrl) && (
                   <div className="space-y-1">
                     <p className="text-xs uppercase tracking-wide text-[var(--color-text-tertiary)]">
                       Featured Song
                     </p>
                     {(() => {
-                      const embedMeta = getSongLinkEmbedMeta(featuredSongUrl);
-                      if (embedMeta?.provider === "bandcamp") {
-                        return (
-                          <div className="rounded-xl overflow-hidden border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)]">
-                            <iframe
-                              src={embedMeta.src}
-                              title="Bandcamp player"
-                              loading="lazy"
-                              sandbox="allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox"
-                              referrerPolicy="strict-origin-when-cross-origin"
-                              className="block w-full border-0"
-                              height={120}
-                            />
-                          </div>
-                        );
-                      }
-
-                      if (embedMeta?.provider === "youtube") {
-                        return (
-                          <div className="rounded-xl overflow-hidden border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)]">
-                            <div className="relative w-full pt-[56.25%]">
-                              <iframe
-                                src={embedMeta.iframe.src}
-                                title={embedMeta.iframe.title}
-                                loading="lazy"
-                                allow={embedMeta.iframe.allow}
-                                allowFullScreen
-                                referrerPolicy="strict-origin-when-cross-origin"
-                                className="absolute inset-0 h-full w-full border-0"
-                              />
-                            </div>
-                          </div>
-                        );
-                      }
-
-                      if (embedMeta?.provider === "spotify") {
-                        const spotifyHeight = embedMeta.iframe.kind === "track" ? 152 : 352;
-                        return (
-                          <div className="rounded-xl overflow-hidden border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)]">
-                            <iframe
-                              src={embedMeta.iframe.src}
-                              title={embedMeta.iframe.title}
-                              loading="lazy"
-                              allow={embedMeta.iframe.allow}
-                              referrerPolicy="strict-origin-when-cross-origin"
-                              className="block w-full border-0"
-                              height={spotifyHeight}
-                            />
-                          </div>
-                        );
-                      }
-
-                      const platform = getSongPlatformInfo(featuredSongUrl);
-                      return (
-                        <Link
-                          href={featuredSongUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={`flex items-center gap-3 px-4 py-3 rounded-lg ${platform.color} hover:opacity-90 text-white transition-opacity ring-2 ring-[var(--color-border-accent)]/60`}
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 3l14 9-14 9V3z" />
-                          </svg>
-                          <span className="font-semibold">{platform.name}</span>
-                          <span className="text-sm text-white/90">Featured</span>
-                          <svg className="w-4 h-4 ml-auto" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                          </svg>
-                        </Link>
-                      );
+                      const embedMeta = songLinkEmbedMap.get(featuredSongUrl);
+                      return embedMeta ? <SongLinkEmbed embed={embedMeta} /> : null;
                     })()}
                   </div>
                 )}
                 {additionalSongLinks.map((link) => {
-                  const embedMeta = getSongLinkEmbedMeta(link);
-                  if (embedMeta?.provider === "bandcamp") {
-                    return (
-                      <div
-                        key={link}
-                        className="rounded-xl overflow-hidden border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)]"
-                      >
-                        <iframe
-                          src={embedMeta.src}
-                          title="Bandcamp player"
-                          loading="lazy"
-                          sandbox="allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox"
-                          referrerPolicy="strict-origin-when-cross-origin"
-                          className="block w-full border-0"
-                          height={120}
-                        />
-                      </div>
-                    );
-                  }
-
-                  if (embedMeta?.provider === "youtube") {
-                    return (
-                      <div
-                        key={link}
-                        className="rounded-xl overflow-hidden border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)]"
-                      >
-                        <div className="relative w-full pt-[56.25%]">
-                          <iframe
-                            src={embedMeta.iframe.src}
-                            title={embedMeta.iframe.title}
-                            loading="lazy"
-                            allow={embedMeta.iframe.allow}
-                            allowFullScreen
-                            referrerPolicy="strict-origin-when-cross-origin"
-                            className="absolute inset-0 h-full w-full border-0"
-                          />
-                        </div>
-                      </div>
-                    );
-                  }
-
-                  if (embedMeta?.provider === "spotify") {
-                    const spotifyHeight = embedMeta.iframe.kind === "track" ? 152 : 352;
-                    return (
-                      <div
-                        key={link}
-                        className="rounded-xl overflow-hidden border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)]"
-                      >
-                        <iframe
-                          src={embedMeta.iframe.src}
-                          title={embedMeta.iframe.title}
-                          loading="lazy"
-                          allow={embedMeta.iframe.allow}
-                          referrerPolicy="strict-origin-when-cross-origin"
-                          className="block w-full border-0"
-                          height={spotifyHeight}
-                        />
-                      </div>
-                    );
-                  }
-
-                  const platform = getSongPlatformInfo(link);
-                  return (
-                    <Link
-                      key={link}
-                      href={link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`flex items-center gap-3 px-4 py-3 rounded-lg ${platform.color} hover:opacity-90 text-white transition-opacity`}
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                      </svg>
-                      <span className="font-medium">{platform.name}</span>
-                      <svg className="w-4 h-4 ml-auto" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                      </svg>
-                    </Link>
-                  );
+                  const embedMeta = songLinkEmbedMap.get(link);
+                  return embedMeta ? <SongLinkEmbed key={link} embed={embedMeta} /> : null;
                 })}
+                {isOwner ? <UnsupportedMusicLinksNotice links={unsupportedMusicLinks} /> : null}
               </div>
             </section>
             );
