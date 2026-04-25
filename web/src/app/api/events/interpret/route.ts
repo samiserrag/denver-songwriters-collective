@@ -39,7 +39,7 @@ import {
 export const maxDuration = 60;
 
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
-const DEFAULT_INTERPRETER_MODEL = "gpt-5.2";
+const DEFAULT_INTERPRETER_MODEL = "gpt-5.5";
 const GOOGLE_GEOCODING_API_URL = "https://maps.googleapis.com/maps/api/geocode/json";
 type SupabaseServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>;
 
@@ -949,6 +949,13 @@ function buildSystemPrompt() {
     "- For create mode title formatting, prefer: `<Venue Name> - <Event Name>` when venue is known.",
     "- Always include concrete event details in description (at minimum when/where/type/cost if known).",
     "- Set event_type/category from explicit wording: if user says showcase, use showcase (not open_mic).",
+    "- Do not invent facts. Use only the user's message, attached flyer text, provided source notes, venue catalog, and deterministic server hints.",
+    "- Treat Google Maps links as location hints only. Never put Google Maps links in external_url.",
+    "- If the user provides source URLs, preserve the best non-maps event/venue/organizer URL as external_url when appropriate.",
+    "- If recurrence is visible in message or flyer text, preserve it as a recurring series instead of silently downgrading to single.",
+    "- Only enable performer slots when explicitly requested with slot/timeslot/lineup language.",
+    "- For gig events, do not add signup_time or performer slots unless explicitly requested.",
+    "- Default timezone to America/Denver unless the source clearly says otherwise.",
     "- Keep human_summary concise and deterministic.",
   ].join("\n");
 }

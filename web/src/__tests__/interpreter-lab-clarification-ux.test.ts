@@ -143,11 +143,11 @@ describe("Phase 8C — follow-up instruction callout", () => {
 // ---------------------------------------------------------------------------
 describe("Phase 8C — existing functionality preserved", () => {
   it("preserves next_action badge rendering", () => {
-    expect(labSource).toContain('responseGuidance.next_action.replace(/_/g, " ")');
+    expect(labSource).toContain("getDraftReadinessLabel(responseGuidance)");
   });
 
   it("preserves confidence display", () => {
-    expect(labSource).toContain("Confidence:");
+    expect(labSource).toContain("getConfidenceLabel(responseGuidance.confidence)");
     expect(labSource).toContain("responseGuidance.confidence");
   });
 
@@ -161,7 +161,7 @@ describe("Phase 8C — existing functionality preserved", () => {
   });
 
   it("preserves ready state green container", () => {
-    expect(labSource).toContain("The draft is ready.");
+    expect(labSource).toContain("Review the extracted fields below.");
     expect(labSource).toContain("bg-emerald-500/5");
   });
 

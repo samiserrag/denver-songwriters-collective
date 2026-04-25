@@ -6,7 +6,7 @@
  * 2. Host subtitle includes 3-step cue.
  * 3. Host run button uses two-state logic (Generate Draft / Send Answer).
  * 4. Host route contains no lab/debug wording visible to users.
- * 5. Render order: Latest Reply appears before What Happens Next,
+ * 5. Render order: Draft Status appears before Review Draft,
  *    both appear before Draft Summary.
  * 6. Conversation history is visually de-emphasized for host variant.
  */
@@ -30,7 +30,7 @@ describe("INTERPRETER-14 — Host copy updates", () => {
 
   it("host subtitle includes 3-step cue with Generate Draft reference", () => {
     expect(src).toContain(
-      "Describe your event, click Generate Draft, then answer follow-up questions in the same box. Your event stays private until you publish it."
+      "Describe your event, paste source notes or flyer text, click Generate Draft, then answer follow-up questions in the same box. Your event stays private until you publish it."
     );
   });
 
@@ -96,21 +96,21 @@ describe("INTERPRETER-14 — Host variant has no lab/debug wording", () => {
 // ---------------------------------------------------------------------------
 // D) Render order — conversation zone sections
 // ---------------------------------------------------------------------------
-describe("INTERPRETER-14 — Render order: Latest Reply → What Happens Next → Draft Summary", () => {
-  it("Latest Reply appears before What Happens Next in source", () => {
-    const latestReplyIdx = src.indexOf("Latest Reply");
-    const whatNextIdx = src.indexOf("What Happens Next");
-    expect(latestReplyIdx).toBeGreaterThan(-1);
-    expect(whatNextIdx).toBeGreaterThan(-1);
-    expect(latestReplyIdx).toBeLessThan(whatNextIdx);
+describe("INTERPRETER-14 — Render order: Draft Status → Review Draft → Draft Summary", () => {
+  it("Draft Status appears before Review Draft in source", () => {
+    const draftStatusIdx = src.indexOf("Draft Status");
+    const reviewDraftIdx = src.indexOf("Review Draft");
+    expect(draftStatusIdx).toBeGreaterThan(-1);
+    expect(reviewDraftIdx).toBeGreaterThan(-1);
+    expect(draftStatusIdx).toBeLessThan(reviewDraftIdx);
   });
 
-  it("What Happens Next appears before Draft Summary in source", () => {
-    const whatNextIdx = src.indexOf("What Happens Next");
+  it("Review Draft appears before Draft Summary in source", () => {
+    const reviewDraftIdx = src.indexOf("Review Draft");
     const draftSummaryIdx = src.indexOf("Draft Summary");
-    expect(whatNextIdx).toBeGreaterThan(-1);
+    expect(reviewDraftIdx).toBeGreaterThan(-1);
     expect(draftSummaryIdx).toBeGreaterThan(-1);
-    expect(whatNextIdx).toBeLessThan(draftSummaryIdx);
+    expect(reviewDraftIdx).toBeLessThan(draftSummaryIdx);
   });
 
   it("Draft Summary appears before Conversation History / Previous Messages in source", () => {

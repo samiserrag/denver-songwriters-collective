@@ -139,4 +139,12 @@ describe("Phase 9B — event-type reliability", () => {
   it("system prompt now instructs showcase/open_mic type correctness", () => {
     expect(interpretRouteSource).toContain("if user says showcase, use showcase");
   });
+
+  it("system prompt includes event-ops safety rules from the browser agent playbook", () => {
+    expect(interpretRouteSource).toContain("Do not invent facts");
+    expect(interpretRouteSource).toContain("Never put Google Maps links in external_url");
+    expect(interpretRouteSource).toContain("Only enable performer slots when explicitly requested");
+    expect(interpretRouteSource).toContain("For gig events, do not add signup_time or performer slots unless explicitly requested");
+    expect(interpretRouteSource).toContain("Default timezone to America/Denver");
+  });
 });

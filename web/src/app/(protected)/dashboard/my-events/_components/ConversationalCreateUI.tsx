@@ -3,6 +3,20 @@
 import { Fragment, useState, useCallback, useRef, useEffect, useMemo } from "react";
 import Link from "next/link";
 import {
+  ArrowLeft,
+  Bot,
+  CheckCircle2,
+  ClipboardCheck,
+  FileText,
+  History,
+  ImagePlus,
+  Loader2,
+  Send,
+  Sparkles,
+  Upload,
+  X,
+} from "lucide-react";
+import {
   type InterpretMode,
   type ImageInput,
   IMAGE_INPUT_LIMITS,
@@ -36,7 +50,9 @@ interface ConversationEntry {
 
 interface QualityHint {
   field: string;
-  hint: string;
+  hint?: string;
+  impact?: string;
+  prompt?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -131,6 +147,24 @@ const FIELD_INPUT_HINTS: Record<string, { label: string; examples: string[] }> =
 
 function getFieldHint(field: string): { label: string; examples: string[] } | null {
   return FIELD_INPUT_HINTS[field] ?? null;
+}
+
+function getQualityHintText(hint: QualityHint): string {
+  return hint.prompt ?? hint.hint ?? hint.impact ?? "";
+}
+
+function getDraftReadinessLabel(response: ResponseGuidance): string {
+  if (response.next_action === "ask_clarification") return "Needs one detail";
+  if (response.next_action === "await_confirmation") return "Ready for review";
+  if (response.next_action === "show_preview") return "Draft preview";
+  return "Ready";
+}
+
+function getConfidenceLabel(confidence: number | null): string | null {
+  if (confidence === null) return null;
+  if (confidence >= 0.82) return "High confidence";
+  if (confidence >= 0.62) return "Moderate confidence";
+  return "Low confidence";
 }
 
 interface ResponseGuidance {
@@ -860,7 +894,11 @@ export function ConversationalCreateUI({
       : [];
     const hints = Array.isArray(maybe.quality_hints)
       ? (maybe.quality_hints as QualityHint[]).filter(
-          (h) => typeof h === "object" && h !== null && typeof h.field === "string" && typeof h.hint === "string"
+          (h) =>
+            typeof h === "object" &&
+            h !== null &&
+            typeof h.field === "string" &&
+            getQualityHintText(h).length > 0
         )
       : [];
     return {
@@ -889,6 +927,9 @@ export function ConversationalCreateUI({
       : conversationHistory.length > 0
         ? "Update Draft"
         : "Generate Draft";
+  const isClarificationTurn = responseGuidance?.next_action === "ask_clarification";
+  const canSubmitInterpret =
+    !isSubmitting && (message.trim().length > 0 || stagedImages.length > 0);
 
   // Phase 8E: host variant forces create mode at logic level
   const effectiveMode: InterpretMode = isHostVariant ? "create" : mode;
@@ -1550,11 +1591,16 @@ export function ConversationalCreateUI({
         {/* Phase 8E: variant-aware header */}
         {isHostVariant ? (
           <div>
-            <h1 className="font-[var(--font-family-serif)] text-3xl text-[var(--color-text-primary)] mb-2">
-              Create Happening with AI
-            </h1>
+            <div className="mb-2 flex items-center gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[var(--color-border-input)] bg-[var(--color-bg-secondary)] text-[var(--color-accent-primary)]">
+                <Bot className="h-5 w-5" aria-hidden="true" />
+              </span>
+              <h1 className="font-[var(--font-family-serif)] text-3xl text-[var(--color-text-primary)]">
+                Create Happening with AI
+              </h1>
+            </div>
             <p className="text-[var(--color-text-secondary)]">
-              Describe your event, click Generate Draft, then answer follow-up questions in the same box. Your event stays private until you publish it.
+              Describe your event, paste source notes or flyer text, click Generate Draft, then answer follow-up questions in the same box. Your event stays private until you publish it.
             </p>
             <div className="mt-3 rounded-lg border border-amber-300 dark:border-amber-500/30 bg-amber-100 dark:bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-200">
               <p className="font-medium">
@@ -1563,10 +1609,11 @@ export function ConversationalCreateUI({
             </div>
             <Link
               href="/dashboard/my-events/new?classic=true"
-              className="inline-block mt-2 text-sm text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors"
+              className="mt-2 inline-flex items-center gap-1.5 text-sm text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors"
               onClick={() => sendTelemetry("fallback_click")}
             >
-              ← Use classic form instead
+              <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
+              Use classic form instead
             </Link>
           </div>
         ) : (
@@ -1599,7 +1646,11 @@ export function ConversationalCreateUI({
 
           <label className="block space-y-2">
             <span className="text-sm text-[var(--color-text-secondary)]">
-              {isHostVariant ? "Describe your happening" : "Message"}
+              {isHostVariant
+                ? isClarificationTurn
+                  ? "Answer the follow-up"
+                  : "Describe your happening"
+                : "Message"}
             </span>
             <textarea
               value={message}
@@ -1607,7 +1658,9 @@ export function ConversationalCreateUI({
               rows={isHostVariant ? 4 : 5}
               className="w-full rounded-lg bg-[var(--color-bg-input)] border border-[var(--color-border-input)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
               placeholder={isHostVariant
-                ? "e.g. Open mic night at Dazzle Jazz, every Tuesday at 7pm, $10 cover..."
+                ? isClarificationTurn && responseGuidance?.clarification_question
+                  ? responseGuidance.clarification_question
+                  : "e.g. Open mic night at Dazzle Jazz, every Tuesday at 7pm, $10 cover. Source: venue website..."
                 : "Describe the event, or paste an image of a flyer..."}
             />
           </label>
@@ -1694,13 +1747,14 @@ export function ConversationalCreateUI({
                       <button
                         type="button"
                         onClick={() => removeImage(img.id)}
-                        className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/65 text-white opacity-0 transition-opacity group-hover:opacity-100 focus:opacity-100"
                         aria-label="Remove image"
                       >
-                        x
+                        <X className="h-3.5 w-3.5" aria-hidden="true" />
                       </button>
                       {isSelected && (
-                        <span className="absolute top-1 left-1 bg-[var(--color-accent-primary)] text-[var(--color-background)] text-[9px] font-bold px-1.5 py-0.5 rounded">
+                        <span className="absolute top-1 left-1 inline-flex items-center gap-1 rounded bg-[var(--color-accent-primary)] px-1.5 py-0.5 text-[9px] font-bold text-[var(--color-background)]">
+                          <CheckCircle2 className="h-2.5 w-2.5" aria-hidden="true" />
                           Cover
                         </span>
                       )}
@@ -1714,9 +1768,23 @@ export function ConversationalCreateUI({
             )}
 
             {stagedImages.length === 0 && (
-              <p className="text-xs text-[var(--color-text-tertiary)]">
-                Drag and drop, paste from clipboard, or click &ldquo;+ Add image&rdquo; to stage flyer images for extraction.
-              </p>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex w-full items-center gap-3 rounded-lg border border-dashed border-[var(--color-border-input)] bg-[var(--color-bg-secondary)]/40 px-4 py-3 text-left transition-colors hover:border-[var(--color-accent-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]/40"
+              >
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)]">
+                  <ImagePlus className="h-4 w-4" aria-hidden="true" />
+                </span>
+                <span>
+                  <span className="block text-sm font-medium text-[var(--color-text-primary)]">
+                    Add a flyer or screenshot
+                  </span>
+                  <span className="block text-xs text-[var(--color-text-tertiary)]">
+                    Drag and drop, paste from clipboard, or choose an image.
+                  </span>
+                </span>
+              </button>
             )}
 
             {canShowCoverControls && stagedImages.length > 0 && !coverCandidateId && (
@@ -1739,9 +1807,16 @@ export function ConversationalCreateUI({
           <div className="flex gap-3 flex-wrap">
             <button
               onClick={submit}
-              disabled={isSubmitting}
-              className="px-4 py-2 rounded-lg bg-[var(--color-accent-primary)] text-[var(--color-background)] font-semibold disabled:opacity-60"
+              disabled={!canSubmitInterpret}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[var(--color-accent-primary)] px-4 py-2 font-semibold text-[var(--color-text-on-accent)] transition-colors hover:bg-[var(--color-accent-hover)] disabled:cursor-not-allowed disabled:opacity-60"
             >
+              {isSubmitting ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              ) : runActionLabel === "Send Answer" ? (
+                <Send className="h-4 w-4" aria-hidden="true" />
+              ) : (
+                <Sparkles className="h-4 w-4" aria-hidden="true" />
+              )}
               {isSubmitting ? "Sending..." : runActionLabel}
             </button>
 
@@ -1751,8 +1826,13 @@ export function ConversationalCreateUI({
                 onClick={applyCover}
                 disabled={isApplyingCover || isSubmitting}
                 type="button"
-                className="px-4 py-2 rounded-lg bg-emerald-600 text-white font-semibold disabled:opacity-60 transition-colors hover:bg-emerald-700"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 font-semibold text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
+                {isApplyingCover ? (
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                ) : (
+                  <Upload className="h-4 w-4" aria-hidden="true" />
+                )}
                 {isApplyingCover ? "Applying..." : "Apply as Cover"}
               </button>
             )}
@@ -1763,8 +1843,13 @@ export function ConversationalCreateUI({
                 onClick={createEvent}
                 disabled={isCreating || isSubmitting}
                 type="button"
-                className="px-4 py-2 rounded-lg bg-blue-600 text-white font-semibold disabled:opacity-60 transition-colors hover:bg-blue-700"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
+                {isCreating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                ) : (
+                  <ClipboardCheck className="h-4 w-4" aria-hidden="true" />
+                )}
                 {isCreating ? "Creating…" : "Confirm & Create Draft"}
               </button>
             )}
@@ -1775,8 +1860,13 @@ export function ConversationalCreateUI({
                 onClick={applyOccurrenceEdit}
                 disabled={isApplyingOccurrence || isSubmitting}
                 type="button"
-                className="px-4 py-2 rounded-lg bg-indigo-600 text-white font-semibold disabled:opacity-60 transition-colors hover:bg-indigo-700"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 font-semibold text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
+                {isApplyingOccurrence ? (
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                ) : (
+                  <ClipboardCheck className="h-4 w-4" aria-hidden="true" />
+                )}
                 {isApplyingOccurrence ? "Applying…" : "Confirm & Apply Occurrence Edit"}
               </button>
             )}
@@ -1785,8 +1875,9 @@ export function ConversationalCreateUI({
               <button
                 onClick={clearHistory}
                 type="button"
-                className="px-4 py-2 rounded-lg border border-[var(--color-border-input)] text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-[var(--color-border-input)] px-4 py-2 text-sm text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
               >
+                <History className="h-4 w-4" aria-hidden="true" />
                 Clear History ({conversationHistory.length / 2} turns)
               </button>
             )}
@@ -1794,14 +1885,23 @@ export function ConversationalCreateUI({
 
           {statusCode === 200 && responseGuidance && (
             <div className="rounded-lg border border-[var(--color-border-input)] bg-[var(--color-bg-secondary)]/50 p-3 space-y-2">
-              <p className="text-[11px] uppercase tracking-wide text-[var(--color-text-tertiary)]">
-                Latest Reply
-              </p>
-              <p className="text-sm text-[var(--color-text-primary)]">
-                {responseGuidance.clarification_question ??
-                  responseGuidance.human_summary ??
-                  "Draft updated. See details below."}
-              </p>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text-tertiary)]">
+                  Draft Status
+                </p>
+                <span className="rounded-full bg-[var(--color-bg-secondary)] px-2 py-0.5 text-[11px] font-medium text-[var(--color-text-secondary)]">
+                  {getDraftReadinessLabel(responseGuidance)}
+                </span>
+              </div>
+              {responseGuidance.next_action === "ask_clarification" ? (
+                <p className="text-sm font-medium text-[var(--color-text-primary)]">
+                  {responseGuidance.clarification_question || "Please provide the missing detail."}
+                </p>
+              ) : (
+                <p className="text-sm text-[var(--color-text-primary)]">
+                  {responseGuidance.human_summary || "Draft updated. Review the fields below before creating it."}
+                </p>
+              )}
               {responseGuidance.next_action === "ask_clarification" && (
                 <p className="text-xs text-[var(--color-text-tertiary)]">
                   Continue by answering above, then click{" "}
@@ -1935,19 +2035,15 @@ export function ConversationalCreateUI({
                   href={`/dashboard/my-events/${createdSummary.eventId}`}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold transition-colors hover:bg-emerald-700"
                 >
-                  Open Draft →
+                  <FileText className="h-3.5 w-3.5" aria-hidden="true" />
+                  Edit & Publish
                 </Link>
                 <Link
                   href="/dashboard/my-events"
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--color-border-input)] text-xs font-semibold text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
                 >
+                  <History className="h-3.5 w-3.5" aria-hidden="true" />
                   Go to My Happenings (check Drafts)
-                </Link>
-                <Link
-                  href={`/dashboard/my-events/${createdSummary.eventId}`}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--color-border-input)] text-xs font-semibold text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
-                >
-                  Edit & Publish
                 </Link>
               </div>
             </div>
@@ -1978,7 +2074,7 @@ export function ConversationalCreateUI({
             {/* Status header with next_action badge + confidence */}
             <div className="flex items-center gap-3 flex-wrap">
               <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
-                What Happens Next
+                Review Draft
               </h2>
               <span
                 className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
@@ -1987,13 +2083,13 @@ export function ConversationalCreateUI({
                     : responseGuidance.next_action === "done"
                       ? "bg-emerald-500/15 text-emerald-600"
                       : "bg-blue-500/15 text-blue-600"
-                }`}
+                  }`}
               >
-                {responseGuidance.next_action.replace(/_/g, " ")}
+                {getDraftReadinessLabel(responseGuidance)}
               </span>
-              {responseGuidance.confidence !== null && (
+              {getConfidenceLabel(responseGuidance.confidence) && (
                 <span className="text-xs text-[var(--color-text-tertiary)]">
-                  Confidence: {Math.round(responseGuidance.confidence * 100)}%
+                  {getConfidenceLabel(responseGuidance.confidence)}
                 </span>
               )}
             </div>
@@ -2050,7 +2146,7 @@ export function ConversationalCreateUI({
             {responseGuidance.next_action !== "ask_clarification" && (
               <div className="rounded-lg bg-emerald-500/5 border border-emerald-500/20 p-4">
                 <p className="text-sm text-[var(--color-text-primary)]">
-                  The draft is ready.
+                  Review the extracted fields below.
                   {canShowCreateAction
                     ? " Click Confirm & Create Draft below to save, then Publish Event to make it public."
                     : ""}
@@ -2066,7 +2162,7 @@ export function ConversationalCreateUI({
                 </p>
                 {responseGuidance.quality_hints.map((hint, i) => (
                   <p key={i} className="text-xs text-[var(--color-text-tertiary)]">
-                    <span className="font-mono">{hint.field}</span>: {hint.hint}
+                    <span className="font-mono">{hint.field}</span>: {getQualityHintText(hint)}
                   </p>
                 ))}
               </div>

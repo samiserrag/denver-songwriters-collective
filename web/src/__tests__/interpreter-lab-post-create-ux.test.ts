@@ -127,8 +127,8 @@ describe("Phase 8D — What Was Written summary block", () => {
 // C) Strong next-action CTAs
 // ---------------------------------------------------------------------------
 describe("Phase 8D — next-action CTAs", () => {
-  it("renders Open Draft CTA with arrow", () => {
-    expect(labSource).toContain("Open Draft →");
+  it("renders primary Edit & Publish CTA", () => {
+    expect(labSource).toContain("Edit & Publish");
   });
 
   it("links Open Draft to the created event page", () => {
@@ -137,10 +137,6 @@ describe("Phase 8D — next-action CTAs", () => {
 
   it("renders Go to My Happenings CTA with draft cue", () => {
     expect(labSource).toContain("Go to My Happenings (check Drafts)");
-  });
-
-  it("renders Edit & Publish CTA", () => {
-    expect(labSource).toContain("Edit & Publish");
   });
 
   it("uses prominent styling for primary CTA", () => {
@@ -183,11 +179,11 @@ describe("Phase 8D — duplicate submit prevention", () => {
 // ---------------------------------------------------------------------------
 describe("Phase 8D — existing functionality preserved", () => {
   it("preserves next_action badge rendering (8B)", () => {
-    expect(labSource).toContain('responseGuidance.next_action.replace(/_/g, " ")');
+    expect(labSource).toContain("getDraftReadinessLabel(responseGuidance)");
   });
 
   it("preserves confidence display (8B)", () => {
-    expect(labSource).toContain("Confidence:");
+    expect(labSource).toContain("getConfidenceLabel(responseGuidance.confidence)");
     expect(labSource).toContain("responseGuidance.confidence");
   });
 

@@ -146,13 +146,13 @@ describe("Occurrence apply — button", () => {
 
   it("button visibility gated on canShowOccurrenceAction", () => {
     const buttonStart = labSource.indexOf("Confirm & Apply Occurrence Edit");
-    const buttonSection = labSource.slice(buttonStart - 600, buttonStart);
+    const buttonSection = labSource.slice(buttonStart - 900, buttonStart);
     expect(buttonSection).toContain("canShowOccurrenceAction");
   });
 
   it("button disabled during apply or submit", () => {
     const buttonStart = labSource.indexOf("Confirm & Apply Occurrence Edit");
-    const buttonSection = labSource.slice(buttonStart - 600, buttonStart);
+    const buttonSection = labSource.slice(buttonStart - 900, buttonStart);
     expect(buttonSection).toContain("isApplyingOccurrence");
     expect(buttonSection).toContain("isSubmitting");
   });

@@ -21,24 +21,23 @@ const labSource = fs.readFileSync(LAB_PATH, "utf-8");
 // A) Human-readable guidance is primary
 // ---------------------------------------------------------------------------
 describe("Phase 8B — human-readable guidance is primary", () => {
-  it("renders 'What Happens Next' section with next_action badge", () => {
-    expect(labSource).toContain("What Happens Next");
-    // next_action is shown as a styled badge, not just raw text
-    expect(labSource).toContain('responseGuidance.next_action.replace(/_/g, " ")');
+  it("renders a review section with a user-facing readiness badge", () => {
+    expect(labSource).toContain("Review Draft");
+    expect(labSource).toContain("getDraftReadinessLabel(responseGuidance)");
   });
 
-  it("renders confidence percentage when available", () => {
+  it("renders user-facing confidence language when available", () => {
     expect(labSource).toContain("responseGuidance.confidence");
-    expect(labSource).toContain("Confidence:");
+    expect(labSource).toContain("getConfidenceLabel(responseGuidance.confidence)");
   });
 
   it("renders human_summary as readable text", () => {
     expect(labSource).toContain("responseGuidance.human_summary");
   });
 
-  it("shows an inline latest reply panel near the input controls", () => {
-    expect(labSource).toContain("Latest Reply");
-    expect(labSource).toContain("responseGuidance.clarification_question ??");
+  it("shows an inline draft status panel near the input controls", () => {
+    expect(labSource).toContain("Draft Status");
+    expect(labSource).toContain("responseGuidance.next_action === \"ask_clarification\"");
   });
 
   it("shows clarification prompt in a styled container, not raw JSON", () => {
@@ -50,7 +49,7 @@ describe("Phase 8B — human-readable guidance is primary", () => {
   });
 
   it("shows ready state when draft is complete", () => {
-    expect(labSource).toContain("The draft is ready.");
+    expect(labSource).toContain("Review the extracted fields below.");
     expect(labSource).toContain("Confirm & Create Draft below to save, then Publish Event to make it public");
   });
 
@@ -58,7 +57,7 @@ describe("Phase 8B — human-readable guidance is primary", () => {
     expect(labSource).toContain("quality_hints");
     expect(labSource).toContain("Suggestions");
     expect(labSource).toContain("hint.field");
-    expect(labSource).toContain("hint.hint");
+    expect(labSource).toContain("getQualityHintText(hint)");
   });
 });
 
@@ -151,7 +150,7 @@ describe("Phase 8B — ResponseGuidance type expansion", () => {
   it("defines QualityHint interface", () => {
     expect(labSource).toContain("interface QualityHint");
     expect(labSource).toContain("field: string");
-    expect(labSource).toContain("hint: string");
+    expect(labSource).toContain("prompt?: string");
   });
 });
 

@@ -29,7 +29,7 @@ Required environment variables:
 
 Optional:
 
-- `OPENAI_EVENT_INTERPRETER_MODEL=gpt-5.2` (default: `gpt-5.2`)
+- `OPENAI_EVENT_INTERPRETER_MODEL=gpt-5.5` (default: `gpt-5.5`)
 
 Rate limiting:
 

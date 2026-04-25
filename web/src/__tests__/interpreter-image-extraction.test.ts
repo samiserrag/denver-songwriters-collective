@@ -48,6 +48,10 @@ describe("Interpreter image extraction (Phase 3 route)", () => {
     expect(routeSource).toContain("const model = process.env.OPENAI_EVENT_INTERPRETER_MODEL?.trim() || DEFAULT_INTERPRETER_MODEL");
   });
 
+  it("defaults the interpreter to GPT-5.5 when no env override is set", () => {
+    expect(routeSource).toContain('const DEFAULT_INTERPRETER_MODEL = "gpt-5.5"');
+  });
+
   it("feeds extracted text into Phase B user prompt", () => {
     expect(routeSource).toContain("extractedImageText");
     expect(routeSource).toContain("extracted_image_text");
