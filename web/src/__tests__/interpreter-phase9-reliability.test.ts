@@ -170,4 +170,19 @@ describe("Phase 9B — event-type reliability", () => {
     expect(interpretRouteSource).toContain('resolvedNextAction !== "ask_clarification"');
     expect(interpretRouteSource).toContain('!resolvedBlockingFields.includes("external_url")');
   });
+
+  it("runs an internal draft verifier before showing create previews", () => {
+    expect(interpretRouteSource).toContain("DEFAULT_DRAFT_VERIFIER_MODEL");
+    expect(interpretRouteSource).toContain("verifyDraftWithCritic");
+    expect(interpretRouteSource).toContain("buildDraftVerifierPrompt");
+    expect(interpretRouteSource).toContain("draft_verification");
+    expect(interpretRouteSource).toContain("highRiskVerificationIssue");
+  });
+
+  it("keeps verifier results internal unless a high-risk issue needs one clarification", () => {
+    expect(interpretRouteSource).toContain('mode === "create" && resolvedNextAction !== "ask_clarification"');
+    expect(interpretRouteSource).toContain('issue.severity === "high"');
+    expect(interpretRouteSource).toContain('resolvedNextAction = "ask_clarification"');
+    expect(interpretRouteSource).toContain("Please confirm ${highRiskVerificationIssue.field}");
+  });
 });

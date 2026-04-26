@@ -46,6 +46,19 @@ export interface QualityHint {
   prompt: string;
 }
 
+export interface DraftVerificationIssue {
+  severity: "low" | "medium" | "high";
+  field: string;
+  issue: string;
+  question: string | null;
+}
+
+export interface DraftVerificationResult {
+  status: "pass" | "needs_review";
+  summary: string;
+  issues: DraftVerificationIssue[];
+}
+
 export interface InterpretEventDraftResponse {
   mode: InterpretMode;
   next_action: NextAction;
@@ -56,6 +69,7 @@ export interface InterpretEventDraftResponse {
   draft_payload: Record<string, unknown>;
   quality_hints: QualityHint[];
   extraction_metadata?: ExtractionMetadata;
+  draft_verification?: DraftVerificationResult;
 }
 
 const CREATE_PAYLOAD_ALLOWLIST = new Set([

@@ -10,6 +10,7 @@ import {
   validateInterpretMode,
   validateNextAction,
   validateSanitizedDraftPayload,
+  type DraftVerificationResult,
   type ExtractionMetadata,
   type ImageInput,
   type InterpretEventRequestBody,
@@ -36,12 +37,13 @@ import {
   pruneSatisfiedBlockingFields,
 } from "@/lib/events/interpreterPostprocess";
 
-/** Vercel serverless function timeout — two LLM calls need headroom. */
+/** Vercel serverless function timeout — vision, drafting, and verifier calls need headroom. */
 export const maxDuration = 60;
 
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
 const DEFAULT_INTERPRETER_MODEL = "gpt-5.5";
 const DEFAULT_VISION_EXTRACTION_MODEL = "gpt-4.1-mini";
+const DEFAULT_DRAFT_VERIFIER_MODEL = "gpt-4.1-mini";
 const GOOGLE_GEOCODING_API_URL = "https://maps.googleapis.com/maps/api/geocode/json";
 type SupabaseServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>;
 
@@ -1072,6 +1074,181 @@ function pickCurrentEventContext(event: Record<string, unknown>): Record<string,
   return safe;
 }
 
+function buildDraftVerifierPrompt(input: {
+  message: string;
+  extractedImageText?: string;
+  draft: Record<string, unknown>;
+  currentDate: string;
+  venueResolution: VenueResolutionOutcome | null;
+}) {
+  return JSON.stringify(
+    {
+      task: "verify_event_draft",
+      current_date: input.currentDate,
+      current_timezone: "America/Denver",
+      source_message: input.message,
+      extracted_image_text: input.extractedImageText ?? null,
+      venue_resolution: input.venueResolution
+        ? {
+            status: input.venueResolution.status,
+            ...(input.venueResolution.status === "resolved"
+              ? {
+                  venue_name: input.venueResolution.venueName,
+                  confidence: input.venueResolution.confidence,
+                }
+              : {}),
+            ...(input.venueResolution.status === "ambiguous"
+              ? {
+                  input_name: input.venueResolution.inputName,
+                  candidates: input.venueResolution.candidates.map((c) => c.name),
+                }
+              : {}),
+            ...(input.venueResolution.status === "unresolved"
+              ? { input_name: input.venueResolution.inputName }
+              : {}),
+          }
+        : null,
+      draft_payload: input.draft,
+      verifier_rules: [
+        "You are a silent event-ops verifier. The user will not see your reasoning unless you find a high-risk issue.",
+        "Check the draft against source_message, extracted_image_text, current_date, and venue_resolution.",
+        "Flag high severity only for contradictions or publish-critical problems: wrong date, past date for a new event, wrong venue, impossible time order, wrong event type, invented facts, or missing required field.",
+        "Do not flag optional missing details such as cost, source URL, end time, capacity, or age policy.",
+        "Do not ask broad questions. If high severity is needed, provide one concrete question the user can answer quickly.",
+        "Prefer pass when the draft is reasonable and assumptions are clearly stated.",
+      ],
+    },
+    null,
+    2
+  );
+}
+
+function parseDraftVerification(value: unknown): DraftVerificationResult | null {
+  const obj = parseJsonObject(value);
+  if (!obj) return null;
+  if (obj.status !== "pass" && obj.status !== "needs_review") return null;
+  if (typeof obj.summary !== "string") return null;
+  if (!Array.isArray(obj.issues)) return null;
+
+  const issues = obj.issues
+    .map((issue) => {
+      const row = parseJsonObject(issue);
+      if (!row) return null;
+      if (row.severity !== "low" && row.severity !== "medium" && row.severity !== "high") return null;
+      if (typeof row.field !== "string" || typeof row.issue !== "string") return null;
+      if (row.question !== null && typeof row.question !== "string") return null;
+      return {
+        severity: row.severity,
+        field: row.field,
+        issue: row.issue,
+        question: row.question,
+      };
+    })
+    .filter((issue): issue is DraftVerificationResult["issues"][number] => issue !== null);
+
+  return {
+    status: obj.status,
+    summary: obj.summary.slice(0, 400),
+    issues: issues.slice(0, 5),
+  };
+}
+
+async function verifyDraftWithCritic(input: {
+  openAiKey: string;
+  verifierModel: string;
+  message: string;
+  extractedImageText?: string;
+  draft: Record<string, unknown>;
+  currentDate: string;
+  venueResolution: VenueResolutionOutcome | null;
+  traceId: string | null;
+}): Promise<DraftVerificationResult | null> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8_000);
+
+  try {
+    const verifierResponse = await fetch(OPENAI_RESPONSES_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${input.openAiKey}`,
+        "Content-Type": "application/json",
+      },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model: input.verifierModel,
+        instructions:
+          "Return strict JSON only. Be conservative: high severity means the user should not publish without resolving it.",
+        input: buildDraftVerifierPrompt(input),
+        max_output_tokens: 900,
+        text: {
+          format: {
+            type: "json_schema",
+            name: "draft_verification",
+            strict: true,
+            schema: {
+              type: "object",
+              additionalProperties: false,
+              required: ["status", "summary", "issues"],
+              properties: {
+                status: { type: "string", enum: ["pass", "needs_review"] },
+                summary: { type: "string" },
+                issues: {
+                  type: "array",
+                  maxItems: 5,
+                  items: {
+                    type: "object",
+                    additionalProperties: false,
+                    required: ["severity", "field", "issue", "question"],
+                    properties: {
+                      severity: { type: "string", enum: ["low", "medium", "high"] },
+                      field: { type: "string" },
+                      issue: { type: "string" },
+                      question: { type: ["string", "null"] },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      }),
+    });
+
+    const verifierData = await verifierResponse.json();
+    if (!verifierResponse.ok) {
+      console.warn("[events/interpret] draft verifier upstream error", {
+        traceId: input.traceId,
+        status: verifierResponse.status,
+        data: verifierData,
+      });
+      return null;
+    }
+
+    const verifierObj = parseJsonObject(verifierData);
+    const outputText = verifierObj ? extractResponseText(verifierObj) : null;
+    if (!outputText) return null;
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(outputText);
+    } catch {
+      return null;
+    }
+
+    return parseDraftVerification(parsed);
+  } catch (error) {
+    const isTimeout = error instanceof Error && error.name === "AbortError";
+    console.warn("[events/interpret] draft verifier skipped", {
+      traceId: input.traceId,
+      isTimeout,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 export async function POST(request: Request) {
   if (process.env.ENABLE_NL_EVENTS_INTERPRETER !== "true") {
     return NextResponse.json(
@@ -1087,6 +1264,7 @@ export async function POST(request: Request) {
 
   const model = process.env.OPENAI_EVENT_INTERPRETER_MODEL?.trim() || DEFAULT_INTERPRETER_MODEL;
   const visionModel = process.env.OPENAI_EVENT_VISION_MODEL?.trim() || DEFAULT_VISION_EXTRACTION_MODEL;
+  const verifierModel = process.env.OPENAI_EVENT_DRAFT_VERIFIER_MODEL?.trim() || DEFAULT_DRAFT_VERIFIER_MODEL;
 
   const supabase = await createSupabaseServerClient();
   const { data: { user: sessionUser }, error: sessionUserError } = await supabase.auth.getUser();
@@ -1590,16 +1768,43 @@ export async function POST(request: Request) {
       ? `${humanSummary} Date adjusted to ${futureDateGuardResult.to} because the source date would otherwise be in the past.`
       : humanSummary;
 
+  const currentDate = new Date().toLocaleDateString("en-CA", { timeZone: "America/Denver" });
+  const draftVerification =
+    mode === "create" && resolvedNextAction !== "ask_clarification"
+      ? await verifyDraftWithCritic({
+          openAiKey,
+          verifierModel,
+          message: normalizedMessage,
+          extractedImageText,
+          draft: sanitizedDraft,
+          currentDate,
+          venueResolution,
+          traceId,
+        })
+      : null;
+
+  const highRiskVerificationIssue = draftVerification?.issues.find((issue) => issue.severity === "high") ?? null;
+  if (highRiskVerificationIssue && resolvedNextAction !== "ask_clarification") {
+    resolvedNextAction = "ask_clarification";
+    resolvedBlockingFields = [highRiskVerificationIssue.field || "draft_verification"];
+    resolvedClarificationQuestion =
+      highRiskVerificationIssue.question ||
+      `Please confirm ${highRiskVerificationIssue.field}: ${highRiskVerificationIssue.issue}`;
+  }
+
   const response = {
     mode,
     next_action: resolvedNextAction,
     confidence: responsePayload.confidence,
-    human_summary: finalHumanSummary,
+    human_summary: highRiskVerificationIssue
+      ? `${finalHumanSummary} I found one thing worth confirming before this goes live.`
+      : finalHumanSummary,
     clarification_question: resolvedClarificationQuestion,
     blocking_fields: resolvedBlockingFields,
     draft_payload: sanitizedDraft,
     quality_hints: qualityHints,
     ...(extractionMetadata ? { extraction_metadata: extractionMetadata } : {}),
+    ...(draftVerification ? { draft_verification: draftVerification } : {}),
   };
 
   console.info("[events/interpret] response", {
@@ -1654,6 +1859,16 @@ export async function POST(request: Request) {
             imagesProcessed: extractionMetadata.images_processed,
             extractedFields: extractionMetadata.extracted_fields,
             confidence: extractionMetadata.confidence,
+          },
+        }
+      : {}),
+    ...(draftVerification
+      ? {
+          draftVerification: {
+            status: draftVerification.status,
+            issueCount: draftVerification.issues.length,
+            highRisk: draftVerification.issues.some((issue) => issue.severity === "high"),
+            model: verifierModel,
           },
         }
       : {}),
