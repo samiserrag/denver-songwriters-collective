@@ -16,8 +16,8 @@ const ROUTE_PATH = path.resolve(
 const routeSource = fs.readFileSync(ROUTE_PATH, "utf-8");
 
 describe("Interpreter image extraction (Phase 3 route)", () => {
-  it("exports maxDuration = 75 for Vercel function timeout", () => {
-    expect(routeSource).toContain("export const maxDuration = 75");
+  it("exports maxDuration = 90 for Vercel function timeout", () => {
+    expect(routeSource).toContain("export const maxDuration = 90");
   });
 
   it("enforces request body size limit before JSON parse", () => {
