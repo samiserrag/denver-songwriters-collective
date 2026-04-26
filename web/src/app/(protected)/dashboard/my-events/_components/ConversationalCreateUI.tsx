@@ -22,6 +22,7 @@ import {
   type ImageInput,
   IMAGE_INPUT_LIMITS,
 } from "@/lib/events/interpretEventContract";
+import { HappeningCard, type HappeningEvent } from "@/components/happenings/HappeningCard";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   uploadCoverForEvent,
@@ -112,6 +113,92 @@ interface LastInterpretResponse {
   mode: InterpretMode;
   next_action: string;
   draft_payload: Record<string, unknown>;
+}
+
+function coerceString(value: unknown): string | null {
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+}
+
+function normalizeDraftEventTypes(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value
+      .map((entry) => coerceString(entry))
+      .filter((entry): entry is string => entry !== null);
+  }
+
+  const single = coerceString(value);
+  return single ? [single] : ["open_mic"];
+}
+
+function buildPublicEventHref(
+  summary: CreatedEventSummary,
+  draft: Record<string, unknown> | null
+): string {
+  const identifier = summary.slug || summary.eventId;
+  const eventTypes = draft ? normalizeDraftEventTypes(draft.event_type) : [];
+  return eventTypes.includes("open_mic") ? `/open-mics/${identifier}` : `/events/${identifier}`;
+}
+
+function buildDraftPreviewEvent(input: {
+  draft: Record<string, unknown> | null;
+  selectedCoverImage: StagedImage | null;
+  createdSummary: CreatedEventSummary | null;
+}): HappeningEvent | null {
+  const draft = input.draft;
+  const title = coerceString(draft?.title) ?? input.createdSummary?.title ?? "Draft happening";
+  const startDate =
+    coerceString(draft?.start_date) ??
+    coerceString(draft?.event_date) ??
+    input.createdSummary?.startDate ??
+    null;
+
+  if (!draft && !input.createdSummary) return null;
+
+  const coverPreviewUrl = input.selectedCoverImage
+    ? `data:${input.selectedCoverImage.mime_type};base64,${input.selectedCoverImage.base64}`
+    : null;
+
+  return {
+    id: input.createdSummary?.eventId ?? "draft-preview",
+    slug: input.createdSummary?.slug ?? null,
+    title,
+    description: coerceString(draft?.description),
+    event_type: draft
+      ? normalizeDraftEventTypes(draft.event_type)
+      : input.createdSummary?.eventType
+        ? [input.createdSummary.eventType.replace(/\s+/g, "_")]
+        : ["open_mic"],
+    event_date: startDate,
+    start_time: coerceString(draft?.start_time) ?? input.createdSummary?.startTime ?? null,
+    end_time: coerceString(draft?.end_time) ?? input.createdSummary?.endTime ?? null,
+    day_of_week: coerceString(draft?.day_of_week) ?? input.createdSummary?.dayOfWeek ?? null,
+    recurrence_rule:
+      coerceString(draft?.recurrence_rule) ?? input.createdSummary?.recurrenceRule ?? null,
+    venue_id: coerceString(draft?.venue_id),
+    venue_name: coerceString(draft?.venue_name) ?? input.createdSummary?.venueName ?? null,
+    custom_location_name:
+      coerceString(draft?.custom_location_name) ?? input.createdSummary?.venueName ?? null,
+    custom_address: coerceString(draft?.custom_address),
+    custom_city: coerceString(draft?.custom_city),
+    custom_state: coerceString(draft?.custom_state),
+    location_mode: normalizeLocationMode(
+      draft?.location_mode ?? input.createdSummary?.locationMode,
+      "venue"
+    ),
+    online_url: coerceString(draft?.online_url),
+    is_free: typeof draft?.is_free === "boolean" ? draft.is_free : null,
+    cost_label: coerceString(draft?.cost_label) ?? input.createdSummary?.costLabel ?? null,
+    signup_mode: normalizeSignupMode(draft?.signup_mode) as HappeningEvent["signup_mode"],
+    signup_url: coerceString(draft?.signup_url),
+    cover_image_url: coverPreviewUrl,
+    imageUrl: coverPreviewUrl,
+    status: "draft",
+    categories: Array.isArray(draft?.categories)
+      ? draft?.categories.filter((entry): entry is string => typeof entry === "string")
+      : null,
+    has_timeslots: typeof draft?.has_timeslots === "boolean" ? draft.has_timeslots : null,
+    total_slots: typeof draft?.total_slots === "number" ? draft.total_slots : null,
+  };
 }
 
 function normalizeSnakeCaseDisplay(value: unknown): string | null {
@@ -1131,14 +1218,17 @@ export function ConversationalCreateUI({
   const chatMode: InterpretMode =
     isHostVariant && hasCreatedDraft ? "edit_series" : isHostVariant ? "create" : mode;
 
-  // INTERPRETER-14: host variant uses simplified two-state label;
-  // after create, host variant stays in a draft-editing loop.
+  const hasAssistantResponse = conversationHistory.some((entry) => entry.role === "assistant");
+
+  // Host flow behaves like a normal AI chat: first turn drafts, later turns reply or update.
   const runActionLabel = isHostVariant
     ? responseGuidance?.next_action === "ask_clarification"
       ? "Send Answer"
       : hasCreatedDraft
         ? "Update Draft"
-        : "Generate Draft"
+        : hasAssistantResponse
+          ? "Send Message"
+          : "Generate Draft"
     : responseGuidance?.next_action === "ask_clarification"
       ? "Send Answer"
       : conversationHistory.length > 0
@@ -1149,6 +1239,21 @@ export function ConversationalCreateUI({
     !isSubmitting && (message.trim().length > 0 || stagedImages.length > 0);
   const selectedCoverImage =
     coverCandidateId ? stagedImages.find((img) => img.id === coverCandidateId) ?? null : null;
+  const draftPreviewEvent = useMemo(
+    () =>
+      buildDraftPreviewEvent({
+        draft: responseGuidance?.draft_payload ?? lastInterpretResponse?.draft_payload ?? null,
+        selectedCoverImage,
+        createdSummary,
+      }),
+    [responseGuidance?.draft_payload, lastInterpretResponse?.draft_payload, selectedCoverImage, createdSummary]
+  );
+  const createdPublicHref = createdSummary
+    ? buildPublicEventHref(
+        createdSummary,
+        responseGuidance?.draft_payload ?? lastInterpretResponse?.draft_payload ?? null
+      )
+    : null;
 
   // Phase 8E: host variant starts in create mode, then stays in edit mode for the created draft.
   const effectiveMode: InterpretMode = chatMode;
@@ -1585,10 +1690,9 @@ export function ConversationalCreateUI({
           },
         ]);
 
-        if (body.next_action === "ask_clarification") {
-          // Keep follow-up turns lightweight by clearing the original long prompt.
-          setMessage("");
-        }
+        // Keep the transcript as the source of truth and make the composer feel
+        // like a normal chat reply box after every completed model turn.
+        setMessage("");
 
         // Phase 4B: Track last successful interpreter response for create action
         if (body.next_action && body.draft_payload) {
@@ -2182,8 +2286,8 @@ export function ConversationalCreateUI({
               {isHostVariant
                 ? isClarificationTurn
                   ? "Answer the follow-up"
-                  : hasCreatedDraft
-                    ? "Ask for a draft change"
+                  : hasCreatedDraft || hasAssistantResponse
+                    ? "Reply or request changes"
                     : "Describe your happening"
                 : "Message"}
             </span>
@@ -2195,8 +2299,8 @@ export function ConversationalCreateUI({
               placeholder={isHostVariant
                 ? isClarificationTurn && responseGuidance?.clarification_question
                   ? responseGuidance.clarification_question
-                  : hasCreatedDraft
-                    ? "e.g. Make it weekly, change the start time to 8pm, use the flyer as cover, or tighten the description..."
+                  : hasCreatedDraft || hasAssistantResponse
+                    ? "Ask me to search again, change a field, add a missing detail, or fix anything that looks off..."
                   : "e.g. Open mic night at Dazzle Jazz, every Tuesday at 7pm, $10 cover. Source: venue website..."
                 : "Describe the event, or paste an image of a flyer..."}
             />
@@ -2239,7 +2343,7 @@ export function ConversationalCreateUI({
             >
               {isSubmitting ? (
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-              ) : runActionLabel === "Send Answer" ? (
+              ) : runActionLabel === "Send Answer" || runActionLabel === "Send Message" ? (
                 <Send className="h-4 w-4" aria-hidden="true" />
               ) : (
                 <Sparkles className="h-4 w-4" aria-hidden="true" />
@@ -2304,7 +2408,7 @@ export function ConversationalCreateUI({
                       <img
                         src={img.previewUrl}
                         alt="Staged"
-                        className={`w-full h-full object-cover ${
+                        className={`w-full h-full bg-[var(--color-bg-tertiary)] object-contain ${
                           canShowCoverControls ? "cursor-pointer" : ""
                         }`}
                         onClick={
@@ -2607,7 +2711,7 @@ export function ConversationalCreateUI({
                   {createdSummary.isPublished ? "Edit event" : "Edit & Publish"}
                 </Link>
                 <Link
-                  href={`/events/${createdSummary.slug || createdSummary.eventId}`}
+                  href={createdPublicHref ?? `/events/${createdSummary.slug || createdSummary.eventId}`}
                   target="_blank"
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--color-border-input)] text-xs font-semibold text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
                 >
@@ -2659,22 +2763,57 @@ export function ConversationalCreateUI({
                     )}
                   </div>
                   <p className="mt-1 text-xs text-[var(--color-text-tertiary)]">
-                    Check the cover and key fields. After saving, edits here patch the same draft.
+                    Check the card, cover, and key fields. After saving, edits here patch the same draft.
                   </p>
+                  {createdSummary && createdPublicHref && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Link
+                        href={`/dashboard/my-events/${createdSummary.eventId}`}
+                        target="_blank"
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"
+                      >
+                        <FileText className="h-3.5 w-3.5" aria-hidden="true" />
+                        Edit / publish
+                      </Link>
+                      <Link
+                        href={createdPublicHref}
+                        target="_blank"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-border-input)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                        {createdSummary.isPublished ? "Open live page" : "Open draft preview"}
+                      </Link>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-4 p-4">
+                  {draftPreviewEvent && (
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold uppercase text-[var(--color-text-tertiary)]">
+                        Listing card preview
+                      </p>
+                      <div className="pointer-events-none">
+                        <HappeningCard
+                          event={draftPreviewEvent}
+                          isFavorited={null}
+                          onClick={() => undefined}
+                        />
+                      </div>
+                    </div>
+                  )}
+
                   {selectedCoverImage ? (
                     <div className="overflow-hidden rounded-lg border border-[var(--color-border-input)]">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={selectedCoverImage.previewUrl}
                         alt="Selected cover candidate"
-                        className="aspect-[16/9] w-full object-cover"
+                        className="max-h-[360px] w-full bg-[var(--color-bg-tertiary)] object-contain"
                       />
                       <div className="flex items-center gap-2 bg-[var(--color-bg-secondary)] px-3 py-2 text-xs text-[var(--color-text-secondary)]">
                         <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" aria-hidden="true" />
-                        {createdSummary?.hasCover ? "Cover attached" : "Selected as cover candidate"}
+                        {createdSummary?.hasCover ? "Cover attached" : "Selected original cover candidate"}
                       </div>
                     </div>
                   ) : (
@@ -2724,19 +2863,24 @@ export function ConversationalCreateUI({
                     )}
 
                   {responseGuidance?.draft_verification && (
-                    <div className={`rounded-lg border p-3 ${
+                    <details
+                      open={responseGuidance.draft_verification.status === "needs_review"}
+                      className={`rounded-lg border p-3 ${
                       responseGuidance.draft_verification.status === "pass"
                         ? "border-emerald-500/20 bg-emerald-500/5"
                         : "border-amber-500/20 bg-amber-500/5"
-                    }`}>
-                      <div className="flex items-center gap-2 text-xs font-semibold uppercase text-[var(--color-text-secondary)]">
+                    }`}
+                    >
+                      <summary className="cursor-pointer list-none">
+                        <div className="flex items-center gap-2 text-xs font-semibold uppercase text-[var(--color-text-secondary)]">
                         <CheckCircle2 className={`h-3.5 w-3.5 ${
                           responseGuidance.draft_verification.status === "pass"
                             ? "text-emerald-500"
                             : "text-amber-500"
                         }`} aria-hidden="true" />
-                        Draft double-check
-                      </div>
+                          Draft double-check
+                        </div>
+                      </summary>
                       <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
                         {responseGuidance.draft_verification.summary}
                       </p>
@@ -2750,7 +2894,7 @@ export function ConversationalCreateUI({
                           ))}
                         </ul>
                       )}
-                    </div>
+                    </details>
                   )}
 
                   {responseGuidance?.next_action === "ask_clarification" && (
@@ -2856,7 +3000,7 @@ export function ConversationalCreateUI({
                           {createdSummary.isPublished ? "Edit event" : "Edit / publish"}
                         </Link>
                         <Link
-                          href={`/events/${createdSummary.slug || createdSummary.eventId}`}
+                          href={createdPublicHref ?? `/events/${createdSummary.slug || createdSummary.eventId}`}
                           target="_blank"
                           className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-border-input)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
                         >

@@ -40,14 +40,14 @@ import {
 } from "@/lib/events/interpreterPostprocess";
 
 /** Vercel serverless function timeout — vision, drafting, search, and verifier calls need headroom. */
-export const maxDuration = 75;
+export const maxDuration = 90;
 
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
 const DEFAULT_INTERPRETER_MODEL = "gpt-5.5";
 const DEFAULT_VISION_EXTRACTION_MODEL = "gpt-4.1-mini";
 const DEFAULT_DRAFT_VERIFIER_MODEL = "gpt-5.5";
 const DEFAULT_WEB_SEARCH_VERIFIER_MODEL = "gpt-5.5";
-const WEB_SEARCH_TIMEOUT_MS = 18_000;
+const WEB_SEARCH_TIMEOUT_MS = 30_000;
 const GOOGLE_GEOCODING_API_URL = "https://maps.googleapis.com/maps/api/geocode/json";
 type SupabaseServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>;
 
@@ -1118,7 +1118,7 @@ async function verifyEventDetailsWithWebSearch(input: {
         ],
         tool_choice: input.returnNoReliableResult ? "required" : "auto",
         include: ["web_search_call.action.sources"],
-        max_output_tokens: 1200,
+        max_output_tokens: 900,
         text: {
           format: {
             type: "json_schema",

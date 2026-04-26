@@ -4,7 +4,7 @@
  * Verifies:
  * 1. Host title is "Create Happening with AI".
  * 2. Host subtitle and next-step callout keep the workflow clear.
- * 3. Host run button uses two-state logic (Generate Draft / Send Answer).
+ * 3. Host run button uses chat-style logic (Generate Draft / Send Answer / Send Message / Update Draft).
  * 4. Host route contains no lab/debug wording visible to users.
  * 5. Host route uses a chat-first layout with a persistent review rail.
  * 6. Conversation history is in the main chat surface for host variant.
@@ -44,13 +44,14 @@ describe("INTERPRETER-14 — Host copy updates", () => {
 });
 
 // ---------------------------------------------------------------------------
-// B) Host run button — two-state label logic
+// B) Host run button — chat label logic
 // ---------------------------------------------------------------------------
-describe("INTERPRETER-14 — Host run button two-state label", () => {
-  it("host variant has dedicated two-state label branch", () => {
+describe("INTERPRETER-14 — Host run button chat label", () => {
+  it("host variant has dedicated chat label branch", () => {
     // The runActionLabel logic should check isHostVariant first
     expect(src).toContain("isHostVariant");
-    // Host: ask_clarification → Send Answer, else → Generate Draft
+    // Host: ask_clarification → Send Answer, saved draft → Update Draft,
+    // assistant response → Send Message, first turn → Generate Draft
     // Lab: ask_clarification → Send Answer, history > 0 → Update Draft, else → Generate Draft
   });
 
@@ -61,6 +62,11 @@ describe("INTERPRETER-14 — Host run button two-state label", () => {
   it("host variant uses Update Draft after a draft exists", () => {
     expect(src).toContain("hasCreatedDraft");
     expect(src).toContain('"Update Draft"');
+  });
+
+  it("host variant uses Send Message after the first assistant response", () => {
+    expect(src).toContain("hasAssistantResponse");
+    expect(src).toContain('"Send Message"');
   });
 
   it("lab variant still has 'Update Draft' for follow-up turns", () => {
@@ -97,7 +103,7 @@ describe("INTERPRETER-14 — Host variant has no lab/debug wording", () => {
 describe("INTERPRETER-14 — Host chat-first workspace", () => {
   it("renders a persistent review side panel for host users", () => {
     expect(src).toContain("Review");
-    expect(src).toContain("Check the cover and key fields");
+    expect(src).toContain("Check the card, cover, and key fields");
     expect(src).toContain("lg:grid-cols-[minmax(0,1fr)_380px]");
     expect(src).toContain("lg:sticky lg:top-6");
   });
@@ -120,7 +126,16 @@ describe("INTERPRETER-14 — Host chat-first workspace", () => {
     expect(src).toContain('target="_blank"');
     expect(src).toContain("Preview draft");
     expect(src).toContain("View live page");
-    expect(src).toContain("`/events/${createdSummary.slug || createdSummary.eventId}`");
+    expect(src).toContain("createdPublicHref");
+    expect(src).toContain("Open draft preview");
+  });
+
+  it("shows an actual listing card preview and preserves original cover aspect ratio", () => {
+    expect(src).toContain("Listing card preview");
+    expect(src).toContain("<HappeningCard");
+    expect(src).toContain("buildDraftPreviewEvent");
+    expect(src).toContain("object-contain");
+    expect(src).toContain("Selected original cover candidate");
   });
 
   it("keeps chat send controls above image attachment controls", () => {
@@ -161,7 +176,7 @@ describe("INTERPRETER-14 — Conversation history for host", () => {
   });
 
   it("host composer changes after draft creation", () => {
-    expect(src).toContain("Ask for a draft change");
-    expect(src).toContain("Make it weekly");
+    expect(src).toContain("Reply or request changes");
+    expect(src).toContain("Ask me to search again");
   });
 });
