@@ -135,8 +135,9 @@ describe("Phase 8D — next-action CTAs", () => {
     expect(labSource).toContain("`/dashboard/my-events/${createdSummary.eventId}`");
   });
 
-  it("always renders a preview link using slug or event id fallback", () => {
-    expect(labSource).toContain("Preview event");
+  it("always renders a draft/live page link using slug or event id fallback", () => {
+    expect(labSource).toContain("Preview draft");
+    expect(labSource).toContain("View live page");
     expect(labSource).toContain("`/events/${createdSummary.slug || createdSummary.eventId}`");
   });
 

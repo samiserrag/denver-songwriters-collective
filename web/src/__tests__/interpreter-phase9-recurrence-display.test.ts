@@ -33,7 +33,7 @@ describe("Phase 9D — recurrence humanization setup", () => {
 
   it("buildCreatedEventSummary extracts day_of_week", () => {
     const fnStart = labSource.indexOf("function buildCreatedEventSummary");
-    const fnEnd = labSource.indexOf("}", fnStart + 200);
+    const fnEnd = labSource.indexOf("function normalizeTitleWithVenuePrefix", fnStart);
     const fnSection = labSource.slice(fnStart, fnEnd);
     expect(fnSection).toContain("day_of_week");
   });
