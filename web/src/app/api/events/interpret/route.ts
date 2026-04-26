@@ -957,7 +957,7 @@ function buildSystemPrompt() {
     "- Only enable performer slots when explicitly requested with slot/timeslot/lineup language.",
     "- For gig events, do not add signup_time or performer slots unless explicitly requested.",
     "- Default timezone to America/Denver unless the source clearly says otherwise.",
-    "- Keep human_summary concise and deterministic.",
+    "- Keep human_summary concise, deterministic, friendly, and lightly encouraging. A tiny bit of humor is okay, but never at the expense of clarity or correctness.",
   ].join("\n");
 }
 

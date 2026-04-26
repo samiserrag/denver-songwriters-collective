@@ -311,7 +311,43 @@ describe("Phase 4B — create message display", () => {
 });
 
 // ---------------------------------------------------------------------------
-// F) Regression: Phase 4A edit-mode still intact
+// F) Post-create chat edit loop
+// ---------------------------------------------------------------------------
+describe("Phase 4B — post-create chat edit loop", () => {
+  it("tracks interpreter response mode for create vs edit actions", () => {
+    expect(labSource).toContain("interface LastInterpretResponse");
+    expect(labSource).toContain("mode: InterpretMode");
+    expect(labSource).toContain("mode: effectiveMode");
+  });
+
+  it("switches the host chat into edit_series after draft creation", () => {
+    expect(labSource).toContain('hasCreatedDraft ? "edit_series"');
+    expect(labSource).toContain("const chatMode: InterpretMode");
+    expect(labSource).toContain("createdEventId ?? eventId.trim()");
+  });
+
+  it("maps edit_series draft payloads into PATCH-safe bodies", () => {
+    expect(labSource).toContain("function mapDraftToSeriesPatchPayload");
+    expect(labSource).toContain("SERIES_PATCH_OPTIONALS");
+    expect(labSource).toContain("delete body.venue_name");
+    expect(labSource).toContain("No editable changes were extracted");
+  });
+
+  it("applies post-create updates through PATCH /api/my-events/:id", () => {
+    expect(labSource).toContain("async function applySeriesPatch()");
+    expect(labSource).toContain("canShowSeriesPatchAction");
+    expect(labSource).toContain('method: "PATCH"');
+    expect(labSource).toContain("`/api/my-events/${createdEventId}`");
+  });
+
+  it("uses chat-native apply copy for draft revisions", () => {
+    expect(labSource).toContain("Apply Draft Update");
+    expect(labSource).toContain("Draft updated. Nice, the tiny event paperwork mountain got smaller.");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// G) Regression: Phase 4A edit-mode still intact
 // ---------------------------------------------------------------------------
 describe("Phase 4B — Phase 4A regression", () => {
   it("still has applyCover for edit mode", () => {

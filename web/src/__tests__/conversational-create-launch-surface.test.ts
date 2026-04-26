@@ -132,10 +132,10 @@ describe("Phase 8E — host variant write decoupling", () => {
 // D) Host variant forces create mode in payload construction
 // ---------------------------------------------------------------------------
 describe("Phase 8E — host variant forces create mode", () => {
-  it("computes effectiveMode from variant", () => {
-    expect(componentSource).toContain(
-      'const effectiveMode: InterpretMode = isHostVariant ? "create" : mode'
-    );
+  it("computes effectiveMode from the host chat mode", () => {
+    expect(componentSource).toContain("const chatMode: InterpretMode");
+    expect(componentSource).toContain('hasCreatedDraft ? "edit_series"');
+    expect(componentSource).toContain("const effectiveMode: InterpretMode = chatMode");
   });
 
   it("uses effectiveMode in payload mode field", () => {
@@ -143,7 +143,8 @@ describe("Phase 8E — host variant forces create mode", () => {
   });
 
   it("uses effectiveMode for eventId gating", () => {
-    expect(componentSource).toContain('effectiveMode !== "create" && eventId.trim()');
+    expect(componentSource).toContain("const targetEventId = createdEventId ?? eventId.trim()");
+    expect(componentSource).toContain('effectiveMode !== "create" && targetEventId');
   });
 
   it("uses effectiveMode for dateKey gating", () => {

@@ -147,6 +147,7 @@ describe("Phase 9B — event-type reliability", () => {
     expect(interpretRouteSource).toContain("Only enable performer slots when explicitly requested");
     expect(interpretRouteSource).toContain("For gig events, do not add signup_time or performer slots unless explicitly requested");
     expect(interpretRouteSource).toContain("Default timezone to America/Denver");
+    expect(interpretRouteSource).toContain("friendly, and lightly encouraging");
   });
 
   it("strips optional external-url asks from non-blocking summaries", () => {

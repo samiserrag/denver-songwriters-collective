@@ -172,7 +172,7 @@ describe("Occurrence apply — flow isolation", () => {
 
   it("applyOccurrenceEdit does NOT reference create state or cover upload", () => {
     const applyStart = labSource.indexOf("async function applyOccurrenceEdit");
-    const applyEnd = labSource.indexOf("async function createEvent");
+    const applyEnd = labSource.indexOf("async function applySeriesPatch");
     const fnSection = applyStart > 0 && applyEnd > applyStart
       ? labSource.slice(applyStart, applyEnd)
       : "";
@@ -182,7 +182,8 @@ describe("Occurrence apply — flow isolation", () => {
   });
 
   it("host variant forces create mode — occurrence button can never show in host", () => {
-    expect(labSource).toContain('isHostVariant ? "create" : mode');
+    expect(labSource).toContain("const chatMode: InterpretMode");
+    expect(labSource).toContain('hasCreatedDraft ? "edit_series"');
     // canShowOccurrenceAction requires effectiveMode === "edit_occurrence"
     // which is impossible when isHostVariant is true
     const guardStart = labSource.indexOf("canShowOccurrenceAction");

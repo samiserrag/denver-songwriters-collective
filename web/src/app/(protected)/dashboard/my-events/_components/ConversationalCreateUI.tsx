@@ -78,6 +78,12 @@ interface CreatedEventSummary {
   coverNote: string | null;
 }
 
+interface LastInterpretResponse {
+  mode: InterpretMode;
+  next_action: string;
+  draft_payload: Record<string, unknown>;
+}
+
 function normalizeSnakeCaseDisplay(value: unknown): string | null {
   if (typeof value === "string") {
     const trimmed = value.trim();
@@ -294,6 +300,50 @@ const CREATE_PASSTHROUGH_OPTIONALS = [
   "online_url",
   "venue_name",
   "day_of_week",
+] as const;
+
+const SERIES_PATCH_OPTIONALS = [
+  "title",
+  "description",
+  "event_type",
+  "capacity",
+  "host_notes",
+  "day_of_week",
+  "start_time",
+  "event_date",
+  "start_date",
+  "end_time",
+  "status",
+  "recurrence_rule",
+  "cover_image_url",
+  "visibility",
+  "timezone",
+  "location_mode",
+  "online_url",
+  "is_free",
+  "cost_label",
+  "signup_mode",
+  "signup_url",
+  "signup_deadline",
+  "signup_time",
+  "age_policy",
+  "external_url",
+  "categories",
+  "max_occurrences",
+  "custom_dates",
+  "has_timeslots",
+  "total_slots",
+  "slot_duration_minutes",
+  "allow_guests",
+  "venue_id",
+  "venue_name",
+  "custom_location_name",
+  "custom_address",
+  "custom_city",
+  "custom_state",
+  "custom_latitude",
+  "custom_longitude",
+  "location_notes",
 ] as const;
 
 type MapResult =
@@ -788,6 +838,81 @@ function mapDraftToOccurrencePayload(
   return { ok: true, body };
 }
 
+function mapDraftToSeriesPatchPayload(
+  draft: Record<string, unknown>,
+  intentText: string
+): MapResult {
+  const body: Record<string, unknown> = {};
+
+  for (const field of SERIES_PATCH_OPTIONALS) {
+    const value = draft[field];
+    if (value !== undefined && value !== null) {
+      body[field] = value;
+    }
+  }
+
+  if (body.start_date !== undefined && body.event_date === undefined) {
+    body.event_date = normalizeStartDate(body.start_date);
+    delete body.start_date;
+  }
+
+  if (body.event_date !== undefined) {
+    const normalizedEventDate = normalizeStartDate(body.event_date);
+    if (!normalizedEventDate) {
+      return { ok: false, error: "event_date must be a valid date (YYYY-MM-DD)." };
+    }
+    body.event_date = normalizedEventDate;
+  }
+
+  if (body.event_type !== undefined) {
+    const rawEventTypes = Array.isArray(body.event_type)
+      ? body.event_type.filter((v): v is string => typeof v === "string" && v.trim().length > 0)
+      : [];
+    const hintedEventType = inferEventTypeFromIntentText(intentText);
+    const eventType = hintedEventType ? [hintedEventType] : rawEventTypes;
+    if (eventType.length === 0) {
+      return { ok: false, error: "event_type must be a non-empty array" };
+    }
+    body.event_type = eventType;
+  }
+
+  if (body.location_mode !== undefined) {
+    const fallback =
+      typeof body.online_url === "string" && body.online_url.trim().length > 0 ? "online" : "venue";
+    body.location_mode = normalizeLocationMode(body.location_mode, fallback);
+  }
+
+  if (isGoogleMapsUrl(body.external_url)) {
+    body.external_url = null;
+  }
+
+  if (body.signup_mode !== undefined) {
+    body.signup_mode = normalizeSignupMode(body.signup_mode);
+  }
+
+  if (body.recurrence_rule !== undefined) {
+    body.recurrence_rule = normalizeRecurrenceRuleForCreate(body.recurrence_rule);
+  }
+
+  if (body.has_timeslots === true) {
+    const hasExplicitTimeslotIntent = explicitlyRequestsTimeslots(intentText);
+    if (!hasExplicitTimeslotIntent) {
+      body.has_timeslots = false;
+      body.total_slots = null;
+      body.slot_duration_minutes = null;
+      body.allow_guests = false;
+    }
+  }
+
+  delete body.venue_name;
+
+  if (Object.keys(body).length === 0) {
+    return { ok: false, error: "No editable changes were extracted." };
+  }
+
+  return { ok: true, body };
+}
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -865,12 +990,10 @@ export function ConversationalCreateUI({
     text: string;
   } | null>(null);
 
-  // ---- Phase 4B: create-mode write state ----
-  const [lastInterpretResponse, setLastInterpretResponse] = useState<{
-    next_action: string;
-    draft_payload: Record<string, unknown>;
-  } | null>(null);
+  // ---- Phase 4B: create/edit write state ----
+  const [lastInterpretResponse, setLastInterpretResponse] = useState<LastInterpretResponse | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [isApplyingSeriesPatch, setIsApplyingSeriesPatch] = useState(false);
   const [createdEventId, setCreatedEventId] = useState<string | null>(null);
   const [createdSummary, setCreatedSummary] = useState<CreatedEventSummary | null>(null);
   const [createMessage, setCreateMessage] = useState<{
@@ -916,12 +1039,18 @@ export function ConversationalCreateUI({
     };
   }, [responseBody]);
 
+  const hasCreatedDraft = typeof createdEventId === "string" && createdEventId.length > 0;
+  const chatMode: InterpretMode =
+    isHostVariant && hasCreatedDraft ? "edit_series" : isHostVariant ? "create" : mode;
+
   // INTERPRETER-14: host variant uses simplified two-state label;
-  // lab variant keeps three-state (Generate Draft / Update Draft / Send Answer).
+  // after create, host variant stays in a draft-editing loop.
   const runActionLabel = isHostVariant
     ? responseGuidance?.next_action === "ask_clarification"
       ? "Send Answer"
-      : "Generate Draft"
+      : hasCreatedDraft
+        ? "Update Draft"
+        : "Generate Draft"
     : responseGuidance?.next_action === "ask_clarification"
       ? "Send Answer"
       : conversationHistory.length > 0
@@ -930,9 +1059,11 @@ export function ConversationalCreateUI({
   const isClarificationTurn = responseGuidance?.next_action === "ask_clarification";
   const canSubmitInterpret =
     !isSubmitting && (message.trim().length > 0 || stagedImages.length > 0);
+  const selectedCoverImage =
+    coverCandidateId ? stagedImages.find((img) => img.id === coverCandidateId) ?? null : null;
 
-  // Phase 8E: host variant forces create mode at logic level
-  const effectiveMode: InterpretMode = isHostVariant ? "create" : mode;
+  // Phase 8E: host variant starts in create mode, then stays in edit mode for the created draft.
+  const effectiveMode: InterpretMode = chatMode;
 
   // Derived: is current mode an edit mode with a valid eventId?
   const isEditMode = effectiveMode === "edit_series" || effectiveMode === "edit_occurrence";
@@ -954,6 +1085,13 @@ export function ConversationalCreateUI({
     writesEnabled &&
     effectiveMode === "create" &&
     lastInterpretResponse !== null &&
+    ACTIONABLE_NEXT_ACTIONS.has(lastInterpretResponse.next_action as NextAction);
+
+  const canShowSeriesPatchAction =
+    writesEnabled &&
+    effectiveMode === "edit_series" &&
+    lastInterpretResponse !== null &&
+    createdEventId !== null &&
     ACTIONABLE_NEXT_ACTIONS.has(lastInterpretResponse.next_action as NextAction);
 
   // Occurrence edit apply guard (lab variant only — host variant forces create via effectiveMode)
@@ -1142,22 +1280,23 @@ export function ConversationalCreateUI({
     setStatusCode(null);
     setResponseBody(null);
 
-    // Avoid stale create writes if the new interpret call fails.
-    if (effectiveMode === "create") {
+    // Avoid stale write actions if the new interpret call fails.
+    if (effectiveMode === "create" || effectiveMode === "edit_series") {
       setLastInterpretResponse(null);
       setCreateMessage(null);
     }
 
     try {
-      // Phase 8E: use effectiveMode (forced to "create" in host variant)
+      // Phase 8E: use effectiveMode (host starts in create, then edits the created draft)
       const payload: Record<string, unknown> = {
         mode: effectiveMode,
         message,
         trace_id: traceId,
       };
 
-      if (effectiveMode !== "create" && eventId.trim()) {
-        payload.eventId = eventId.trim();
+      const targetEventId = createdEventId ?? eventId.trim();
+      if (effectiveMode !== "create" && targetEventId) {
+        payload.eventId = targetEventId;
       }
       if (effectiveMode === "edit_occurrence" && dateKey.trim()) {
         payload.dateKey = dateKey.trim();
@@ -1226,6 +1365,7 @@ export function ConversationalCreateUI({
         // Phase 4B: Track last successful interpreter response for create action
         if (body.next_action && body.draft_payload) {
           setLastInterpretResponse({
+            mode: effectiveMode,
             next_action: body.next_action as string,
             draft_payload: body.draft_payload as Record<string, unknown>,
           });
@@ -1381,6 +1521,59 @@ export function ConversationalCreateUI({
     }
   }
 
+  async function applySeriesPatch() {
+    if (!canShowSeriesPatchAction || !lastInterpretResponse || !createdEventId) return;
+
+    const intentText = collectUserIntentText(conversationHistory, message);
+    const mapResult = mapDraftToSeriesPatchPayload(lastInterpretResponse.draft_payload, intentText);
+    if (!mapResult.ok) {
+      setCreateMessage({ type: "error", text: `I need one cleaner instruction before I can update the draft: ${mapResult.error}` });
+      return;
+    }
+
+    setIsApplyingSeriesPatch(true);
+    setCreateMessage(null);
+
+    try {
+      const res = await fetch(`/api/my-events/${createdEventId}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(mapResult.body),
+      });
+
+      const result = await res.json().catch(() => ({ error: "Non-JSON response" }));
+      if (!res.ok) {
+        setCreateMessage({
+          type: "error",
+          text: `I couldn't apply that yet (${res.status}): ${result.error || JSON.stringify(result)}`,
+        });
+        return;
+      }
+
+      setCreatedSummary(
+        buildCreatedEventSummary(
+          createdEventId,
+          typeof result.slug === "string" ? result.slug : createdSummary?.slug ?? null,
+          result as Record<string, unknown>,
+          Boolean(result.cover_image_url ?? createdSummary?.hasCover),
+          createdSummary?.coverNote ?? null
+        )
+      );
+      setCreateMessage({
+        type: "success",
+        text: "Draft updated. Nice, the tiny event paperwork mountain got smaller.",
+      });
+    } catch (error) {
+      setCreateMessage({
+        type: "error",
+        text: error instanceof Error ? error.message : "Draft update failed.",
+      });
+    } finally {
+      setIsApplyingSeriesPatch(false);
+    }
+  }
+
   // ---- Phase 4B: Create event from interpreter draft (create mode only) ----
 
   async function createEvent() {
@@ -1479,6 +1672,7 @@ export function ConversationalCreateUI({
       const slug = result.slug as string | undefined;
       const draftSnapshot = lastInterpretResponse.draft_payload;
       setCreatedEventId(newEventId);
+      setEventId(newEventId);
 
       // 2. Deferred cover assignment (optional)
       const effectiveCoverCandidateId = coverCandidateId ?? stagedImages[0]?.id ?? null;
@@ -1587,7 +1781,7 @@ export function ConversationalCreateUI({
       onDrop={handleDrop}
       onDragOver={handleDragOver}
     >
-      <div className="max-w-3xl mx-auto space-y-6">
+      <div className="mx-auto max-w-7xl space-y-6">
         {/* Phase 8E: variant-aware header */}
         {isHostVariant ? (
           <div>
@@ -1627,6 +1821,8 @@ export function ConversationalCreateUI({
           </div>
         )}
 
+        <div className={isHostVariant ? "grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]" : "space-y-6"}>
+          <section className="space-y-4">
         <div className="card-base p-6 space-y-4">
           {/* Phase 8E: mode selector only in lab variant */}
           {!isHostVariant && (
@@ -1644,12 +1840,61 @@ export function ConversationalCreateUI({
             </label>
           )}
 
+          {isHostVariant && (
+            <div className="space-y-3 rounded-lg border border-[var(--color-border-input)] bg-[var(--color-bg-secondary)]/30 p-3">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs font-semibold uppercase text-[var(--color-text-tertiary)]">
+                  Conversation
+                </p>
+                <span className="text-xs text-[var(--color-text-tertiary)]">
+                  {hasCreatedDraft ? "Editing saved draft" : "Building draft"}
+                </span>
+              </div>
+              <div className="max-h-[360px] space-y-3 overflow-auto pr-1">
+                {conversationHistory.length === 0 ? (
+                  <div className="flex gap-3">
+                    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)]">
+                      <Bot className="h-4 w-4" aria-hidden="true" />
+                    </span>
+                    <div className="rounded-lg bg-[var(--color-bg-secondary)] px-3 py-2 text-sm text-[var(--color-text-primary)]">
+                      Send me the messy version: flyer screenshot, source notes, half-remembered venue details, all of it. I will ask one useful follow-up at a time and keep the draft tidy.
+                    </div>
+                  </div>
+                ) : (
+                  conversationHistory.map((entry, i) => (
+                    <div
+                      key={i}
+                      className={`flex gap-3 ${entry.role === "user" ? "justify-end" : "justify-start"}`}
+                    >
+                      {entry.role === "assistant" && (
+                        <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)]">
+                          <Bot className="h-4 w-4" aria-hidden="true" />
+                        </span>
+                      )}
+                      <div
+                        className={`max-w-[82%] whitespace-pre-wrap rounded-lg px-3 py-2 text-sm ${
+                          entry.role === "user"
+                            ? "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)]"
+                            : "bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)]"
+                        }`}
+                      >
+                        {entry.content}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
           <label className="block space-y-2">
             <span className="text-sm text-[var(--color-text-secondary)]">
               {isHostVariant
                 ? isClarificationTurn
                   ? "Answer the follow-up"
-                  : "Describe your happening"
+                  : hasCreatedDraft
+                    ? "Ask for a draft change"
+                    : "Describe your happening"
                 : "Message"}
             </span>
             <textarea
@@ -1660,6 +1905,8 @@ export function ConversationalCreateUI({
               placeholder={isHostVariant
                 ? isClarificationTurn && responseGuidance?.clarification_question
                   ? responseGuidance.clarification_question
+                  : hasCreatedDraft
+                    ? "e.g. Make it weekly, change the start time to 8pm, use the flyer as cover, or tighten the description..."
                   : "e.g. Open mic night at Dazzle Jazz, every Tuesday at 7pm, $10 cover. Source: venue website..."
                 : "Describe the event, or paste an image of a flyer..."}
             />
@@ -1854,6 +2101,22 @@ export function ConversationalCreateUI({
               </button>
             )}
 
+            {canShowSeriesPatchAction && (
+              <button
+                onClick={applySeriesPatch}
+                disabled={isApplyingSeriesPatch || isSubmitting}
+                type="button"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isApplyingSeriesPatch ? (
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                ) : (
+                  <ClipboardCheck className="h-4 w-4" aria-hidden="true" />
+                )}
+                {isApplyingSeriesPatch ? "Updating…" : "Apply Draft Update"}
+              </button>
+            )}
+
             {/* Occurrence edit apply — lab variant only (host forces create via effectiveMode) */}
             {canShowOccurrenceAction && (
               <button
@@ -1945,7 +2208,7 @@ export function ConversationalCreateUI({
           )}
 
           {/* Phase 8D: Post-create confidence block */}
-          {createdSummary && (
+          {!isHostVariant && createdSummary && (
             <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4 space-y-4">
               {/* Success header */}
               <div className="flex items-center gap-2">
@@ -2050,7 +2313,7 @@ export function ConversationalCreateUI({
           )}
 
           {/* Phase 4B: Legacy create links fallback (createdEventId without summary — shouldn't happen but safe) */}
-          {createdEventId && !createdSummary && (
+          {!isHostVariant && createdEventId && !createdSummary && (
             <div className="text-xs text-[var(--color-text-tertiary)] flex gap-3 flex-wrap">
               <Link
                 href={`/dashboard/my-events/${createdEventId}`}
@@ -2067,9 +2330,142 @@ export function ConversationalCreateUI({
             </div>
           )}
         </div>
+          </section>
+
+          {isHostVariant && (
+            <aside className="space-y-4 lg:sticky lg:top-6 lg:self-start">
+              <div className="card-base overflow-hidden">
+                <div className="border-b border-[var(--color-border-input)] px-4 py-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">
+                      Draft Preview
+                    </h2>
+                    {responseGuidance && (
+                      <span className="rounded-full bg-[var(--color-bg-secondary)] px-2 py-0.5 text-[11px] font-medium text-[var(--color-text-secondary)]">
+                        {getDraftReadinessLabel(responseGuidance)}
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-1 text-xs text-[var(--color-text-tertiary)]">
+                    Keep chatting here after the draft is saved. I will patch the same draft instead of making you start over.
+                  </p>
+                </div>
+
+                <div className="space-y-4 p-4">
+                  {selectedCoverImage ? (
+                    <div className="overflow-hidden rounded-lg border border-[var(--color-border-input)]">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={selectedCoverImage.previewUrl}
+                        alt="Selected cover candidate"
+                        className="aspect-[16/9] w-full object-cover"
+                      />
+                      <div className="flex items-center gap-2 bg-[var(--color-bg-secondary)] px-3 py-2 text-xs text-[var(--color-text-secondary)]">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" aria-hidden="true" />
+                        {createdSummary?.hasCover ? "Cover attached" : "Selected as cover candidate"}
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex w-full items-center gap-3 rounded-lg border border-dashed border-[var(--color-border-input)] bg-[var(--color-bg-secondary)]/30 px-3 py-3 text-left text-sm text-[var(--color-text-secondary)] hover:border-[var(--color-accent-primary)]"
+                    >
+                      <ImagePlus className="h-4 w-4" aria-hidden="true" />
+                      Add a flyer or cover image
+                    </button>
+                  )}
+
+                  {responseGuidance?.human_summary && (
+                    <div className="rounded-lg bg-[var(--color-bg-secondary)]/60 p-3 text-sm text-[var(--color-text-primary)]">
+                      {responseGuidance.human_summary}
+                    </div>
+                  )}
+
+                  {responseGuidance?.next_action === "ask_clarification" && (
+                    <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3">
+                      <p className="text-xs font-semibold uppercase text-amber-600">One thing I need</p>
+                      <p className="mt-1 text-sm text-[var(--color-text-primary)]">
+                        {responseGuidance.clarification_question || "Please provide the missing detail."}
+                      </p>
+                    </div>
+                  )}
+
+                  {responseGuidance?.draft_payload && (
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold uppercase text-[var(--color-text-tertiary)]">
+                        Extracted Fields
+                      </p>
+                      <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-xs">
+                        {(() => {
+                          const d = responseGuidance.draft_payload;
+                          const rows: [string, string][] = [];
+                          if (d.title) rows.push(["Title", String(d.title)]);
+                          if (d.event_type) rows.push(["Type", String(d.event_type)]);
+                          if (d.start_date || d.event_date) rows.push(["Date", String(d.start_date ?? d.event_date)]);
+                          if (d.start_time) rows.push(["Start", String(d.start_time)]);
+                          if (d.end_time) rows.push(["End", String(d.end_time)]);
+                          if (d.series_mode) rows.push(["Series", String(d.series_mode)]);
+                          if (d.recurrence_rule) rows.push(["Recurrence", humanizeRecurrence(typeof d.recurrence_rule === "string" ? d.recurrence_rule : null, typeof d.day_of_week === "string" ? d.day_of_week : null)]);
+                          if (d.venue_name) rows.push(["Venue", String(d.venue_name)]);
+                          if (d.custom_location_name) rows.push(["Location", String(d.custom_location_name)]);
+                          if (d.signup_mode) rows.push(["Signup", String(d.signup_mode)]);
+                          if (d.cost_label) rows.push(["Cost", String(d.cost_label)]);
+                          if (d.has_timeslots) rows.push(["Slots", "Enabled"]);
+                          if (rows.length === 0) rows.push(["Status", "No draft fields yet"]);
+                          return rows.map(([label, value]) => (
+                            <Fragment key={label}>
+                              <span className="text-right font-medium text-[var(--color-text-tertiary)]">{label}</span>
+                              <span className="break-words text-[var(--color-text-primary)]">{value}</span>
+                            </Fragment>
+                          ));
+                        })()}
+                      </div>
+                    </div>
+                  )}
+
+                  {createdSummary && (
+                    <div className="space-y-2 rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3">
+                      <div className="flex items-center gap-2 text-sm font-semibold text-[var(--color-text-primary)]">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-500" aria-hidden="true" />
+                        Draft saved
+                      </div>
+                      <p className="text-xs text-[var(--color-text-secondary)]">
+                        Private until you publish. You can keep asking for edits here.
+                      </p>
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        <Link
+                          href={`/dashboard/my-events/${createdSummary.eventId}`}
+                          target="_blank"
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"
+                        >
+                          <FileText className="h-3.5 w-3.5" aria-hidden="true" />
+                          Open draft
+                        </Link>
+                        {createdSummary.slug && (
+                          <Link
+                            href={`/happenings/${createdSummary.slug}`}
+                            target="_blank"
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-border-input)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                          >
+                            Preview link
+                          </Link>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {createMessage && createMessage.type !== "error" && (
+                    <p className="text-xs text-emerald-500">{createMessage.text}</p>
+                  )}
+                </div>
+              </div>
+            </aside>
+          )}
+        </div>
 
         {/* ---- Phase 8B: Human-readable guidance (primary) ---- */}
-        {statusCode === 200 && responseGuidance && (
+        {!isHostVariant && statusCode === 200 && responseGuidance && (
           <div className="card-base p-6 space-y-4">
             {/* Status header with next_action badge + confidence */}
             <div className="flex items-center gap-3 flex-wrap">
@@ -2171,7 +2567,7 @@ export function ConversationalCreateUI({
         )}
 
         {/* ---- Phase 8B: Draft state summary ---- */}
-        {statusCode === 200 && responseGuidance?.draft_payload && (
+        {!isHostVariant && statusCode === 200 && responseGuidance?.draft_payload && (
           <div className="card-base p-6 space-y-3">
             <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
               Draft Summary
@@ -2211,7 +2607,7 @@ export function ConversationalCreateUI({
         )}
 
         {/* ---- Conversation history display ---- */}
-        {conversationHistory.length > 0 && (
+        {!isHostVariant && conversationHistory.length > 0 && (
           <div className={`card-base p-6 space-y-3 ${isHostVariant ? "opacity-70" : ""}`}>
             <h2 className={`font-semibold text-[var(--color-text-primary)] ${isHostVariant ? "text-sm" : "text-lg"}`}>
               {isHostVariant ? "Previous Messages" : "Conversation History"}

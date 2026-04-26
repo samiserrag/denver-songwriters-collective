@@ -6,9 +6,8 @@
  * 2. Host subtitle includes 3-step cue.
  * 3. Host run button uses two-state logic (Generate Draft / Send Answer).
  * 4. Host route contains no lab/debug wording visible to users.
- * 5. Render order: Draft Status appears before Review Draft,
- *    both appear before Draft Summary.
- * 6. Conversation history is visually de-emphasized for host variant.
+ * 5. Host route uses a chat-first layout with a persistent Draft Preview.
+ * 6. Conversation history is in the main chat surface for host variant.
  */
 import { describe, expect, it } from "vitest";
 import * as fs from "node:fs";
@@ -28,10 +27,8 @@ describe("INTERPRETER-14 — Host copy updates", () => {
     expect(src).toContain("Create Happening with AI");
   });
 
-  it("host subtitle includes 3-step cue with Generate Draft reference", () => {
-    expect(src).toContain(
-      "Describe your event, paste source notes or flyer text, click Generate Draft, then answer follow-up questions in the same box. Your event stays private until you publish it."
-    );
+  it("host subtitle frames the chat loop", () => {
+    expect(src).toContain("answer follow-up questions in the same box");
   });
 
   it("host fallback link says 'Use classic form instead'", () => {
@@ -59,10 +56,9 @@ describe("INTERPRETER-14 — Host run button two-state label", () => {
     expect(src).toContain('"Send Answer"');
   });
 
-  it("host variant defaults to 'Generate Draft' (not 'Update Draft')", () => {
-    // The host branch should NOT produce "Update Draft"
-    // Verify the host-specific two-state comment exists
-    expect(src).toContain("host variant uses simplified two-state label");
+  it("host variant uses Update Draft after a draft exists", () => {
+    expect(src).toContain("hasCreatedDraft");
+    expect(src).toContain('"Update Draft"');
   });
 
   it("lab variant still has 'Update Draft' for follow-up turns", () => {
@@ -94,49 +90,45 @@ describe("INTERPRETER-14 — Host variant has no lab/debug wording", () => {
 });
 
 // ---------------------------------------------------------------------------
-// D) Render order — conversation zone sections
+// D) Chat-first workspace
 // ---------------------------------------------------------------------------
-describe("INTERPRETER-14 — Render order: Draft Status → Review Draft → Draft Summary", () => {
-  it("Draft Status appears before Review Draft in source", () => {
-    const draftStatusIdx = src.indexOf("Draft Status");
-    const reviewDraftIdx = src.indexOf("Review Draft");
-    expect(draftStatusIdx).toBeGreaterThan(-1);
-    expect(reviewDraftIdx).toBeGreaterThan(-1);
-    expect(draftStatusIdx).toBeLessThan(reviewDraftIdx);
+describe("INTERPRETER-14 — Host chat-first workspace", () => {
+  it("renders a persistent Draft Preview side panel for host users", () => {
+    expect(src).toContain("Draft Preview");
+    expect(src).toContain("lg:grid-cols-[minmax(0,1fr)_380px]");
+    expect(src).toContain("lg:sticky lg:top-6");
   });
 
-  it("Review Draft appears before Draft Summary in source", () => {
-    const reviewDraftIdx = src.indexOf("Review Draft");
-    const draftSummaryIdx = src.indexOf("Draft Summary");
-    expect(reviewDraftIdx).toBeGreaterThan(-1);
-    expect(draftSummaryIdx).toBeGreaterThan(-1);
-    expect(reviewDraftIdx).toBeLessThan(draftSummaryIdx);
+  it("keeps the chat transcript near the composer instead of below the page", () => {
+    const conversationIdx = src.indexOf("Conversation");
+    const textareaIdx = src.indexOf("<textarea");
+    expect(conversationIdx).toBeGreaterThan(-1);
+    expect(textareaIdx).toBeGreaterThan(-1);
+    expect(conversationIdx).toBeLessThan(textareaIdx);
   });
 
-  it("Draft Summary appears before Conversation History / Previous Messages in source", () => {
-    const draftSummaryIdx = src.indexOf("Draft Summary");
-    const historyIdx = src.indexOf("Previous Messages");
-    expect(draftSummaryIdx).toBeGreaterThan(-1);
-    expect(historyIdx).toBeGreaterThan(-1);
-    expect(draftSummaryIdx).toBeLessThan(historyIdx);
+  it("opens draft and preview links in another tab", () => {
+    expect(src).toContain('target="_blank"');
+    expect(src).toContain("Preview link");
   });
 });
 
 // ---------------------------------------------------------------------------
-// E) Conversation history — host de-emphasis
+// E) Conversation history — host chat treatment
 // ---------------------------------------------------------------------------
-describe("INTERPRETER-14 — Conversation history de-emphasis for host", () => {
-  it("host variant uses 'Previous Messages' label instead of 'Conversation History'", () => {
-    expect(src).toContain("Previous Messages");
+describe("INTERPRETER-14 — Conversation history for host", () => {
+  it("host variant keeps lab conversation history wording out of the host flow", () => {
+    expect(src).toContain("!isHostVariant && conversationHistory.length > 0");
     expect(src).toContain("Conversation History");
   });
 
-  it("host variant applies opacity reduction to history section", () => {
-    expect(src).toContain('isHostVariant ? "opacity-70" : ""');
+  it("host variant includes friendly first assistant message", () => {
+    expect(src).toContain("Send me the messy version");
+    expect(src).toContain("I will ask one useful follow-up at a time");
   });
 
-  it("host variant uses friendly role labels (You/AI instead of user/assistant)", () => {
-    expect(src).toContain('"You:"');
-    expect(src).toContain('"AI:"');
+  it("host composer changes after draft creation", () => {
+    expect(src).toContain("Ask for a draft change");
+    expect(src).toContain("Make it weekly");
   });
 });
