@@ -198,6 +198,18 @@ describe("Phase 9B — event-type reliability", () => {
     expect(interpretRouteSource).toContain("OPENAI_EVENT_WEB_SEARCH_MODEL");
   });
 
+  it("does not treat similar-but-not-exact search results as verification", () => {
+    expect(interpretRouteSource).toContain("isNonExactEventSearchResult");
+    expect(interpretRouteSource).toContain("web search verification ignored non-exact event result");
+    expect(interpretRouteSource).toContain("Set status to searched only when at least one source appears to describe the exact same event");
+    expect(interpretRouteSource).toContain("similar venue, similar jam, different city, different date, or unrelated event");
+  });
+
+  it("preserves named flyer event titles instead of prepending venue names", () => {
+    expect(interpretRouteSource).toContain("Preserve the event's own title from the flyer/source");
+    expect(interpretRouteSource).toContain("Do not prepend the venue to named events");
+  });
+
   it("feeds sourced web facts into both draft and verifier prompts", () => {
     expect(interpretRouteSource).toContain("webSearchVerification");
     expect(interpretRouteSource).toContain("Use sourced facts to reduce unnecessary questions");

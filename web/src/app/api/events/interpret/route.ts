@@ -971,6 +971,8 @@ function buildWebSearchVerificationPrompt(input: {
       instructions: [
         "Use web search only when it can verify event facts for a public event listing.",
         "Look for official venue, organizer, ticketing, social, or event-calendar sources.",
+        "Set status to searched only when at least one source appears to describe the exact same event or exact same recurring event series.",
+        "If search finds only a similar venue, similar jam, different city, different date, or unrelated event, set status to no_reliable_sources, use an empty sources array, and summarize that no exact public match was found.",
         "Return only facts that are directly supported by sources or clearly present in the supplied source_message/extracted_image_text.",
         "Prefer exact event date, start/end time, venue name, address, cost, signup details, age policy, external event URL, and cancellation/status if present.",
         "If sources conflict with the supplied flyer/post, mention the conflict in summary instead of deciding silently.",
@@ -1027,6 +1029,19 @@ function parseWebSearchVerification(value: unknown, fallbackSources: WebSearchVe
     facts,
     sources,
   };
+}
+
+function isNonExactEventSearchResult(result: WebSearchVerificationResult): boolean {
+  const searchable = [result.summary, ...result.facts].join("\n").toLowerCase();
+  return [
+    /\bexact (?:event|match|listing|source)\b.*\b(?:not|no)\b/,
+    /\b(?:not|no)\b.*\bexact (?:event|match|listing|source)\b/,
+    /\b(?:event|listing|source)\b.*\bnot found\b/,
+    /\bnot found\b.*\b(?:event|listing|source)\b/,
+    /\bno reliable sources?\b/,
+    /\bunrelated\b/,
+    /\bsimilar\b.*\b(?:event|listing|source)\b/,
+  ].some((pattern) => pattern.test(searchable));
 }
 
 async function verifyEventDetailsWithWebSearch(input: {
@@ -1138,6 +1153,14 @@ async function verifyEventDetailsWithWebSearch(input: {
     if (!result || result.status !== "searched" || result.sources.length === 0) {
       return null;
     }
+    if (isNonExactEventSearchResult(result)) {
+      console.info("[events/interpret] web search verification ignored non-exact event result", {
+        traceId: input.traceId,
+        sourceCount: result.sources.length,
+        summary: redactEmails(truncate(result.summary, 200)),
+      });
+      return null;
+    }
     return result;
   } catch (error) {
     const isTimeout = error instanceof Error && error.name === "AbortError";
@@ -1236,8 +1259,9 @@ function buildSystemPrompt() {
     "- If a detail is missing but optional (cost, source URL, end time, capacity, organizer note), leave it blank/null and say it was not stated instead of blocking the user.",
     "- If you need verification, ask one specific human question and explain what you already inferred.",
     "- Do not claim you searched the web or verified online unless an explicit tool result or source text is present in the prompt.",
-    "- When web_search_verification is present, use it as supporting evidence. You may say you verified online only when status is searched and sources are present.",
+    "- When web_search_verification is present, use it as supporting evidence. You may say you verified online only when status is searched, sources are present, and those sources match the same event or recurring event series.",
     "- If web_search_verification conflicts with the user's flyer/post, preserve the user's supplied details and ask one targeted question only if the conflict would make publishing risky.",
+    "- If search did not find an exact same-event match, do not mention online verification in human_summary and do not use similar events as facts.",
     "- Do not append conversational tails like 'anything else'.",
     "- RSVP remains default platform behavior; do not disable it.",
     "- Timeslots are optional. Encourage for open_mic, jam_session, workshop when relevant.",
@@ -1248,7 +1272,7 @@ function buildSystemPrompt() {
     "- If the user says 'tonight', 'tomorrow', 'next', 'upcoming', or 'if this is in the past', resolve that relative date yourself from current_date instead of asking for the year.",
     "- If venue match is uncertain, leave venue_id null and set venue_name to your best guess of the venue the user intended. The server will attempt deterministic resolution.",
     "- If locked_draft is provided, preserve its confirmed fields unless the user explicitly changes them.",
-    "- For create mode title formatting, prefer: `<Venue Name> - <Event Name>` when venue is known.",
+    "- Preserve the event's own title from the flyer/source. Do not prepend the venue to named events such as jams, showcases, festivals, concerts, slams, workshops, or sessions unless the source title already includes it.",
     "- Always include concrete event details in description (at minimum when/where/type/cost if known).",
     "- Set event_type/category from explicit wording: if user says showcase, use showcase (not open_mic).",
     "- Do not invent facts. Use only the user's message, attached flyer text, provided source notes, venue catalog, and deterministic server hints.",
