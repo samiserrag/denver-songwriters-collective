@@ -135,6 +135,11 @@ describe("Phase 8D — next-action CTAs", () => {
     expect(labSource).toContain("`/dashboard/my-events/${createdSummary.eventId}`");
   });
 
+  it("always renders a preview link using slug or event id fallback", () => {
+    expect(labSource).toContain("Preview event");
+    expect(labSource).toContain("`/events/${createdSummary.slug || createdSummary.eventId}`");
+  });
+
   it("renders Go to My Happenings CTA with draft cue", () => {
     expect(labSource).toContain("Go to My Happenings (check Drafts)");
   });
@@ -171,6 +176,13 @@ describe("Phase 8D — duplicate submit prevention", () => {
     const matches = labSource.match(/buildCreatedEventSummary\(/g);
     expect(matches).not.toBeNull();
     expect(matches!.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("does not prepend venue names to created event titles", () => {
+    const fnStart = labSource.indexOf("function normalizeTitleWithVenuePrefix");
+    const fnSection = labSource.slice(fnStart, fnStart + 400);
+    expect(fnSection).toContain("return input.title.trim()");
+    expect(fnSection).not.toContain("${cleanVenue} - ${cleanTitle}");
   });
 });
 

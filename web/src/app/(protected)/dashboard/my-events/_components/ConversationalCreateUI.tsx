@@ -585,28 +585,11 @@ function inferEventTypesFromIntentText(intentText: string): string[] {
   return ranked.map((entry) => entry.eventType);
 }
 
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
 function normalizeTitleWithVenuePrefix(input: {
   title: unknown;
-  venueName: string | null;
 }): string | null {
   if (!hasNonEmptyText(input.title)) return null;
-  const cleanTitle = input.title.trim();
-  if (!input.venueName) return cleanTitle;
-
-  const cleanVenue = input.venueName.trim();
-  if (!cleanVenue) return cleanTitle;
-
-  const alreadyPrefixed = new RegExp(
-    `^${escapeRegExp(cleanVenue)}\\s*-\\s*`,
-    "i"
-  ).test(cleanTitle);
-  if (alreadyPrefixed) return cleanTitle;
-
-  return `${cleanVenue} - ${cleanTitle}`;
+  return input.title.trim();
 }
 
 function buildMinimumEventDescription(input: {
@@ -709,7 +692,6 @@ function mapDraftToCreatePayload(
 
   const normalizedTitle = normalizeTitleWithVenuePrefix({
     title: draft.title,
-    venueName: resolvedVenueName,
   });
 
   if (!normalizedTitle) {
@@ -2384,6 +2366,13 @@ export function ConversationalCreateUI({
                   Edit & Publish
                 </Link>
                 <Link
+                  href={`/events/${createdSummary.slug || createdSummary.eventId}`}
+                  target="_blank"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--color-border-input)] text-xs font-semibold text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
+                >
+                  Preview event
+                </Link>
+                <Link
                   href="/dashboard/my-events"
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--color-border-input)] text-xs font-semibold text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
                 >
@@ -2551,15 +2540,13 @@ export function ConversationalCreateUI({
                           <FileText className="h-3.5 w-3.5" aria-hidden="true" />
                           Open draft
                         </Link>
-                        {createdSummary.slug && (
-                          <Link
-                            href={`/happenings/${createdSummary.slug}`}
-                            target="_blank"
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-border-input)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
-                          >
-                            Preview link
-                          </Link>
-                        )}
+                        <Link
+                          href={`/events/${createdSummary.slug || createdSummary.eventId}`}
+                          target="_blank"
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-border-input)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                        >
+                          Preview event
+                        </Link>
                       </div>
                     </div>
                   )}
