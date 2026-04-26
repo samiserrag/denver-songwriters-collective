@@ -208,9 +208,17 @@ describe("Phase 9B — event-type reliability", () => {
     expect(interpretRouteSource).toContain("similar venue, similar jam, different city, different date, or unrelated event");
   });
 
-  it("preserves named flyer event titles instead of prepending venue names", () => {
-    expect(interpretRouteSource).toContain("Preserve the event's own title from the flyer/source");
-    expect(interpretRouteSource).toContain("Do not prepend the venue to named events");
+  it("uses venue-type titles for generic events while preserving named flyer events", () => {
+    expect(interpretRouteSource).toContain("prefer the public title format 'Venue Name - Type'");
+    expect(interpretRouteSource).toContain("Preserve distinct named events");
+    expect(interpretRouteSource).toContain("applyVenueTypeTitleDefault");
+    expect(postprocessSource).toContain("applyVenueTypeTitleDefault");
+  });
+
+  it("keeps sign-up time separate from public performance start time", () => {
+    expect(interpretRouteSource).toContain("If a flyer separates sign-up/check-in from performances");
+    expect(postprocessSource).toContain("SIGNUP_TIME_PATTERN");
+    expect(postprocessSource).toContain("PERFORMANCE_RANGE_PATTERN");
   });
 
   it("feeds sourced web facts into both draft and verifier prompts", () => {

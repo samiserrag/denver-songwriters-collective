@@ -31,6 +31,7 @@ import {
 import type { NextAction } from "@/lib/events/interpretEventContract";
 import { normalizeSignupMode } from "@/lib/events/signupModeContract";
 import { normalizeDraftRecurrenceFields } from "@/lib/events/recurrenceDraftTools";
+import { applyVenueTypeTitleDefault } from "@/lib/events/interpreterPostprocess";
 import { humanizeRecurrence } from "@/lib/recurrenceHumanizer";
 import { CropModal } from "@/components/gallery/CropModal";
 
@@ -147,6 +148,21 @@ function buildDraftPreviewEvent(input: {
 }): HappeningEvent | null {
   const draft = input.draft;
   const title = coerceString(draft?.title) ?? input.createdSummary?.title ?? "Draft happening";
+  const eventTypes = draft
+    ? normalizeDraftEventTypes(draft.event_type)
+    : input.createdSummary?.eventType
+      ? [input.createdSummary.eventType.replace(/\s+/g, "_")]
+      : ["open_mic"];
+  const normalizedTitle =
+    normalizeTitleWithVenuePrefix({
+      title,
+      venueName:
+        coerceString(draft?.venue_name) ??
+        coerceString(draft?.custom_location_name) ??
+        input.createdSummary?.venueName ??
+        null,
+      eventType: eventTypes,
+    }) ?? title;
   const startDate =
     coerceString(draft?.start_date) ??
     coerceString(draft?.event_date) ??
@@ -162,13 +178,9 @@ function buildDraftPreviewEvent(input: {
   return {
     id: input.createdSummary?.eventId ?? "draft-preview",
     slug: input.createdSummary?.slug ?? null,
-    title,
+    title: normalizedTitle,
     description: coerceString(draft?.description),
-    event_type: draft
-      ? normalizeDraftEventTypes(draft.event_type)
-      : input.createdSummary?.eventType
-        ? [input.createdSummary.eventType.replace(/\s+/g, "_")]
-        : ["open_mic"],
+    event_type: eventTypes,
     event_date: startDate,
     start_time: coerceString(draft?.start_time) ?? input.createdSummary?.startTime ?? null,
     end_time: coerceString(draft?.end_time) ?? input.createdSummary?.endTime ?? null,
@@ -596,6 +608,19 @@ function explicitlyRequestsVenueDirectoryCreate(intentText: string): boolean {
   return /\b(new venue|create venue|add venue|add to venues|add this venue)\b/i.test(intentText);
 }
 
+function shouldCreateReusableVenueForDraft(body: Record<string, unknown>): boolean {
+  const hasVenueId = typeof body.venue_id === "string" && body.venue_id.trim().length > 0;
+  const hasCustomLocation =
+    typeof body.custom_location_name === "string" && body.custom_location_name.trim().length > 0;
+  if (hasVenueId || !hasCustomLocation) return false;
+
+  const seriesMode = typeof body.series_mode === "string" ? body.series_mode : "single";
+  const hasRecurringRule =
+    typeof body.recurrence_rule === "string" && body.recurrence_rule.trim().length > 0;
+  const hasCustomDates = Array.isArray(body.custom_dates) && body.custom_dates.length > 0;
+  return seriesMode !== "single" || hasRecurringRule || hasCustomDates;
+}
+
 function extractGoogleMapsUrl(intentText: string): string | null {
   const match = intentText.match(GOOGLE_MAPS_LINK_REGEX);
   return match ? match[0].trim() : null;
@@ -723,9 +748,17 @@ function inferEventTypesFromIntentText(intentText: string): string[] {
 
 function normalizeTitleWithVenuePrefix(input: {
   title: unknown;
+  venueName?: string | null;
+  eventType?: string[];
 }): string | null {
-  if (!hasNonEmptyText(input.title)) return null;
-  return input.title.trim();
+  const draft: Record<string, unknown> = {
+    title: input.title,
+    venue_name: input.venueName ?? null,
+    event_type: input.eventType ?? [],
+  };
+  applyVenueTypeTitleDefault(draft);
+  if (!hasNonEmptyText(draft.title)) return null;
+  return draft.title.trim();
 }
 
 function buildMinimumEventDescription(input: {
@@ -828,6 +861,8 @@ function mapDraftToCreatePayload(
 
   const normalizedTitle = normalizeTitleWithVenuePrefix({
     title: draft.title,
+    venueName: resolvedVenueName,
+    eventType,
   });
 
   if (!normalizedTitle) {
@@ -1596,6 +1631,11 @@ export function ConversationalCreateUI({
         setHasUnappliedSeriesPatch(false);
       }
     }
+    const userTranscriptContent =
+      message.trim() ||
+      (stagedImages.length === 1
+        ? "Attached an image."
+        : `Attached ${stagedImages.length} images.`);
 
     try {
       // Phase 8E: use effectiveMode (host starts in create, then edits the created draft)
@@ -1634,7 +1674,6 @@ export function ConversationalCreateUI({
           })
         );
       }
-
       const res = await fetch("/api/events/interpret", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -1654,7 +1693,7 @@ export function ConversationalCreateUI({
             : "The event agent could not finish that request.";
         setConversationHistory((prev) => [
           ...prev,
-          { role: "user", content: message },
+          { role: "user", content: userTranscriptContent },
           {
             role: "assistant",
             content:
@@ -1688,7 +1727,7 @@ export function ConversationalCreateUI({
 
         setConversationHistory((prev) => [
           ...prev,
-          { role: "user", content: message },
+          { role: "user", content: userTranscriptContent },
           {
             role: "assistant",
             content: assistantParts.join("\n\n") || JSON.stringify(body),
@@ -1720,7 +1759,7 @@ export function ConversationalCreateUI({
       });
       setConversationHistory((prev) => [
         ...prev,
-        { role: "user", content: message },
+        { role: "user", content: userTranscriptContent },
         {
           role: "assistant",
           content:
@@ -1957,9 +1996,11 @@ export function ConversationalCreateUI({
       const createBody: Record<string, unknown> = { ...mapResult.body, trace_id: traceId };
       let venueCreateNote: string | null = null;
 
-      // Optional: when user explicitly requests "new venue", try adding it to venue directory first.
+      // Reusable series should use canonical venues when we have enough detail;
+      // explicit "add venue" requests keep the same behavior for one-off events.
       if (
-        explicitlyRequestsVenueDirectoryCreate(intentText) &&
+        (explicitlyRequestsVenueDirectoryCreate(intentText) ||
+          shouldCreateReusableVenueForDraft(createBody)) &&
         typeof createBody.venue_id !== "string" &&
         typeof createBody.custom_location_name === "string" &&
         createBody.custom_location_name.trim().length > 0

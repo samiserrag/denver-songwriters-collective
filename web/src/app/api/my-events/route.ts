@@ -13,6 +13,7 @@ import { processVenueGeocodingWithStatus } from "@/lib/venue/geocoding";
 import { Database } from "@/lib/supabase/database.types";
 import { warmEventSharePreview } from "@/lib/events/sharePreview";
 import { normalizeDraftRecurrenceFields } from "@/lib/events/recurrenceDraftTools";
+import { applyVenueTypeTitleDefault } from "@/lib/events/interpreterPostprocess";
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>;
 
@@ -699,6 +700,16 @@ export async function POST(request: Request) {
           ? body.location_notes.trim() || null
           : null,
     };
+  }
+
+  const titleDraft = {
+    ...body,
+    venue_name: venueName ?? body.venue_name ?? customLocationFields.custom_location_name,
+    custom_location_name: customLocationFields.custom_location_name,
+  };
+  applyVenueTypeTitleDefault(titleDraft);
+  if (typeof titleDraft.title === "string" && titleDraft.title.trim().length > 0) {
+    body.title = titleDraft.title.trim();
   }
 
   // Determine series configuration

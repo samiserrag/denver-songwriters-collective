@@ -31,7 +31,7 @@ export interface ExtractionMetadata {
 
 export interface InterpretEventRequestBody {
   mode: InterpretMode;
-  message: string;
+  message?: string;
   eventId?: string;
   dateKey?: string;
   conversationHistory?: Array<{ role: "user" | "assistant"; content: string }>;

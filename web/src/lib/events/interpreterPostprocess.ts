@@ -301,12 +301,16 @@ export function applyEventTypeHint(input: {
 }
 
 // ---------------------------------------------------------------------------
-// Time semantics: doors vs performance start (Phase 7D)
+// Time semantics: doors/sign-up vs public performance start (Phase 7D)
 // ---------------------------------------------------------------------------
 
 export const DOORS_PATTERN = /\bdoors?\s+(?:open\s+)?(?:at\s+)?(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)/i;
 export const PERFORMANCE_START_PATTERN =
   /\b(?:first\s+performance|show|music|set|acts?)\s+(?:starts?\s+)?(?:at\s+)?(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)/i;
+export const SIGNUP_TIME_PATTERN =
+  /\b(?:(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\s*(?:[-–—]\s*)?sign[\s-]?up|sign[\s-]?up\s*(?:starts?\s*)?(?:at\s*)?(\d{1,2}(?::\d{2})?\s*(?:am|pm)?))/i;
+export const PERFORMANCE_RANGE_PATTERN =
+  /\b(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\s*(?:[-–—]|to)\s*(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\s*(?:performances?|show|music|sets?)\b/i;
 
 export function parseTimeString(raw: string): string | null {
   const cleaned = raw.trim().toLowerCase();
@@ -320,18 +324,129 @@ export function parseTimeString(raw: string): string | null {
   return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:00`;
 }
 
+function inheritMeridiemIfMissing(raw: string, fallback: string): string {
+  if (/\b(?:am|pm)\b/i.test(raw)) return raw;
+  const meridiem = fallback.match(/\b(am|pm)\b/i)?.[1];
+  return meridiem ? `${raw.trim()}${meridiem}` : raw;
+}
+
 export function applyTimeSemantics(
   draft: Record<string, unknown>,
   message: string,
 ): void {
   const doorsMatch = message.match(DOORS_PATTERN);
   const performanceMatch = message.match(PERFORMANCE_START_PATTERN);
+  const signupMatch = message.match(SIGNUP_TIME_PATTERN);
+  const performanceRangeMatch = message.match(PERFORMANCE_RANGE_PATTERN);
 
   if (doorsMatch && performanceMatch) {
     const performanceTime = parseTimeString(performanceMatch[1]);
     if (performanceTime) {
       draft.start_time = performanceTime;
     }
+  }
+
+  if (signupMatch) {
+    const signupRaw = signupMatch[1] || signupMatch[2];
+    const signupTime = signupRaw ? parseTimeString(signupRaw) : null;
+    if (signupTime) {
+      draft.signup_time = signupTime;
+    }
+  }
+
+  if (signupMatch && performanceRangeMatch) {
+    const rangeEndRaw = performanceRangeMatch[2];
+    const rangeStartRaw = inheritMeridiemIfMissing(performanceRangeMatch[1], rangeEndRaw);
+    const rangeStart = parseTimeString(rangeStartRaw);
+    const rangeEnd = parseTimeString(rangeEndRaw);
+    if (rangeStart) {
+      draft.start_time = rangeStart;
+    }
+    if (rangeEnd && (draft.end_time === null || draft.end_time === undefined || draft.end_time === "")) {
+      draft.end_time = rangeEnd;
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Title defaults: generic event names should include the venue.
+// ---------------------------------------------------------------------------
+
+const EVENT_TYPE_TITLE_LABELS: Record<string, string> = {
+  open_mic: "Open Mic",
+  jam_session: "Jam Session",
+  song_circle: "Song Circle",
+  showcase: "Showcase",
+  workshop: "Workshop",
+  meetup: "Meetup",
+  gig: "Live Music",
+};
+
+function normalizeComparableTitle(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\b(the|night|event|at|hosted|by)\b/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function getPrimaryEventType(draft: Record<string, unknown>): string | null {
+  if (!Array.isArray(draft.event_type)) return null;
+  return (
+    draft.event_type.find(
+      (value): value is string => typeof value === "string" && EVENT_TYPE_TITLE_LABELS[value] !== undefined
+    ) ?? null
+  );
+}
+
+function shouldUseVenueTypeTitle(input: {
+  title: string;
+  venueName: string;
+  primaryEventType: string;
+  typeLabel: string;
+}): boolean {
+  const title = normalizeComparableTitle(input.title);
+  const venue = normalizeComparableTitle(input.venueName);
+  const type = normalizeComparableTitle(input.typeLabel);
+  if (!title || !venue || !type) return false;
+
+  if (title === type) return true;
+
+  // Open mic flyers often produce "Open Mic", "Open Mic Night", or
+  // "{Venue} Open Mic Night". Those are generic listing labels, not distinct
+  // event brands, so name them consistently by venue for discoverability.
+  if (input.primaryEventType === "open_mic" && title.includes("open mic")) {
+    const remainder = title
+      .replace(venue, " ")
+      .replace(type, " ")
+      .replace(/\bopen mic\b/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    return remainder.length === 0;
+  }
+
+  return false;
+}
+
+export function applyVenueTypeTitleDefault(draft: Record<string, unknown>): void {
+  if (typeof draft.title !== "string" || draft.title.trim().length === 0) return;
+  const venueName =
+    typeof draft.venue_name === "string" && draft.venue_name.trim().length > 0
+      ? draft.venue_name.trim()
+      : typeof draft.custom_location_name === "string" && draft.custom_location_name.trim().length > 0
+        ? draft.custom_location_name.trim()
+        : null;
+  if (!venueName) return;
+
+  const primaryEventType = getPrimaryEventType(draft);
+  if (!primaryEventType) return;
+  const typeLabel = EVENT_TYPE_TITLE_LABELS[primaryEventType];
+  if (!typeLabel) return;
+
+  if (shouldUseVenueTypeTitle({ title: draft.title, venueName, primaryEventType, typeLabel })) {
+    draft.title = `${venueName} - ${typeLabel}`;
   }
 }
 

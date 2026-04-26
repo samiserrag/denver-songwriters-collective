@@ -28,6 +28,7 @@ import {
   detectsRecurrenceIntent,
   applyRecurrenceHintFromExtractedText,
   applyEventTypeHint,
+  applyVenueTypeTitleDefault,
   applyFutureDateGuard,
   applyTimeSemantics,
   reduceClarificationToSingle,
@@ -322,6 +323,26 @@ function extractAddressFromText(input: string): ParsedAddressHint | null {
     `\\b(\\d{1,6}\\s+[A-Za-z0-9.'#-]+(?:\\s+[A-Za-z0-9.'#-]+){0,6}\\s+${streetSuffix})\\b\\s+([A-Za-z .'-]+?)\\s+(Colorado|[A-Z]{2})\\s*(\\d{5})?`,
     "i"
   );
+  const coloradoZipOnlyCities = [
+    "Denver",
+    "Pueblo",
+    "Greeley",
+    "Lafayette",
+    "Lakewood",
+    "Aurora",
+    "Arvada",
+    "Boulder",
+    "Colorado Springs",
+    "Fort Collins",
+    "Golden",
+    "Littleton",
+    "Longmont",
+    "Wheat Ridge",
+  ].join("|");
+  const coloradoZipOnly = new RegExp(
+    `\\b(\\d{1,6}\\s+(?:[NSEW]\\s+)?[A-Za-z0-9.'#-]+(?:\\s+[A-Za-z0-9.'#-]+){0,5})\\s+(${coloradoZipOnlyCities})\\s+(8\\d{4})\\b`,
+    "i"
+  );
 
   // Try line-by-line first to avoid spanning noisy flyer/body text.
   const lines = input
@@ -335,9 +356,29 @@ function extractAddressFromText(input: string): ParsedAddressHint | null {
     if (line.split(/\s+/).length > 14) continue;
     match = line.match(withCommas) || line.match(compact);
     if (match) break;
+    const coloradoZipMatch = line.match(coloradoZipOnly);
+    if (coloradoZipMatch) {
+      const street = coloradoZipMatch[1]?.trim();
+      const city = coloradoZipMatch[2]?.trim();
+      const zip = coloradoZipMatch[3]?.trim() || null;
+      if (street && city && !looksLikeNoisyStreetCandidate(street)) {
+        return { street, city, state: "CO", zip };
+      }
+    }
   }
   if (!match) {
     match = input.match(withCommas) || input.match(compact);
+  }
+  if (!match) {
+    const coloradoZipMatch = input.match(coloradoZipOnly);
+    if (coloradoZipMatch) {
+      const street = coloradoZipMatch[1]?.trim();
+      const city = coloradoZipMatch[2]?.trim();
+      const zip = coloradoZipMatch[3]?.trim() || null;
+      if (street && city && !looksLikeNoisyStreetCandidate(street)) {
+        return { street, city, state: "CO", zip };
+      }
+    }
   }
   if (!match) return null;
 
@@ -646,10 +687,10 @@ function hardenDraftForCreateEdit(input: {
     }
   }
 
-  // Phase 7D: Time semantics — treat "doors at X" + "show starts at Y"
-  // as start_time = Y (performance start), not doors time.
+  // Phase 7D: Time semantics — treat "doors/sign-up at X" + "show starts at Y"
+  // as start_time = Y (performance start), keeping signup_time separate.
   if (mode === "create" || mode === "edit_series") {
-    applyTimeSemantics(draft, message);
+    applyTimeSemantics(draft, [message, extractedImageText || ""].join("\n"));
   }
 
   // Phase 10: Deterministic event-type/category hinting.
@@ -1348,7 +1389,7 @@ function buildSystemPrompt() {
     "- If the user says 'tonight', 'tomorrow', 'next', 'upcoming', or 'if this is in the past', resolve that relative date yourself from current_date instead of asking for the year.",
     "- If venue match is uncertain, leave venue_id null and set venue_name to your best guess of the venue the user intended. The server will attempt deterministic resolution.",
     "- If locked_draft is provided, preserve its confirmed fields unless the user explicitly changes them.",
-    "- Preserve the event's own title from the flyer/source. Do not prepend the venue to named events such as jams, showcases, festivals, concerts, slams, workshops, or sessions unless the source title already includes it.",
+    "- For generic event names, prefer the public title format 'Venue Name - Type' (for example 'Fellow Traveler - Open Mic' or 'Ethos - Open Mic'). Preserve distinct named events such as Jam&Slam, festivals, concerts, workshops, slams, and branded showcases.",
     "- Always include concrete event details in description (at minimum when/where/type/cost if known).",
     "- Set event_type/category from explicit wording: if user says showcase, use showcase (not open_mic).",
     "- Do not invent facts. Use only the user's message, attached flyer text, provided source notes, venue catalog, and deterministic server hints.",
@@ -1360,6 +1401,7 @@ function buildSystemPrompt() {
     "- For custom recurrence, include custom_dates as concrete YYYY-MM-DD dates in chronological order, starting with start_date. Generate up to 12 upcoming dates from current_date/source details; ask only if the pattern cannot be converted into dates safely.",
     "- Do not output vague series_mode values like recurring. Choose one of single, weekly, biweekly, monthly, or custom.",
     "- Only enable performer slots when explicitly requested with slot/timeslot/lineup language.",
+    "- If a flyer separates sign-up/check-in from performances, set signup_time to sign-up/check-in time and start_time to the public performance/show start time. Example: '6:00PM SIGN UP, 6:30PM-9:00PM PERFORMANCES' means signup_time 18:00:00, start_time 18:30:00, end_time 21:00:00.",
     "- For gig events, do not add signup_time or performer slots unless explicitly requested.",
     "- Default timezone to America/Denver unless the source clearly says otherwise.",
     "- Keep human_summary concise, deterministic, friendly, and lightly encouraging. A tiny bit of humor is okay, but never at the expense of clarity or correctness.",
@@ -1705,11 +1747,6 @@ export async function POST(request: Request) {
   if (!validateInterpretMode(body?.mode)) {
     return NextResponse.json({ error: "mode must be create | edit_series | edit_occurrence." }, { status: 400 });
   }
-  if (typeof body?.message !== "string" || body.message.trim().length === 0) {
-    return NextResponse.json({ error: "message is required." }, { status: 400 });
-  }
-
-  const normalizedMessage = body.message.trim().slice(0, 3000);
   const mode = body.mode;
   const dateKey = typeof body.dateKey === "string" ? body.dateKey : undefined;
   const eventId = typeof body.eventId === "string" ? body.eventId : undefined;
@@ -1731,6 +1768,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: imageValidation.error }, { status: imageValidation.status });
   }
   const validatedImages = imageValidation.images;
+  const rawMessage = typeof body?.message === "string" ? body.message.trim() : "";
+  if (rawMessage.length === 0 && validatedImages.length === 0) {
+    return NextResponse.json({ error: "message or image is required." }, { status: 400 });
+  }
+
+  const normalizedMessage = (rawMessage || "Please draft this event from the attached image.").slice(0, 3000);
 
   if ((mode === "edit_series" || mode === "edit_occurrence") && !eventId) {
     return NextResponse.json({ error: "eventId is required for edit modes." }, { status: 400 });
@@ -2164,6 +2207,7 @@ export async function POST(request: Request) {
       conversationHistory,
       extractedImageText,
     });
+    applyVenueTypeTitleDefault(sanitizedDraft);
   }
 
   const futureDateGuardResult =
@@ -2268,7 +2312,7 @@ export async function POST(request: Request) {
     draft_payload: sanitizedDraft,
     quality_hints: qualityHints,
     ...(extractionMetadata ? { extraction_metadata: extractionMetadata } : {}),
-    ...(draftVerification ? { draft_verification: draftVerification } : {}),
+    ...(highRiskVerificationIssue && draftVerification ? { draft_verification: draftVerification } : {}),
     ...(webSearchVerification ? { web_search_verification: webSearchVerification } : {}),
   };
 

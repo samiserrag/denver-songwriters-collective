@@ -31,6 +31,14 @@ describe("Interpreter image extraction (Phase 3 route)", () => {
     expect(routeSource).toContain("validateImageInputs(body.image_inputs)");
   });
 
+  it("allows image-only draft requests without requiring typed message text", () => {
+    expect(routeSource).toContain("message or image is required");
+    expect(routeSource).toContain("Please draft this event from the attached image.");
+    expect(routeSource.indexOf("validateImageInputs(body.image_inputs)")).toBeLessThan(
+      routeSource.indexOf("message or image is required")
+    );
+  });
+
   it("returns typed 400/413 for invalid images", () => {
     expect(routeSource).toContain("imageValidation.status");
     expect(routeSource).toContain("imageValidation.error");

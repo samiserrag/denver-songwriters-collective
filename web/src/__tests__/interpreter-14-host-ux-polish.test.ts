@@ -158,6 +158,18 @@ describe("INTERPRETER-14 — Host chat-first workspace", () => {
     expect(src).toContain("normalizeDraftRecurrenceFields(body)");
   });
 
+  it("normalizes generic event titles to venue-type names before writing drafts", () => {
+    expect(src).toContain('import { applyVenueTypeTitleDefault } from "@/lib/events/interpreterPostprocess"');
+    expect(src).toContain("normalizeTitleWithVenuePrefix");
+    expect(src).toContain("venueName: resolvedVenueName");
+  });
+
+  it("supports image-only chat turns without blank user bubbles", () => {
+    expect(src).toContain("message.trim() ||");
+    expect(src).toContain("Attached an image.");
+    expect(src).toContain("Attached ${stagedImages.length} images.");
+  });
+
   it("auto-scrolls the host chat and surfaces attempted searches", () => {
     expect(src).toContain("chatEndRef");
     expect(src).toContain("scrollIntoView");
