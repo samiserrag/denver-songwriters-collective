@@ -334,7 +334,6 @@ async function findReusableConversationalEvent(input: {
     .eq("event_date", input.eventDate)
     .eq("start_time", input.startTime)
     .in("status", ["active", "needs_verification"])
-    .is("deleted_at", null)
     .order("created_at", { ascending: false })
     .limit(10);
 
