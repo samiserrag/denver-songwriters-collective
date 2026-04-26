@@ -1012,6 +1012,7 @@ export function ConversationalCreateUI({
 
   // ---- Phase 4A: cover candidate state ----
   const [coverCandidateId, setCoverCandidateId] = useState<string | null>(null);
+  const [appliedCoverCandidateId, setAppliedCoverCandidateId] = useState<string | null>(null);
   const [isApplyingCover, setIsApplyingCover] = useState(false);
   const [coverMessage, setCoverMessage] = useState<{
     type: "success" | "error";
@@ -1022,6 +1023,7 @@ export function ConversationalCreateUI({
   const [lastInterpretResponse, setLastInterpretResponse] = useState<LastInterpretResponse | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [isApplyingSeriesPatch, setIsApplyingSeriesPatch] = useState(false);
+  const [hasUnappliedSeriesPatch, setHasUnappliedSeriesPatch] = useState(false);
   const [createdEventId, setCreatedEventId] = useState<string | null>(null);
   const [createdSummary, setCreatedSummary] = useState<CreatedEventSummary | null>(null);
   const [createMessage, setCreateMessage] = useState<{
@@ -1121,7 +1123,20 @@ export function ConversationalCreateUI({
     effectiveMode === "edit_series" &&
     lastInterpretResponse !== null &&
     createdEventId !== null &&
+    hasUnappliedSeriesPatch &&
     ACTIONABLE_NEXT_ACTIONS.has(lastInterpretResponse.next_action as NextAction);
+
+  const selectedCoverAlreadyAttached =
+    isEditMode &&
+    Boolean(createdSummary?.hasCover) &&
+    coverCandidateId !== null &&
+    appliedCoverCandidateId === coverCandidateId;
+
+  const canShowApplyCoverAction =
+    canShowCoverControls &&
+    isEditMode &&
+    coverCandidateId !== null &&
+    !selectedCoverAlreadyAttached;
 
   const hostWorkflowStep = createdSummary
     ? {
@@ -1195,6 +1210,8 @@ export function ConversationalCreateUI({
     setCreateMessage(null);
     setCreatedEventId(null);
     setCreatedSummary(null);
+    setHasUnappliedSeriesPatch(false);
+    setAppliedCoverCandidateId(null);
   }, [mode]);
 
   // If create inputs materially change (mode/image set), require a fresh
@@ -1206,6 +1223,8 @@ export function ConversationalCreateUI({
       setCreateMessage(null);
       setCreatedEventId(null);
       setCreatedSummary(null);
+      setHasUnappliedSeriesPatch(false);
+      setAppliedCoverCandidateId(null);
     }
   }, [mode, stagedImages.length]);
 
@@ -1309,7 +1328,10 @@ export function ConversationalCreateUI({
       return prev.filter((img) => img.id !== id);
     });
     setImageError(null);
-  }, []);
+    if (appliedCoverCandidateId === id) {
+      setAppliedCoverCandidateId(null);
+    }
+  }, [appliedCoverCandidateId]);
 
   // ---- clipboard paste handler ----
 
@@ -1358,6 +1380,9 @@ export function ConversationalCreateUI({
     if (effectiveMode === "create" || effectiveMode === "edit_series") {
       setLastInterpretResponse(null);
       setCreateMessage(null);
+      if (effectiveMode === "edit_series") {
+        setHasUnappliedSeriesPatch(false);
+      }
     }
 
     try {
@@ -1467,6 +1492,10 @@ export function ConversationalCreateUI({
             next_action: body.next_action as string,
             draft_payload: body.draft_payload as Record<string, unknown>,
           });
+          setHasUnappliedSeriesPatch(
+            effectiveMode === "edit_series" &&
+              ACTIONABLE_NEXT_ACTIONS.has(body.next_action as NextAction)
+          );
         }
       }
     } catch (error) {
@@ -1564,6 +1593,10 @@ export function ConversationalCreateUI({
         await softDeleteCoverImageRow(supabase, targetEventId, previousCoverUrl);
       }
 
+      setAppliedCoverCandidateId(coverCandidateId);
+      setCreatedSummary((prev) =>
+        prev ? { ...prev, hasCover: true, coverNote: null } : prev
+      );
       setCoverMessage({
         type: "success",
         text: `Cover image applied to event ${targetEventId.slice(0, 8)}…`,
@@ -1673,6 +1706,7 @@ export function ConversationalCreateUI({
         type: "success",
         text: "Draft updated. Nice, the tiny event paperwork mountain got smaller.",
       });
+      setHasUnappliedSeriesPatch(false);
     } catch (error) {
       setCreateMessage({
         type: "error",
@@ -1820,6 +1854,7 @@ export function ConversationalCreateUI({
               }
 
               setCreatedSummary(buildCreatedEventSummary(newEventId, slug ?? null, draftSnapshot, true, null));
+              setAppliedCoverCandidateId(effectiveCoverCandidateId);
               setCreateMessage({
                 type: "success",
                 text: `Event created as draft with cover.${venueCreateNote ?? ""}`,
@@ -2194,7 +2229,7 @@ export function ConversationalCreateUI({
             </button>
 
             {/* Phase 4A: Apply as Cover — edit mode only */}
-            {canShowCoverControls && isEditMode && coverCandidateId && (
+            {canShowApplyCoverAction && (
               <button
                 onClick={applyCover}
                 disabled={isApplyingCover || isSubmitting}

@@ -163,6 +163,12 @@ describe("Phase 8D — duplicate submit prevention", () => {
     expect(labSource).toContain("canShowCreateAction && !createdEventId");
   });
 
+  it("only shows Apply Draft Update for a fresh unapplied edit", () => {
+    expect(labSource).toContain("hasUnappliedSeriesPatch");
+    expect(labSource).toContain("setHasUnappliedSeriesPatch(false)");
+    expect(labSource).toContain("effectiveMode === \"edit_series\"");
+  });
+
   it("shows Creating… text during create operation", () => {
     expect(labSource).toContain("Creating…");
   });

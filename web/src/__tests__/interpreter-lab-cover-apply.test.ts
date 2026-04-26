@@ -68,6 +68,12 @@ describe("Phase 4A — cover candidate UX", () => {
     expect(labSource).toContain("Apply as Cover");
   });
 
+  it("hides Apply as Cover when the selected saved-draft cover is already attached", () => {
+    expect(labSource).toContain("appliedCoverCandidateId");
+    expect(labSource).toContain("selectedCoverAlreadyAttached");
+    expect(labSource).toContain("canShowApplyCoverAction");
+  });
+
   it("disables apply button during apply or submit", () => {
     expect(labSource).toContain("isApplyingCover || isSubmitting");
   });
