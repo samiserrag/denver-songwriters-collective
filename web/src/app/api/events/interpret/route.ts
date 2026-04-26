@@ -942,10 +942,6 @@ function shouldAttemptEventWebSearch(input: {
   if (/\b(search|look up|verify|confirm|find online|website|facebook|instagram|eventbrite)\b/i.test(combined)) {
     return true;
   }
-  if (input.extractedImageText && /\b(venue|location|address|date|time|event|show|open mic|jam|slam)\b/i.test(input.extractedImageText)) {
-    return true;
-  }
-
   return false;
 }
 

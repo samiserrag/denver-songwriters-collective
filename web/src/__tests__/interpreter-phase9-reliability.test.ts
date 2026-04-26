@@ -224,6 +224,13 @@ describe("Phase 9B — event-type reliability", () => {
     expect(searchTriggerSection).not.toContain("today|tonight|tomorrow");
   });
 
+  it("does not trigger web search solely because OCR found event-like text", () => {
+    const searchTriggerStart = interpretRouteSource.indexOf("function shouldAttemptEventWebSearch");
+    const searchTriggerSection = interpretRouteSource.slice(searchTriggerStart, searchTriggerStart + 1400);
+    expect(searchTriggerSection).not.toContain("input.extractedImageText &&");
+    expect(searchTriggerSection).not.toContain("open mic|jam|slam");
+  });
+
   it("keeps verifier results internal unless a high-risk issue needs one clarification", () => {
     expect(interpretRouteSource).toContain('mode === "create" && resolvedNextAction !== "ask_clarification"');
     expect(interpretRouteSource).toContain('issue.severity === "high"');
