@@ -41,6 +41,7 @@ export const maxDuration = 60;
 
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
 const DEFAULT_INTERPRETER_MODEL = "gpt-5.5";
+const DEFAULT_VISION_EXTRACTION_MODEL = "gpt-4.1-mini";
 const GOOGLE_GEOCODING_API_URL = "https://maps.googleapis.com/maps/api/geocode/json";
 type SupabaseServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>;
 
@@ -1085,6 +1086,7 @@ export async function POST(request: Request) {
   }
 
   const model = process.env.OPENAI_EVENT_INTERPRETER_MODEL?.trim() || DEFAULT_INTERPRETER_MODEL;
+  const visionModel = process.env.OPENAI_EVENT_VISION_MODEL?.trim() || DEFAULT_VISION_EXTRACTION_MODEL;
 
   const supabase = await createSupabaseServerClient();
   const { data: { user: sessionUser }, error: sessionUserError } = await supabase.auth.getUser();
@@ -1207,16 +1209,15 @@ export async function POST(request: Request) {
   let extractionMetadata: ExtractionMetadata | undefined;
   let extractedImageText: string | undefined;
 
-  const useSinglePassVision = validatedImages.length > 0 && /^gpt-5\.5\b/i.test(model);
-
-  if (validatedImages.length > 0 && !useSinglePassVision) {
+  if (validatedImages.length > 0) {
     console.info("[events/interpret] starting Phase A vision extraction", {
       userId: sessionUser.id,
       traceId,
       imageCount: validatedImages.length,
+      visionModel,
     });
 
-    const extraction = await extractTextFromImages(openAiKey, validatedImages, model);
+    const extraction = await extractTextFromImages(openAiKey, validatedImages, visionModel);
     extractionMetadata = extraction.metadata;
 
     if (extraction.extractedText) {
@@ -1234,13 +1235,6 @@ export async function POST(request: Request) {
         warnings: extraction.metadata.warnings,
       });
     }
-  } else if (useSinglePassVision) {
-    extractionMetadata = {
-      images_processed: validatedImages.length,
-      confidence: 0,
-      extracted_fields: [],
-      warnings: ["Images were interpreted in the main GPT-5.5 pass to avoid a two-call timeout."],
-    };
   }
 
   const geocodingApiKey =
@@ -1279,32 +1273,7 @@ export async function POST(request: Request) {
   });
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), useSinglePassVision ? 45_000 : 25_000);
-  const llmInput =
-    validatedImages.length > 0
-      ? [
-          {
-            role: "user",
-            content: [
-              {
-                type: "input_text",
-                text: [
-                  userPrompt,
-                  "",
-                  "Attached image instructions:",
-                  "- Read the attached flyer/screenshot directly.",
-                  "- Use visible image text as source evidence for title, date, time, venue, address, signup, cost, and description.",
-                  "- Treat the first attached image as the intended cover candidate unless the user says otherwise.",
-                ].join("\n"),
-              },
-              ...validatedImages.map((img) => ({
-                type: "input_image",
-                image_url: `data:${img.mime_type};base64,${img.data}`,
-              })),
-            ],
-          },
-        ]
-      : userPrompt;
+  const timeout = setTimeout(() => controller.abort(), 30_000);
 
   let responsePayload: Record<string, unknown>;
   try {
@@ -1318,7 +1287,7 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         model,
         instructions: buildSystemPrompt(),
-        input: llmInput,
+        input: userPrompt,
         max_output_tokens: 2500,
         text: {
           format: {
