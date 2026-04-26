@@ -143,6 +143,7 @@ describe("Phase 9B — event-type reliability", () => {
   it("system prompt includes event-ops safety rules from the browser agent playbook", () => {
     expect(interpretRouteSource).toContain("Do not invent facts");
     expect(interpretRouteSource).toContain("Never put Google Maps links in external_url");
+    expect(interpretRouteSource).toContain("external_url is optional and can stay null");
     expect(interpretRouteSource).toContain("Only enable performer slots when explicitly requested");
     expect(interpretRouteSource).toContain("For gig events, do not add signup_time or performer slots unless explicitly requested");
     expect(interpretRouteSource).toContain("Default timezone to America/Denver");

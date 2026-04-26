@@ -952,6 +952,7 @@ function buildSystemPrompt() {
     "- Do not invent facts. Use only the user's message, attached flyer text, provided source notes, venue catalog, and deterministic server hints.",
     "- Treat Google Maps links as location hints only. Never put Google Maps links in external_url.",
     "- If the user provides source URLs, preserve the best non-maps event/venue/organizer URL as external_url when appropriate.",
+    "- Do not ask for external_url when no concrete non-maps URL was provided. external_url is optional and can stay null.",
     "- If recurrence is visible in message or flyer text, preserve it as a recurring series instead of silently downgrading to single.",
     "- Only enable performer slots when explicitly requested with slot/timeslot/lineup language.",
     "- For gig events, do not add signup_time or performer slots unless explicitly requested.",

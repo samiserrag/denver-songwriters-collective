@@ -703,7 +703,7 @@ export function pruneOptionalBlockingFields(
     return { blockingFields, clarificationQuestion };
   }
 
-  const optionalBlocking = new Set(["end_time"]);
+  const optionalBlocking = new Set(["end_time", "external_url"]);
   const filtered = blockingFields.filter((field) => !optionalBlocking.has(field));
 
   if (filtered.length === blockingFields.length) {
@@ -714,9 +714,13 @@ export function pruneOptionalBlockingFields(
     clarificationQuestion !== null &&
     /\bend\s*time\b/i.test(clarificationQuestion) &&
     filtered.length === 0;
+  const questionIsExternalUrlOnly =
+    clarificationQuestion !== null &&
+    /\b(?:external|source|website|url|link)\b/i.test(clarificationQuestion) &&
+    filtered.length === 0;
 
   return {
     blockingFields: filtered,
-    clarificationQuestion: questionIsEndTimeOnly ? null : clarificationQuestion,
+    clarificationQuestion: questionIsEndTimeOnly || questionIsExternalUrlOnly ? null : clarificationQuestion,
   };
 }

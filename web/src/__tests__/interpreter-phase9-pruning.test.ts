@@ -78,11 +78,12 @@ describe("Phase 9C — pipeline ordering", () => {
     expect(pruneIdx).toBeGreaterThan(mergeIdx);
   });
 
-  it("pruneOptionalBlockingFields still only prunes end_time (no accidental expansion)", () => {
+  it("pruneOptionalBlockingFields prunes only optional create blockers", () => {
     const fnStart = postprocessSource.indexOf("pruneOptionalBlockingFields");
     const fnSection = postprocessSource.slice(fnStart, fnStart + 600);
     expect(fnSection).toContain("end_time");
-    // Should not contain other field names in this function
+    expect(fnSection).toContain("external_url");
+    // Should not contain required/meaningful quality fields in this function
     expect(fnSection).not.toContain("description");
     expect(fnSection).not.toContain("cost_label");
   });
