@@ -733,7 +733,7 @@
       },
       "expected": {
         "title": "Acoustic Open Mic Night",
-        "series_mode": "recurring",
+        "series_mode": "monthly",
         "location_mode": "venue",
         "custom_location_name": "The End Lafayette"
       },
@@ -839,7 +839,7 @@
       },
       "expected": {
         "title": "Acoustic Open Mic Night",
-        "series_mode": "recurring",
+        "series_mode": "monthly",
         "venue_id": "venue-end",
         "venue_name": "The End Lafayette",
         "location_mode": "venue"
@@ -849,7 +849,7 @@
     },
     {
       "id": "F24",
-      "name": "INTERPRETER-08: series_mode normalized to recurring when recurrence_rule present",
+      "name": "INTERPRETER-08: series_mode normalized to exact monthly mode when recurrence_rule present",
       "mode": "create",
       "message": "Acoustic Open Mic Night at The End Lafayette monthly on the 4th Tuesday at 6:40 PM.",
       "conversationHistory": [],
@@ -879,7 +879,7 @@
       "expected": {
         "next_action": "show_preview",
         "title": "Acoustic Open Mic Night",
-        "series_mode": "recurring",
+        "series_mode": "monthly",
         "recurrence_rule_must_not_be_null": true,
         "venue_id": "venue-end",
         "location_mode": "venue",
@@ -959,9 +959,9 @@
       "expected": {
         "next_action": "show_preview",
         "title": "Amplified Open Mic Night",
-        "series_mode": "recurring",
-        "recurrence_rule": "FREQ=MONTHLY;BYDAY=TU;BYSETPOS=3",
-        "day_of_week": "tuesday",
+        "series_mode": "monthly",
+        "recurrence_rule": "FREQ=MONTHLY;BYDAY=3TU",
+        "day_of_week": "Tuesday",
         "venue_id": "venue-end",
         "location_mode": "venue",
         "blocking_fields_empty": true

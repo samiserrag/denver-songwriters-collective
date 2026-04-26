@@ -281,7 +281,7 @@ export async function PATCH(
   if (body.signup_mode !== undefined) {
     body.signup_mode = normalizeSignupMode(body.signup_mode);
   }
-  normalizeDraftRecurrenceFields(body);
+  normalizeDraftRecurrenceFields(body, { customDateLimit: 100 });
 
   if (body.visibility !== undefined) {
     if (body.visibility !== "public" && body.visibility !== "invite_only") {
