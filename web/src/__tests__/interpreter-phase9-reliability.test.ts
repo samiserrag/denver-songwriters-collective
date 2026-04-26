@@ -148,4 +148,10 @@ describe("Phase 9B — event-type reliability", () => {
     expect(interpretRouteSource).toContain("For gig events, do not add signup_time or performer slots unless explicitly requested");
     expect(interpretRouteSource).toContain("Default timezone to America/Denver");
   });
+
+  it("strips optional external-url asks from non-blocking summaries", () => {
+    expect(interpretRouteSource).toContain("stripOptionalExternalUrlAskFromSummary");
+    expect(interpretRouteSource).toContain('resolvedNextAction !== "ask_clarification"');
+    expect(interpretRouteSource).toContain('!resolvedBlockingFields.includes("external_url")');
+  });
 });

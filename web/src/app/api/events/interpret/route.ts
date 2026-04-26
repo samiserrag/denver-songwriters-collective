@@ -961,6 +961,18 @@ function buildSystemPrompt() {
   ].join("\n");
 }
 
+function stripOptionalExternalUrlAskFromSummary(summary: string): string {
+  const cleaned = summary
+    .replace(
+      /\s*(?:Need|Needs|Still need|Missing)\s+[^.?!]*(?:external|source|website|url|link)[^.?!]*[.?!]?/gi,
+      ""
+    )
+    .replace(/\s{2,}/g, " ")
+    .trim();
+
+  return cleaned || summary.trim();
+}
+
 function buildUserPrompt(input: {
   mode: string;
   message: string;
@@ -1539,12 +1551,19 @@ export async function POST(request: Request) {
   }
 
   const qualityHints = buildQualityHints(sanitizedDraft);
+  const shouldStripOptionalExternalUrlAsk =
+    resolvedNextAction !== "ask_clarification" &&
+    !resolvedBlockingFields.includes("external_url") &&
+    !hasNonEmptyString(sanitizedDraft.external_url);
+  const humanSummary = shouldStripOptionalExternalUrlAsk
+    ? stripOptionalExternalUrlAskFromSummary(responsePayload.human_summary)
+    : responsePayload.human_summary.trim();
 
   const response = {
     mode,
     next_action: resolvedNextAction,
     confidence: responsePayload.confidence,
-    human_summary: responsePayload.human_summary.trim(),
+    human_summary: humanSummary,
     clarification_question: resolvedClarificationQuestion,
     blocking_fields: resolvedBlockingFields,
     draft_payload: sanitizedDraft,
