@@ -185,11 +185,11 @@ describe("Phase 8D — duplicate submit prevention", () => {
     expect(matches!.length).toBeGreaterThanOrEqual(3);
   });
 
-  it("does not prepend venue names to created event titles", () => {
+  it("uses venue/type defaults for generic created event titles", () => {
     const fnStart = labSource.indexOf("function normalizeTitleWithVenuePrefix");
-    const fnSection = labSource.slice(fnStart, fnStart + 400);
-    expect(fnSection).toContain("return input.title.trim()");
-    expect(fnSection).not.toContain("${cleanVenue} - ${cleanTitle}");
+    const fnSection = labSource.slice(fnStart, fnStart + 600);
+    expect(fnSection).toContain("applyVenueTypeTitleDefault");
+    expect(fnSection).toContain("return draft.title");
   });
 });
 
