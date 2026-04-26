@@ -50,18 +50,20 @@ export default async function NewEventPage({
   const showChooser = CONVERSATIONAL_CREATE_ENABLED && !forceClassic;
 
   return (
-    <main className="min-h-screen bg-[var(--color-background)] py-12 px-6">
-      <div className="max-w-2xl mx-auto">
-        <h1 className="font-[var(--font-family-serif)] text-3xl text-[var(--color-text-primary)] mb-2">Create Happening</h1>
-        <p className="text-[var(--color-text-secondary)] mb-8">
-          {canCreateCSC
-            ? "Set up a new community happening or official CSC happening"
-            : "Set up a new community happening"}
-        </p>
+    <main className="min-h-screen bg-[var(--color-background)] px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
+      <div className="mx-auto w-full max-w-7xl">
+        <div className="max-w-2xl">
+          <h1 className="font-[var(--font-family-serif)] text-3xl text-[var(--color-text-primary)] mb-2">Create Happening</h1>
+          <p className="text-[var(--color-text-secondary)] mb-8">
+            {canCreateCSC
+              ? "Set up a new community happening or official CSC happening"
+              : "Set up a new community happening"}
+          </p>
+        </div>
 
         {/* Phase 8E: Conversational create chooser (flag-gated) */}
         {showChooser && (
-          <div className="mb-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="mb-8 grid max-w-4xl grid-cols-1 gap-4 sm:grid-cols-2">
             <Link
               href="/dashboard/my-events/new/conversational"
               className="block rounded-lg border border-[var(--color-border-input)] p-4 hover:border-[var(--color-accent-primary)] transition-colors group"

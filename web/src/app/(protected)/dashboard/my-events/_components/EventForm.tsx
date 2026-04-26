@@ -169,40 +169,45 @@ function TimePicker({
   onChange,
   required,
   placeholder = "Select time",
+  periodLabel = "AM/PM",
 }: {
   value: string;
   onChange: (value: string) => void;
   required?: boolean;
   placeholder?: string;
+  periodLabel?: string;
 }) {
   const parsed = from24Hour(value);
   const display = parsed.display;
-  const ampm = parsed.ampm || "PM";
+  const [emptyAmpm, setEmptyAmpm] = useState<"AM" | "PM">("PM");
+  const selectedAmpm = display ? (parsed.ampm === "AM" ? "AM" : "PM") : emptyAmpm;
 
   const handleDisplayChange = (newDisplay: string) => {
     if (newDisplay) {
-      onChange(to24Hour(newDisplay, ampm));
+      onChange(to24Hour(newDisplay, selectedAmpm));
     } else {
+      setEmptyAmpm("PM");
       onChange("");
     }
   };
 
   const handleAmpmChange = (newAmpm: "AM" | "PM") => {
+    setEmptyAmpm(newAmpm);
     if (display) {
       onChange(to24Hour(display, newAmpm));
     }
   };
 
   const inputClass =
-    "px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none";
+    "min-w-0 px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none";
 
   return (
-    <div className="flex gap-2 items-center">
+    <div className="grid grid-cols-[minmax(0,1fr)_5rem] items-center gap-2">
       <select
         value={display}
         onChange={(e) => handleDisplayChange(e.target.value)}
         required={required}
-        className={`flex-1 ${inputClass}`}
+        className={`w-full ${inputClass}`}
       >
         <option value="">{placeholder}</option>
         {HOUR_MINUTE_OPTIONS.map(({ display: d }) => (
@@ -212,9 +217,9 @@ function TimePicker({
         ))}
       </select>
       <select
-        value={ampm}
+        value={selectedAmpm}
         onChange={(e) => handleAmpmChange(e.target.value as "AM" | "PM")}
-        aria-label="AM/PM"
+        aria-label={periodLabel}
         className={`w-20 text-center font-medium ${inputClass}`}
       >
         <option value="AM">AM</option>
@@ -1231,8 +1236,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[12rem_minmax(0,1fr)_22rem]">
-        <aside className="hidden xl:block">
+      <div className="grid grid-cols-1 gap-5 2xl:grid-cols-[12rem_minmax(34rem,1fr)_22rem]">
+        <aside className="hidden 2xl:block">
           <nav className="sticky top-4 space-y-2 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] p-3">
             {[
               { href: "#event-type", label: "Basics", icon: Tags, done: formData.event_type.length > 0 && Boolean(formData.title.trim()) },
@@ -1369,7 +1374,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
           >
       {/* ============ SECTION 3: SCHEDULE ============ */}
       {/* Phase 4.44c: When is this event? */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
         {/* Occurrence date picker - allows rescheduling a single occurrence */}
         {occurrenceMode && (
           <div>
@@ -1405,6 +1410,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
             onChange={(v) => updateField("start_time", v)}
             required
             placeholder="Select time"
+            periodLabel="Start time AM/PM"
           />
         </div>
         <div>
@@ -1415,6 +1421,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
             value={formData.end_time}
             onChange={(v) => updateField("end_time", v)}
             placeholder="Select time"
+            periodLabel="End time AM/PM"
           />
         </div>
         {/* Signup Time - prominently displayed for in-person signup time at venue */}
@@ -1426,6 +1433,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
             value={formData.signup_time}
             onChange={(v) => updateField("signup_time", v)}
             placeholder="Select time..."
+            periodLabel="Signup time AM/PM"
           />
           <p className="mt-1 text-sm text-[var(--color-text-secondary)]">When does in-person signup typically begin?</p>
         </div>
@@ -2798,7 +2806,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         </div>
 
         {!occurrenceMode && (
-          <aside className="xl:sticky xl:top-4 xl:self-start">
+          <aside className="2xl:sticky 2xl:top-4 2xl:self-start">
             <div className="space-y-4">
               <section className="rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-primary)] p-4 shadow-sm">
                 <div className="mb-3 flex items-center justify-between gap-3">
