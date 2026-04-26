@@ -59,6 +59,13 @@ describe("Phase 8B — human-readable guidance is primary", () => {
     expect(labSource).toContain("hint.field");
     expect(labSource).toContain("getQualityHintText(hint)");
   });
+
+  it("renders online verification sources when the backend checked the web", () => {
+    expect(labSource).toContain("web_search_verification");
+    expect(labSource).toContain("Checked online");
+    expect(labSource).toContain("ExternalLink");
+    expect(labSource).toContain("source.domain || source.title || \"Source\"");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -145,6 +152,12 @@ describe("Phase 8B — ResponseGuidance type expansion", () => {
 
   it("includes quality_hints in ResponseGuidance", () => {
     expect(labSource).toContain("quality_hints: QualityHint[]");
+  });
+
+  it("includes web search verification in ResponseGuidance", () => {
+    expect(labSource).toContain("interface WebSearchVerification");
+    expect(labSource).toContain("web_search_verification: WebSearchVerification | null");
+    expect(labSource).toContain("parseWebSearchVerification");
   });
 
   it("defines QualityHint interface", () => {

@@ -7,6 +7,7 @@ import {
   Bot,
   CheckCircle2,
   ClipboardCheck,
+  ExternalLink,
   FileText,
   History,
   ImagePlus,
@@ -53,6 +54,19 @@ interface QualityHint {
   hint?: string;
   impact?: string;
   prompt?: string;
+}
+
+interface WebSearchVerificationSource {
+  url: string;
+  title: string | null;
+  domain: string | null;
+}
+
+interface WebSearchVerification {
+  status: "searched" | "no_reliable_sources";
+  summary: string;
+  facts: string[];
+  sources: WebSearchVerificationSource[];
 }
 
 // ---------------------------------------------------------------------------
@@ -173,6 +187,36 @@ function getConfidenceLabel(confidence: number | null): string | null {
   return "Low confidence";
 }
 
+function parseWebSearchVerification(value: unknown): WebSearchVerification | null {
+  if (!value || typeof value !== "object") return null;
+  const maybe = value as Record<string, unknown>;
+  if (maybe.status !== "searched" && maybe.status !== "no_reliable_sources") return null;
+  if (typeof maybe.summary !== "string") return null;
+  const facts = Array.isArray(maybe.facts)
+    ? maybe.facts.filter((fact): fact is string => typeof fact === "string" && fact.trim().length > 0)
+    : [];
+  const sources = Array.isArray(maybe.sources)
+    ? maybe.sources
+        .map((source): WebSearchVerificationSource | null => {
+          if (!source || typeof source !== "object") return null;
+          const row = source as Record<string, unknown>;
+          if (typeof row.url !== "string") return null;
+          return {
+            url: row.url,
+            title: typeof row.title === "string" ? row.title : null,
+            domain: typeof row.domain === "string" ? row.domain : null,
+          };
+        })
+        .filter((source): source is WebSearchVerificationSource => source !== null)
+    : [];
+  return {
+    status: maybe.status,
+    summary: maybe.summary,
+    facts,
+    sources,
+  };
+}
+
 interface ResponseGuidance {
   next_action: string;
   human_summary: string | null;
@@ -181,6 +225,7 @@ interface ResponseGuidance {
   confidence: number | null;
   draft_payload: Record<string, unknown> | null;
   quality_hints: QualityHint[];
+  web_search_verification: WebSearchVerification | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -500,10 +545,13 @@ const EVENT_TYPE_SIGNAL_PATTERNS: Record<string, RegExp[]> = {
   jam_session: [/\bjam\s+session\b/i, /\bjam\b/i],
   workshop: [/\bworkshop\b/i, /\bmasterclass\b/i],
   song_circle: [/\bsong\s+circle\b/i],
-  gig: [/\bgig\b/i, /\blive\s+music\b/i, /\bconcert\b/i],
+  gig: [/\bgig\b/i, /\blive\s+music\b/i, /\bconcert\b/i, /\bperformance\b/i, /\blive\s+performance\b/i],
   meetup: [/\bmeetup\b/i, /\bmeet\s?up\b/i],
   poetry: [/\bpoetry\b/i],
   comedy: [/\bcomedy\b/i, /\bstand[\s-]?up\b/i],
+  irish: [/\birish\b/i, /\bceltic\b/i],
+  blues: [/\bblues\b/i],
+  bluegrass: [/\bbluegrass\b/i],
 };
 
 const EVENT_TYPE_PRIORITY: Record<string, number> = {
@@ -516,10 +564,13 @@ const EVENT_TYPE_PRIORITY: Record<string, number> = {
   meetup: 40,
   poetry: 30,
   comedy: 20,
+  irish: 10,
+  blues: 10,
+  bluegrass: 10,
 };
 
-function inferEventTypeFromIntentText(intentText: string): string | null {
-  if (!intentText.trim()) return null;
+function inferEventTypesFromIntentText(intentText: string): string[] {
+  if (!intentText.trim()) return [];
   const ranked = Object.entries(EVENT_TYPE_SIGNAL_PATTERNS)
     .map(([eventType, patterns]) => ({
       eventType,
@@ -531,16 +582,7 @@ function inferEventTypeFromIntentText(intentText: string): string | null {
       return (EVENT_TYPE_PRIORITY[b.eventType] ?? 0) - (EVENT_TYPE_PRIORITY[a.eventType] ?? 0);
     });
 
-  if (ranked.length === 0) return null;
-  if (
-    ranked.length > 1 &&
-    ranked[0].matches === ranked[1].matches &&
-    (EVENT_TYPE_PRIORITY[ranked[0].eventType] ?? 0) ===
-      (EVENT_TYPE_PRIORITY[ranked[1].eventType] ?? 0)
-  ) {
-    return null;
-  }
-  return ranked[0].eventType;
+  return ranked.map((entry) => entry.eventType);
 }
 
 function escapeRegExp(value: string): string {
@@ -643,8 +685,10 @@ function mapDraftToCreatePayload(
   const rawEventTypes = Array.isArray(draft.event_type)
     ? draft.event_type.filter((v): v is string => typeof v === "string" && v.trim().length > 0)
     : [];
-  const hintedEventType = inferEventTypeFromIntentText(intentText);
-  const eventType = hintedEventType ? [hintedEventType] : rawEventTypes;
+  const hintedEventTypes = inferEventTypesFromIntentText(intentText);
+  const eventType = hintedEventTypes.length > 0
+    ? [...new Set([...hintedEventTypes, ...rawEventTypes])]
+    : rawEventTypes;
 
   if (eventType.length === 0) {
     return { ok: false, error: "event_type must be a non-empty array" };
@@ -868,8 +912,10 @@ function mapDraftToSeriesPatchPayload(
     const rawEventTypes = Array.isArray(body.event_type)
       ? body.event_type.filter((v): v is string => typeof v === "string" && v.trim().length > 0)
       : [];
-    const hintedEventType = inferEventTypeFromIntentText(intentText);
-    const eventType = hintedEventType ? [hintedEventType] : rawEventTypes;
+    const hintedEventTypes = inferEventTypesFromIntentText(intentText);
+    const eventType = hintedEventTypes.length > 0
+      ? [...new Set([...hintedEventTypes, ...rawEventTypes])]
+      : rawEventTypes;
     if (eventType.length === 0) {
       return { ok: false, error: "event_type must be a non-empty array" };
     }
@@ -1036,6 +1082,7 @@ export function ConversationalCreateUI({
           ? (maybe.draft_payload as Record<string, unknown>)
           : null,
       quality_hints: hints,
+      web_search_verification: parseWebSearchVerification(maybe.web_search_verification),
     };
   }, [responseBody]);
 
@@ -1354,6 +1401,15 @@ export function ConversationalCreateUI({
         const assistantParts: string[] = [];
         if (typeof body.human_summary === "string" && body.human_summary.trim().length > 0) {
           assistantParts.push(body.human_summary.trim());
+        }
+        const webSearch = parseWebSearchVerification(body.web_search_verification);
+        if (webSearch?.status === "searched" && webSearch.sources.length > 0) {
+          assistantParts.push(
+            `Checked online: ${webSearch.sources
+              .slice(0, 3)
+              .map((source) => source.domain || source.title || "source")
+              .join(", ")}`
+          );
         }
         if (
           body.next_action === "ask_clarification" &&
@@ -2408,6 +2464,33 @@ export function ConversationalCreateUI({
                     </div>
                   )}
 
+                  {responseGuidance?.web_search_verification?.status === "searched" &&
+                    responseGuidance.web_search_verification.sources.length > 0 && (
+                      <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3">
+                        <div className="flex items-center gap-2 text-xs font-semibold uppercase text-emerald-600">
+                          <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
+                          Checked online
+                        </div>
+                        <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
+                          {responseGuidance.web_search_verification.summary}
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {responseGuidance.web_search_verification.sources.slice(0, 3).map((source) => (
+                            <a
+                              key={source.url}
+                              href={source.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex max-w-full items-center gap-1 rounded-md border border-emerald-500/20 px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                            >
+                              <ExternalLink className="h-3 w-3 shrink-0" aria-hidden="true" />
+                              <span className="truncate">{source.domain || source.title || "Source"}</span>
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                   {responseGuidance?.next_action === "ask_clarification" && (
                     <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3">
                       <p className="text-xs font-semibold uppercase text-amber-600">One thing I need</p>
@@ -2522,6 +2605,33 @@ export function ConversationalCreateUI({
                 {responseGuidance.human_summary}
               </p>
             )}
+
+            {responseGuidance.web_search_verification?.status === "searched" &&
+              responseGuidance.web_search_verification.sources.length > 0 && (
+                <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-[var(--color-text-primary)]">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-500" aria-hidden="true" />
+                    Checked online
+                  </div>
+                  <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
+                    {responseGuidance.web_search_verification.summary}
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {responseGuidance.web_search_verification.sources.slice(0, 4).map((source) => (
+                      <a
+                        key={source.url}
+                        href={source.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex max-w-full items-center gap-1.5 rounded-lg border border-[var(--color-border-input)] px-2.5 py-1.5 text-xs font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                        <span className="truncate">{source.domain || source.title || "Source"}</span>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
 
             {/* Phase 8C: Enhanced clarification prompt with input hints */}
             {responseGuidance.next_action === "ask_clarification" && (

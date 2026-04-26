@@ -14,6 +14,8 @@ import {
   type ExtractionMetadata,
   type ImageInput,
   type InterpretEventRequestBody,
+  type WebSearchVerificationResult,
+  type WebSearchVerificationSource,
 } from "@/lib/events/interpretEventContract";
 import {
   resolveVenue,
@@ -44,6 +46,7 @@ const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
 const DEFAULT_INTERPRETER_MODEL = "gpt-5.5";
 const DEFAULT_VISION_EXTRACTION_MODEL = "gpt-4.1-mini";
 const DEFAULT_DRAFT_VERIFIER_MODEL = "gpt-4.1-mini";
+const WEB_SEARCH_TIMEOUT_MS = 12_000;
 const GOOGLE_GEOCODING_API_URL = "https://maps.googleapis.com/maps/api/geocode/json";
 type SupabaseServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>;
 
@@ -165,6 +168,45 @@ function extractResponseText(data: Record<string, unknown>): string | null {
   return null;
 }
 
+function extractHostname(value: string): string | null {
+  try {
+    return new URL(value).hostname.replace(/^www\./, "");
+  } catch {
+    return null;
+  }
+}
+
+function collectWebSearchSources(value: unknown): WebSearchVerificationSource[] {
+  const seen = new Set<string>();
+  const sources: WebSearchVerificationSource[] = [];
+
+  const visit = (node: unknown) => {
+    if (sources.length >= 8) return;
+    if (Array.isArray(node)) {
+      for (const item of node) visit(item);
+      return;
+    }
+
+    const obj = parseJsonObject(node);
+    if (!obj) return;
+
+    const url = typeof obj.url === "string" ? obj.url : null;
+    if (url && /^https?:\/\//i.test(url) && !seen.has(url)) {
+      seen.add(url);
+      sources.push({
+        url,
+        title: typeof obj.title === "string" && obj.title.trim() ? obj.title.trim().slice(0, 180) : null,
+        domain: extractHostname(url),
+      });
+    }
+
+    for (const child of Object.values(obj)) visit(child);
+  };
+
+  visit(value);
+  return sources;
+}
+
 function redactEmails(input: string): string {
   return input.replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, "[redacted-email]");
 }
@@ -206,6 +248,7 @@ const GOOGLE_MAPS_URL_REGEX =
   /\bhttps?:\/\/(?:maps\.app\.goo\.gl\/[^\s]+|goo\.gl\/maps\/[^\s]+|(?:www\.)?google\.com\/maps\/[^\s]+|maps\.google\.com\/[^\s]+)\b/gi;
 const GOOGLE_MAPS_URL_SINGLE_REGEX =
   /\bhttps?:\/\/(?:maps\.app\.goo\.gl\/[^\s]+|goo\.gl\/maps\/[^\s]+|(?:www\.)?google\.com\/maps\/[^\s]+|maps\.google\.com\/[^\s]+)\b/i;
+const URL_REGEX = /\bhttps?:\/\/[^\s)]+/gi;
 const GOOGLE_MAPS_3D_4D_REGEX = /!3d(-?[0-9]+\.[0-9]+)!4d(-?[0-9]+\.[0-9]+)/;
 const GOOGLE_MAPS_AT_REGEX = /@(-?[0-9]+\.[0-9]+),(-?[0-9]+\.[0-9]+)/;
 
@@ -866,6 +909,250 @@ async function extractTextFromImages(
 }
 
 // ---------------------------------------------------------------------------
+// Phase A2 — Optional online event verification
+// ---------------------------------------------------------------------------
+
+function isEventWebSearchEnabled(): boolean {
+  const raw = process.env.OPENAI_EVENT_WEB_SEARCH_ENABLED?.trim().toLowerCase();
+  if (!raw) return true;
+  return !["0", "false", "off", "disabled", "no"].includes(raw);
+}
+
+function hasNonMapsUrl(input: string): boolean {
+  const urls = input.match(URL_REGEX) || [];
+  return urls.some((url) => !GOOGLE_MAPS_URL_SINGLE_REGEX.test(url));
+}
+
+function shouldAttemptEventWebSearch(input: {
+  mode: string;
+  message: string;
+  conversationHistory: Array<{ role: "user" | "assistant"; content: string }>;
+  extractedImageText?: string;
+}): boolean {
+  if (input.mode !== "create" || !isEventWebSearchEnabled()) return false;
+
+  const combined = [
+    input.message,
+    ...input.conversationHistory.filter((h) => h.role === "user").map((h) => h.content),
+    input.extractedImageText || "",
+  ].join("\n");
+
+  if (hasNonMapsUrl(combined)) return true;
+  if (/\b(search|look up|verify|confirm|find online|website|facebook|instagram|eventbrite)\b/i.test(combined)) {
+    return true;
+  }
+  if (/\b(today|tonight|tomorrow|this weekend|upcoming|next)\b/i.test(combined)) return true;
+  if (input.extractedImageText && /\b(venue|location|address|date|time|event|show|open mic|jam|slam)\b/i.test(input.extractedImageText)) {
+    return true;
+  }
+
+  return false;
+}
+
+function buildWebSearchVerificationPrompt(input: {
+  message: string;
+  conversationHistory: Array<{ role: "user" | "assistant"; content: string }>;
+  extractedImageText?: string;
+  googleMapsHint: GoogleMapsHint | null;
+  currentDate: string;
+}) {
+  return JSON.stringify(
+    {
+      task: "verify_public_event_details_for_event_draft",
+      current_date: input.currentDate,
+      current_timezone: "America/Denver",
+      source_message: input.message,
+      recent_user_context: input.conversationHistory
+        .filter((entry) => entry.role === "user")
+        .map((entry) => entry.content)
+        .slice(-4),
+      extracted_image_text: input.extractedImageText ?? null,
+      google_maps_hint: input.googleMapsHint,
+      instructions: [
+        "Use web search only when it can verify event facts for a public event listing.",
+        "Look for official venue, organizer, ticketing, social, or event-calendar sources.",
+        "Return only facts that are directly supported by sources or clearly present in the supplied source_message/extracted_image_text.",
+        "Prefer exact event date, start/end time, venue name, address, cost, signup details, age policy, external event URL, and cancellation/status if present.",
+        "If sources conflict with the supplied flyer/post, mention the conflict in summary instead of deciding silently.",
+        "Do not create the final event draft. This is only supporting context for another model pass.",
+      ],
+      required_output_shape: {
+        status: "searched | no_reliable_sources",
+        summary: "string",
+        facts: "string[]",
+        sources: [{ url: "string", title: "string|null" }],
+      },
+    },
+    null,
+    2
+  );
+}
+
+function parseWebSearchVerification(value: unknown, fallbackSources: WebSearchVerificationSource[]): WebSearchVerificationResult | null {
+  const obj = parseJsonObject(value);
+  if (!obj) return null;
+  if (obj.status !== "searched" && obj.status !== "no_reliable_sources") return null;
+  if (typeof obj.summary !== "string") return null;
+
+  const facts = Array.isArray(obj.facts)
+    ? obj.facts
+        .filter((fact): fact is string => typeof fact === "string" && fact.trim().length > 0)
+        .map((fact) => fact.trim().slice(0, 240))
+        .slice(0, 12)
+    : [];
+
+  const modelSources = Array.isArray(obj.sources)
+    ? obj.sources
+        .map((source): WebSearchVerificationSource | null => {
+          const row = parseJsonObject(source);
+          if (!row || typeof row.url !== "string" || !/^https?:\/\//i.test(row.url)) return null;
+          return {
+            url: row.url,
+            title: typeof row.title === "string" && row.title.trim() ? row.title.trim().slice(0, 180) : null,
+            domain: extractHostname(row.url),
+          };
+        })
+        .filter((source): source is WebSearchVerificationSource => source !== null)
+    : [];
+
+  const sourcesByUrl = new Map<string, WebSearchVerificationSource>();
+  for (const source of [...modelSources, ...fallbackSources]) {
+    if (!sourcesByUrl.has(source.url)) sourcesByUrl.set(source.url, source);
+  }
+  const sources = [...sourcesByUrl.values()].slice(0, 8);
+
+  return {
+    status: obj.status,
+    summary: obj.summary.trim().slice(0, 600),
+    facts,
+    sources,
+  };
+}
+
+async function verifyEventDetailsWithWebSearch(input: {
+  openAiKey: string;
+  searchModel: string;
+  message: string;
+  conversationHistory: Array<{ role: "user" | "assistant"; content: string }>;
+  extractedImageText?: string;
+  googleMapsHint: GoogleMapsHint | null;
+  currentDate: string;
+  traceId: string | null;
+}): Promise<WebSearchVerificationResult | null> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), WEB_SEARCH_TIMEOUT_MS);
+
+  try {
+    const searchResponse = await fetch(OPENAI_RESPONSES_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${input.openAiKey}`,
+        "Content-Type": "application/json",
+      },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model: input.searchModel,
+        instructions:
+          "You are a careful event research assistant. Return strict JSON only. Search the web when useful and cite sources in the sources array.",
+        input: buildWebSearchVerificationPrompt(input),
+        tools: [
+          {
+            type: "web_search",
+            user_location: {
+              type: "approximate",
+              country: "US",
+              city: "Denver",
+              region: "Colorado",
+              timezone: "America/Denver",
+            },
+          },
+        ],
+        tool_choice: "auto",
+        include: ["web_search_call.action.sources"],
+        max_output_tokens: 1200,
+        text: {
+          format: {
+            type: "json_schema",
+            name: "event_web_search_verification",
+            strict: true,
+            schema: {
+              type: "object",
+              additionalProperties: false,
+              required: ["status", "summary", "facts", "sources"],
+              properties: {
+                status: { type: "string", enum: ["searched", "no_reliable_sources"] },
+                summary: { type: "string" },
+                facts: {
+                  type: "array",
+                  maxItems: 12,
+                  items: { type: "string" },
+                },
+                sources: {
+                  type: "array",
+                  maxItems: 8,
+                  items: {
+                    type: "object",
+                    additionalProperties: false,
+                    required: ["url", "title"],
+                    properties: {
+                      url: { type: "string" },
+                      title: { type: ["string", "null"] },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      }),
+    });
+
+    const searchData = await searchResponse.json();
+    const fallbackSources = collectWebSearchSources(searchData);
+
+    if (!searchResponse.ok) {
+      console.warn("[events/interpret] web search verification skipped after upstream error", {
+        traceId: input.traceId,
+        status: searchResponse.status,
+        data: searchData,
+      });
+      return null;
+    }
+
+    const searchObj = parseJsonObject(searchData);
+    const outputText = searchObj ? extractResponseText(searchObj) : null;
+    if (!outputText) return null;
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(outputText);
+    } catch {
+      console.warn("[events/interpret] web search verification returned non-json output", {
+        traceId: input.traceId,
+        outputPreview: redactEmails(truncate(outputText, 200)),
+      });
+      return null;
+    }
+
+    const result = parseWebSearchVerification(parsed, fallbackSources);
+    if (!result || result.status !== "searched" || result.sources.length === 0) {
+      return null;
+    }
+    return result;
+  } catch (error) {
+    const isTimeout = error instanceof Error && error.name === "AbortError";
+    console.warn("[events/interpret] web search verification skipped", {
+      traceId: input.traceId,
+      isTimeout,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Prompt builders
 // ---------------------------------------------------------------------------
 
@@ -949,6 +1236,8 @@ function buildSystemPrompt() {
     "- If a detail is missing but optional (cost, source URL, end time, capacity, organizer note), leave it blank/null and say it was not stated instead of blocking the user.",
     "- If you need verification, ask one specific human question and explain what you already inferred.",
     "- Do not claim you searched the web or verified online unless an explicit tool result or source text is present in the prompt.",
+    "- When web_search_verification is present, use it as supporting evidence. You may say you verified online only when status is searched and sources are present.",
+    "- If web_search_verification conflicts with the user's flyer/post, preserve the user's supplied details and ask one targeted question only if the conflict would make publishing risky.",
     "- Do not append conversational tails like 'anything else'.",
     "- RSVP remains default platform behavior; do not disable it.",
     "- Timeslots are optional. Encourage for open_mic, jam_session, workshop when relevant.",
@@ -997,6 +1286,7 @@ function buildUserPrompt(input: {
   lockedDraft?: Record<string, unknown> | null;
   extractedImageText?: string;
   googleMapsHint?: GoogleMapsHint | null;
+  webSearchVerification?: WebSearchVerificationResult | null;
 }) {
   // Send only id+name to the LLM (slug is used server-side for resolution only)
   const llmVenueCatalog = input.venueCatalog.map((v) => ({ id: v.id, name: v.name }));
@@ -1025,6 +1315,13 @@ function buildUserPrompt(input: {
             google_maps_hint: input.googleMapsHint,
             google_maps_note:
               "A Google Maps link was detected and server-expanded. Prefer this hint for location/address fields when present. Do not ask for address again if full address is already available in this hint.",
+          }
+        : {}),
+      ...(input.webSearchVerification
+        ? {
+            web_search_verification: input.webSearchVerification,
+            web_search_note:
+              "Online search was performed by a separate verifier. Use sourced facts to reduce unnecessary questions. Do not claim online verification unless this object has status searched and at least one source.",
           }
         : {}),
       required_output_shape: {
@@ -1080,6 +1377,7 @@ function buildDraftVerifierPrompt(input: {
   draft: Record<string, unknown>;
   currentDate: string;
   venueResolution: VenueResolutionOutcome | null;
+  webSearchVerification?: WebSearchVerificationResult | null;
 }) {
   return JSON.stringify(
     {
@@ -1088,6 +1386,7 @@ function buildDraftVerifierPrompt(input: {
       current_timezone: "America/Denver",
       source_message: input.message,
       extracted_image_text: input.extractedImageText ?? null,
+      web_search_verification: input.webSearchVerification ?? null,
       venue_resolution: input.venueResolution
         ? {
             status: input.venueResolution.status,
@@ -1111,8 +1410,9 @@ function buildDraftVerifierPrompt(input: {
       draft_payload: input.draft,
       verifier_rules: [
         "You are a silent event-ops verifier. The user will not see your reasoning unless you find a high-risk issue.",
-        "Check the draft against source_message, extracted_image_text, current_date, and venue_resolution.",
+        "Check the draft against source_message, extracted_image_text, web_search_verification, current_date, and venue_resolution.",
         "Flag high severity only for contradictions or publish-critical problems: wrong date, past date for a new event, wrong venue, impossible time order, wrong event type, invented facts, or missing required field.",
+        "If web_search_verification has sourced facts that conflict with the draft, flag high only when publishing would likely be wrong.",
         "Do not flag optional missing details such as cost, source URL, end time, capacity, or age policy.",
         "Do not ask broad questions. If high severity is needed, provide one concrete question the user can answer quickly.",
         "Prefer pass when the draft is reasonable and assumptions are clearly stated.",
@@ -1161,6 +1461,7 @@ async function verifyDraftWithCritic(input: {
   draft: Record<string, unknown>;
   currentDate: string;
   venueResolution: VenueResolutionOutcome | null;
+  webSearchVerification?: WebSearchVerificationResult | null;
   traceId: string | null;
 }): Promise<DraftVerificationResult | null> {
   const controller = new AbortController();
@@ -1265,6 +1566,7 @@ export async function POST(request: Request) {
   const model = process.env.OPENAI_EVENT_INTERPRETER_MODEL?.trim() || DEFAULT_INTERPRETER_MODEL;
   const visionModel = process.env.OPENAI_EVENT_VISION_MODEL?.trim() || DEFAULT_VISION_EXTRACTION_MODEL;
   const verifierModel = process.env.OPENAI_EVENT_DRAFT_VERIFIER_MODEL?.trim() || DEFAULT_DRAFT_VERIFIER_MODEL;
+  const webSearchModel = process.env.OPENAI_EVENT_WEB_SEARCH_MODEL?.trim() || model;
 
   const supabase = await createSupabaseServerClient();
   const { data: { user: sessionUser }, error: sessionUserError } = await supabase.auth.getUser();
@@ -1317,6 +1619,7 @@ export async function POST(request: Request) {
     typeof body.trace_id === "string" && body.trace_id.length <= 64
       ? body.trace_id
       : null;
+  const currentDate = new Date().toLocaleDateString("en-CA", { timeZone: "America/Denver" });
 
   // Validate image inputs (count, mime type, decoded size).
   const imageValidation = validateImageInputs(body.image_inputs);
@@ -1422,6 +1725,44 @@ export async function POST(request: Request) {
     geocodingApiKey,
   });
 
+  let webSearchVerification: WebSearchVerificationResult | null = null;
+  if (
+    shouldAttemptEventWebSearch({
+      mode,
+      message: normalizedMessage,
+      conversationHistory,
+      extractedImageText,
+    })
+  ) {
+    console.info("[events/interpret] starting Phase A2 web search verification", {
+      userId: sessionUser.id,
+      traceId,
+      model: webSearchModel,
+      hasImages: validatedImages.length > 0,
+    });
+
+    webSearchVerification = await verifyEventDetailsWithWebSearch({
+      openAiKey,
+      searchModel: webSearchModel,
+      message: normalizedMessage,
+      conversationHistory,
+      extractedImageText,
+      googleMapsHint,
+      currentDate,
+      traceId,
+    });
+
+    if (webSearchVerification) {
+      console.info("[events/interpret] Phase A2 complete", {
+        userId: sessionUser.id,
+        traceId,
+        sourceCount: webSearchVerification.sources.length,
+        factCount: webSearchVerification.facts.length,
+        domains: webSearchVerification.sources.map((source) => source.domain).filter(Boolean).slice(0, 5),
+      });
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Phase B — Structured interpretation
   // ---------------------------------------------------------------------------
@@ -1436,6 +1777,7 @@ export async function POST(request: Request) {
     lockedDraft,
     extractedImageText,
     googleMapsHint,
+    webSearchVerification,
   });
 
   console.info("[events/interpret] request", {
@@ -1445,6 +1787,8 @@ export async function POST(request: Request) {
     eventId: eventId ?? null,
     dateKey: dateKey ?? null,
     model,
+    webSearchModel,
+    hasWebSearchVerification: !!webSearchVerification,
     hasImages: validatedImages.length > 0,
     hasLockedDraft: !!lockedDraft && Object.keys(lockedDraft).length > 0,
     prompt: redactEmails(truncate(userPrompt, 1200)),
@@ -1709,7 +2053,7 @@ export async function POST(request: Request) {
           message: normalizedMessage,
           history: conversationHistory,
           extractedImageText,
-          todayIso: new Date().toLocaleDateString("en-CA", { timeZone: "America/Denver" }),
+          todayIso: currentDate,
         })
       : { applied: false as const };
 
@@ -1768,7 +2112,6 @@ export async function POST(request: Request) {
       ? `${humanSummary} Date adjusted to ${futureDateGuardResult.to} because the source date would otherwise be in the past.`
       : humanSummary;
 
-  const currentDate = new Date().toLocaleDateString("en-CA", { timeZone: "America/Denver" });
   const draftVerification =
     mode === "create" && resolvedNextAction !== "ask_clarification"
       ? await verifyDraftWithCritic({
@@ -1779,6 +2122,7 @@ export async function POST(request: Request) {
           draft: sanitizedDraft,
           currentDate,
           venueResolution,
+          webSearchVerification,
           traceId,
         })
       : null;
@@ -1805,6 +2149,7 @@ export async function POST(request: Request) {
     quality_hints: qualityHints,
     ...(extractionMetadata ? { extraction_metadata: extractionMetadata } : {}),
     ...(draftVerification ? { draft_verification: draftVerification } : {}),
+    ...(webSearchVerification ? { web_search_verification: webSearchVerification } : {}),
   };
 
   console.info("[events/interpret] response", {
@@ -1869,6 +2214,20 @@ export async function POST(request: Request) {
             issueCount: draftVerification.issues.length,
             highRisk: draftVerification.issues.some((issue) => issue.severity === "high"),
             model: verifierModel,
+          },
+        }
+      : {}),
+    ...(webSearchVerification
+      ? {
+          webSearchVerification: {
+            status: webSearchVerification.status,
+            sourceCount: webSearchVerification.sources.length,
+            factCount: webSearchVerification.facts.length,
+            domains: webSearchVerification.sources
+              .map((source) => source.domain)
+              .filter(Boolean)
+              .slice(0, 5),
+            model: webSearchModel,
           },
         }
       : {}),

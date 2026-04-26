@@ -59,6 +59,19 @@ export interface DraftVerificationResult {
   issues: DraftVerificationIssue[];
 }
 
+export interface WebSearchVerificationSource {
+  url: string;
+  title: string | null;
+  domain: string | null;
+}
+
+export interface WebSearchVerificationResult {
+  status: "searched" | "no_reliable_sources";
+  summary: string;
+  facts: string[];
+  sources: WebSearchVerificationSource[];
+}
+
 export interface InterpretEventDraftResponse {
   mode: InterpretMode;
   next_action: NextAction;
@@ -70,6 +83,7 @@ export interface InterpretEventDraftResponse {
   quality_hints: QualityHint[];
   extraction_metadata?: ExtractionMetadata;
   draft_verification?: DraftVerificationResult;
+  web_search_verification?: WebSearchVerificationResult;
 }
 
 const CREATE_PAYLOAD_ALLOWLIST = new Set([

@@ -171,10 +171,13 @@ const EVENT_TYPE_SIGNAL_PATTERNS: Record<string, RegExp[]> = {
   jam_session: [/\bjam\s+session\b/i, /\bjam\b/i],
   workshop: [/\bworkshop\b/i, /\bmasterclass\b/i],
   song_circle: [/\bsong\s+circle\b/i, /\bsongwriter(?:s)?\s+circle\b/i],
-  gig: [/\bgig\b/i, /\blive\s+music\b/i, /\bconcert\b/i],
+  gig: [/\bgig\b/i, /\blive\s+music\b/i, /\bconcert\b/i, /\bperformance\b/i, /\blive\s+performance\b/i],
   meetup: [/\bmeetup\b/i, /\bmeet\s?up\b/i],
   poetry: [/\bpoetry\b/i, /\bpoet(?:ry)?\s+night\b/i],
   comedy: [/\bcomedy\b/i, /\bstand[\s-]?up\b/i],
+  irish: [/\birish\b/i, /\bceltic\b/i],
+  blues: [/\bblues\b/i],
+  bluegrass: [/\bbluegrass\b/i],
 };
 
 const EVENT_TYPE_PRIORITY: Record<string, number> = {
@@ -187,6 +190,9 @@ const EVENT_TYPE_PRIORITY: Record<string, number> = {
   meetup: 40,
   poetry: 30,
   comedy: 20,
+  irish: 10,
+  blues: 10,
+  bluegrass: 10,
 };
 
 function countPatternMatches(text: string, patterns: RegExp[]): number {
@@ -195,8 +201,8 @@ function countPatternMatches(text: string, patterns: RegExp[]): number {
   }, 0);
 }
 
-function deriveSingleEventTypeFromText(text: string): string | null {
-  if (!text.trim()) return null;
+function deriveEventTypesFromText(text: string): string[] {
+  if (!text.trim()) return [];
 
   const counts = Object.entries(EVENT_TYPE_SIGNAL_PATTERNS)
     .map(([eventType, patterns]) => ({
@@ -209,23 +215,15 @@ function deriveSingleEventTypeFromText(text: string): string | null {
       return (EVENT_TYPE_PRIORITY[b.eventType] ?? 0) - (EVENT_TYPE_PRIORITY[a.eventType] ?? 0);
     });
 
-  if (counts.length === 0) return null;
-  if (
-    counts.length > 1 &&
-    counts[0].matches === counts[1].matches &&
-    (EVENT_TYPE_PRIORITY[counts[0].eventType] ?? 0) ===
-      (EVENT_TYPE_PRIORITY[counts[1].eventType] ?? 0)
-  ) {
-    return null;
-  }
-  return counts[0].eventType;
+  if (counts.length === 0) return [];
+  return counts.map((entry) => entry.eventType);
 }
 
 export function deriveEventTypeHint(input: {
   message: string;
   history: Array<{ role: "user" | "assistant"; content: string }>;
   extractedImageText?: string;
-}): string | null {
+}): string[] {
   const { message, history, extractedImageText } = input;
   const userText = [
     message,
@@ -233,13 +231,13 @@ export function deriveEventTypeHint(input: {
   ].join("\n");
 
   // User text wins over OCR when both exist.
-  const userHint = deriveSingleEventTypeFromText(userText);
-  if (userHint) return userHint;
+  const userHint = deriveEventTypesFromText(userText);
+  if (userHint.length > 0) return userHint;
 
   if (typeof extractedImageText === "string" && extractedImageText.trim().length > 0) {
-    return deriveSingleEventTypeFromText(extractedImageText);
+    return deriveEventTypesFromText(extractedImageText);
   }
-  return null;
+  return [];
 }
 
 const EVENT_TYPE_TO_CATEGORY_LABEL: Record<string, string> = {
@@ -252,6 +250,9 @@ const EVENT_TYPE_TO_CATEGORY_LABEL: Record<string, string> = {
   meetup: "Meetup",
   poetry: "Poetry",
   comedy: "Comedy",
+  irish: "Irish",
+  blues: "Blues",
+  bluegrass: "Bluegrass",
 };
 
 export function applyEventTypeHint(input: {
@@ -261,14 +262,21 @@ export function applyEventTypeHint(input: {
   extractedImageText?: string;
 }): void {
   const { draft, message, history, extractedImageText } = input;
-  const hint = deriveEventTypeHint({ message, history, extractedImageText });
-  if (!hint) return;
+  const hints = deriveEventTypeHint({ message, history, extractedImageText });
+  if (hints.length === 0) return;
 
-  // Promote the deterministic hint to primary type.
-  draft.event_type = [hint];
+  const existingEventTypes = Array.isArray(draft.event_type)
+    ? draft.event_type
+        .filter((value): value is string => typeof value === "string")
+        .map((value) => value.trim())
+        .filter((value) => value.length > 0)
+    : [];
+  draft.event_type = [...new Set([...hints, ...existingEventTypes])];
 
-  const label = EVENT_TYPE_TO_CATEGORY_LABEL[hint];
-  if (!label) return;
+  const labels = hints
+    .map((hint) => EVENT_TYPE_TO_CATEGORY_LABEL[hint])
+    .filter((label): label is string => typeof label === "string" && label.length > 0);
+  if (labels.length === 0) return;
 
   const existingCategories = Array.isArray(draft.categories)
     ? draft.categories
@@ -277,7 +285,11 @@ export function applyEventTypeHint(input: {
         .filter((value) => value.length > 0)
     : [];
 
-  draft.categories = [label, ...existingCategories.filter((value) => value.toLowerCase() !== label.toLowerCase())];
+  const labelsLower = new Set(labels.map((label) => label.toLowerCase()));
+  draft.categories = [
+    ...labels,
+    ...existingCategories.filter((value) => !labelsLower.has(value.toLowerCase())),
+  ];
 }
 
 // ---------------------------------------------------------------------------

@@ -129,6 +129,14 @@ describe("Phase 9B — event-type reliability", () => {
     expect(postprocessSource).toContain("EVENT_TYPE_SIGNAL_PATTERNS");
   });
 
+  it("postprocess preserves multi-type and genre intent", () => {
+    expect(postprocessSource).toContain("deriveEventTypesFromText");
+    expect(postprocessSource).toContain("irish");
+    expect(postprocessSource).toContain("blues");
+    expect(postprocessSource).toContain("bluegrass");
+    expect(postprocessSource).toContain("[...new Set([...hints, ...existingEventTypes])]");
+  });
+
   it("route applies event-type hints in hardening and again after locked draft merge", () => {
     expect(interpretRouteSource).toContain("applyEventTypeHint({");
     const createMergeSectionStart = interpretRouteSource.indexOf("mergeLockedCreateDraft({");
@@ -177,6 +185,22 @@ describe("Phase 9B — event-type reliability", () => {
     expect(interpretRouteSource).toContain("buildDraftVerifierPrompt");
     expect(interpretRouteSource).toContain("draft_verification");
     expect(interpretRouteSource).toContain("highRiskVerificationIssue");
+  });
+
+  it("runs optional online search verification before GPT-5.5 drafting", () => {
+    expect(interpretRouteSource).toContain("Phase A2 — Optional online event verification");
+    expect(interpretRouteSource).toContain("shouldAttemptEventWebSearch");
+    expect(interpretRouteSource).toContain('type: "web_search"');
+    expect(interpretRouteSource).toContain('include: ["web_search_call.action.sources"]');
+    expect(interpretRouteSource).toContain("web_search_verification");
+    expect(interpretRouteSource).toContain("OPENAI_EVENT_WEB_SEARCH_ENABLED");
+  });
+
+  it("feeds sourced web facts into both draft and verifier prompts", () => {
+    expect(interpretRouteSource).toContain("webSearchVerification");
+    expect(interpretRouteSource).toContain("Use sourced facts to reduce unnecessary questions");
+    expect(interpretRouteSource).toContain("Check the draft against source_message, extracted_image_text, web_search_verification");
+    expect(interpretRouteSource).toContain("Do not claim online verification unless this object has status searched");
   });
 
   it("keeps verifier results internal unless a high-risk issue needs one clarification", () => {

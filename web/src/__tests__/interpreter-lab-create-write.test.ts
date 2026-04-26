@@ -98,7 +98,8 @@ describe("Phase 4B — mapDraftToCreatePayload", () => {
 
   it("validates event_type is a non-empty array", () => {
     expect(labSource).toContain("rawEventTypes");
-    expect(labSource).toContain("hintedEventType ? [hintedEventType] : rawEventTypes");
+    expect(labSource).toContain("hintedEventTypes.length > 0");
+    expect(labSource).toContain("[...new Set([...hintedEventTypes, ...rawEventTypes])]");
     expect(labSource).toContain("if (eventType.length === 0)");
     expect(labSource).toContain("event_type must be a non-empty array");
   });
@@ -181,10 +182,17 @@ describe("Phase 4B — mapDraftToCreatePayload", () => {
   });
 
   it("derives event_type hint from user intent text (e.g. showcase vs open_mic)", () => {
-    expect(labSource).toContain("inferEventTypeFromIntentText");
-    expect(labSource).toContain("hintedEventType ? [hintedEventType] : rawEventTypes");
+    expect(labSource).toContain("inferEventTypesFromIntentText");
+    expect(labSource).toContain("[...new Set([...hintedEventTypes, ...rawEventTypes])]");
     expect(labSource).toContain("showcase");
     expect(labSource).toContain("open_mic");
+  });
+
+  it("preserves multi-type intent such as Irish jam sessions and blues performances", () => {
+    expect(labSource).toContain("irish");
+    expect(labSource).toContain("blues");
+    expect(labSource).toContain("bluegrass");
+    expect(labSource).toContain("performance");
   });
 });
 
