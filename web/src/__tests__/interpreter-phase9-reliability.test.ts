@@ -240,6 +240,13 @@ describe("Phase 9B — event-type reliability", () => {
     expect(interpretRouteSource).toContain("web-search step timed out");
   });
 
+  it("supports default-on host web search without relying on magic user wording", () => {
+    expect(interpretRouteSource).toContain("body.use_web_search !== false");
+    expect(interpretRouteSource).toContain("const shouldUseWebSearch = useWebSearch || explicitWebSearchRequest");
+    expect(interpretRouteSource).toContain("input.useWebSearch && combined.trim().length >= 20");
+    expect(interpretRouteSource).toContain("returnNoReliableResult: shouldUseWebSearch");
+  });
+
   it("allows explicit web search during saved-draft editing loops", () => {
     const searchTriggerStart = interpretRouteSource.indexOf("function shouldAttemptEventWebSearch");
     const searchTriggerSection = interpretRouteSource.slice(searchTriggerStart, searchTriggerStart + 600);

@@ -39,4 +39,12 @@ describe("classic event form responsive layout", () => {
     expect(eventFormSource).toContain("periodLabel=\"End time AM/PM\"");
     expect(eventFormSource).toContain("periodLabel=\"Signup time AM/PM\"");
   });
+
+  it("keeps weekly RRULEs out of the monthly recurrence default and puts publish next to saves", () => {
+    expect(eventFormSource).toContain("getSeriesModeFromRecurrenceRule");
+    expect(eventFormSource).toContain('normalized.startsWith("FREQ=WEEKLY")');
+    expect(eventFormSource).toContain('data-publish-after-save="true"');
+    expect(eventFormSource).toContain("Save & publish");
+    expect(eventFormSource).toContain("shouldPublishAfterSave");
+  });
 });

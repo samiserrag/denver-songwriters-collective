@@ -1146,6 +1146,7 @@ export function ConversationalCreateUI({
 
   // ---- conversation history ----
   const [conversationHistory, setConversationHistory] = useState<ConversationEntry[]>([]);
+  const [useWebSearch, setUseWebSearch] = useState(true);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -1598,6 +1599,7 @@ export function ConversationalCreateUI({
       const payload: Record<string, unknown> = {
         mode: effectiveMode,
         message,
+        use_web_search: useWebSearch,
         trace_id: traceId,
       };
 
@@ -2304,6 +2306,23 @@ export function ConversationalCreateUI({
                   : "e.g. Open mic night at Dazzle Jazz, every Tuesday at 7pm, $10 cover. Source: venue website..."
                 : "Describe the event, or paste an image of a flyer..."}
             />
+          </label>
+
+          <label className="flex items-start gap-3 rounded-lg border border-[var(--color-border-input)] bg-[var(--color-bg-secondary)]/35 px-3 py-2.5 text-sm">
+            <input
+              type="checkbox"
+              checked={useWebSearch}
+              onChange={(e) => setUseWebSearch(e.target.checked)}
+              className="mt-1 h-4 w-4 rounded border-[var(--color-border-input)] accent-[var(--color-accent-primary)]"
+            />
+            <span>
+              <span className="block font-medium text-[var(--color-text-primary)]">
+                Use search to fill in missing details
+              </span>
+              <span className="block text-xs text-[var(--color-text-tertiary)]">
+                Default on. I will try to verify venue, time, cost, and recurrence before asking you.
+              </span>
+            </span>
           </label>
 
           {/* Phase 8E: eventId/dateKey only in lab variant */}

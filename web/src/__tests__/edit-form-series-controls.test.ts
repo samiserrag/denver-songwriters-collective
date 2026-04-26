@@ -143,8 +143,16 @@ describe("Series mode detection from event data", () => {
   // Helper that mirrors the initialization logic in EventForm
   function detectSeriesMode(recurrenceRule: string | null | undefined): "single" | "weekly" | "biweekly" | "monthly" | "custom" {
     if (!recurrenceRule) return "single";
-    if (recurrenceRule === "weekly") return "weekly";
-    if (recurrenceRule === "biweekly") return "biweekly";
+    const normalized = recurrenceRule.trim().toUpperCase();
+    if (normalized === "CUSTOM") return "custom";
+    if (
+      normalized === "BIWEEKLY" ||
+      (normalized.startsWith("FREQ=WEEKLY") && /(?:^|;)INTERVAL=2(?:;|$)/.test(normalized))
+    ) {
+      return "biweekly";
+    }
+    if (normalized === "WEEKLY" || normalized.startsWith("FREQ=WEEKLY")) return "weekly";
+    if (normalized === "MONTHLY" || normalized.startsWith("FREQ=MONTHLY")) return "monthly";
     return "monthly";
   }
 
@@ -154,6 +162,18 @@ describe("Series mode detection from event data", () => {
 
   it("detects 'biweekly' → biweekly mode", () => {
     expect(detectSeriesMode("biweekly")).toBe("biweekly");
+  });
+
+  it("detects weekly RRULEs → weekly mode", () => {
+    expect(detectSeriesMode("FREQ=WEEKLY;BYDAY=SU")).toBe("weekly");
+  });
+
+  it("detects interval-2 weekly RRULEs → biweekly mode", () => {
+    expect(detectSeriesMode("FREQ=WEEKLY;INTERVAL=2;BYDAY=SU")).toBe("biweekly");
+  });
+
+  it("detects monthly RRULEs → monthly mode", () => {
+    expect(detectSeriesMode("FREQ=MONTHLY;BYDAY=1SU")).toBe("monthly");
   });
 
   it("detects '3rd' → monthly mode", () => {
@@ -174,6 +194,10 @@ describe("Series mode detection from event data", () => {
 
   it("detects undefined → single mode", () => {
     expect(detectSeriesMode(undefined)).toBe("single");
+  });
+
+  it("detects custom → custom mode", () => {
+    expect(detectSeriesMode("custom")).toBe("custom");
   });
 });
 

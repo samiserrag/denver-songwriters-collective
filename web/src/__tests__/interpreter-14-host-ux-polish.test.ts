@@ -146,6 +146,13 @@ describe("INTERPRETER-14 — Host chat-first workspace", () => {
     expect(sendButtonIdx).toBeLessThan(imageAreaIdx);
   });
 
+  it("defaults web search on and sends the preference to the interpreter", () => {
+    expect(src).toContain("const [useWebSearch, setUseWebSearch] = useState(true)");
+    expect(src).toContain("Use search to fill in missing details");
+    expect(src).toContain("use_web_search: useWebSearch");
+    expect(src).toContain("Default on. I will try to verify venue, time, cost, and recurrence before asking you.");
+  });
+
   it("auto-scrolls the host chat and surfaces attempted searches", () => {
     expect(src).toContain("chatEndRef");
     expect(src).toContain("scrollIntoView");

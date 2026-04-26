@@ -959,6 +959,7 @@ function shouldAttemptEventWebSearch(input: {
   message: string;
   conversationHistory: Array<{ role: "user" | "assistant"; content: string }>;
   extractedImageText?: string;
+  useWebSearch?: boolean;
 }): boolean {
   if ((input.mode !== "create" && input.mode !== "edit_series") || !isEventWebSearchEnabled()) return false;
 
@@ -970,6 +971,9 @@ function shouldAttemptEventWebSearch(input: {
 
   if (hasNonMapsUrl(combined)) return true;
   if (isExplicitEventWebSearchRequest(combined)) {
+    return true;
+  }
+  if (input.useWebSearch && combined.trim().length >= 20) {
     return true;
   }
   return false;
@@ -1715,6 +1719,7 @@ export async function POST(request: Request) {
     typeof body.trace_id === "string" && body.trace_id.length <= 64
       ? body.trace_id
       : null;
+  const useWebSearch = body.use_web_search !== false;
   const currentDate = new Date().toLocaleDateString("en-CA", { timeZone: "America/Denver" });
 
   // Validate image inputs (count, mime type, decoded size).
@@ -1826,8 +1831,9 @@ export async function POST(request: Request) {
     message: normalizedMessage,
     conversationHistory,
   });
+  const shouldUseWebSearch = useWebSearch || explicitWebSearchRequest;
   const webSearchEnabled = isEventWebSearchEnabled();
-  if (explicitWebSearchRequest && !webSearchEnabled) {
+  if (shouldUseWebSearch && !webSearchEnabled) {
     webSearchVerification = buildNoReliableWebSearchResult(
       "Search was requested, but online search is disabled for this event assistant right now."
     );
@@ -1839,6 +1845,7 @@ export async function POST(request: Request) {
       message: normalizedMessage,
       conversationHistory,
       extractedImageText,
+      useWebSearch: shouldUseWebSearch,
     })
   ) {
     console.info("[events/interpret] starting Phase A2 web search verification", {
@@ -1859,7 +1866,7 @@ export async function POST(request: Request) {
       currentEvent,
       currentDate,
       traceId,
-      returnNoReliableResult: explicitWebSearchRequest,
+      returnNoReliableResult: shouldUseWebSearch,
     });
 
     if (webSearchVerification) {

@@ -65,6 +65,7 @@ function DateDayIndicator({ dateValue }: { dateValue: string }) {
 }
 
 type SectionTone = "blue" | "indigo" | "green" | "amber" | "neutral";
+type SeriesMode = "single" | "weekly" | "biweekly" | "monthly" | "custom";
 
 const sectionToneClasses: Record<SectionTone, string> = {
   blue: "border-l-sky-500 bg-sky-500/[0.04]",
@@ -88,6 +89,26 @@ function OptionalBadge() {
       Optional
     </span>
   );
+}
+
+function getSeriesModeFromRecurrenceRule(rule: string | null | undefined): SeriesMode {
+  if (!rule) return "single";
+
+  const normalized = rule.trim().toUpperCase();
+  if (normalized === "CUSTOM") return "custom";
+  if (
+    normalized === "BIWEEKLY" ||
+    (normalized.startsWith("FREQ=WEEKLY") && /(?:^|;)INTERVAL=2(?:;|$)/.test(normalized))
+  ) {
+    return "biweekly";
+  }
+  if (normalized === "WEEKLY" || normalized.startsWith("FREQ=WEEKLY")) {
+    return "weekly";
+  }
+  if (normalized === "MONTHLY" || normalized.startsWith("FREQ=MONTHLY")) {
+    return "monthly";
+  }
+  return "monthly";
 }
 
 function SectionPanel({
@@ -382,6 +403,9 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
 
     return [...new Set(normalized)];
   })();
+  const initialDetectedSeriesMode = mode === "edit"
+    ? getSeriesModeFromRecurrenceRule(event?.recurrence_rule)
+    : "single";
 
   const [formData, setFormData] = useState({
     title: event?.title || "",
@@ -403,11 +427,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     // Series start date / event date (used by schedule section date inputs)
     start_date: event?.event_date || "",
     occurrence_count: event?.max_occurrences ? event.max_occurrences.toString() : "0", // 0 = no end date (ongoing), >0 = finite series
-    series_mode: (mode === "edit" && event?.recurrence_rule
-      ? (event.recurrence_rule === "biweekly" ? "biweekly"
-        : event.recurrence_rule === "weekly" ? "weekly"
-        : event.recurrence_rule === "custom" ? "custom" : "monthly")
-      : "single") as "single" | "weekly" | "biweekly" | "monthly" | "custom", // Phase 4.x: Series mode selection
+    series_mode: initialDetectedSeriesMode as SeriesMode, // Phase 4.x: Series mode selection
     // Phase 3 scan-first fields
     timezone: event?.timezone || "America/Denver",
     location_mode: event?.location_mode || "venue",
@@ -490,7 +510,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
   // Phase 4.x: Monthly ordinal pattern state (e.g., 1st, 2nd/4th, etc.)
   // Phase 4.86: Use centralized parseOrdinalsFromRecurrenceRule() for round-trip consistency
   const [selectedOrdinals, setSelectedOrdinals] = useState<number[]>(() => {
-    if (mode === "edit" && event?.recurrence_rule) {
+    if (initialDetectedSeriesMode === "monthly" && event?.recurrence_rule) {
       const parsed = parseOrdinalsFromRecurrenceRule(event.recurrence_rule);
       return parsed.length > 0 ? parsed : [1];
     }
@@ -498,11 +518,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
   });
 
   // Track original series mode for edit-mode change detection
-  const initialSeriesMode = mode === "edit" && event?.recurrence_rule
-    ? (event.recurrence_rule === "biweekly" ? "biweekly"
-      : event.recurrence_rule === "weekly" ? "weekly"
-      : event.recurrence_rule === "custom" ? "custom" : "monthly")
-    : "single";
+  const initialSeriesMode = initialDetectedSeriesMode;
 
   const isWeeklyLikeMode = formData.series_mode === "weekly" || formData.series_mode === "biweekly";
   const effectiveAnchorDate = formData.start_date || formData.event_date || event?.event_date || "";
@@ -675,6 +691,12 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const submitter = (e.nativeEvent as Event & { submitter?: HTMLElement | null }).submitter ?? null;
+    const shouldPublishAfterSave =
+      submitter?.getAttribute("data-publish-after-save") === "true" &&
+      mode === "edit" &&
+      !occurrenceMode &&
+      !formData.is_published;
     setLoading(true);
     setError("");
     setErrorDetails(null);
@@ -924,8 +946,9 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         // Phase 4.43: capacity is independent of timeslots (RSVP always available)
         capacity: formData.capacity ? parseInt(formData.capacity) : null,
         cover_image_url: mode === "create" && pendingCoverFile ? null : coverImageUrl,
-        // Keep publish state immutable from edit-form saves; publish/unpublish has dedicated control.
-        is_published: mode === "create" ? formData.is_published : undefined,
+        // Normal edit saves preserve publish state; Save & publish intentionally flips it.
+        is_published: mode === "create" ? formData.is_published : shouldPublishAfterSave ? true : undefined,
+        status: shouldPublishAfterSave ? "active" : undefined,
         // Slot configuration
         has_timeslots: slotConfig.has_timeslots,
         total_slots: slotConfig.has_timeslots ? slotConfig.total_slots : null,
@@ -1053,7 +1076,12 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         const coverFailureParam = coverUploadFailed ? "&coverUploadFailed=true" : "";
         router.push(`/dashboard/my-events/${data.id}?created=true&status=${publishStatus}${coverFailureParam}`);
       } else {
-        setSuccess("Changes saved successfully!");
+        if (shouldPublishAfterSave) {
+          setFormData(prev => ({ ...prev, is_published: true }));
+          setSuccess("Changes saved and event published.");
+        } else {
+          setSuccess("Changes saved successfully!");
+        }
         // Clear URL params (created, status) after edit to prevent stale banner
         if (window.location.search.includes("created=true")) {
           router.replace(`/dashboard/my-events/${event?.id}`);
@@ -1144,6 +1172,12 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
       : mode === "create"
         ? "Create happening"
         : "Save changes";
+  const canSaveAndPublish =
+    mode === "edit" &&
+    !occurrenceMode &&
+    Boolean(event?.id) &&
+    event?.status !== "cancelled" &&
+    !formData.is_published;
   const selectedLocationLabel = getPreviewLocation() || (formData.location_mode === "online" ? "Online" : "No location yet");
 
   return (
@@ -1175,7 +1209,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
               </span>
             </div>
             <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
-              Complete the required setup, review the listing preview, then save. Publishing is handled separately from draft edits.
+              Complete the required setup, review the listing preview, then save the draft or publish when everything is ready.
             </p>
           </div>
 
@@ -1193,12 +1227,24 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
             )}
             <button
               type="submit"
+              data-publish-after-save="false"
               disabled={loading}
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[var(--color-accent-primary)] px-5 py-2.5 text-sm font-semibold text-[var(--color-text-on-accent)] transition-colors hover:bg-[var(--color-accent-hover)] disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Save className="h-4 w-4" aria-hidden="true" />
               {saveButtonLabel}
             </button>
+            {canSaveAndPublish && (
+              <button
+                type="submit"
+                data-publish-after-save="true"
+                disabled={loading}
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Sparkles className="h-4 w-4" aria-hidden="true" />
+                {loading ? "Saving..." : "Save & publish"}
+              </button>
+            )}
             {mode === "edit" && (
               <button
                 type="button"
@@ -2785,12 +2831,24 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
           <div className="flex flex-col gap-3 border-t border-[var(--color-border-default)] pt-4 sm:flex-row sm:items-center">
             <button
               type="submit"
+              data-publish-after-save="false"
               disabled={loading}
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[var(--color-accent-primary)] px-6 py-3 font-semibold text-[var(--color-text-on-accent)] transition-colors hover:bg-[var(--color-accent-hover)] disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Save className="h-4 w-4" aria-hidden="true" />
               {saveButtonLabel}
             </button>
+            {canSaveAndPublish && (
+              <button
+                type="submit"
+                data-publish-after-save="true"
+                disabled={loading}
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Sparkles className="h-4 w-4" aria-hidden="true" />
+                {loading ? "Saving..." : "Save & publish"}
+              </button>
+            )}
             {mode === "edit" && (
               <button
                 type="button"
@@ -2883,12 +2941,24 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
                 </p>
                 <button
                   type="submit"
+                  data-publish-after-save="false"
                   disabled={loading}
                   className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-[var(--color-accent-primary)] px-4 py-2.5 text-sm font-semibold text-[var(--color-text-on-accent)] transition-colors hover:bg-[var(--color-accent-hover)] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <Save className="h-4 w-4" aria-hidden="true" />
                   {saveButtonLabel}
                 </button>
+                {canSaveAndPublish && (
+                  <button
+                    type="submit"
+                    data-publish-after-save="true"
+                    disabled={loading}
+                    className="mt-2 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Sparkles className="h-4 w-4" aria-hidden="true" />
+                    {loading ? "Saving..." : "Save & publish"}
+                  </button>
+                )}
               </section>
             </div>
           </aside>

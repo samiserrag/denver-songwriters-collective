@@ -18,10 +18,12 @@ describe("Publish state persistence guardrails", () => {
     expect(form).toContain("is_published: nextIsPublished");
   });
 
-  it("EventForm does not send is_published in edit PATCH payload", () => {
+  it("EventForm does not send is_published during ordinary edit saves", () => {
     const form = read("web/src/app/(protected)/dashboard/my-events/_components/EventForm.tsx");
-    expect(form).toContain("Keep publish state immutable from edit-form saves");
-    expect(form).toContain('is_published: mode === "create" ? formData.is_published : undefined');
+    expect(form).toContain("Normal edit saves preserve publish state");
+    expect(form).toContain('is_published: mode === "create" ? formData.is_published : shouldPublishAfterSave ? true : undefined');
+    expect(form).toContain('data-publish-after-save="false"');
+    expect(form).toContain('data-publish-after-save="true"');
   });
 
   it("PublishButton guards against persisted-state mismatch and shows explicit error", () => {
