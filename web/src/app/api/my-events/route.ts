@@ -97,6 +97,42 @@ function classifyVenueCandidatesForPromotion(input: {
     : { kind: "no_match" };
 }
 
+function isReusableSeriesRequest(body: Record<string, unknown>): boolean {
+  const seriesMode = typeof body.series_mode === "string" ? body.series_mode : "single";
+  const hasRecurringRule =
+    typeof body.recurrence_rule === "string" && body.recurrence_rule.trim().length > 0;
+  const hasCustomDates = Array.isArray(body.custom_dates) && body.custom_dates.length > 0;
+  return seriesMode !== "single" || hasRecurringRule || hasCustomDates;
+}
+
+function extractZipFromText(value: string): string | null {
+  return value.match(/\b\d{5}(?:-\d{4})?\b/)?.[0] ?? null;
+}
+
+function inferStateFromZip(zip: string | null, fallback: string): string {
+  if (fallback.trim()) return fallback.trim();
+  // Colorado ZIPs are enough for the local event assistant to avoid defaulting
+  // a Pueblo/Springs venue back to Denver when the flyer only says "81006".
+  if (zip && /^8[01]\d{3}(?:-\d{4})?$/.test(zip)) return "CO";
+  return "";
+}
+
+function inferCityFromZip(zip: string | null, fallback: string): string {
+  if (fallback.trim()) return fallback.trim();
+  if (!zip) return "";
+  if (/^810\d{2}(?:-\d{4})?$/.test(zip)) return "Pueblo";
+  if (/^809\d{2}(?:-\d{4})?$/.test(zip)) return "Colorado Springs";
+  if (/^802\d{2}(?:-\d{4})?$/.test(zip)) return "Denver";
+  return "";
+}
+
+function cleanStreetAddress(address: string, city: string, zip: string | null): string {
+  let cleaned = address.trim();
+  if (zip) cleaned = cleaned.replace(new RegExp(`\\b${zip.replace("-", "\\-")}\\b`, "i"), "").trim();
+  if (city) cleaned = cleaned.replace(new RegExp(`\\b${city.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b\\s*$`, "i"), "").trim();
+  return cleaned.replace(/[,\s]+$/g, "").trim();
+}
+
 // GET - Get events where user is host/cohost
 export async function GET() {
   const supabase = await createSupabaseServerClient();
@@ -509,10 +545,19 @@ export async function POST(request: Request) {
     (body.location_mode === "venue" || body.location_mode === "hybrid" || !body.location_mode)
   ) {
     const customName = customLocationNameInput;
-    const customAddress =
-      typeof body.custom_address === "string" ? body.custom_address.trim() : "";
-    const customCity = customCityInput;
-    const customState = customStateInput;
+    const rawCustomAddress = typeof body.custom_address === "string" ? body.custom_address.trim() : "";
+    const customZip =
+      (typeof body.custom_zip === "string" ? body.custom_zip.trim() : "") ||
+      extractZipFromText(rawCustomAddress);
+    const customCity = inferCityFromZip(customZip, customCityInput);
+    const customState = inferStateFromZip(customZip, customStateInput);
+    const customAddress = cleanStreetAddress(rawCustomAddress, customCity, customZip);
+    const shouldCreateReusableVenue =
+      isAdmin &&
+      !hasVenue &&
+      isReusableSeriesRequest(body) &&
+      !!customCity &&
+      !!customState;
 
     if (customName) {
       // 1) Reuse existing canonical venue by name (case-insensitive), but only
@@ -561,9 +606,8 @@ export async function POST(request: Request) {
         !promotedVenue &&
         !hasAmbiguousCandidates &&
         isAdmin &&
-        customAddress &&
-        customCity &&
-        customState
+        (customAddress || shouldCreateReusableVenue) &&
+        (customAddress ? !!customCity && !!customState : shouldCreateReusableVenue)
       ) {
         const serviceClient = createServiceRoleClient();
 
@@ -572,10 +616,7 @@ export async function POST(request: Request) {
           address: customAddress,
           city: customCity,
           state: customState,
-          zip:
-            typeof body.custom_address === "string"
-              ? (body.custom_address.match(/\b\d{5}(?:-\d{4})?\b/)?.[0] ?? null)
-              : null,
+          zip: customZip,
           google_maps_url:
             typeof body.google_maps_url === "string" ? body.google_maps_url.trim() || null : null,
           website_url: null,

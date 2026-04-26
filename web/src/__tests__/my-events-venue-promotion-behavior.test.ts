@@ -250,6 +250,44 @@ describe("POST /api/my-events venue auto-promotion behavior", () => {
     expect(capturedEventInsertPayloads[0].location_mode).toBe("venue");
   });
 
+  it("promotes recurring flyer venues with zip-only Colorado address hints", async () => {
+    mockIsAdmin = true;
+    mockVenueCandidates = [];
+    mockVenueById = {
+      "venue-canonical-1": { name: "Ethos", address: "615 E Mesa", city: "Pueblo", state: "CO" },
+    };
+    mockCanonicalVenueInsertResult = {
+      data: { id: "venue-canonical-1", name: "Ethos", address: "615 E Mesa", city: "Pueblo", state: "CO" },
+      error: null,
+    };
+
+    const request = new Request("http://localhost/api/my-events", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        title: "Ethos - Open Mic",
+        event_type: ["open_mic"],
+        start_time: "18:30",
+        start_date: "2026-05-07",
+        location_mode: "venue",
+        series_mode: "monthly",
+        recurrence_rule: "1st/3rd",
+        custom_location_name: "Ethos",
+        custom_address: "615 E Mesa Pueblo 81006",
+      }),
+    });
+
+    const response = await POST(request);
+    expect(response.status).toBe(200);
+    expect(capturedCanonicalVenueInserts).toHaveLength(1);
+    expect(capturedCanonicalVenueInserts[0].address).toBe("615 E Mesa");
+    expect(capturedCanonicalVenueInserts[0].city).toBe("Pueblo");
+    expect(capturedCanonicalVenueInserts[0].state).toBe("CO");
+    expect(capturedCanonicalVenueInserts[0].zip).toBe("81006");
+    expect(capturedEventInsertPayloads[0].venue_id).toBe("venue-canonical-1");
+    expect(capturedEventInsertPayloads[0].custom_location_name).toBeNull();
+  });
+
   it("accepts city/state-only custom locations without promoting to a canonical venue", async () => {
     const request = new Request("http://localhost/api/my-events", {
       method: "POST",

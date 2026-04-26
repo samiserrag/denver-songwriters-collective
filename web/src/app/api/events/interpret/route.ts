@@ -11,6 +11,7 @@ import {
   validateNextAction,
   validateSanitizedDraftPayload,
   type DraftVerificationResult,
+  type DraftVerificationPatch,
   type ExtractionMetadata,
   type ImageInput,
   type InterpretEventRequestBody,
@@ -48,7 +49,7 @@ const DEFAULT_INTERPRETER_MODEL = "gpt-5.5";
 const DEFAULT_VISION_EXTRACTION_MODEL = "gpt-4.1-mini";
 const DEFAULT_DRAFT_VERIFIER_MODEL = "gpt-5.5";
 const DEFAULT_WEB_SEARCH_VERIFIER_MODEL = "gpt-5.5";
-const WEB_SEARCH_TIMEOUT_MS = 30_000;
+const WEB_SEARCH_TIMEOUT_MS = 40_000;
 const GOOGLE_GEOCODING_API_URL = "https://maps.googleapis.com/maps/api/geocode/json";
 type SupabaseServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>;
 
@@ -1044,9 +1045,12 @@ function buildWebSearchVerificationPrompt(input: {
       locked_draft: input.lockedDraft ?? null,
       current_event: input.currentEvent ?? null,
       instructions: [
-        "Use web search only when it can verify event facts for a public event listing.",
+        "Use web search to verify event facts for a public event listing before deciding there is no reliable public source.",
         "If source_message is a short follow-up like 'can you search?', use locked_draft, current_event, recent_user_context, extracted_image_text, and google_maps_hint to build the search query.",
-        "Look for official venue, organizer, ticketing, social, or event-calendar sources.",
+        "Run multiple targeted search angles when details are incomplete: event title + venue, venue + recurrence phrase, organizer/host + venue, and address + event type.",
+        "Prioritize official venue, organizer, ticketing, social, and event-calendar sources. Use general search results only as pointers to those sources.",
+        "When a flyer contains an address, search the address and venue name together before giving up.",
+        "When a flyer contains a recurring phrase, search both the literal phrase and a normalized version, for example 'first and third Thursday open mic Ethos Pueblo'.",
         "Set status to searched only when at least one source appears to describe the exact same event or exact same recurring event series.",
         "If search finds only a similar venue, similar jam, different city, different date, or unrelated event, set status to no_reliable_sources, use an empty sources array, and summarize that no exact public match was found.",
         "Return only facts that are directly supported by sources or clearly present in the supplied source_message/extracted_image_text.",
@@ -1120,6 +1124,16 @@ function isNonExactEventSearchResult(result: WebSearchVerificationResult): boole
   ].some((pattern) => pattern.test(searchable));
 }
 
+function supportsReasoningEffort(modelName: string): boolean {
+  return /^(?:gpt-5|o[134])\b/i.test(modelName.trim());
+}
+
+function getConfiguredReasoningEffort(): "minimal" | "low" | "medium" | "high" {
+  const raw = process.env.OPENAI_EVENT_WEB_SEARCH_REASONING_EFFORT?.trim().toLowerCase();
+  if (raw === "minimal" || raw === "low" || raw === "medium" || raw === "high") return raw;
+  return "medium";
+}
+
 async function verifyEventDetailsWithWebSearch(input: {
   openAiKey: string;
   searchModel: string;
@@ -1148,6 +1162,9 @@ async function verifyEventDetailsWithWebSearch(input: {
         model: input.searchModel,
         instructions:
           "You are a careful event research assistant. Return strict JSON only. Search the web when useful and cite sources in the sources array.",
+        ...(supportsReasoningEffort(input.searchModel)
+          ? { reasoning: { effort: getConfiguredReasoningEffort() } }
+          : {}),
         input: buildWebSearchVerificationPrompt(input),
         tools: [
           {
@@ -1388,6 +1405,7 @@ function buildSystemPrompt() {
     "- Flyer dates often omit a year. If a month/day date from a flyer would be in the past for current_date, advance it to the next upcoming future occurrence of that month/day.",
     "- If the user says 'tonight', 'tomorrow', 'next', 'upcoming', or 'if this is in the past', resolve that relative date yourself from current_date instead of asking for the year.",
     "- If venue match is uncertain, leave venue_id null and set venue_name to your best guess of the venue the user intended. The server will attempt deterministic resolution.",
+    "- For recurring in-person events at a venue that is not in the catalog, set venue_name/custom_location_name plus any address/city/state you can extract. Do not describe it as a one-off custom location; say it can be added as a reusable venue when saved.",
     "- If locked_draft is provided, preserve its confirmed fields unless the user explicitly changes them.",
     "- For generic event names, prefer the public title format 'Venue Name - Type' (for example 'Fellow Traveler - Open Mic' or 'Ethos - Open Mic'). Preserve distinct named events such as Jam&Slam, festivals, concerts, workshops, slams, and branded showcases.",
     "- Always include concrete event details in description (at minimum when/where/type/cost if known).",
@@ -1554,18 +1572,131 @@ function buildDraftVerifierPrompt(input: {
         : null,
       draft_payload: input.draft,
       verifier_rules: [
-        "You are a silent event-ops verifier. The user will not see your reasoning unless you find a high-risk issue.",
+        "You are a silent event-ops verifier and draft repair assistant. The user will not see your reasoning unless you find an unfixable high-risk issue.",
         "Check the draft against source_message, extracted_image_text, web_search_verification, current_date, and venue_resolution.",
-        "Flag high severity only for contradictions or publish-critical problems: wrong date, past date for a new event, wrong venue, impossible time order, wrong event type, invented facts, or missing required field.",
+        "When the fix is clear from the supplied evidence, return a patch instead of asking the user.",
+        "Use patches for safe corrections such as title cleanup, event_type/category cleanup, signup_time vs start_time, end_time, recurrence_rule/series_mode, custom venue name/address/city/state, cost, age policy, or description.",
+        "Do not set venue_id unless it is already present in draft_payload or venue_resolution explicitly resolved to that id. Prefer venue_name/custom_location fields for new venues.",
+        "For recurring in-person events at a named place that is not in the venue catalog, preserve full custom venue details so the save step can promote it to a reusable venue.",
+        "Flag high severity only for contradictions or publish-critical problems that cannot be safely patched: wrong date, past date for a new event, wrong venue, impossible time order, wrong event type, invented facts, or missing required field.",
         "If web_search_verification has sourced facts that conflict with the draft, flag high only when publishing would likely be wrong.",
         "Do not flag optional missing details such as cost, source URL, end time, capacity, or age policy.",
         "Do not ask broad questions. If high severity is needed, provide one concrete question the user can answer quickly.",
-        "Prefer pass when the draft is reasonable and assumptions are clearly stated.",
+        "Prefer pass with patches when the draft can be made reasonable without bothering the user.",
       ],
+      patch_contract: {
+        description:
+          "Return patches as typed field/value records. Use value_kind to select which value field is active. Leave inactive value fields null or empty.",
+        allowed_fields: [
+          "title",
+          "description",
+          "event_type",
+          "categories",
+          "start_date",
+          "event_date",
+          "day_of_week",
+          "start_time",
+          "end_time",
+          "signup_time",
+          "recurrence_rule",
+          "series_mode",
+          "custom_dates",
+          "venue_name",
+          "custom_location_name",
+          "custom_address",
+          "custom_city",
+          "custom_state",
+          "location_mode",
+          "is_free",
+          "cost_label",
+          "age_policy",
+          "signup_mode",
+          "external_url",
+          "has_timeslots",
+          "total_slots",
+          "slot_duration_minutes",
+        ],
+      },
     },
     null,
     2
   );
+}
+
+const DRAFT_VERIFIER_PATCH_FIELDS = new Set([
+  "title",
+  "description",
+  "event_type",
+  "categories",
+  "start_date",
+  "event_date",
+  "day_of_week",
+  "start_time",
+  "end_time",
+  "signup_time",
+  "recurrence_rule",
+  "series_mode",
+  "custom_dates",
+  "venue_name",
+  "custom_location_name",
+  "custom_address",
+  "custom_city",
+  "custom_state",
+  "location_mode",
+  "is_free",
+  "cost_label",
+  "age_policy",
+  "signup_mode",
+  "external_url",
+  "has_timeslots",
+  "total_slots",
+  "slot_duration_minutes",
+]);
+
+function parseDraftVerificationPatch(value: unknown): DraftVerificationPatch | null {
+  const obj = parseJsonObject(value);
+  if (!obj) return null;
+  if (typeof obj.field !== "string" || !DRAFT_VERIFIER_PATCH_FIELDS.has(obj.field)) return null;
+  if (
+    obj.value_kind !== "string" &&
+    obj.value_kind !== "number" &&
+    obj.value_kind !== "boolean" &&
+    obj.value_kind !== "string_array" &&
+    obj.value_kind !== "null"
+  ) {
+    return null;
+  }
+  if (typeof obj.reason !== "string" || obj.reason.trim().length === 0) return null;
+
+  const stringValue =
+    typeof obj.string_value === "string" && obj.string_value.trim().length > 0
+      ? obj.string_value.trim().slice(0, 2000)
+      : null;
+  const numberValue = typeof obj.number_value === "number" && Number.isFinite(obj.number_value)
+    ? obj.number_value
+    : null;
+  const booleanValue = typeof obj.boolean_value === "boolean" ? obj.boolean_value : null;
+  const stringArrayValue = Array.isArray(obj.string_array_value)
+    ? obj.string_array_value
+        .filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+        .map((item) => item.trim().slice(0, 240))
+        .slice(0, 24)
+    : [];
+
+  if (obj.value_kind === "string" && stringValue === null) return null;
+  if (obj.value_kind === "number" && numberValue === null) return null;
+  if (obj.value_kind === "boolean" && booleanValue === null) return null;
+  if (obj.value_kind === "string_array" && stringArrayValue.length === 0) return null;
+
+  return {
+    field: obj.field,
+    value_kind: obj.value_kind,
+    string_value: stringValue,
+    number_value: numberValue,
+    boolean_value: booleanValue,
+    string_array_value: stringArrayValue,
+    reason: obj.reason.trim().slice(0, 240),
+  };
 }
 
 function parseDraftVerification(value: unknown): DraftVerificationResult | null {
@@ -1574,6 +1705,12 @@ function parseDraftVerification(value: unknown): DraftVerificationResult | null 
   if (obj.status !== "pass" && obj.status !== "needs_review") return null;
   if (typeof obj.summary !== "string") return null;
   if (!Array.isArray(obj.issues)) return null;
+  const patches = Array.isArray(obj.patches)
+    ? obj.patches
+        .map(parseDraftVerificationPatch)
+        .filter((patch): patch is DraftVerificationPatch => patch !== null)
+        .slice(0, 12)
+    : [];
 
   const issues = obj.issues
     .map((issue) => {
@@ -1595,7 +1732,46 @@ function parseDraftVerification(value: unknown): DraftVerificationResult | null 
     status: obj.status,
     summary: obj.summary.slice(0, 400),
     issues: issues.slice(0, 5),
+    patches,
   };
+}
+
+function applyDraftVerifierPatches(
+  draft: Record<string, unknown>,
+  verification: DraftVerificationResult | null
+): DraftVerificationPatch[] {
+  if (!verification || verification.patches.length === 0) return [];
+
+  const applied: DraftVerificationPatch[] = [];
+  for (const patch of verification.patches) {
+    let nextValue: unknown;
+    if (patch.value_kind === "null") {
+      nextValue = null;
+    } else if (patch.value_kind === "string") {
+      nextValue = patch.string_value;
+    } else if (patch.value_kind === "number") {
+      nextValue = patch.number_value;
+    } else if (patch.value_kind === "boolean") {
+      nextValue = patch.boolean_value;
+    } else {
+      nextValue = patch.string_array_value;
+    }
+
+    if (nextValue === undefined) continue;
+    draft[patch.field] = nextValue;
+    applied.push(patch);
+  }
+
+  if (applied.length > 0) {
+    if (hasNonEmptyString(draft.venue_name) && !hasNonEmptyString(draft.custom_location_name)) {
+      draft.custom_location_name = draft.venue_name;
+    }
+    if (hasNonEmptyString(draft.custom_location_name) && !hasNonEmptyString(draft.location_mode)) {
+      draft.location_mode = "venue";
+    }
+  }
+
+  return applied;
 }
 
 async function verifyDraftWithCritic(input: {
@@ -1634,7 +1810,7 @@ async function verifyDraftWithCritic(input: {
             schema: {
               type: "object",
               additionalProperties: false,
-              required: ["status", "summary", "issues"],
+              required: ["status", "summary", "issues", "patches"],
               properties: {
                 status: { type: "string", enum: ["pass", "needs_review"] },
                 summary: { type: "string" },
@@ -1650,6 +1826,70 @@ async function verifyDraftWithCritic(input: {
                       field: { type: "string" },
                       issue: { type: "string" },
                       question: { type: ["string", "null"] },
+                    },
+                  },
+                },
+                patches: {
+                  type: "array",
+                  maxItems: 12,
+                  items: {
+                    type: "object",
+                    additionalProperties: false,
+                    required: [
+                      "field",
+                      "value_kind",
+                      "string_value",
+                      "number_value",
+                      "boolean_value",
+                      "string_array_value",
+                      "reason",
+                    ],
+                    properties: {
+                      field: {
+                        type: "string",
+                        enum: [
+                          "title",
+                          "description",
+                          "event_type",
+                          "categories",
+                          "start_date",
+                          "event_date",
+                          "day_of_week",
+                          "start_time",
+                          "end_time",
+                          "signup_time",
+                          "recurrence_rule",
+                          "series_mode",
+                          "custom_dates",
+                          "venue_name",
+                          "custom_location_name",
+                          "custom_address",
+                          "custom_city",
+                          "custom_state",
+                          "location_mode",
+                          "is_free",
+                          "cost_label",
+                          "age_policy",
+                          "signup_mode",
+                          "external_url",
+                          "has_timeslots",
+                          "total_slots",
+                          "slot_duration_minutes",
+                        ],
+                      },
+                      value_kind: {
+                        type: "string",
+                        enum: ["string", "number", "boolean", "string_array", "null"],
+                      },
+                      string_value: { type: ["string", "null"] },
+                      number_value: { type: ["number", "null"] },
+                      boolean_value: { type: ["boolean", "null"] },
+                      string_array_value: {
+                        type: "array",
+                        maxItems: 24,
+                        items: { type: "string" },
+                      },
+                      reason: { type: "string" },
                     },
                   },
                 },
@@ -2263,7 +2503,6 @@ export async function POST(request: Request) {
     resolvedNextAction = "show_preview";
   }
 
-  const qualityHints = buildQualityHints(sanitizedDraft);
   const shouldStripOptionalExternalUrlAsk =
     resolvedNextAction !== "ask_clarification" &&
     !resolvedBlockingFields.includes("external_url") &&
@@ -2291,7 +2530,27 @@ export async function POST(request: Request) {
         })
       : null;
 
-  const highRiskVerificationIssue = draftVerification?.issues.find((issue) => issue.severity === "high") ?? null;
+  const appliedVerifierPatches = applyDraftVerifierPatches(sanitizedDraft, draftVerification);
+  if (appliedVerifierPatches.length > 0) {
+    hardenDraftForCreateEdit({
+      mode,
+      draft: sanitizedDraft,
+      message: normalizedMessage,
+      conversationHistory,
+      extractedImageText,
+      extractionConfidence: extractionMetadata?.confidence,
+    });
+    if (mode === "create") {
+      applyVenueTypeTitleDefault(sanitizedDraft);
+    }
+    normalizeSeriesModeConsistency(sanitizedDraft);
+    enforceVenueCustomExclusivity(sanitizedDraft);
+    resolvedBlockingFields = pruneSatisfiedBlockingFields(sanitizedDraft, resolvedBlockingFields);
+  }
+
+  const patchedFields = new Set(appliedVerifierPatches.map((patch) => patch.field));
+  const highRiskVerificationIssue =
+    draftVerification?.issues.find((issue) => issue.severity === "high" && !patchedFields.has(issue.field)) ?? null;
   if (highRiskVerificationIssue && resolvedNextAction !== "ask_clarification") {
     resolvedNextAction = "ask_clarification";
     resolvedBlockingFields = [highRiskVerificationIssue.field || "draft_verification"];
@@ -2300,13 +2559,19 @@ export async function POST(request: Request) {
       `Please confirm ${highRiskVerificationIssue.field}: ${highRiskVerificationIssue.issue}`;
   }
 
+  const qualityHints = buildQualityHints(sanitizedDraft);
+  const visibleHumanSummary =
+    appliedVerifierPatches.length > 0 && !highRiskVerificationIssue
+      ? `${finalHumanSummary} I cleaned up ${appliedVerifierPatches.length === 1 ? "one draft detail" : `${appliedVerifierPatches.length} draft details`} before showing this to you.`
+      : finalHumanSummary;
+
   const response = {
     mode,
     next_action: resolvedNextAction,
     confidence: responsePayload.confidence,
     human_summary: highRiskVerificationIssue
-      ? `${finalHumanSummary} I found one thing worth confirming before this goes live.`
-      : finalHumanSummary,
+      ? `${visibleHumanSummary} I found one thing worth confirming before this goes live.`
+      : visibleHumanSummary,
     clarification_question: resolvedClarificationQuestion,
     blocking_fields: resolvedBlockingFields,
     draft_payload: sanitizedDraft,
@@ -2323,6 +2588,7 @@ export async function POST(request: Request) {
     nextAction: response.next_action,
     confidence: response.confidence,
     blockingFields: response.blocking_fields,
+    verifierPatchFields: appliedVerifierPatches.map((patch) => patch.field),
     draft: redactEmails(truncate(JSON.stringify(response.draft_payload), 1200)),
     ...(googleMapsHint
       ? {

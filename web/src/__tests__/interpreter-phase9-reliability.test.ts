@@ -186,6 +186,8 @@ describe("Phase 9B — event-type reliability", () => {
     expect(interpretRouteSource).toContain("verifyDraftWithCritic");
     expect(interpretRouteSource).toContain("buildDraftVerifierPrompt");
     expect(interpretRouteSource).toContain("draft_verification");
+    expect(interpretRouteSource).toContain("applyDraftVerifierPatches");
+    expect(interpretRouteSource).toContain("patch_contract");
     expect(interpretRouteSource).toContain("highRiskVerificationIssue");
     expect(interpretRouteSource).toContain('(mode === "create" || mode === "edit_series")');
   });
@@ -199,6 +201,8 @@ describe("Phase 9B — event-type reliability", () => {
     expect(interpretRouteSource).toContain("OPENAI_EVENT_WEB_SEARCH_ENABLED");
     expect(interpretRouteSource).toContain('const DEFAULT_WEB_SEARCH_VERIFIER_MODEL = "gpt-5.5"');
     expect(interpretRouteSource).toContain("OPENAI_EVENT_WEB_SEARCH_MODEL");
+    expect(interpretRouteSource).toContain("Run multiple targeted search angles");
+    expect(interpretRouteSource).toContain("OPENAI_EVENT_WEB_SEARCH_REASONING_EFFORT");
   });
 
   it("does not treat similar-but-not-exact search results as verification", () => {
@@ -240,7 +244,7 @@ describe("Phase 9B — event-type reliability", () => {
   it("does not silently drop explicit search requests when web search cannot produce sources", () => {
     expect(interpretRouteSource).toContain("buildNoReliableWebSearchResult");
     expect(interpretRouteSource).toContain('tool_choice: input.returnNoReliableResult ? "required" : "auto"');
-    expect(interpretRouteSource).toContain("const WEB_SEARCH_TIMEOUT_MS = 30_000");
+    expect(interpretRouteSource).toContain("const WEB_SEARCH_TIMEOUT_MS = 40_000");
     expect(interpretRouteSource).toContain("export const maxDuration = 90");
     expect(interpretRouteSource).toContain("web-search service returned an upstream error");
     expect(interpretRouteSource).toContain("returned no usable verification text");

@@ -54,10 +54,21 @@ export interface DraftVerificationIssue {
   question: string | null;
 }
 
+export interface DraftVerificationPatch {
+  field: string;
+  value_kind: "string" | "number" | "boolean" | "string_array" | "null";
+  string_value: string | null;
+  number_value: number | null;
+  boolean_value: boolean | null;
+  string_array_value: string[];
+  reason: string;
+}
+
 export interface DraftVerificationResult {
   status: "pass" | "needs_review";
   summary: string;
   issues: DraftVerificationIssue[];
+  patches: DraftVerificationPatch[];
 }
 
 export interface WebSearchVerificationSource {
