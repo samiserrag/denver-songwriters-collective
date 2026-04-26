@@ -194,6 +194,8 @@ describe("Phase 9B — event-type reliability", () => {
     expect(interpretRouteSource).toContain('include: ["web_search_call.action.sources"]');
     expect(interpretRouteSource).toContain("web_search_verification");
     expect(interpretRouteSource).toContain("OPENAI_EVENT_WEB_SEARCH_ENABLED");
+    expect(interpretRouteSource).toContain('const DEFAULT_WEB_SEARCH_VERIFIER_MODEL = "gpt-4.1-mini"');
+    expect(interpretRouteSource).toContain("OPENAI_EVENT_WEB_SEARCH_MODEL");
   });
 
   it("feeds sourced web facts into both draft and verifier prompts", () => {
@@ -201,6 +203,13 @@ describe("Phase 9B — event-type reliability", () => {
     expect(interpretRouteSource).toContain("Use sourced facts to reduce unnecessary questions");
     expect(interpretRouteSource).toContain("Check the draft against source_message, extracted_image_text, web_search_verification");
     expect(interpretRouteSource).toContain("Do not claim online verification unless this object has status searched");
+  });
+
+  it("does not trigger web search solely from relative-date wording", () => {
+    const searchTriggerStart = interpretRouteSource.indexOf("function shouldAttemptEventWebSearch");
+    const searchTriggerSection = interpretRouteSource.slice(searchTriggerStart, searchTriggerStart + 1400);
+    expect(searchTriggerSection).not.toContain("upcoming|next");
+    expect(searchTriggerSection).not.toContain("today|tonight|tomorrow");
   });
 
   it("keeps verifier results internal unless a high-risk issue needs one clarification", () => {

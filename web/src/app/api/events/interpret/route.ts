@@ -46,7 +46,8 @@ const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
 const DEFAULT_INTERPRETER_MODEL = "gpt-5.5";
 const DEFAULT_VISION_EXTRACTION_MODEL = "gpt-4.1-mini";
 const DEFAULT_DRAFT_VERIFIER_MODEL = "gpt-4.1-mini";
-const WEB_SEARCH_TIMEOUT_MS = 12_000;
+const DEFAULT_WEB_SEARCH_VERIFIER_MODEL = "gpt-4.1-mini";
+const WEB_SEARCH_TIMEOUT_MS = 7_000;
 const GOOGLE_GEOCODING_API_URL = "https://maps.googleapis.com/maps/api/geocode/json";
 type SupabaseServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>;
 
@@ -941,7 +942,6 @@ function shouldAttemptEventWebSearch(input: {
   if (/\b(search|look up|verify|confirm|find online|website|facebook|instagram|eventbrite)\b/i.test(combined)) {
     return true;
   }
-  if (/\b(today|tonight|tomorrow|this weekend|upcoming|next)\b/i.test(combined)) return true;
   if (input.extractedImageText && /\b(venue|location|address|date|time|event|show|open mic|jam|slam)\b/i.test(input.extractedImageText)) {
     return true;
   }
@@ -1566,7 +1566,7 @@ export async function POST(request: Request) {
   const model = process.env.OPENAI_EVENT_INTERPRETER_MODEL?.trim() || DEFAULT_INTERPRETER_MODEL;
   const visionModel = process.env.OPENAI_EVENT_VISION_MODEL?.trim() || DEFAULT_VISION_EXTRACTION_MODEL;
   const verifierModel = process.env.OPENAI_EVENT_DRAFT_VERIFIER_MODEL?.trim() || DEFAULT_DRAFT_VERIFIER_MODEL;
-  const webSearchModel = process.env.OPENAI_EVENT_WEB_SEARCH_MODEL?.trim() || model;
+  const webSearchModel = process.env.OPENAI_EVENT_WEB_SEARCH_MODEL?.trim() || DEFAULT_WEB_SEARCH_VERIFIER_MODEL;
 
   const supabase = await createSupabaseServerClient();
   const { data: { user: sessionUser }, error: sessionUserError } = await supabase.auth.getUser();
