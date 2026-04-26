@@ -43,8 +43,10 @@ describe("Interpreter image extraction (Phase 3 route)", () => {
     expect(routeSource).toContain("model: modelName");
   });
 
-  it("uses the same configured model for Phase A and Phase B", () => {
-    expect(routeSource).toContain("extractTextFromImages(openAiKey, validatedImages, model)");
+  it("uses fast vision extraction before GPT-5.5 event reasoning", () => {
+    expect(routeSource).toContain('const DEFAULT_VISION_EXTRACTION_MODEL = "gpt-4.1-mini"');
+    expect(routeSource).toContain("const visionModel = process.env.OPENAI_EVENT_VISION_MODEL?.trim() || DEFAULT_VISION_EXTRACTION_MODEL");
+    expect(routeSource).toContain("extractTextFromImages(openAiKey, validatedImages, visionModel)");
     expect(routeSource).toContain("const model = process.env.OPENAI_EVENT_INTERPRETER_MODEL?.trim() || DEFAULT_INTERPRETER_MODEL");
   });
 
