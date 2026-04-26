@@ -153,6 +153,11 @@ describe("INTERPRETER-14 — Host chat-first workspace", () => {
     expect(src).toContain("Default on. I will try to verify venue, time, cost, and recurrence before asking you.");
   });
 
+  it("normalizes complex model recurrence output before writing drafts", () => {
+    expect(src).toContain('import { normalizeDraftRecurrenceFields } from "@/lib/events/recurrenceDraftTools"');
+    expect(src).toContain("normalizeDraftRecurrenceFields(body)");
+  });
+
   it("auto-scrolls the host chat and surfaces attempted searches", () => {
     expect(src).toContain("chatEndRef");
     expect(src).toContain("scrollIntoView");

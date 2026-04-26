@@ -6,6 +6,8 @@
  * and prevents logic drift between production and test code.
  */
 
+import { normalizeDraftRecurrenceFields } from "@/lib/events/recurrenceDraftTools";
+
 // ---------------------------------------------------------------------------
 // Recurrence intent guard (Phase 7B)
 // ---------------------------------------------------------------------------
@@ -630,10 +632,10 @@ export function normalizeSeriesModeConsistency(
   const rule = draft.recurrence_rule;
   if (typeof rule !== "string" || !rule.trim()) return;
 
-  if (RECURRING_RRULE_PATTERN.test(rule)) {
-    if (!draft.series_mode || draft.series_mode === "single") {
-      draft.series_mode = "recurring";
-    }
+  normalizeDraftRecurrenceFields(draft);
+
+  if (RECURRING_RRULE_PATTERN.test(rule) && (!draft.series_mode || draft.series_mode === "single")) {
+    draft.series_mode = "custom";
   }
 }
 

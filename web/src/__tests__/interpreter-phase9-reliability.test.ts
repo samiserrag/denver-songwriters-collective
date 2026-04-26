@@ -247,6 +247,12 @@ describe("Phase 9B — event-type reliability", () => {
     expect(interpretRouteSource).toContain("returnNoReliableResult: shouldUseWebSearch");
   });
 
+  it("gives the model a deterministic recurrence contract for unsupported schedules", () => {
+    expect(interpretRouteSource).toContain("Recurrence contract: use series_mode single");
+    expect(interpretRouteSource).toContain("custom for irregular schedules, multiple weekdays");
+    expect(interpretRouteSource).toContain("Do not output vague series_mode values like recurring");
+  });
+
   it("allows explicit web search during saved-draft editing loops", () => {
     const searchTriggerStart = interpretRouteSource.indexOf("function shouldAttemptEventWebSearch");
     const searchTriggerSection = interpretRouteSource.slice(searchTriggerStart, searchTriggerStart + 600);

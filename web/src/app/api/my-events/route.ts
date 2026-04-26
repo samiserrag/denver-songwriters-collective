@@ -12,6 +12,7 @@ import { sendAdminEventAlert } from "@/lib/email/adminEventAlerts";
 import { processVenueGeocodingWithStatus } from "@/lib/venue/geocoding";
 import { Database } from "@/lib/supabase/database.types";
 import { warmEventSharePreview } from "@/lib/events/sharePreview";
+import { normalizeDraftRecurrenceFields } from "@/lib/events/recurrenceDraftTools";
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>;
 
@@ -707,6 +708,7 @@ export async function POST(request: Request) {
   // - "biweekly": Every-other-week recurring series (single event row + recurrence_rule="biweekly")
   // - "monthly": Monthly ordinal pattern (creates SINGLE event with recurrence_rule like "1st/3rd")
   // - "custom": Custom dates (non-predictable, creates multiple event records)
+  normalizeDraftRecurrenceFields(body);
   const seriesMode = (body.series_mode as string) || "single";
   const startDate = body.start_date;
 

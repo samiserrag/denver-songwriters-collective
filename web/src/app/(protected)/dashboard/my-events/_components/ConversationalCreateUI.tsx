@@ -30,6 +30,7 @@ import {
 } from "@/lib/events/uploadCoverForEvent";
 import type { NextAction } from "@/lib/events/interpretEventContract";
 import { normalizeSignupMode } from "@/lib/events/signupModeContract";
+import { normalizeDraftRecurrenceFields } from "@/lib/events/recurrenceDraftTools";
 import { humanizeRecurrence } from "@/lib/recurrenceHumanizer";
 import { CropModal } from "@/components/gallery/CropModal";
 
@@ -886,6 +887,7 @@ function mapDraftToCreatePayload(
   if (normalizedRecurrence) {
     body.recurrence_rule = normalizedRecurrence;
   }
+  normalizeDraftRecurrenceFields(body);
 
   // 4c. Guard against half-configured timeslots.
   if (body.has_timeslots === true) {
@@ -1056,6 +1058,7 @@ function mapDraftToSeriesPatchPayload(
   if (body.recurrence_rule !== undefined) {
     body.recurrence_rule = normalizeRecurrenceRuleForCreate(body.recurrence_rule);
   }
+  normalizeDraftRecurrenceFields(body);
 
   if (body.has_timeslots === true) {
     const hasExplicitTimeslotIntent = explicitlyRequestsTimeslots(intentText);

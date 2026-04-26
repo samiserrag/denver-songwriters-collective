@@ -13,6 +13,7 @@ import { MediaEmbedValidationError, normalizeMediaEmbedUrl } from "@/lib/mediaEm
 import { upsertMediaEmbeds } from "@/lib/mediaEmbedsServer";
 import { sendAdminEventAlert } from "@/lib/email/adminEventAlerts";
 import { warmEventSharePreview } from "@/lib/events/sharePreview";
+import { normalizeDraftRecurrenceFields } from "@/lib/events/recurrenceDraftTools";
 
 const LEGACY_VERIFICATION_STATUSES = new Set(["needs_verification", "unverified"]);
 
@@ -280,6 +281,7 @@ export async function PATCH(
   if (body.signup_mode !== undefined) {
     body.signup_mode = normalizeSignupMode(body.signup_mode);
   }
+  normalizeDraftRecurrenceFields(body);
 
   if (body.visibility !== undefined) {
     if (body.visibility !== "public" && body.visibility !== "invite_only") {
