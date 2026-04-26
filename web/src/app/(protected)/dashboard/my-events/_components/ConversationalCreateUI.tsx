@@ -1123,6 +1123,51 @@ export function ConversationalCreateUI({
     createdEventId !== null &&
     ACTIONABLE_NEXT_ACTIONS.has(lastInterpretResponse.next_action as NextAction);
 
+  const hostWorkflowStep = createdSummary
+    ? {
+        label: "Draft saved",
+        tone: "success" as const,
+        title: "Open the draft to publish, or keep editing here.",
+        detail: "The event is private. Preview it in a new tab, then publish from the draft when it looks right.",
+      }
+    : canShowCreateAction && !createdEventId
+      ? {
+          label: "Ready to save",
+          tone: "ready" as const,
+          title: "Review the key fields, then create the private draft.",
+          detail: "Use Confirm & Create Draft when the date, time, location, and cover look right.",
+        }
+      : isClarificationTurn
+        ? {
+            label: "Needs one answer",
+            tone: "warning" as const,
+            title: "Answer the follow-up so I can finish the draft.",
+            detail: responseGuidance?.clarification_question || "One detail is blocking a clean event draft.",
+          }
+        : isSubmitting
+          ? {
+              label: "Working",
+              tone: "working" as const,
+              title: "Reading your notes and image.",
+              detail: "I am extracting the event details and checking for publish-risk issues.",
+            }
+          : {
+              label: "Start here",
+              tone: "idle" as const,
+              title: "Add a flyer, paste notes, or type what you know.",
+              detail: "Messy input is fine. I will draft the event and ask only for details that block publishing.",
+            };
+  const hostWorkflowToneClass =
+    hostWorkflowStep.tone === "success"
+      ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-600"
+      : hostWorkflowStep.tone === "ready"
+        ? "border-blue-500/25 bg-blue-500/10 text-blue-600"
+        : hostWorkflowStep.tone === "warning"
+          ? "border-amber-500/25 bg-amber-500/10 text-amber-600"
+          : "border-[var(--color-border-input)] bg-[var(--color-bg-secondary)]/45 text-[var(--color-text-secondary)]";
+  const hostSubmitIsSecondary =
+    isHostVariant && canShowCreateAction && !createdEventId && !isClarificationTurn;
+
   // Occurrence edit apply guard (lab variant only — host variant forces create via effectiveMode)
   const canShowOccurrenceAction =
     writesEnabled &&
@@ -1857,13 +1902,26 @@ export function ConversationalCreateUI({
                 Create Happening with AI
               </h1>
             </div>
-            <p className="text-[var(--color-text-secondary)]">
-              Describe your event, paste source notes or flyer text, click Generate Draft, then answer follow-up questions in the same box. Your event stays private until you publish it.
+            <p className="max-w-3xl text-[var(--color-text-secondary)]">
+              Turn a flyer, link, or rough notes into a private event draft. You can keep chatting here until it is ready.
             </p>
-            <div className="mt-3 rounded-lg border border-amber-300 dark:border-amber-500/30 bg-amber-100 dark:bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-200">
-              <p className="font-medium">
-                Important: Confirm and create your draft, then click <strong>Publish Event</strong> to make it public.
-              </p>
+            <div className={`mt-4 rounded-lg border px-4 py-3 ${hostWorkflowToneClass}`}>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide">
+                    {hostWorkflowStep.label}
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-[var(--color-text-primary)]">
+                    {hostWorkflowStep.title}
+                  </p>
+                  <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
+                    {hostWorkflowStep.detail}
+                  </p>
+                </div>
+                <span className="shrink-0 rounded-full border border-current/20 px-2.5 py-1 text-[11px] font-semibold">
+                  Private until published
+                </span>
+              </div>
             </div>
             <Link
               href="/dashboard/my-events/new?classic=true"
@@ -1905,12 +1963,12 @@ export function ConversationalCreateUI({
           )}
 
           {isHostVariant && (
-            <div className="space-y-3 rounded-lg border border-[var(--color-border-input)] bg-[var(--color-bg-secondary)]/30 p-3">
+            <div className="space-y-3 rounded-lg border border-[var(--color-border-input)] bg-[var(--color-bg-secondary)]/25 p-3">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-xs font-semibold uppercase text-[var(--color-text-tertiary)]">
-                  Conversation
+                  Chat
                 </p>
-                <span className="text-xs text-[var(--color-text-tertiary)]">
+                <span className="rounded-full bg-[var(--color-bg-secondary)] px-2 py-0.5 text-[11px] font-medium text-[var(--color-text-secondary)]">
                   {hasCreatedDraft ? "Editing saved draft" : "Building draft"}
                 </span>
               </div>
@@ -2119,7 +2177,11 @@ export function ConversationalCreateUI({
             <button
               onClick={submit}
               disabled={!canSubmitInterpret}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[var(--color-accent-primary)] px-4 py-2 font-semibold text-[var(--color-text-on-accent)] transition-colors hover:bg-[var(--color-accent-hover)] disabled:cursor-not-allowed disabled:opacity-60"
+              className={
+                hostSubmitIsSecondary
+                  ? "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-[var(--color-border-input)] px-4 py-2 font-semibold text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)] disabled:cursor-not-allowed disabled:opacity-60"
+                  : "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[var(--color-accent-primary)] px-4 py-2 font-semibold text-[var(--color-text-on-accent)] transition-colors hover:bg-[var(--color-accent-hover)] disabled:cursor-not-allowed disabled:opacity-60"
+              }
             >
               {isSubmitting ? (
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
@@ -2154,7 +2216,7 @@ export function ConversationalCreateUI({
                 onClick={createEvent}
                 disabled={isCreating || isSubmitting}
                 type="button"
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 font-semibold text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isCreating ? (
                   <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
@@ -2210,7 +2272,7 @@ export function ConversationalCreateUI({
             )}
           </div>
 
-          {statusCode === 200 && responseGuidance && (
+          {!isHostVariant && statusCode === 200 && responseGuidance && (
             <div className="rounded-lg border border-[var(--color-border-input)] bg-[var(--color-bg-secondary)]/50 p-3 space-y-2">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text-tertiary)]">
@@ -2409,7 +2471,7 @@ export function ConversationalCreateUI({
                 <div className="border-b border-[var(--color-border-input)] px-4 py-3">
                   <div className="flex items-center justify-between gap-3">
                     <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">
-                      Draft Preview
+                      Review
                     </h2>
                     {responseGuidance && (
                       <span className="rounded-full bg-[var(--color-bg-secondary)] px-2 py-0.5 text-[11px] font-medium text-[var(--color-text-secondary)]">
@@ -2418,7 +2480,7 @@ export function ConversationalCreateUI({
                     )}
                   </div>
                   <p className="mt-1 text-xs text-[var(--color-text-tertiary)]">
-                    Keep chatting here after the draft is saved. I will patch the same draft instead of making you start over.
+                    Check the cover and key fields. After saving, edits here patch the same draft.
                   </p>
                 </div>
 
@@ -2447,20 +2509,13 @@ export function ConversationalCreateUI({
                     </button>
                   )}
 
-                  {responseGuidance?.human_summary && (
-                    <div className="rounded-lg bg-[var(--color-bg-secondary)]/60 p-3 text-sm text-[var(--color-text-primary)]">
-                      {responseGuidance.human_summary}
-                    </div>
-                  )}
-
                   {responseGuidance?.web_search_verification?.status === "searched" &&
                     responseGuidance.web_search_verification.sources.length > 0 && (
-                      <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3">
-                        <div className="flex items-center gap-2 text-xs font-semibold uppercase text-emerald-600">
-                          <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
-                          Checked online
-                        </div>
-                        <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
+                      <details className="rounded-lg border border-[var(--color-border-input)] bg-[var(--color-bg-secondary)]/25 p-3">
+                        <summary className="cursor-pointer text-xs font-semibold text-[var(--color-text-secondary)]">
+                          Sources checked ({responseGuidance.web_search_verification.sources.length})
+                        </summary>
+                        <p className="mt-2 text-xs text-[var(--color-text-secondary)]">
                           {responseGuidance.web_search_verification.summary}
                         </p>
                         <div className="mt-2 flex flex-wrap gap-2">
@@ -2477,7 +2532,7 @@ export function ConversationalCreateUI({
                             </a>
                           ))}
                         </div>
-                      </div>
+                      </details>
                     )}
 
                   {responseGuidance?.next_action === "ask_clarification" && (
@@ -2492,7 +2547,7 @@ export function ConversationalCreateUI({
                   {responseGuidance?.draft_payload && (
                     <div className="space-y-2">
                       <p className="text-xs font-semibold uppercase text-[var(--color-text-tertiary)]">
-                        Extracted Fields
+                        Key fields
                       </p>
                       <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-xs">
                         {(() => {

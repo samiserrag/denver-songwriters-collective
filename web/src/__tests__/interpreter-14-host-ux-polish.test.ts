@@ -3,10 +3,10 @@
  *
  * Verifies:
  * 1. Host title is "Create Happening with AI".
- * 2. Host subtitle includes 3-step cue.
+ * 2. Host subtitle and next-step callout keep the workflow clear.
  * 3. Host run button uses two-state logic (Generate Draft / Send Answer).
  * 4. Host route contains no lab/debug wording visible to users.
- * 5. Host route uses a chat-first layout with a persistent Draft Preview.
+ * 5. Host route uses a chat-first layout with a persistent review rail.
  * 6. Conversation history is in the main chat surface for host variant.
  */
 import { describe, expect, it } from "vitest";
@@ -28,16 +28,18 @@ describe("INTERPRETER-14 — Host copy updates", () => {
   });
 
   it("host subtitle frames the chat loop", () => {
-    expect(src).toContain("answer follow-up questions in the same box");
+    expect(src).toContain("Turn a flyer, link, or rough notes into a private event draft");
+    expect(src).toContain("keep chatting here until it is ready");
   });
 
   it("host fallback link says 'Use classic form instead'", () => {
     expect(src).toContain("Use classic form instead");
   });
 
-  it("host variant includes explicit publish warning", () => {
-    expect(src).toContain("Important: Confirm and create your draft");
-    expect(src).toContain("Publish Event");
+  it("host variant includes a single next-step callout with publish state", () => {
+    expect(src).toContain("hostWorkflowStep");
+    expect(src).toContain("Private until published");
+    expect(src).toContain("Ready to save");
   });
 });
 
@@ -93,18 +95,25 @@ describe("INTERPRETER-14 — Host variant has no lab/debug wording", () => {
 // D) Chat-first workspace
 // ---------------------------------------------------------------------------
 describe("INTERPRETER-14 — Host chat-first workspace", () => {
-  it("renders a persistent Draft Preview side panel for host users", () => {
-    expect(src).toContain("Draft Preview");
+  it("renders a persistent review side panel for host users", () => {
+    expect(src).toContain("Review");
+    expect(src).toContain("Check the cover and key fields");
     expect(src).toContain("lg:grid-cols-[minmax(0,1fr)_380px]");
     expect(src).toContain("lg:sticky lg:top-6");
   });
 
   it("keeps the chat transcript near the composer instead of below the page", () => {
-    const conversationIdx = src.indexOf("Conversation");
+    const conversationIdx = src.indexOf("Chat");
     const textareaIdx = src.indexOf("<textarea");
     expect(conversationIdx).toBeGreaterThan(-1);
     expect(textareaIdx).toBeGreaterThan(-1);
     expect(conversationIdx).toBeLessThan(textareaIdx);
+  });
+
+  it("demotes duplicate details and source checks in host flow", () => {
+    expect(src).toContain("Sources checked");
+    expect(src).toContain("Key fields");
+    expect(src).toContain("!isHostVariant && statusCode === 200 && responseGuidance");
   });
 
   it("opens draft and preview links in another tab", () => {
