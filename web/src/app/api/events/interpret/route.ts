@@ -924,6 +924,12 @@ function hasNonMapsUrl(input: string): boolean {
   return urls.some((url) => !GOOGLE_MAPS_URL_SINGLE_REGEX.test(url));
 }
 
+function isExplicitEventWebSearchRequest(input: string): boolean {
+  return /\b(search|look up|look this up|verify|confirm|find online|check online|google|website|facebook|instagram|eventbrite)\b/i.test(
+    input
+  );
+}
+
 function shouldAttemptEventWebSearch(input: {
   mode: string;
   message: string;
@@ -939,7 +945,7 @@ function shouldAttemptEventWebSearch(input: {
   ].join("\n");
 
   if (hasNonMapsUrl(combined)) return true;
-  if (/\b(search|look up|verify|confirm|find online|website|facebook|instagram|eventbrite)\b/i.test(combined)) {
+  if (isExplicitEventWebSearchRequest(combined)) {
     return true;
   }
   return false;
@@ -950,6 +956,8 @@ function buildWebSearchVerificationPrompt(input: {
   conversationHistory: Array<{ role: "user" | "assistant"; content: string }>;
   extractedImageText?: string;
   googleMapsHint: GoogleMapsHint | null;
+  lockedDraft?: Record<string, unknown> | null;
+  currentEvent?: Record<string, unknown> | null;
   currentDate: string;
 }) {
   return JSON.stringify(
@@ -964,8 +972,11 @@ function buildWebSearchVerificationPrompt(input: {
         .slice(-4),
       extracted_image_text: input.extractedImageText ?? null,
       google_maps_hint: input.googleMapsHint,
+      locked_draft: input.lockedDraft ?? null,
+      current_event: input.currentEvent ?? null,
       instructions: [
         "Use web search only when it can verify event facts for a public event listing.",
+        "If source_message is a short follow-up like 'can you search?', use locked_draft, current_event, recent_user_context, extracted_image_text, and google_maps_hint to build the search query.",
         "Look for official venue, organizer, ticketing, social, or event-calendar sources.",
         "Set status to searched only when at least one source appears to describe the exact same event or exact same recurring event series.",
         "If search finds only a similar venue, similar jam, different city, different date, or unrelated event, set status to no_reliable_sources, use an empty sources array, and summarize that no exact public match was found.",
@@ -1047,8 +1058,11 @@ async function verifyEventDetailsWithWebSearch(input: {
   conversationHistory: Array<{ role: "user" | "assistant"; content: string }>;
   extractedImageText?: string;
   googleMapsHint: GoogleMapsHint | null;
+  lockedDraft?: Record<string, unknown> | null;
+  currentEvent?: Record<string, unknown> | null;
   currentDate: string;
   traceId: string | null;
+  returnNoReliableResult: boolean;
 }): Promise<WebSearchVerificationResult | null> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), WEB_SEARCH_TIMEOUT_MS);
@@ -1146,8 +1160,21 @@ async function verifyEventDetailsWithWebSearch(input: {
     }
 
     const result = parseWebSearchVerification(parsed, fallbackSources);
-    if (!result || result.status !== "searched" || result.sources.length === 0) {
+    if (!result) {
       return null;
+    }
+    if (result.status === "no_reliable_sources") {
+      return input.returnNoReliableResult ? { ...result, sources: [] } : null;
+    }
+    if (result.sources.length === 0) {
+      return input.returnNoReliableResult
+        ? {
+            status: "no_reliable_sources",
+            summary: result.summary || "Search ran but did not find a reliable exact public source.",
+            facts: [],
+            sources: [],
+          }
+        : null;
     }
     if (isNonExactEventSearchResult(result)) {
       console.info("[events/interpret] web search verification ignored non-exact event result", {
@@ -1155,7 +1182,7 @@ async function verifyEventDetailsWithWebSearch(input: {
         sourceCount: result.sources.length,
         summary: redactEmails(truncate(result.summary, 200)),
       });
-      return null;
+      return input.returnNoReliableResult ? { ...result, status: "no_reliable_sources", facts: [], sources: [] } : null;
     }
     return result;
   } catch (error) {
@@ -1256,8 +1283,9 @@ function buildSystemPrompt() {
     "- If you need verification, ask one specific human question and explain what you already inferred.",
     "- Do not claim you searched the web or verified online unless an explicit tool result or source text is present in the prompt.",
     "- When web_search_verification is present, use it as supporting evidence. You may say you verified online only when status is searched, sources are present, and those sources match the same event or recurring event series.",
+    "- If web_search_verification status is no_reliable_sources and the latest user asked you to search, say briefly that search was attempted but did not find a reliable exact source. Do not ask again for a source link or flyer if the user already said they do not know; ask only for the specific missing publish-critical fact.",
     "- If web_search_verification conflicts with the user's flyer/post, preserve the user's supplied details and ask one targeted question only if the conflict would make publishing risky.",
-    "- If search did not find an exact same-event match, do not mention online verification in human_summary and do not use similar events as facts.",
+    "- If search did not find an exact same-event match, do not use similar events as facts.",
     "- Do not append conversational tails like 'anything else'.",
     "- RSVP remains default platform behavior; do not disable it.",
     "- Timeslots are optional. Encourage for open_mic, jam_session, workshop when relevant.",
@@ -1341,7 +1369,7 @@ function buildUserPrompt(input: {
         ? {
             web_search_verification: input.webSearchVerification,
             web_search_note:
-              "Online search was performed by a separate verifier. Use sourced facts to reduce unnecessary questions. Do not claim online verification unless this object has status searched and at least one source.",
+              "Online search was performed by a separate verifier. Use sourced facts to reduce unnecessary questions. If status is no_reliable_sources, treat it as an attempted search with no exact public source found.",
           }
         : {}),
       required_output_shape: {
@@ -1746,6 +1774,7 @@ export async function POST(request: Request) {
   });
 
   let webSearchVerification: WebSearchVerificationResult | null = null;
+  const explicitWebSearchRequest = isExplicitEventWebSearchRequest(normalizedMessage);
   if (
     shouldAttemptEventWebSearch({
       mode,
@@ -1768,8 +1797,11 @@ export async function POST(request: Request) {
       conversationHistory,
       extractedImageText,
       googleMapsHint,
+      lockedDraft,
+      currentEvent,
       currentDate,
       traceId,
+      returnNoReliableResult: explicitWebSearchRequest,
     });
 
     if (webSearchVerification) {

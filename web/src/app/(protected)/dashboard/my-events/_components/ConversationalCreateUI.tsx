@@ -30,6 +30,7 @@ import {
 import type { NextAction } from "@/lib/events/interpretEventContract";
 import { normalizeSignupMode } from "@/lib/events/signupModeContract";
 import { humanizeRecurrence } from "@/lib/recurrenceHumanizer";
+import { CropModal } from "@/components/gallery/CropModal";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -1015,6 +1016,8 @@ export function ConversationalCreateUI({
   // ---- image staging ----
   const [stagedImages, setStagedImages] = useState<StagedImage[]>([]);
   const [imageError, setImageError] = useState<string | null>(null);
+  const [cropTarget, setCropTarget] = useState<File | null>(null);
+  const [cropQueue, setCropQueue] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // P1 fix: ref-based count prevents concurrent stageFiles() from exceeding max
@@ -1056,6 +1059,12 @@ export function ConversationalCreateUI({
 
   // ---- conversation history ----
   const [conversationHistory, setConversationHistory] = useState<ConversationEntry[]>([]);
+  const chatEndRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!isHostVariant) return;
+    chatEndRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
+  }, [conversationHistory, isSubmitting, isHostVariant]);
 
   // ---- Phase 4A: cover candidate state ----
   const [coverCandidateId, setCoverCandidateId] = useState<string | null>(null);
@@ -1300,74 +1309,115 @@ export function ConversationalCreateUI({
 
   // ---- image staging logic ----
 
+  const processReviewedImage = useCallback(async (file: File) => {
+    setImageError(null);
+
+    if (stagedCountRef.current >= IMAGE_INPUT_LIMITS.maxCount) {
+      setImageError(`Max ${IMAGE_INPUT_LIMITS.maxCount} images allowed`);
+      return;
+    }
+
+    if (!ACCEPTED_MIMES.includes(file.type)) {
+      setImageError(`Unsupported type: ${file.type}. Use JPEG, PNG, WebP, or GIF.`);
+      return;
+    }
+
+    if (file.size > IMAGE_INPUT_LIMITS.maxIntakeBytes) {
+      setImageError(
+        `File too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Max ${IMAGE_INPUT_LIMITS.maxIntakeBytes / 1024 / 1024}MB.`
+      );
+      return;
+    }
+
+    try {
+      const { base64, mime_type } = await resizeImageToBase64(file);
+
+      if (stagedCountRef.current >= IMAGE_INPUT_LIMITS.maxCount) {
+        setImageError(`Max ${IMAGE_INPUT_LIMITS.maxCount} images allowed`);
+        return;
+      }
+
+      const decodedBytes = Math.ceil(base64.length * 3 / 4);
+      if (decodedBytes > IMAGE_INPUT_LIMITS.maxDecodedBytes) {
+        setImageError("Resized image still exceeds 1MB — try a smaller image.");
+        return;
+      }
+
+      const previewUrl = URL.createObjectURL(file);
+      objectUrlsRef.current.add(previewUrl);
+
+      const staged: StagedImage = {
+        id: crypto.randomUUID(),
+        file,
+        previewUrl,
+        base64,
+        mime_type,
+      };
+
+      stagedCountRef.current += 1;
+      setStagedImages((prev) => [...prev, staged]);
+    } catch {
+      setImageError("Failed to process image.");
+    }
+  }, []);
+
+  const continueCropQueue = useCallback(() => {
+    setCropQueue((prev) => {
+      const [next, ...rest] = prev;
+      setCropTarget(next ?? null);
+      return rest;
+    });
+  }, []);
+
+  const stageReviewedAndContinue = useCallback(
+    async (file: File) => {
+      await processReviewedImage(file);
+      continueCropQueue();
+    },
+    [continueCropQueue, processReviewedImage]
+  );
+
   const stageFiles = useCallback(
-    async (files: File[]) => {
+    (files: File[]) => {
       setImageError(null);
 
-      // Use ref for accurate count even during concurrent calls
-      const remaining = IMAGE_INPUT_LIMITS.maxCount - stagedCountRef.current;
+      const queuedCount = (cropTarget ? 1 : 0) + cropQueue.length;
+      const remaining = IMAGE_INPUT_LIMITS.maxCount - stagedCountRef.current - queuedCount;
       if (remaining <= 0) {
         setImageError(`Max ${IMAGE_INPUT_LIMITS.maxCount} images allowed`);
         return;
       }
 
-      const toProcess = files.slice(0, remaining);
-
-      for (const file of toProcess) {
-        // Re-check on each iteration since previous iterations may have added images
-        if (stagedCountRef.current >= IMAGE_INPUT_LIMITS.maxCount) {
-          setImageError(`Max ${IMAGE_INPUT_LIMITS.maxCount} images allowed`);
-          break;
-        }
-
-        if (!ACCEPTED_MIMES.includes(file.type)) {
-          setImageError(`Unsupported type: ${file.type}. Use JPEG, PNG, WebP, or GIF.`);
-          continue;
-        }
-
-        if (file.size > IMAGE_INPUT_LIMITS.maxIntakeBytes) {
-          setImageError(
-            `File too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Max ${IMAGE_INPUT_LIMITS.maxIntakeBytes / 1024 / 1024}MB.`
-          );
-          continue;
-        }
-
-        try {
-          const { base64, mime_type } = await resizeImageToBase64(file);
-
-          // Post-await re-check: a concurrent stageFiles() may have filled slots during resize
-          if (stagedCountRef.current >= IMAGE_INPUT_LIMITS.maxCount) {
-            setImageError(`Max ${IMAGE_INPUT_LIMITS.maxCount} images allowed`);
-            break;
+      const accepted = files
+        .filter((file) => {
+          if (!ACCEPTED_MIMES.includes(file.type)) {
+            setImageError(`Unsupported type: ${file.type}. Use JPEG, PNG, WebP, or GIF.`);
+            return false;
           }
-
-          // Check decoded size after resize
-          const decodedBytes = Math.ceil(base64.length * 3 / 4);
-          if (decodedBytes > IMAGE_INPUT_LIMITS.maxDecodedBytes) {
-            setImageError("Resized image still exceeds 1MB — try a smaller image.");
-            continue;
+          if (file.size > IMAGE_INPUT_LIMITS.maxIntakeBytes) {
+            setImageError(
+              `File too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Max ${IMAGE_INPUT_LIMITS.maxIntakeBytes / 1024 / 1024}MB.`
+            );
+            return false;
           }
+          return true;
+        })
+        .slice(0, remaining);
 
-          const previewUrl = URL.createObjectURL(file);
-          objectUrlsRef.current.add(previewUrl);
+      if (accepted.length === 0) return;
+      if (accepted.length < files.length) {
+        setImageError(`Only ${remaining} more image${remaining === 1 ? "" : "s"} can be added.`);
+      }
 
-          const staged: StagedImage = {
-            id: crypto.randomUUID(),
-            file,
-            previewUrl,
-            base64,
-            mime_type,
-          };
-
-          // Eagerly increment ref so concurrent calls see it immediately
-          stagedCountRef.current += 1;
-          setStagedImages((prev) => [...prev, staged]);
-        } catch {
-          setImageError("Failed to process image.");
-        }
+      if (!cropTarget) {
+        const [first, ...rest] = accepted;
+        setCropTarget(first ?? null);
+        if (rest.length > 0) setCropQueue((prev) => [...prev, ...rest]);
+      } else {
+        setCropQueue((prev) => [...prev, ...accepted]);
       }
     },
-    [] // No deps needed — uses refs for mutable state
+    [cropQueue.length, cropTarget]
   );
 
   const removeImage = useCallback((id: string) => {
@@ -1515,6 +1565,8 @@ export function ConversationalCreateUI({
               .map((source) => source.domain || source.title || "source")
               .join(", ")}`
           );
+        } else if (webSearch?.status === "no_reliable_sources") {
+          assistantParts.push(`Searched online: ${webSearch.summary}`);
         }
         if (
           body.next_action === "ask_clarification" &&
@@ -1979,6 +2031,8 @@ export function ConversationalCreateUI({
     setConversationHistory([]);
     setStatusCode(null);
     setResponseBody(null);
+    setCropTarget(null);
+    setCropQueue([]);
     setStagedImages((prev) => {
       prev.forEach((img) => {
         URL.revokeObjectURL(img.previewUrl);
@@ -2118,6 +2172,7 @@ export function ConversationalCreateUI({
                     </div>
                   ))
                 )}
+                <div ref={chatEndRef} aria-hidden="true" />
               </div>
             </div>
           )}
@@ -2171,6 +2226,38 @@ export function ConversationalCreateUI({
               />
             </label>
           )}
+
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={submit}
+              disabled={!canSubmitInterpret}
+              className={
+                hostSubmitIsSecondary
+                  ? "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-[var(--color-border-input)] px-4 py-2 font-semibold text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)] disabled:cursor-not-allowed disabled:opacity-60"
+                  : "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[var(--color-accent-primary)] px-4 py-2 font-semibold text-[var(--color-text-on-accent)] transition-colors hover:bg-[var(--color-accent-hover)] disabled:cursor-not-allowed disabled:opacity-60"
+              }
+            >
+              {isSubmitting ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              ) : runActionLabel === "Send Answer" ? (
+                <Send className="h-4 w-4" aria-hidden="true" />
+              ) : (
+                <Sparkles className="h-4 w-4" aria-hidden="true" />
+              )}
+              {isSubmitting ? "Sending..." : runActionLabel}
+            </button>
+
+            {conversationHistory.length > 0 && (
+              <button
+                onClick={clearHistory}
+                type="button"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-[var(--color-border-input)] px-4 py-2 text-sm text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
+              >
+                <History className="h-4 w-4" aria-hidden="true" />
+                Clear History ({conversationHistory.length / 2} turns)
+              </button>
+            )}
+          </div>
 
           {/* ---- Image staging area ---- */}
           <div className="space-y-2">
@@ -2287,25 +2374,6 @@ export function ConversationalCreateUI({
 
           {/* ---- Action buttons ---- */}
           <div className="flex gap-3 flex-wrap">
-            <button
-              onClick={submit}
-              disabled={!canSubmitInterpret}
-              className={
-                hostSubmitIsSecondary
-                  ? "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-[var(--color-border-input)] px-4 py-2 font-semibold text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)] disabled:cursor-not-allowed disabled:opacity-60"
-                  : "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[var(--color-accent-primary)] px-4 py-2 font-semibold text-[var(--color-text-on-accent)] transition-colors hover:bg-[var(--color-accent-hover)] disabled:cursor-not-allowed disabled:opacity-60"
-              }
-            >
-              {isSubmitting ? (
-                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-              ) : runActionLabel === "Send Answer" ? (
-                <Send className="h-4 w-4" aria-hidden="true" />
-              ) : (
-                <Sparkles className="h-4 w-4" aria-hidden="true" />
-              )}
-              {isSubmitting ? "Sending..." : runActionLabel}
-            </button>
-
             {/* Phase 4A: Apply as Cover — edit mode only */}
             {canShowApplyCoverAction && (
               <button
@@ -2373,16 +2441,6 @@ export function ConversationalCreateUI({
               </button>
             )}
 
-            {conversationHistory.length > 0 && (
-              <button
-                onClick={clearHistory}
-                type="button"
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-[var(--color-border-input)] px-4 py-2 text-sm text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
-              >
-                <History className="h-4 w-4" aria-hidden="true" />
-                Clear History ({conversationHistory.length / 2} turns)
-              </button>
-            )}
           </div>
 
           {!isHostVariant && statusCode === 200 && responseGuidance && (
@@ -2630,29 +2688,38 @@ export function ConversationalCreateUI({
                     </button>
                   )}
 
-                  {responseGuidance?.web_search_verification?.status === "searched" &&
-                    responseGuidance.web_search_verification.sources.length > 0 && (
-                      <details className="rounded-lg border border-[var(--color-border-input)] bg-[var(--color-bg-secondary)]/25 p-3">
+                  {responseGuidance?.web_search_verification && (
+                      <details
+                        className={`rounded-lg border p-3 ${
+                          responseGuidance.web_search_verification.status === "searched"
+                            ? "border-emerald-500/20 bg-emerald-500/5"
+                            : "border-amber-500/20 bg-amber-500/5"
+                        }`}
+                      >
                         <summary className="cursor-pointer text-xs font-semibold text-[var(--color-text-secondary)]">
-                          Sources checked ({responseGuidance.web_search_verification.sources.length})
+                          {responseGuidance.web_search_verification.status === "searched"
+                            ? `Sources checked (${responseGuidance.web_search_verification.sources.length})`
+                            : "Search tried"}
                         </summary>
                         <p className="mt-2 text-xs text-[var(--color-text-secondary)]">
                           {responseGuidance.web_search_verification.summary}
                         </p>
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          {responseGuidance.web_search_verification.sources.slice(0, 3).map((source) => (
-                            <a
-                              key={source.url}
-                              href={source.url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-flex max-w-full items-center gap-1 rounded-md border border-emerald-500/20 px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
-                            >
-                              <ExternalLink className="h-3 w-3 shrink-0" aria-hidden="true" />
-                              <span className="truncate">{source.domain || source.title || "Source"}</span>
-                            </a>
-                          ))}
-                        </div>
+                        {responseGuidance.web_search_verification.sources.length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {responseGuidance.web_search_verification.sources.slice(0, 3).map((source) => (
+                              <a
+                                key={source.url}
+                                href={source.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex max-w-full items-center gap-1 rounded-md border border-emerald-500/20 px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                              >
+                                <ExternalLink className="h-3 w-3 shrink-0" aria-hidden="true" />
+                                <span className="truncate">{source.domain || source.title || "Source"}</span>
+                              </a>
+                            ))}
+                          </div>
+                        )}
                       </details>
                     )}
 
@@ -2841,30 +2908,46 @@ export function ConversationalCreateUI({
               </p>
             )}
 
-            {responseGuidance.web_search_verification?.status === "searched" &&
-              responseGuidance.web_search_verification.sources.length > 0 && (
-                <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4">
+            {responseGuidance.web_search_verification && (
+                <div
+                  className={`rounded-lg border p-4 ${
+                    responseGuidance.web_search_verification.status === "searched"
+                      ? "border-emerald-500/20 bg-emerald-500/5"
+                      : "border-amber-500/20 bg-amber-500/5"
+                  }`}
+                >
                   <div className="flex items-center gap-2 text-sm font-semibold text-[var(--color-text-primary)]">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-500" aria-hidden="true" />
-                    Checked online
+                    <CheckCircle2
+                      className={`h-4 w-4 ${
+                        responseGuidance.web_search_verification.status === "searched"
+                          ? "text-emerald-500"
+                          : "text-amber-500"
+                      }`}
+                      aria-hidden="true"
+                    />
+                    {responseGuidance.web_search_verification.status === "searched"
+                      ? "Checked online"
+                      : "Search tried"}
                   </div>
                   <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
                     {responseGuidance.web_search_verification.summary}
                   </p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {responseGuidance.web_search_verification.sources.slice(0, 4).map((source) => (
-                      <a
-                        key={source.url}
-                        href={source.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex max-w-full items-center gap-1.5 rounded-lg border border-[var(--color-border-input)] px-2.5 py-1.5 text-xs font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
-                      >
-                        <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                        <span className="truncate">{source.domain || source.title || "Source"}</span>
-                      </a>
-                    ))}
-                  </div>
+                  {responseGuidance.web_search_verification.sources.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {responseGuidance.web_search_verification.sources.slice(0, 4).map((source) => (
+                        <a
+                          key={source.url}
+                          href={source.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex max-w-full items-center gap-1.5 rounded-lg border border-[var(--color-border-input)] px-2.5 py-1.5 text-xs font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                          <span className="truncate">{source.domain || source.title || "Source"}</span>
+                        </a>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -3022,6 +3105,19 @@ export function ConversationalCreateUI({
           </details>
         )}
       </div>
+      {cropTarget && (
+        <CropModal
+          file={cropTarget}
+          aspectRatio={undefined}
+          onComplete={(croppedFile) => {
+            void stageReviewedAndContinue(croppedFile);
+          }}
+          onCancel={continueCropQueue}
+          onUseOriginal={() => {
+            void stageReviewedAndContinue(cropTarget);
+          }}
+        />
+      )}
     </main>
   );
 }

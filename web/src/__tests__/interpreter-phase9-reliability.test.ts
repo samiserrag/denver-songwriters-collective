@@ -217,7 +217,15 @@ describe("Phase 9B — event-type reliability", () => {
     expect(interpretRouteSource).toContain("webSearchVerification");
     expect(interpretRouteSource).toContain("Use sourced facts to reduce unnecessary questions");
     expect(interpretRouteSource).toContain("Check the draft against source_message, extracted_image_text, web_search_verification");
-    expect(interpretRouteSource).toContain("Do not claim online verification unless this object has status searched");
+    expect(interpretRouteSource).toContain("If status is no_reliable_sources, treat it as an attempted search");
+  });
+
+  it("passes attempted no-result searches through when the user explicitly asks", () => {
+    expect(interpretRouteSource).toContain("isExplicitEventWebSearchRequest");
+    expect(interpretRouteSource).toContain("returnNoReliableResult");
+    expect(interpretRouteSource).toContain("locked_draft: input.lockedDraft ?? null");
+    expect(interpretRouteSource).toContain("current_event: input.currentEvent ?? null");
+    expect(interpretRouteSource).toContain("search was attempted but did not find a reliable exact source");
   });
 
   it("does not trigger web search solely from relative-date wording", () => {

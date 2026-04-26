@@ -122,6 +122,28 @@ describe("INTERPRETER-14 — Host chat-first workspace", () => {
     expect(src).toContain("View live page");
     expect(src).toContain("`/events/${createdSummary.slug || createdSummary.eventId}`");
   });
+
+  it("keeps chat send controls above image attachment controls", () => {
+    const textareaIdx = src.indexOf("<textarea");
+    const sendButtonIdx = src.indexOf("runActionLabel", textareaIdx);
+    const imageAreaIdx = src.indexOf("Image staging area");
+    expect(sendButtonIdx).toBeGreaterThan(textareaIdx);
+    expect(sendButtonIdx).toBeLessThan(imageAreaIdx);
+  });
+
+  it("auto-scrolls the host chat and surfaces attempted searches", () => {
+    expect(src).toContain("chatEndRef");
+    expect(src).toContain("scrollIntoView");
+    expect(src).toContain("Search tried");
+    expect(src).toContain("Searched online:");
+  });
+
+  it("uses the shared crop modal with save-original primary action for uploads", () => {
+    expect(src).toContain('import { CropModal } from "@/components/gallery/CropModal"');
+    expect(src).toContain("<CropModal");
+    expect(src).toContain("onUseOriginal");
+    expect(src).toContain("stageReviewedAndContinue(cropTarget)");
+  });
 });
 
 // ---------------------------------------------------------------------------
