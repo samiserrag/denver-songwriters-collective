@@ -48,6 +48,8 @@ describe("my-events API venue auto-promotion", () => {
   it("reuses matching conversational events instead of creating duplicate drafts", () => {
     expect(routeSource).toContain("findReusableConversationalEvent");
     expect(routeSource).toContain("traceId && eventDates.length === 1");
+    expect(routeSource).toContain("isLikelySameDuplicateTitle");
+    expect(routeSource).not.toContain('.eq("title", input.title)');
     expect(routeSource).toContain("reused_existing: true");
     expect(routeSource).toContain("Reusing matching conversational event instead of creating duplicate");
   });

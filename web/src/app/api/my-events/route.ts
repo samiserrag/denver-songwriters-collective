@@ -313,7 +313,28 @@ function buildEventInsert(params: EventInsertParams) {
 }
 
 function normalizeDuplicateMatchValue(value: unknown): string {
-  return typeof value === "string" ? value.trim().toLowerCase().replace(/\s+/g, " ") : "";
+  return typeof value === "string"
+    ? value
+        .trim()
+        .toLowerCase()
+        .replace(/&/g, " and ")
+        .replace(/[^a-z0-9]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+    : "";
+}
+
+function isLikelySameDuplicateTitle(a: unknown, b: unknown): boolean {
+  const left = normalizeDuplicateMatchValue(a);
+  const right = normalizeDuplicateMatchValue(b);
+  if (!left || !right) return false;
+  if (left === right || left.includes(right) || right.includes(left)) return true;
+
+  const leftTokens = new Set(left.split(" ").filter((token) => token.length > 2));
+  const rightTokens = right.split(" ").filter((token) => token.length > 2);
+  if (rightTokens.length === 0) return false;
+  const shared = rightTokens.filter((token) => leftTokens.has(token)).length;
+  return shared >= Math.min(3, rightTokens.length);
 }
 
 async function findReusableConversationalEvent(input: {
@@ -330,7 +351,6 @@ async function findReusableConversationalEvent(input: {
     .from("events")
     .select("id, slug, title, event_date, start_time, venue_id, custom_location_name, online_url, is_published, status, cover_image_url, updated_at")
     .eq("host_id", input.userId)
-    .eq("title", input.title)
     .eq("event_date", input.eventDate)
     .eq("start_time", input.startTime)
     .in("status", ["active", "needs_verification"])
@@ -346,6 +366,9 @@ async function findReusableConversationalEvent(input: {
   const expectedOnlineUrl = normalizeDuplicateMatchValue(input.onlineUrl);
 
   return (data ?? []).find((event) => {
+    if (!isLikelySameDuplicateTitle(event.title, input.title)) {
+      return false;
+    }
     if (input.finalVenueId) {
       return event.venue_id === input.finalVenueId;
     }
