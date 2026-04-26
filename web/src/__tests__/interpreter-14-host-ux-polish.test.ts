@@ -118,7 +118,8 @@ describe("INTERPRETER-14 — Host chat-first workspace", () => {
 
   it("opens draft and preview links in another tab", () => {
     expect(src).toContain('target="_blank"');
-    expect(src).toContain("Preview event");
+    expect(src).toContain("Preview draft");
+    expect(src).toContain("View live page");
     expect(src).toContain("`/events/${createdSummary.slug || createdSummary.eventId}`");
   });
 });
