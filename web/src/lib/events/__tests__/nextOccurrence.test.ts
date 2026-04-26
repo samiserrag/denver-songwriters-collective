@@ -165,6 +165,19 @@ describe("nextOccurrence", () => {
         expect(result.date).toBe("2025-01-09");
         expect(result.isConfident).toBe(true);
       });
+
+      it("returns the event date for one-time events with descriptive day_of_week", () => {
+        mockDate("2026-04-25");
+        const event = {
+          event_date: "2027-04-19",
+          day_of_week: "Monday",
+          recurrence_rule: null,
+        };
+        const result = computeNextOccurrence(event);
+
+        expect(result.date).toBe("2027-04-19");
+        expect(result.isConfident).toBe(true);
+      });
     });
 
     describe("nth weekday of month (RRULE)", () => {

@@ -40,6 +40,17 @@ describe("Phase 4.42c: Recurrence Unification", () => {
       expect(rec.frequency).toBe("one-time");
     });
 
+    it("keeps dated one-time events one-time when day_of_week is also stored", () => {
+      const rec = interpretRecurrence({
+        event_date: "2027-04-19",
+        day_of_week: "Monday",
+        recurrence_rule: null,
+      });
+      expect(rec.isRecurring).toBe(false);
+      expect(rec.frequency).toBe("one-time");
+      expect(rec.dayName).toBe("Monday");
+    });
+
     it("identifies recurring event WITH event_date as series start", () => {
       // This is the exact bug case we're fixing
       const rec = interpretRecurrence({

@@ -278,7 +278,23 @@ export function interpretRecurrence(input: RecurrenceInput): NormalizedRecurrenc
     return interpretLegacyRule(recurrence_rule, input, baseResult);
   }
 
-  // Case 3: day_of_week only (no recurrence_rule) - treat as weekly
+  // Case 3: event_date with no recurrence rule is a one-time event.
+  // `day_of_week` may be stored as descriptive metadata for the date, but it
+  // must not turn a dated one-time happening into a weekly series.
+  if (event_date) {
+    const dayInfo = getDayOfWeekFromDate(event_date);
+    return {
+      ...baseResult,
+      isRecurring: false,
+      frequency: "one-time",
+      dayOfWeekIndex: dayInfo?.index ?? null,
+      dayAbbrev: dayInfo?.abbrev ?? null,
+      dayName: dayInfo?.name ?? null,
+      startDate: event_date,
+    };
+  }
+
+  // Case 4: day_of_week only (no recurrence_rule, no event_date) - treat as weekly
   if (day_of_week) {
     const dayLower = day_of_week.toLowerCase().trim();
     const dayAbbrev = DAY_NAME_TO_ABBREV[dayLower];
@@ -294,20 +310,6 @@ export function interpretRecurrence(input: RecurrenceInput): NormalizedRecurrenc
         startDate: event_date ?? null,
       };
     }
-  }
-
-  // Case 4: event_date only (no recurrence) - one-time event
-  if (event_date) {
-    const dayInfo = getDayOfWeekFromDate(event_date);
-    return {
-      ...baseResult,
-      isRecurring: false,
-      frequency: "one-time",
-      dayOfWeekIndex: dayInfo?.index ?? null,
-      dayAbbrev: dayInfo?.abbrev ?? null,
-      dayName: dayInfo?.name ?? null,
-      startDate: event_date,
-    };
   }
 
   // Case 5: Nothing specified - unknown
