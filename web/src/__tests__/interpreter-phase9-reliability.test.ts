@@ -134,6 +134,8 @@ describe("Phase 9B — event-type reliability", () => {
     expect(postprocessSource).toContain("irish");
     expect(postprocessSource).toContain("blues");
     expect(postprocessSource).toContain("bluegrass");
+    expect(postprocessSource).toContain("\\bpoem(?:s)?\\b");
+    expect(postprocessSource).toContain("\\bslam\\b");
     expect(postprocessSource).toContain("[...new Set([...hints, ...existingEventTypes])]");
   });
 
