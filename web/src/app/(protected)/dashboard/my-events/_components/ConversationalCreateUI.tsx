@@ -1142,8 +1142,8 @@ export function ConversationalCreateUI({
     ? {
         label: "Draft saved",
         tone: "success" as const,
-        title: "Open the draft to publish, or keep editing here.",
-        detail: "The event is private. Preview it in a new tab, then publish from the draft when it looks right.",
+        title: "Preview the draft, publish from the editor, or keep chatting here.",
+        detail: "The event is private until you publish it. The editor and preview links open the same saved draft.",
       }
     : canShowCreateAction && !createdEventId
       ? {
@@ -2467,7 +2467,7 @@ export function ConversationalCreateUI({
                   target="_blank"
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--color-border-input)] text-xs font-semibold text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
                 >
-                  Preview event
+                  Preview draft
                 </Link>
                 <Link
                   href="/dashboard/my-events"
@@ -2628,14 +2628,14 @@ export function ConversationalCreateUI({
                           className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"
                         >
                           <FileText className="h-3.5 w-3.5" aria-hidden="true" />
-                          Open draft
+                          Edit / publish
                         </Link>
                         <Link
                           href={`/events/${createdSummary.slug || createdSummary.eventId}`}
                           target="_blank"
                           className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-border-input)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
                         >
-                          Preview event
+                          Preview draft
                         </Link>
                       </div>
                     </div>

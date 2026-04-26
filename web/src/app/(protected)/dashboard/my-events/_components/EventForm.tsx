@@ -7,6 +7,7 @@ import {
   CalendarDays,
   CheckCircle2,
   Eye,
+  ExternalLink,
   Image as ImageIcon,
   ListChecks,
   MapPin,
@@ -294,6 +295,8 @@ interface EventFormProps {
     host_notes: string | null;
     cover_image_url: string | null;
     is_published?: boolean;
+    slug?: string | null;
+    status?: string | null;
     // Phase 3 fields
     timezone?: string | null;
     location_mode?: string | null;
@@ -1125,6 +1128,10 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     : formData.is_published
       ? "Published"
       : "Draft";
+  const eventPublicPath = mode === "edit" && event?.id
+    ? `/events/${event.slug || event.id}`
+    : null;
+  const eventPublicLinkLabel = formData.is_published ? "View live page" : "Preview draft";
   const saveButtonLabel = loading
     ? "Saving..."
     : occurrenceMode
@@ -1168,6 +1175,17 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
           </div>
 
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            {eventPublicPath && (
+              <a
+                href={eventPublicPath}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-[var(--color-border-default)] px-4 py-2.5 text-sm font-semibold text-[var(--color-text-primary)] transition-colors hover:border-[var(--color-border-accent)] hover:bg-[var(--color-bg-secondary)]"
+              >
+                <ExternalLink className="h-4 w-4" aria-hidden="true" />
+                {eventPublicLinkLabel}
+              </a>
+            )}
             <button
               type="submit"
               disabled={loading}
