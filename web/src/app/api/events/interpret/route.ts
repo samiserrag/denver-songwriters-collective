@@ -1207,7 +1207,9 @@ export async function POST(request: Request) {
   let extractionMetadata: ExtractionMetadata | undefined;
   let extractedImageText: string | undefined;
 
-  if (validatedImages.length > 0) {
+  const useSinglePassVision = validatedImages.length > 0 && /^gpt-5\.5\b/i.test(model);
+
+  if (validatedImages.length > 0 && !useSinglePassVision) {
     console.info("[events/interpret] starting Phase A vision extraction", {
       userId: sessionUser.id,
       traceId,
@@ -1232,6 +1234,13 @@ export async function POST(request: Request) {
         warnings: extraction.metadata.warnings,
       });
     }
+  } else if (useSinglePassVision) {
+    extractionMetadata = {
+      images_processed: validatedImages.length,
+      confidence: 0,
+      extracted_fields: [],
+      warnings: ["Images were interpreted in the main GPT-5.5 pass to avoid a two-call timeout."],
+    };
   }
 
   const geocodingApiKey =
@@ -1270,7 +1279,32 @@ export async function POST(request: Request) {
   });
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 25_000);
+  const timeout = setTimeout(() => controller.abort(), useSinglePassVision ? 45_000 : 25_000);
+  const llmInput =
+    validatedImages.length > 0
+      ? [
+          {
+            role: "user",
+            content: [
+              {
+                type: "input_text",
+                text: [
+                  userPrompt,
+                  "",
+                  "Attached image instructions:",
+                  "- Read the attached flyer/screenshot directly.",
+                  "- Use visible image text as source evidence for title, date, time, venue, address, signup, cost, and description.",
+                  "- Treat the first attached image as the intended cover candidate unless the user says otherwise.",
+                ].join("\n"),
+              },
+              ...validatedImages.map((img) => ({
+                type: "input_image",
+                image_url: `data:${img.mime_type};base64,${img.data}`,
+              })),
+            ],
+          },
+        ]
+      : userPrompt;
 
   let responsePayload: Record<string, unknown>;
   try {
@@ -1284,7 +1318,8 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         model,
         instructions: buildSystemPrompt(),
-        input: userPrompt,
+        input: llmInput,
+        max_output_tokens: 2500,
         text: {
           format: {
             type: "json_schema",

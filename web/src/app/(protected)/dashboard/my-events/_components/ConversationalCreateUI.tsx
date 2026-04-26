@@ -1335,7 +1335,22 @@ export function ConversationalCreateUI({
       setResponseBody(body);
 
       // Append to conversation history for multi-turn
-      if (res.ok && body) {
+      if (!res.ok) {
+        const errorText =
+          body && typeof body === "object" && "error" in body && typeof body.error === "string"
+            ? body.error
+            : "The event agent could not finish that request.";
+        setConversationHistory((prev) => [
+          ...prev,
+          { role: "user", content: message },
+          {
+            role: "assistant",
+            content:
+              `I hit a service timeout while reading that. Please try Generate Draft again with the same image and notes. ` +
+              `If it still stalls, paste the flyer text too and I will keep going from there. (${errorText})`,
+          },
+        ]);
+      } else if (body) {
         const assistantParts: string[] = [];
         if (typeof body.human_summary === "string" && body.human_summary.trim().length > 0) {
           assistantParts.push(body.human_summary.trim());
@@ -1372,10 +1387,21 @@ export function ConversationalCreateUI({
         }
       }
     } catch (error) {
+      const errorText = error instanceof Error ? error.message : "Request failed";
       setStatusCode(0);
       setResponseBody({
-        error: error instanceof Error ? error.message : "Request failed",
+        error: errorText,
       });
+      setConversationHistory((prev) => [
+        ...prev,
+        { role: "user", content: message },
+        {
+          role: "assistant",
+          content:
+            `I lost the connection before I could finish that draft. Try again once; your staged image is still here. ` +
+            `If it keeps happening, paste the flyer text and I will build the event from that. (${errorText})`,
+        },
+      ]);
     } finally {
       setIsSubmitting(false);
     }
