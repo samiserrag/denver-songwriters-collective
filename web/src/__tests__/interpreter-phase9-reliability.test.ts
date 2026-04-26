@@ -222,10 +222,26 @@ describe("Phase 9B — event-type reliability", () => {
 
   it("passes attempted no-result searches through when the user explicitly asks", () => {
     expect(interpretRouteSource).toContain("isExplicitEventWebSearchRequest");
+    expect(interpretRouteSource).toContain("explicitEventWebSearchRequestFromTurn");
     expect(interpretRouteSource).toContain("returnNoReliableResult");
     expect(interpretRouteSource).toContain("locked_draft: input.lockedDraft ?? null");
     expect(interpretRouteSource).toContain("current_event: input.currentEvent ?? null");
     expect(interpretRouteSource).toContain("search was attempted but did not find a reliable exact source");
+  });
+
+  it("does not silently drop explicit search requests when web search cannot produce sources", () => {
+    expect(interpretRouteSource).toContain("buildNoReliableWebSearchResult");
+    expect(interpretRouteSource).toContain('tool_choice: input.returnNoReliableResult ? "required" : "auto"');
+    expect(interpretRouteSource).toContain("web-search service returned an upstream error");
+    expect(interpretRouteSource).toContain("returned no usable verification text");
+    expect(interpretRouteSource).toContain("web-search verifier returned an unreadable result");
+    expect(interpretRouteSource).toContain("web-search step timed out");
+  });
+
+  it("allows explicit web search during saved-draft editing loops", () => {
+    const searchTriggerStart = interpretRouteSource.indexOf("function shouldAttemptEventWebSearch");
+    const searchTriggerSection = interpretRouteSource.slice(searchTriggerStart, searchTriggerStart + 600);
+    expect(searchTriggerSection).toContain('input.mode !== "create" && input.mode !== "edit_series"');
   });
 
   it("does not trigger web search solely from relative-date wording", () => {

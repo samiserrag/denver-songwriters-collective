@@ -47,7 +47,7 @@ const DEFAULT_INTERPRETER_MODEL = "gpt-5.5";
 const DEFAULT_VISION_EXTRACTION_MODEL = "gpt-4.1-mini";
 const DEFAULT_DRAFT_VERIFIER_MODEL = "gpt-5.5";
 const DEFAULT_WEB_SEARCH_VERIFIER_MODEL = "gpt-5.5";
-const WEB_SEARCH_TIMEOUT_MS = 12_000;
+const WEB_SEARCH_TIMEOUT_MS = 18_000;
 const GOOGLE_GEOCODING_API_URL = "https://maps.googleapis.com/maps/api/geocode/json";
 type SupabaseServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>;
 
@@ -925,9 +925,33 @@ function hasNonMapsUrl(input: string): boolean {
 }
 
 function isExplicitEventWebSearchRequest(input: string): boolean {
-  return /\b(search|look up|look this up|verify|confirm|find online|check online|google|website|facebook|instagram|eventbrite)\b/i.test(
+  return /\b(search|look up|look this up|verify|confirm|research|source|sources|find online|check online|google|website|facebook|instagram|eventbrite)\b/i.test(
     input
   );
+}
+
+function explicitEventWebSearchRequestFromTurn(input: {
+  message: string;
+  conversationHistory: Array<{ role: "user" | "assistant"; content: string }>;
+}): boolean {
+  return isExplicitEventWebSearchRequest(
+    [
+      input.message,
+      ...input.conversationHistory
+        .filter((entry) => entry.role === "user")
+        .map((entry) => entry.content)
+        .slice(-2),
+    ].join("\n")
+  );
+}
+
+function buildNoReliableWebSearchResult(summary: string): WebSearchVerificationResult {
+  return {
+    status: "no_reliable_sources",
+    summary,
+    facts: [],
+    sources: [],
+  };
 }
 
 function shouldAttemptEventWebSearch(input: {
@@ -936,7 +960,7 @@ function shouldAttemptEventWebSearch(input: {
   conversationHistory: Array<{ role: "user" | "assistant"; content: string }>;
   extractedImageText?: string;
 }): boolean {
-  if (input.mode !== "create" || !isEventWebSearchEnabled()) return false;
+  if ((input.mode !== "create" && input.mode !== "edit_series") || !isEventWebSearchEnabled()) return false;
 
   const combined = [
     input.message,
@@ -1092,7 +1116,7 @@ async function verifyEventDetailsWithWebSearch(input: {
             },
           },
         ],
-        tool_choice: "auto",
+        tool_choice: input.returnNoReliableResult ? "required" : "auto",
         include: ["web_search_call.action.sources"],
         max_output_tokens: 1200,
         text: {
@@ -1141,12 +1165,22 @@ async function verifyEventDetailsWithWebSearch(input: {
         status: searchResponse.status,
         data: searchData,
       });
-      return null;
+      return input.returnNoReliableResult
+        ? buildNoReliableWebSearchResult(
+            "Search was requested, but the web-search service returned an upstream error before it could verify this event."
+          )
+        : null;
     }
 
     const searchObj = parseJsonObject(searchData);
     const outputText = searchObj ? extractResponseText(searchObj) : null;
-    if (!outputText) return null;
+    if (!outputText) {
+      return input.returnNoReliableResult
+        ? buildNoReliableWebSearchResult(
+            "Search was requested, but the web-search service returned no usable verification text."
+          )
+        : null;
+    }
 
     let parsed: unknown;
     try {
@@ -1156,12 +1190,20 @@ async function verifyEventDetailsWithWebSearch(input: {
         traceId: input.traceId,
         outputPreview: redactEmails(truncate(outputText, 200)),
       });
-      return null;
+      return input.returnNoReliableResult
+        ? buildNoReliableWebSearchResult(
+            "Search was requested, but the web-search verifier returned an unreadable result."
+          )
+        : null;
     }
 
     const result = parseWebSearchVerification(parsed, fallbackSources);
     if (!result) {
-      return null;
+      return input.returnNoReliableResult
+        ? buildNoReliableWebSearchResult(
+            "Search was requested, but the web-search verifier did not return valid verification details."
+          )
+        : null;
     }
     if (result.status === "no_reliable_sources") {
       return input.returnNoReliableResult ? { ...result, sources: [] } : null;
@@ -1192,7 +1234,13 @@ async function verifyEventDetailsWithWebSearch(input: {
       isTimeout,
       error: error instanceof Error ? error.message : String(error),
     });
-    return null;
+    return input.returnNoReliableResult
+      ? buildNoReliableWebSearchResult(
+          isTimeout
+            ? "Search was requested, but the web-search step timed out before it could verify this event."
+            : "Search was requested, but the web-search step failed before it could verify this event."
+        )
+      : null;
   } finally {
     clearTimeout(timeout);
   }
@@ -1774,8 +1822,18 @@ export async function POST(request: Request) {
   });
 
   let webSearchVerification: WebSearchVerificationResult | null = null;
-  const explicitWebSearchRequest = isExplicitEventWebSearchRequest(normalizedMessage);
+  const explicitWebSearchRequest = explicitEventWebSearchRequestFromTurn({
+    message: normalizedMessage,
+    conversationHistory,
+  });
+  const webSearchEnabled = isEventWebSearchEnabled();
+  if (explicitWebSearchRequest && !webSearchEnabled) {
+    webSearchVerification = buildNoReliableWebSearchResult(
+      "Search was requested, but online search is disabled for this event assistant right now."
+    );
+  }
   if (
+    webSearchEnabled &&
     shouldAttemptEventWebSearch({
       mode,
       message: normalizedMessage,
