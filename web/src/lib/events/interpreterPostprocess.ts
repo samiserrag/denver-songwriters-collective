@@ -316,6 +316,168 @@ export function applyTimeSemantics(
 }
 
 // ---------------------------------------------------------------------------
+// Future-date guard: month/day flyers without a year (Phase 10B)
+// ---------------------------------------------------------------------------
+
+const MONTH_NAME_TO_NUMBER: Record<string, number> = {
+  jan: 1,
+  january: 1,
+  feb: 2,
+  february: 2,
+  mar: 3,
+  march: 3,
+  apr: 4,
+  april: 4,
+  may: 5,
+  jun: 6,
+  june: 6,
+  jul: 7,
+  july: 7,
+  aug: 8,
+  august: 8,
+  sep: 9,
+  sept: 9,
+  september: 9,
+  oct: 10,
+  october: 10,
+  nov: 11,
+  november: 11,
+  dec: 12,
+  december: 12,
+};
+
+const MONTH_DAY_PATTERN =
+  /\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t|tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\.?\s+(\d{1,2})(?:st|nd|rd|th)?(?:,?\s+(\d{4}))?\b/gi;
+
+const FUTURE_DATE_INTENT_PATTERN =
+  /\b(next|upcoming|future|if\s+[^.?!]*\bpast\b|past\s+[^.?!]*\bnext)\b/i;
+
+const PAST_EVENT_INTENT_PATTERN =
+  /\b(yesterday|last\s+(?:night|week|month|year)|already\s+happened|past\s+event|archive|recap)\b/i;
+
+type IsoDateParts = {
+  year: number;
+  month: number;
+  day: number;
+};
+
+type MonthDayMention = {
+  month: number;
+  day: number;
+  year: number | null;
+};
+
+export type FutureDateGuardResult =
+  | { applied: false }
+  | { applied: true; from: string; to: string; reason: "month_day_without_year" | "future_intent" };
+
+function parseIsoDateParts(value: unknown): IsoDateParts | null {
+  if (typeof value !== "string") return null;
+  const match = value.trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return null;
+
+  const year = Number.parseInt(match[1], 10);
+  const month = Number.parseInt(match[2], 10);
+  const day = Number.parseInt(match[3], 10);
+  if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) return null;
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+  return { year, month, day };
+}
+
+function toIsoDate(parts: IsoDateParts): string {
+  return `${parts.year.toString().padStart(4, "0")}-${parts.month
+    .toString()
+    .padStart(2, "0")}-${parts.day.toString().padStart(2, "0")}`;
+}
+
+function compareIsoDate(a: string, b: string): number {
+  if (a === b) return 0;
+  return a < b ? -1 : 1;
+}
+
+function findMatchingMonthDayMention(text: string, month: number, day: number): MonthDayMention | null {
+  MONTH_DAY_PATTERN.lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = MONTH_DAY_PATTERN.exec(text)) !== null) {
+    const normalizedMonth = match[1].toLowerCase().replace(/\.$/, "");
+    const mentionMonth = MONTH_NAME_TO_NUMBER[normalizedMonth];
+    const mentionDay = Number.parseInt(match[2], 10);
+    if (mentionMonth !== month || mentionDay !== day) continue;
+
+    const mentionYear = match[3] ? Number.parseInt(match[3], 10) : null;
+    return {
+      month: mentionMonth,
+      day: mentionDay,
+      year: Number.isInteger(mentionYear) ? mentionYear : null,
+    };
+  }
+  return null;
+}
+
+function nextFutureMonthDayDate(month: number, day: number, todayIso: string): string | null {
+  const today = parseIsoDateParts(todayIso);
+  if (!today) return null;
+
+  for (let year = today.year; year <= today.year + 2; year += 1) {
+    const candidate = toIsoDate({ year, month, day });
+    if (compareIsoDate(candidate, todayIso) > 0) {
+      return candidate;
+    }
+  }
+
+  return null;
+}
+
+export function applyFutureDateGuard(input: {
+  draft: Record<string, unknown>;
+  message: string;
+  history: Array<{ role: "user" | "assistant"; content: string }>;
+  extractedImageText?: string;
+  todayIso: string;
+}): FutureDateGuardResult {
+  const { draft, message, history, extractedImageText, todayIso } = input;
+  const dateValue =
+    typeof draft.start_date === "string" && draft.start_date.trim().length > 0
+      ? draft.start_date
+      : typeof draft.event_date === "string" && draft.event_date.trim().length > 0
+        ? draft.event_date
+        : null;
+  const parsedDate = parseIsoDateParts(dateValue);
+  if (!dateValue || !parsedDate) return { applied: false };
+  if (compareIsoDate(dateValue, todayIso) > 0) return { applied: false };
+
+  const intentText = [
+    message,
+    ...history.filter((entry) => entry.role === "user").map((entry) => entry.content),
+    extractedImageText ?? "",
+  ].join("\n");
+  const matchingMention = findMatchingMonthDayMention(intentText, parsedDate.month, parsedDate.day);
+  if (!matchingMention) return { applied: false };
+
+  const hasFutureIntent = FUTURE_DATE_INTENT_PATTERN.test(intentText);
+  const hasExplicitYear = typeof matchingMention.year === "number";
+  if (hasExplicitYear && !hasFutureIntent) return { applied: false };
+  if (PAST_EVENT_INTENT_PATTERN.test(intentText) && !hasFutureIntent) return { applied: false };
+
+  const nextDate = nextFutureMonthDayDate(parsedDate.month, parsedDate.day, todayIso);
+  if (!nextDate || nextDate === dateValue) return { applied: false };
+
+  if (typeof draft.start_date === "string" && draft.start_date.trim().length > 0) {
+    draft.start_date = nextDate;
+  }
+  if (typeof draft.event_date === "string" && draft.event_date.trim().length > 0) {
+    draft.event_date = nextDate;
+  }
+
+  return {
+    applied: true,
+    from: dateValue,
+    to: nextDate,
+    reason: hasFutureIntent ? "future_intent" : "month_day_without_year",
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Clarification reducer: single blocking question per turn (Phase 7C)
 // ---------------------------------------------------------------------------
 

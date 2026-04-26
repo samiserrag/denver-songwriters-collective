@@ -25,6 +25,7 @@ import {
   detectsRecurrenceIntent,
   applyRecurrenceHintFromExtractedText,
   applyEventTypeHint,
+  applyFutureDateGuard,
   applyTimeSemantics,
   reduceClarificationToSingle,
   enforceVenueCustomExclusivity,
@@ -939,11 +940,20 @@ function buildSystemPrompt() {
     "Never output prose outside strict JSON.",
     "Rules:",
     "- Ask only blocking clarifications needed for the next server action.",
+    "- Work like a strong event-ops assistant, not a form validator. Extract, infer, normalize, and preserve details behind the scenes before asking the host anything.",
+    "- Do not ask for information that can be reasonably inferred from the source text, attached flyer, venue catalog, current date, or existing draft context.",
+    "- Prefer one well-reasoned draft plus a concise note about assumptions over a pile of questions. Ask a follow-up only when publishing would be materially wrong or risky without the answer.",
+    "- If a detail is missing but optional (cost, source URL, end time, capacity, organizer note), leave it blank/null and say it was not stated instead of blocking the user.",
+    "- If you need verification, ask one specific human question and explain what you already inferred.",
+    "- Do not claim you searched the web or verified online unless an explicit tool result or source text is present in the prompt.",
     "- Do not append conversational tails like 'anything else'.",
     "- RSVP remains default platform behavior; do not disable it.",
     "- Timeslots are optional. Encourage for open_mic, jam_session, workshop when relevant.",
     "- Prefer safe scope when ambiguous: occurrence edits over series-wide edits.",
     "- Use date format YYYY-MM-DD and 24h times HH:MM:SS when possible.",
+    "- The current date is provided in the user prompt as current_date in America/Denver. Never draft a past date for a new create-mode event unless the user clearly says it already happened, is a recap, or is archival.",
+    "- Flyer dates often omit a year. If a month/day date from a flyer would be in the past for current_date, advance it to the next upcoming future occurrence of that month/day.",
+    "- If the user says 'tonight', 'tomorrow', 'next', 'upcoming', or 'if this is in the past', resolve that relative date yourself from current_date instead of asking for the year.",
     "- If venue match is uncertain, leave venue_id null and set venue_name to your best guess of the venue the user intended. The server will attempt deterministic resolution.",
     "- If locked_draft is provided, preserve its confirmed fields unless the user explicitly changes them.",
     "- For create mode title formatting, prefer: `<Venue Name> - <Event Name>` when venue is known.",
@@ -990,6 +1000,8 @@ function buildUserPrompt(input: {
   return JSON.stringify(
     {
       task: "interpret_event_message",
+      current_date: new Date().toLocaleDateString("en-CA", { timeZone: "America/Denver" }),
+      current_timezone: "America/Denver",
       mode: input.mode,
       message: input.message,
       date_key: input.dateKey ?? null,
@@ -1508,6 +1520,17 @@ export async function POST(request: Request) {
     });
   }
 
+  const futureDateGuardResult =
+    mode === "create"
+      ? applyFutureDateGuard({
+          draft: sanitizedDraft,
+          message: normalizedMessage,
+          history: conversationHistory,
+          extractedImageText,
+          todayIso: new Date().toLocaleDateString("en-CA", { timeZone: "America/Denver" }),
+        })
+      : { applied: false as const };
+
   // INTERPRETER-08: Normalize series_mode when recurrence_rule is present.
   // Must run after recurrence intent guard + mergeLockedCreateDraft to avoid
   // re-enabling recurrence that was intentionally downgraded.
@@ -1558,12 +1581,16 @@ export async function POST(request: Request) {
   const humanSummary = shouldStripOptionalExternalUrlAsk
     ? stripOptionalExternalUrlAskFromSummary(responsePayload.human_summary)
     : responsePayload.human_summary.trim();
+  const finalHumanSummary =
+    futureDateGuardResult.applied && !humanSummary.includes(futureDateGuardResult.to)
+      ? `${humanSummary} Date adjusted to ${futureDateGuardResult.to} because the source date would otherwise be in the past.`
+      : humanSummary;
 
   const response = {
     mode,
     next_action: resolvedNextAction,
     confidence: responsePayload.confidence,
-    human_summary: humanSummary,
+    human_summary: finalHumanSummary,
     clarification_question: resolvedClarificationQuestion,
     blocking_fields: resolvedBlockingFields,
     draft_payload: sanitizedDraft,
@@ -1593,6 +1620,7 @@ export async function POST(request: Request) {
         }
       : {}),
     ...(locationHintResult.applied ? { locationHintApplied: true } : {}),
+    ...(futureDateGuardResult.applied ? { futureDateGuard: futureDateGuardResult } : {}),
     ...(venueResolution
       ? {
           venueResolution: {

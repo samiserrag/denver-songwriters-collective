@@ -150,6 +150,21 @@ describe("Phase 9B — event-type reliability", () => {
     expect(interpretRouteSource).toContain("friendly, and lightly encouraging");
   });
 
+  it("system prompt requires strong event-ops judgment before asking questions", () => {
+    expect(interpretRouteSource).toContain("Work like a strong event-ops assistant");
+    expect(interpretRouteSource).toContain("Do not ask for information that can be reasonably inferred");
+    expect(interpretRouteSource).toContain("Prefer one well-reasoned draft plus a concise note about assumptions");
+    expect(interpretRouteSource).toContain("Do not claim you searched the web or verified online unless an explicit tool result");
+  });
+
+  it("system prompt and route provide current-date guidance for flyer edge cases", () => {
+    expect(interpretRouteSource).toContain("current_date");
+    expect(interpretRouteSource).toContain("America/Denver");
+    expect(interpretRouteSource).toContain("Never draft a past date for a new create-mode event");
+    expect(interpretRouteSource).toContain("Flyer dates often omit a year");
+    expect(interpretRouteSource).toContain("applyFutureDateGuard");
+  });
+
   it("strips optional external-url asks from non-blocking summaries", () => {
     expect(interpretRouteSource).toContain("stripOptionalExternalUrlAskFromSummary");
     expect(interpretRouteSource).toContain('resolvedNextAction !== "ask_clarification"');
