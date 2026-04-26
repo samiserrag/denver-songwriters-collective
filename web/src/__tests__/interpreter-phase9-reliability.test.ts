@@ -181,12 +181,13 @@ describe("Phase 9B — event-type reliability", () => {
     expect(interpretRouteSource).toContain('!resolvedBlockingFields.includes("external_url")');
   });
 
-  it("runs an internal draft verifier before showing create previews", () => {
+  it("runs an internal draft verifier before showing create or saved-draft previews", () => {
     expect(interpretRouteSource).toContain("DEFAULT_DRAFT_VERIFIER_MODEL");
     expect(interpretRouteSource).toContain("verifyDraftWithCritic");
     expect(interpretRouteSource).toContain("buildDraftVerifierPrompt");
     expect(interpretRouteSource).toContain("draft_verification");
     expect(interpretRouteSource).toContain("highRiskVerificationIssue");
+    expect(interpretRouteSource).toContain('(mode === "create" || mode === "edit_series")');
   });
 
   it("runs optional online search verification before GPT-5.5 drafting", () => {
@@ -196,7 +197,7 @@ describe("Phase 9B — event-type reliability", () => {
     expect(interpretRouteSource).toContain('include: ["web_search_call.action.sources"]');
     expect(interpretRouteSource).toContain("web_search_verification");
     expect(interpretRouteSource).toContain("OPENAI_EVENT_WEB_SEARCH_ENABLED");
-    expect(interpretRouteSource).toContain('const DEFAULT_WEB_SEARCH_VERIFIER_MODEL = "gpt-4.1-mini"');
+    expect(interpretRouteSource).toContain('const DEFAULT_WEB_SEARCH_VERIFIER_MODEL = "gpt-5.5"');
     expect(interpretRouteSource).toContain("OPENAI_EVENT_WEB_SEARCH_MODEL");
   });
 
@@ -234,7 +235,7 @@ describe("Phase 9B — event-type reliability", () => {
   });
 
   it("keeps verifier results internal unless a high-risk issue needs one clarification", () => {
-    expect(interpretRouteSource).toContain('mode === "create" && resolvedNextAction !== "ask_clarification"');
+    expect(interpretRouteSource).toContain('(mode === "create" || mode === "edit_series") && resolvedNextAction !== "ask_clarification"');
     expect(interpretRouteSource).toContain('issue.severity === "high"');
     expect(interpretRouteSource).toContain('resolvedNextAction = "ask_clarification"');
     expect(interpretRouteSource).toContain("Please confirm ${highRiskVerificationIssue.field}");

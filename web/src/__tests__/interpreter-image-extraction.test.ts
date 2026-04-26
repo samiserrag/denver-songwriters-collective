@@ -16,8 +16,8 @@ const ROUTE_PATH = path.resolve(
 const routeSource = fs.readFileSync(ROUTE_PATH, "utf-8");
 
 describe("Interpreter image extraction (Phase 3 route)", () => {
-  it("exports maxDuration = 60 for Vercel function timeout", () => {
-    expect(routeSource).toContain("export const maxDuration = 60");
+  it("exports maxDuration = 75 for Vercel function timeout", () => {
+    expect(routeSource).toContain("export const maxDuration = 75");
   });
 
   it("enforces request body size limit before JSON parse", () => {
@@ -52,6 +52,13 @@ describe("Interpreter image extraction (Phase 3 route)", () => {
 
   it("defaults the interpreter to GPT-5.5 when no env override is set", () => {
     expect(routeSource).toContain('const DEFAULT_INTERPRETER_MODEL = "gpt-5.5"');
+  });
+
+  it("defaults verifier and web-search reasoning passes to GPT-5.5", () => {
+    expect(routeSource).toContain('const DEFAULT_DRAFT_VERIFIER_MODEL = "gpt-5.5"');
+    expect(routeSource).toContain('const DEFAULT_WEB_SEARCH_VERIFIER_MODEL = "gpt-5.5"');
+    expect(routeSource).toContain("const verifierModel = process.env.OPENAI_EVENT_DRAFT_VERIFIER_MODEL?.trim() || DEFAULT_DRAFT_VERIFIER_MODEL");
+    expect(routeSource).toContain("const webSearchModel = process.env.OPENAI_EVENT_WEB_SEARCH_MODEL?.trim() || DEFAULT_WEB_SEARCH_VERIFIER_MODEL");
   });
 
   it("feeds extracted text into Phase B user prompt", () => {

@@ -39,15 +39,15 @@ import {
   pruneSatisfiedBlockingFields,
 } from "@/lib/events/interpreterPostprocess";
 
-/** Vercel serverless function timeout — vision, drafting, and verifier calls need headroom. */
-export const maxDuration = 60;
+/** Vercel serverless function timeout — vision, drafting, search, and verifier calls need headroom. */
+export const maxDuration = 75;
 
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
 const DEFAULT_INTERPRETER_MODEL = "gpt-5.5";
 const DEFAULT_VISION_EXTRACTION_MODEL = "gpt-4.1-mini";
-const DEFAULT_DRAFT_VERIFIER_MODEL = "gpt-4.1-mini";
-const DEFAULT_WEB_SEARCH_VERIFIER_MODEL = "gpt-4.1-mini";
-const WEB_SEARCH_TIMEOUT_MS = 7_000;
+const DEFAULT_DRAFT_VERIFIER_MODEL = "gpt-5.5";
+const DEFAULT_WEB_SEARCH_VERIFIER_MODEL = "gpt-5.5";
+const WEB_SEARCH_TIMEOUT_MS = 12_000;
 const GOOGLE_GEOCODING_API_URL = "https://maps.googleapis.com/maps/api/geocode/json";
 type SupabaseServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>;
 
@@ -1485,7 +1485,7 @@ async function verifyDraftWithCritic(input: {
   traceId: string | null;
 }): Promise<DraftVerificationResult | null> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8_000);
+  const timeout = setTimeout(() => controller.abort(), 12_000);
 
   try {
     const verifierResponse = await fetch(OPENAI_RESPONSES_URL, {
@@ -2133,7 +2133,7 @@ export async function POST(request: Request) {
       : humanSummary;
 
   const draftVerification =
-    mode === "create" && resolvedNextAction !== "ask_clarification"
+    (mode === "create" || mode === "edit_series") && resolvedNextAction !== "ask_clarification"
       ? await verifyDraftWithCritic({
           openAiKey,
           verifierModel,

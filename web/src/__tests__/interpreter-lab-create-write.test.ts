@@ -34,7 +34,8 @@ describe("Phase 4B — create action gating", () => {
 
   it("derives canShowCreateAction from flag + mode + response + next_action", () => {
     expect(labSource).toContain("canShowCreateAction");
-    expect(labSource).toContain('mode === "create"');
+    expect(labSource).toContain('effectiveMode === "create"');
+    expect(labSource).toContain("createdEventId === null");
     expect(labSource).toContain("lastInterpretResponse !== null");
     expect(labSource).toContain(
       "ACTIONABLE_NEXT_ACTIONS.has(lastInterpretResponse.next_action"
@@ -228,15 +229,22 @@ describe("Phase 4B — createEvent handler", () => {
   });
 
   it("sets isCreating during operation (double-submit guard)", () => {
+    expect(labSource).toContain("if (isCreating || createdEventId) return");
     expect(labSource).toContain("setIsCreating(true)");
     expect(labSource).toContain("setIsCreating(false)");
   });
 
   it("clears last create draft state before a new create interpret call", () => {
-    expect(labSource).toContain("if (mode === \"create\")");
+    expect(labSource).toContain("if (mode === \"create\" && !createdEventId)");
     expect(labSource).toContain("setLastInterpretResponse(null)");
     expect(labSource).toContain("setCreateMessage(null)");
     expect(labSource).toContain("setCreatedEventId(null)");
+  });
+
+  it("handles reused existing events from the create API", () => {
+    expect(labSource).toContain("result.reused_existing === true");
+    expect(labSource).toContain("I found the matching saved draft and reused it instead of creating a duplicate");
+    expect(labSource).toContain("This event already exists and is published");
   });
 
   it("attempts venue directory creation when user explicitly requests new venue", () => {
@@ -363,7 +371,11 @@ describe("Phase 4B — Phase 4A regression", () => {
   });
 
   it("Apply as Cover button guarded to edit mode", () => {
-    expect(labSource).toContain("canShowCoverControls && isEditMode && coverCandidateId");
+    const applyCoverBlock = labSource.match(/const canShowApplyCoverAction[\s\S]*?;/);
+    expect(applyCoverBlock).not.toBeNull();
+    expect(applyCoverBlock![0]).toContain("canShowCoverControls");
+    expect(applyCoverBlock![0]).toContain("isEditMode");
+    expect(applyCoverBlock![0]).toContain("coverCandidateId");
   });
 
   it("canShowCoverControls supports both edit and create modes for thumbnail selection", () => {

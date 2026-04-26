@@ -44,4 +44,11 @@ describe("my-events API venue auto-promotion", () => {
     expect(routeSource).toContain("Cannot have both venue_id and custom_location_name");
     expect(routeSource).toContain("Either venue_id or custom_location_name is required for in-person events");
   });
+
+  it("reuses matching conversational events instead of creating duplicate drafts", () => {
+    expect(routeSource).toContain("findReusableConversationalEvent");
+    expect(routeSource).toContain("traceId && eventDates.length === 1");
+    expect(routeSource).toContain("reused_existing: true");
+    expect(routeSource).toContain("Reusing matching conversational event instead of creating duplicate");
+  });
 });

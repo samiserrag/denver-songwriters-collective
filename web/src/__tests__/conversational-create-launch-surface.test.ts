@@ -160,6 +160,19 @@ describe("Phase 8E — host variant forces create mode", () => {
   it("uses effectiveMode for create action gating", () => {
     expect(componentSource).toContain('effectiveMode === "create" &&');
   });
+
+  it("keeps saved drafts attached to the same conversation and labels publish links clearly", () => {
+    expect(componentSource).toContain('hasCreatedDraft ? "edit_series"');
+    expect(componentSource).toContain("Edit / publish");
+    expect(componentSource).toContain("View live page");
+    expect(componentSource).toContain("The editor and preview links open the same saved draft");
+  });
+
+  it("shows the internal draft verification result in the host review panel", () => {
+    expect(componentSource).toContain("parseDraftVerification");
+    expect(componentSource).toContain("Draft double-check");
+    expect(componentSource).toContain("responseGuidance?.draft_verification");
+  });
 });
 
 // ---------------------------------------------------------------------------

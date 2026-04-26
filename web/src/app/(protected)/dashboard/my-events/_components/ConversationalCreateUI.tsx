@@ -69,6 +69,19 @@ interface WebSearchVerification {
   sources: WebSearchVerificationSource[];
 }
 
+interface DraftVerificationIssue {
+  severity: "low" | "medium" | "high";
+  field: string;
+  issue: string;
+  question: string | null;
+}
+
+interface DraftVerification {
+  status: "pass" | "needs_review";
+  summary: string;
+  issues: DraftVerificationIssue[];
+}
+
 // ---------------------------------------------------------------------------
 // Phase 8D: Post-create summary for confidence UX
 // ---------------------------------------------------------------------------
@@ -90,6 +103,8 @@ interface CreatedEventSummary {
   costLabel: string | null;
   hasCover: boolean;
   coverNote: string | null;
+  isPublished: boolean;
+  reusedExisting: boolean;
 }
 
 interface LastInterpretResponse {
@@ -121,7 +136,8 @@ function buildCreatedEventSummary(
   slug: string | null,
   draft: Record<string, unknown>,
   hasCover: boolean,
-  coverNote: string | null
+  coverNote: string | null,
+  options: { isPublished?: boolean; reusedExisting?: boolean } = {}
 ): CreatedEventSummary {
   return {
     eventId,
@@ -140,6 +156,8 @@ function buildCreatedEventSummary(
     costLabel: (draft.cost_label as string) ?? null,
     hasCover,
     coverNote,
+    isPublished: options.isPublished ?? false,
+    reusedExisting: options.reusedExisting ?? false,
   };
 }
 
@@ -217,6 +235,34 @@ function parseWebSearchVerification(value: unknown): WebSearchVerification | nul
   };
 }
 
+function parseDraftVerification(value: unknown): DraftVerification | null {
+  if (!value || typeof value !== "object") return null;
+  const maybe = value as Record<string, unknown>;
+  if (maybe.status !== "pass" && maybe.status !== "needs_review") return null;
+  if (typeof maybe.summary !== "string") return null;
+  const issues = Array.isArray(maybe.issues)
+    ? maybe.issues
+        .map((issue): DraftVerificationIssue | null => {
+          if (!issue || typeof issue !== "object") return null;
+          const row = issue as Record<string, unknown>;
+          if (row.severity !== "low" && row.severity !== "medium" && row.severity !== "high") return null;
+          if (typeof row.field !== "string" || typeof row.issue !== "string") return null;
+          return {
+            severity: row.severity,
+            field: row.field,
+            issue: row.issue,
+            question: typeof row.question === "string" ? row.question : null,
+          };
+        })
+        .filter((issue): issue is DraftVerificationIssue => issue !== null)
+    : [];
+  return {
+    status: maybe.status,
+    summary: maybe.summary,
+    issues,
+  };
+}
+
 interface ResponseGuidance {
   next_action: string;
   human_summary: string | null;
@@ -226,6 +272,7 @@ interface ResponseGuidance {
   draft_payload: Record<string, unknown> | null;
   quality_hints: QualityHint[];
   web_search_verification: WebSearchVerification | null;
+  draft_verification: DraftVerification | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -1067,6 +1114,7 @@ export function ConversationalCreateUI({
           : null,
       quality_hints: hints,
       web_search_verification: parseWebSearchVerification(maybe.web_search_verification),
+      draft_verification: parseDraftVerification(maybe.draft_verification),
     };
   }, [responseBody]);
 
@@ -1115,6 +1163,7 @@ export function ConversationalCreateUI({
   const canShowCreateAction =
     writesEnabled &&
     effectiveMode === "create" &&
+    createdEventId === null &&
     lastInterpretResponse !== null &&
     ACTIONABLE_NEXT_ACTIONS.has(lastInterpretResponse.next_action as NextAction);
 
@@ -1140,10 +1189,14 @@ export function ConversationalCreateUI({
 
   const hostWorkflowStep = createdSummary
     ? {
-        label: "Draft saved",
+        label: createdSummary.isPublished ? "Published" : createdSummary.reusedExisting ? "Draft reused" : "Draft saved",
         tone: "success" as const,
-        title: "Preview the draft, publish from the editor, or keep chatting here.",
-        detail: "The event is private until you publish it. The editor and preview links open the same saved draft.",
+        title: createdSummary.isPublished
+          ? "This event is live. You can still keep chatting to refine it."
+          : "Preview the draft, publish from the editor, or keep chatting here.",
+        detail: createdSummary.isPublished
+          ? "The live page and editor links point to the same event."
+          : "The event is private until you publish it. The editor and preview links open the same saved draft.",
       }
     : canShowCreateAction && !createdEventId
       ? {
@@ -1218,7 +1271,7 @@ export function ConversationalCreateUI({
   // interpret run before create write. Do NOT clear on message edits, or
   // multi-turn clarification loses locked_draft context.
   useEffect(() => {
-    if (mode === "create") {
+    if (mode === "create" && !createdEventId) {
       setLastInterpretResponse(null);
       setCreateMessage(null);
       setCreatedEventId(null);
@@ -1226,7 +1279,7 @@ export function ConversationalCreateUI({
       setHasUnappliedSeriesPatch(false);
       setAppliedCoverCandidateId(null);
     }
-  }, [mode, stagedImages.length]);
+  }, [mode, stagedImages.length, createdEventId]);
 
   // In create mode, default the first staged image as the cover candidate.
   useEffect(() => {
@@ -1699,7 +1752,11 @@ export function ConversationalCreateUI({
           typeof result.slug === "string" ? result.slug : createdSummary?.slug ?? null,
           result as Record<string, unknown>,
           Boolean(result.cover_image_url ?? createdSummary?.hasCover),
-          createdSummary?.coverNote ?? null
+          createdSummary?.coverNote ?? null,
+          {
+            isPublished: result.is_published === true || createdSummary?.isPublished === true,
+            reusedExisting: createdSummary?.reusedExisting === true,
+          }
         )
       );
       setCreateMessage({
@@ -1721,6 +1778,7 @@ export function ConversationalCreateUI({
 
   async function createEvent() {
     if (!canShowCreateAction || !lastInterpretResponse) return;
+    if (isCreating || createdEventId) return;
 
     const intentText = collectUserIntentText(conversationHistory, message);
 
@@ -1814,8 +1872,28 @@ export function ConversationalCreateUI({
       const newEventId = result.id as string;
       const slug = result.slug as string | undefined;
       const draftSnapshot = lastInterpretResponse.draft_payload;
+      const reusedExisting = result.reused_existing === true;
+      const isPublished = result.is_published === true;
       setCreatedEventId(newEventId);
       setEventId(newEventId);
+
+      if (reusedExisting) {
+        setCreatedSummary(buildCreatedEventSummary(
+          newEventId,
+          slug ?? null,
+          draftSnapshot,
+          Boolean(result.cover_image_url),
+          null,
+          { isPublished, reusedExisting: true }
+        ));
+        setCreateMessage({
+          type: "success",
+          text: isPublished
+            ? `This event already exists and is published.${venueCreateNote ?? ""}`
+            : `I found the matching saved draft and reused it instead of creating a duplicate.${venueCreateNote ?? ""}`,
+        });
+        return;
+      }
 
       // 2. Deferred cover assignment (optional)
       const effectiveCoverCandidateId = coverCandidateId ?? stagedImages[0]?.id ?? null;
@@ -1845,7 +1923,7 @@ export function ConversationalCreateUI({
                 await softDeleteCoverImageRow(supabase, newEventId, uploadedUrl).catch(() => {
                   // Best-effort cleanup for partial failure path.
                 });
-                setCreatedSummary(buildCreatedEventSummary(newEventId, slug ?? null, draftSnapshot, false, `Cover update failed: ${updateError.message}`));
+                setCreatedSummary(buildCreatedEventSummary(newEventId, slug ?? null, draftSnapshot, false, `Cover update failed: ${updateError.message}`, { isPublished }));
                 setCreateMessage({
                   type: "warning",
                   text: `Event created but cover update failed.${venueCreateNote ?? ""}`,
@@ -1853,7 +1931,7 @@ export function ConversationalCreateUI({
                 return;
               }
 
-              setCreatedSummary(buildCreatedEventSummary(newEventId, slug ?? null, draftSnapshot, true, null));
+              setCreatedSummary(buildCreatedEventSummary(newEventId, slug ?? null, draftSnapshot, true, null, { isPublished }));
               setAppliedCoverCandidateId(effectiveCoverCandidateId);
               setCreateMessage({
                 type: "success",
@@ -1862,7 +1940,7 @@ export function ConversationalCreateUI({
               return;
             } else {
               // No session for cover upload — event still created
-              setCreatedSummary(buildCreatedEventSummary(newEventId, slug ?? null, draftSnapshot, false, "Cover upload skipped: not authenticated"));
+              setCreatedSummary(buildCreatedEventSummary(newEventId, slug ?? null, draftSnapshot, false, "Cover upload skipped: not authenticated", { isPublished }));
               setCreateMessage({
                 type: "warning",
                 text: `Event created but cover upload skipped.${venueCreateNote ?? ""}`,
@@ -1871,7 +1949,7 @@ export function ConversationalCreateUI({
             }
           } catch (coverError) {
             // Cover upload failed — event still created
-            setCreatedSummary(buildCreatedEventSummary(newEventId, slug ?? null, draftSnapshot, false, `Cover upload failed: ${coverError instanceof Error ? coverError.message : "unknown error"}`));
+            setCreatedSummary(buildCreatedEventSummary(newEventId, slug ?? null, draftSnapshot, false, `Cover upload failed: ${coverError instanceof Error ? coverError.message : "unknown error"}`, { isPublished }));
             setCreateMessage({
               type: "warning",
               text: `Event created but cover upload failed.${venueCreateNote ?? ""}`,
@@ -1882,7 +1960,7 @@ export function ConversationalCreateUI({
       }
 
       // Success without cover
-      setCreatedSummary(buildCreatedEventSummary(newEventId, slug ?? null, draftSnapshot, false, null));
+      setCreatedSummary(buildCreatedEventSummary(newEventId, slug ?? null, draftSnapshot, false, null, { isPublished }));
       setCreateMessage({
         type: "success",
         text: `Event created as draft.${venueCreateNote ?? ""}`,
@@ -2375,14 +2453,22 @@ export function ConversationalCreateUI({
               <div className="flex items-center gap-2">
                 <span className="text-emerald-600 text-lg">✓</span>
                 <h3 className="text-sm font-semibold text-[var(--color-text-primary)]">
-                  Event Created as Draft
+                  {createdSummary.isPublished
+                    ? "Event Already Published"
+                    : createdSummary.reusedExisting
+                      ? "Existing Draft Reused"
+                      : "Event Created as Draft"}
                 </h3>
                 {createMessage && createMessage.type === "warning" && (
                   <span className="text-xs text-amber-500 ml-auto">{createMessage.text}</span>
                 )}
               </div>
               <p className="text-xs text-[var(--color-text-secondary)]">
-                This event is private until you click <strong>Publish Event</strong> in the draft.
+                {createdSummary.isPublished
+                  ? "This event is already live. The links below point to the same saved event."
+                  : "This event is private until you click "}
+                {!createdSummary.isPublished && <strong>Publish Event</strong>}
+                {!createdSummary.isPublished && " in the draft."}
               </p>
 
               {/* What was written summary */}
@@ -2460,14 +2546,14 @@ export function ConversationalCreateUI({
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold transition-colors hover:bg-emerald-700"
                 >
                   <FileText className="h-3.5 w-3.5" aria-hidden="true" />
-                  Edit & Publish
+                  {createdSummary.isPublished ? "Edit event" : "Edit & Publish"}
                 </Link>
                 <Link
                   href={`/events/${createdSummary.slug || createdSummary.eventId}`}
                   target="_blank"
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--color-border-input)] text-xs font-semibold text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
                 >
-                  Preview draft
+                  {createdSummary.isPublished ? "View live page" : "Preview draft"}
                 </Link>
                 <Link
                   href="/dashboard/my-events"
@@ -2570,6 +2656,36 @@ export function ConversationalCreateUI({
                       </details>
                     )}
 
+                  {responseGuidance?.draft_verification && (
+                    <div className={`rounded-lg border p-3 ${
+                      responseGuidance.draft_verification.status === "pass"
+                        ? "border-emerald-500/20 bg-emerald-500/5"
+                        : "border-amber-500/20 bg-amber-500/5"
+                    }`}>
+                      <div className="flex items-center gap-2 text-xs font-semibold uppercase text-[var(--color-text-secondary)]">
+                        <CheckCircle2 className={`h-3.5 w-3.5 ${
+                          responseGuidance.draft_verification.status === "pass"
+                            ? "text-emerald-500"
+                            : "text-amber-500"
+                        }`} aria-hidden="true" />
+                        Draft double-check
+                      </div>
+                      <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
+                        {responseGuidance.draft_verification.summary}
+                      </p>
+                      {responseGuidance.draft_verification.issues.length > 0 && (
+                        <ul className="mt-2 space-y-1 text-xs text-[var(--color-text-secondary)]">
+                          {responseGuidance.draft_verification.issues.slice(0, 3).map((issue) => (
+                            <li key={`${issue.field}-${issue.issue}`}>
+                              <span className="font-semibold">{issue.field.replace(/_/g, " ")}:</span>{" "}
+                              {issue.issue}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
+
                   {responseGuidance?.next_action === "ask_clarification" && (
                     <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3">
                       <p className="text-xs font-semibold uppercase text-amber-600">One thing I need</p>
@@ -2619,8 +2735,50 @@ export function ConversationalCreateUI({
                         Draft saved
                       </div>
                       <p className="text-xs text-[var(--color-text-secondary)]">
-                        Private until you publish. You can keep asking for edits here.
+                        {createdSummary.isPublished
+                          ? "Live now. You can keep asking for edits here."
+                          : "Private until you publish. You can keep asking for edits here."}
                       </p>
+                      <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 rounded-md bg-[var(--color-bg-secondary)]/35 p-2 text-xs">
+                        {createdSummary.title && (
+                          <Fragment>
+                            <span className="text-[var(--color-text-tertiary)]">Title</span>
+                            <span className="text-[var(--color-text-primary)]">{createdSummary.title}</span>
+                          </Fragment>
+                        )}
+                        {createdSummary.startDate && (
+                          <Fragment>
+                            <span className="text-[var(--color-text-tertiary)]">Date</span>
+                            <span className="text-[var(--color-text-primary)]">{createdSummary.startDate}</span>
+                          </Fragment>
+                        )}
+                        {(createdSummary.startTime || createdSummary.endTime) && (
+                          <Fragment>
+                            <span className="text-[var(--color-text-tertiary)]">Time</span>
+                            <span className="text-[var(--color-text-primary)]">
+                              {[createdSummary.startTime, createdSummary.endTime].filter(Boolean).join(" - ")}
+                            </span>
+                          </Fragment>
+                        )}
+                        {createdSummary.venueName && (
+                          <Fragment>
+                            <span className="text-[var(--color-text-tertiary)]">Location</span>
+                            <span className="text-[var(--color-text-primary)]">{createdSummary.venueName}</span>
+                          </Fragment>
+                        )}
+                        {createdSummary.eventType && (
+                          <Fragment>
+                            <span className="text-[var(--color-text-tertiary)]">Type</span>
+                            <span className="text-[var(--color-text-primary)]">{createdSummary.eventType}</span>
+                          </Fragment>
+                        )}
+                        <Fragment>
+                          <span className="text-[var(--color-text-tertiary)]">Cover</span>
+                          <span className="text-[var(--color-text-primary)]">
+                            {createdSummary.hasCover ? "Attached" : "Not attached"}
+                          </span>
+                        </Fragment>
+                      </div>
                       <div className="flex flex-wrap gap-2 pt-1">
                         <Link
                           href={`/dashboard/my-events/${createdSummary.eventId}`}
@@ -2628,14 +2786,14 @@ export function ConversationalCreateUI({
                           className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"
                         >
                           <FileText className="h-3.5 w-3.5" aria-hidden="true" />
-                          Edit / publish
+                          {createdSummary.isPublished ? "Edit event" : "Edit / publish"}
                         </Link>
                         <Link
                           href={`/events/${createdSummary.slug || createdSummary.eventId}`}
                           target="_blank"
                           className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-border-input)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
                         >
-                          Preview draft
+                          {createdSummary.isPublished ? "View live page" : "Preview draft"}
                         </Link>
                       </div>
                     </div>

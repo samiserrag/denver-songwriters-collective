@@ -13,6 +13,8 @@ import { processVenueGeocodingWithStatus } from "@/lib/venue/geocoding";
 import { Database } from "@/lib/supabase/database.types";
 import { warmEventSharePreview } from "@/lib/events/sharePreview";
 
+type SupabaseServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>;
+
 function normalizeLocationMode(value: unknown): "venue" | "online" | "hybrid" {
   if (typeof value !== "string") return "venue";
   const mode = value.trim().toLowerCase();
@@ -308,6 +310,54 @@ function buildEventInsert(params: EventInsertParams) {
     // (verified_by null means auto-confirmed, not admin-verified)
     last_verified_at: publishedAt, // null for drafts, timestamp for published
   };
+}
+
+function normalizeDuplicateMatchValue(value: unknown): string {
+  return typeof value === "string" ? value.trim().toLowerCase().replace(/\s+/g, " ") : "";
+}
+
+async function findReusableConversationalEvent(input: {
+  supabase: SupabaseServerClient;
+  userId: string;
+  title: string;
+  eventDate: string;
+  startTime: string;
+  finalVenueId: string | null;
+  customLocationName: string | null;
+  onlineUrl: string | null;
+}) {
+  const { data, error } = await input.supabase
+    .from("events")
+    .select("id, slug, title, event_date, start_time, venue_id, custom_location_name, online_url, is_published, status, cover_image_url, updated_at")
+    .eq("host_id", input.userId)
+    .eq("title", input.title)
+    .eq("event_date", input.eventDate)
+    .eq("start_time", input.startTime)
+    .in("status", ["active", "needs_verification"])
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  if (error) {
+    console.warn("[POST /api/my-events] Conversational duplicate lookup skipped:", error.message);
+    return null;
+  }
+
+  const expectedCustomLocation = normalizeDuplicateMatchValue(input.customLocationName);
+  const expectedOnlineUrl = normalizeDuplicateMatchValue(input.onlineUrl);
+
+  return (data ?? []).find((event) => {
+    if (input.finalVenueId) {
+      return event.venue_id === input.finalVenueId;
+    }
+    if (expectedCustomLocation) {
+      return normalizeDuplicateMatchValue(event.custom_location_name) === expectedCustomLocation;
+    }
+    if (expectedOnlineUrl) {
+      return normalizeDuplicateMatchValue(event.online_url) === expectedOnlineUrl;
+    }
+    return !event.venue_id && !event.custom_location_name && !event.online_url;
+  }) ?? null;
 }
 
 // POST - Create new CSC event (or series of events)
@@ -684,6 +734,39 @@ export async function POST(request: Request) {
     eventDates = [startDate];
   }
 
+  if (traceId && eventDates.length === 1) {
+    const reusableEvent = await findReusableConversationalEvent({
+      supabase,
+      userId: sessionUser.id,
+      title: body.title as string,
+      eventDate: eventDates[0],
+      startTime: body.start_time as string,
+      finalVenueId,
+      customLocationName: customLocationFields.custom_location_name,
+      onlineUrl: typeof body.online_url === "string" ? body.online_url : null,
+    });
+
+    if (reusableEvent) {
+      console.info("[POST /api/my-events] Reusing matching conversational event instead of creating duplicate:", {
+        eventId: reusableEvent.id,
+        traceId,
+        isPublished: reusableEvent.is_published,
+      });
+      return NextResponse.json({
+        id: reusableEvent.id,
+        slug: reusableEvent.slug || null,
+        event_date: reusableEvent.event_date,
+        series_id: null,
+        series_count: 1,
+        reused_existing: true,
+        is_published: reusableEvent.is_published,
+        status: reusableEvent.status,
+        cover_image_url: reusableEvent.cover_image_url,
+        updated_at: reusableEvent.updated_at,
+      });
+    }
+  }
+
   // Generate series_id if creating multiple events
   const seriesId = eventDates.length > 1 ? crypto.randomUUID() : null;
 
@@ -872,8 +955,12 @@ export async function POST(request: Request) {
 
   return NextResponse.json({
     id: firstEvent.id,
+    slug: firstEvent.slug,
     event_date: firstEvent.event_date,
     series_id: seriesId,
     series_count: createdEvents.length,
+    is_published: (body.is_published as boolean) ?? false,
+    status: "active",
+    updated_at: firstEvent.updated_at,
   });
 }
