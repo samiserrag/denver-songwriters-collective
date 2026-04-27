@@ -2434,7 +2434,7 @@ export function ConversationalCreateUI({
                     <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)]">
                       <Bot className="h-4 w-4" aria-hidden="true" />
                     </span>
-                    <div className="rounded-lg bg-[var(--color-bg-secondary)] px-3 py-2 text-sm text-[var(--color-text-primary)]">
+                    <div className="rounded-lg border border-cyan-400/20 bg-cyan-500/10 px-3 py-2 text-sm text-[var(--color-text-primary)]">
                       Send me the messy version: flyer screenshot, source notes, half-remembered venue details, all of it. I will ask one useful follow-up at a time and keep the draft tidy.
                     </div>
                   </div>
@@ -2449,15 +2449,35 @@ export function ConversationalCreateUI({
                           <Bot className="h-4 w-4" aria-hidden="true" />
                         </span>
                       )}
-                      <div
-                        className={`max-w-[82%] whitespace-pre-wrap rounded-lg px-3 py-2 text-sm ${
-                          entry.role === "user"
-                            ? "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)]"
-                            : "bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)]"
-                        }`}
-                      >
-                        {entry.content}
-                      </div>
+                      {entry.role === "assistant" ? (
+                        <div className="max-w-[82%] space-y-2">
+                          {entry.content.split("\n\n").map((part, partIndex) => {
+                            const questionText = part.replace(/^Question:\s*/i, "").trim();
+                            const isQuestion = /^Question:\s*/i.test(part);
+                            return (
+                              <div
+                                key={`${i}-${partIndex}`}
+                                className={`whitespace-pre-wrap rounded-lg border px-3 py-2 text-sm ${
+                                  isQuestion
+                                    ? "border-amber-500/30 bg-amber-500/10 text-[var(--color-text-primary)]"
+                                    : "border-cyan-400/20 bg-cyan-500/10 text-[var(--color-text-primary)]"
+                                }`}
+                              >
+                                {isQuestion && (
+                                  <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-amber-500">
+                                    Question
+                                  </p>
+                                )}
+                                {isQuestion ? questionText : part}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="max-w-[82%] whitespace-pre-wrap rounded-lg bg-[var(--color-accent-primary)] px-3 py-2 text-sm text-[var(--color-text-on-accent)]">
+                          {entry.content}
+                        </div>
+                      )}
                     </div>
                   ))
                 )}
@@ -2559,7 +2579,7 @@ export function ConversationalCreateUI({
                     <Link
                       href={createdPublicHref}
                       target="_blank"
-                      className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-[var(--color-border-input)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                      className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)] px-3 py-1.5 text-xs font-semibold text-[var(--color-background)] shadow-sm hover:opacity-90"
                     >
                       <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
                       {createdSummary.isPublished ? "Open live page" : "Open draft preview"}
@@ -3133,7 +3153,7 @@ export function ConversationalCreateUI({
                       <Link
                         href={createdPublicHref}
                         target="_blank"
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-border-input)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)] px-3 py-1.5 text-xs font-semibold text-[var(--color-background)] shadow-sm hover:opacity-90"
                       >
                         <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
                         {createdSummary.isPublished ? "Open live page" : "Open draft preview"}

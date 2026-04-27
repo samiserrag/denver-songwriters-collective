@@ -135,7 +135,7 @@ describe("Phase 4A — applyCover handler", () => {
     expect(labSource).toContain("setCoverMessage");
     expect(labSource).toContain('type: "success"');
     expect(labSource).toContain('type: "error"');
-    expect(labSource).toContain("Cover image applied to event");
+    expect(labSource).toContain("Cover updated. Open tabs for this draft will refresh.");
   });
 });
 

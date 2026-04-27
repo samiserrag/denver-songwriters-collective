@@ -129,6 +129,7 @@ describe("INTERPRETER-14 — Host chat-first workspace", () => {
     expect(src).toContain("View live page");
     expect(src).toContain("createdPublicHref");
     expect(src).toContain("Open draft preview");
+    expect(src).toContain("border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]");
   });
 
   it("host flow autosaves private drafts and updates instead of requiring a second confirm click", () => {
@@ -144,6 +145,8 @@ describe("INTERPRETER-14 — Host chat-first workspace", () => {
     expect(src).toContain("Optional follow-up");
     expect(src).toContain("Please check the draft detail page linked below");
     expect(src).toContain("hit save and publish to make it live on the site");
+    expect(src).toContain("bg-amber-500/10");
+    expect(src).toContain("bg-cyan-500/10");
   });
 
   it("shows an actual listing card preview and preserves original cover aspect ratio", () => {
