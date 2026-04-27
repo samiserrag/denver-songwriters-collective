@@ -869,10 +869,10 @@ export default function EventDisplayPage() {
               <h2 className="text-2xl font-bold text-[var(--color-text-accent)] uppercase tracking-wider mb-3 flex-shrink-0">
                 NOW PLAYING
               </h2>
-              <div className="flex-1 bg-black/60 backdrop-blur-sm border-2 border-[var(--color-accent-primary)]/50 rounded-2xl p-4 min-h-0 overflow-hidden flex flex-col">
+              <div className="flex-1 p-2 min-h-0 flex flex-col">
                 {/* Phase 4.113: Now Playing - HUGE layout with frame-filling avatar */}
                 {hasClaimedPerformer(nowPlayingSlot?.claim) ? (
-                  <div className="flex flex-col items-center text-center flex-1 justify-center gap-3 min-h-0">
+                  <div className="flex flex-col items-center text-center flex-1 justify-center gap-2 min-h-0">
                     {/* Large avatar that dominates the frame */}
                     {nowPlayingSlot?.claim?.member?.avatar_url ? (
                       <Image
@@ -880,32 +880,32 @@ export default function EventDisplayPage() {
                         alt={getClaimDisplayName(nowPlayingSlot.claim)}
                         width={160}
                         height={160}
-                        className="h-auto w-[min(12rem,58%,34vh)] rounded-full object-cover border-4 border-[var(--color-accent-primary)] shadow-2xl"
+                        className="h-auto w-[min(9.5rem,48%,24vh)] rounded-full object-cover border-4 border-[var(--color-accent-primary)] shadow-2xl"
                       />
                     ) : (
-                      <div className="aspect-square w-[min(12rem,58%,34vh)] rounded-full bg-[var(--color-accent-primary)]/30 flex items-center justify-center">
-                        <span className="text-5xl text-[var(--color-text-accent)]">
+                      <div className="aspect-square w-[min(9.5rem,48%,24vh)] rounded-full bg-[var(--color-accent-primary)]/30 flex items-center justify-center">
+                        <span className="text-4xl text-[var(--color-text-accent)]">
                           {getClaimInitial(nowPlayingSlot?.claim)}
                         </span>
                       </div>
                     )}
                     {/* HUGE performer name */}
-                    <h3 className="text-3xl font-bold text-white drop-shadow-lg leading-tight break-words max-w-full">
+                    <h3 className="text-3xl font-bold text-white drop-shadow-lg leading-tight whitespace-normal break-normal max-w-full">
                       {getClaimDisplayName(nowPlayingSlot?.claim)}
                     </h3>
                     {/* QR code with prominent CTA */}
                     {nowPlayingSlot?.claim?.member && qrCodes.get(nowPlayingSlot.claim.member.id) && (
                       <div className="flex flex-col items-center">
-                        <div className="bg-white rounded-lg p-1.5 shadow-xl">
+                        <div className="bg-white rounded-md p-1 shadow-xl">
                           <Image
                             src={qrCodes.get(nowPlayingSlot.claim.member.id)!}
                             alt="Profile QR"
-                            width={82}
-                            height={82}
+                            width={64}
+                            height={64}
                           />
                         </div>
                         {/* HUGE CTA text */}
-                        <p className="text-sm text-[var(--color-text-accent)] mt-2 font-semibold">
+                        <p className="text-xs text-[var(--color-text-accent)] mt-1 font-semibold">
                           SCAN TO FOLLOW + TIP
                         </p>
                       </div>
@@ -976,11 +976,11 @@ export default function EventDisplayPage() {
                                   )}
                                   <div className="flex-1 min-w-0">
                                     {/* Phase 4.110: Name font size by tier */}
-                                    <p className={`font-semibold whitespace-normal break-words leading-tight ${
+                                    <p className={`font-semibold whitespace-normal break-normal leading-tight ${
                                       slotTier === "large"
                                         ? (index === 0 ? "text-white text-lg" : "text-gray-300 text-base")
                                         : slotTier === "medium"
-                                          ? (index === 0 ? "text-white text-base" : "text-gray-300 text-base")
+                                          ? (index === 0 ? "text-white text-sm" : "text-gray-300 text-sm")
                                           : (index === 0 ? "text-white text-sm" : "text-gray-300 text-xs")
                                     }`}>
                                       {getClaimDisplayName(slot.claim)}
@@ -991,7 +991,7 @@ export default function EventDisplayPage() {
                                     (() => {
                                       // Limit by claimed performers, not visual rows, so open slots do not hide later performer QRs.
                                       if (!visibleUpNextQrMemberIds.has(slot.claim.member.id)) return null;
-                                      const qrSize = slotTier === "large" ? 44 : slotTier === "medium" ? 32 : 28;
+                                      const qrSize = slotTier === "large" ? 44 : slotTier === "medium" ? 28 : 28;
                                       return (
                                         <div className="bg-white rounded-md p-0.5 flex-shrink-0">
                                           <Image
