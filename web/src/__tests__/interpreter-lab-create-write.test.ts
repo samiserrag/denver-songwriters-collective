@@ -51,7 +51,8 @@ describe("Phase 4B — create action gating", () => {
 
   it("updates lastInterpretResponse after successful interpret", () => {
     expect(labSource).toContain("body.next_action && body.draft_payload");
-    expect(labSource).toContain("setLastInterpretResponse({");
+    expect(labSource).toContain("const nextInterpretResponse: LastInterpretResponse");
+    expect(labSource).toContain("setLastInterpretResponse(nextInterpretResponse)");
   });
 
   it("sends locked_draft on create follow-up turns", () => {
@@ -202,16 +203,17 @@ describe("Phase 4B — mapDraftToCreatePayload", () => {
 // ---------------------------------------------------------------------------
 describe("Phase 4B — createEvent handler", () => {
   it("defines async createEvent function", () => {
-    expect(labSource).toContain("async function createEvent()");
+    expect(labSource).toContain("async function createEvent(");
   });
 
   it("guards on canShowCreateAction", () => {
-    expect(labSource).toContain("!canShowCreateAction || !lastInterpretResponse");
+    expect(labSource).toContain("!options.automatic && !canShowCreateAction");
+    expect(labSource).toContain("if (!sourceResponse) return;");
   });
 
   it("calls mapDraftToCreatePayload before create", () => {
     expect(labSource).toContain("collectUserIntentText");
-    expect(labSource).toContain("mapDraftToCreatePayload(lastInterpretResponse.draft_payload, intentText)");
+    expect(labSource).toContain("mapDraftToCreatePayload(sourceResponse.draft_payload, intentText)");
   });
 
   it("shows error when mapper fails", () => {
@@ -350,7 +352,7 @@ describe("Phase 4B — post-create chat edit loop", () => {
   });
 
   it("applies post-create updates through PATCH /api/my-events/:id", () => {
-    expect(labSource).toContain("async function applySeriesPatch()");
+    expect(labSource).toContain("async function applySeriesPatch(");
     expect(labSource).toContain("canShowSeriesPatchAction");
     expect(labSource).toContain('method: "PATCH"');
     expect(labSource).toContain("`/api/my-events/${createdEventId}`");
@@ -359,6 +361,7 @@ describe("Phase 4B — post-create chat edit loop", () => {
   it("uses chat-native apply copy for draft revisions", () => {
     expect(labSource).toContain("Apply Draft Update");
     expect(labSource).toContain("Draft updated. Nice, the tiny event paperwork mountain got smaller.");
+    expect(labSource).toContain("Draft updated and saved. Open tabs for this draft will refresh.");
   });
 });
 

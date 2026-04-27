@@ -39,7 +39,8 @@ describe("INTERPRETER-14 — Host copy updates", () => {
   it("host variant includes a single next-step callout with publish state", () => {
     expect(src).toContain("hostWorkflowStep");
     expect(src).toContain("Private until published");
-    expect(src).toContain("Ready to save");
+    expect(src).toContain("Draft ready");
+    expect(src).toContain("save the private draft automatically");
   });
 });
 
@@ -128,6 +129,14 @@ describe("INTERPRETER-14 — Host chat-first workspace", () => {
     expect(src).toContain("View live page");
     expect(src).toContain("createdPublicHref");
     expect(src).toContain("Open draft preview");
+  });
+
+  it("host flow autosaves private drafts and updates instead of requiring a second confirm click", () => {
+    expect(src).toContain("await createEvent(nextInterpretResponse, { automatic: true })");
+    expect(src).toContain("await applySeriesPatch(nextInterpretResponse, { automatic: true })");
+    expect(src).toContain("!isHostVariant && canShowCreateAction && !createdEventId");
+    expect(src).toContain("!isHostVariant && canShowSeriesPatchAction");
+    expect(src).toContain("Draft result");
   });
 
   it("shows an actual listing card preview and preserves original cover aspect ratio", () => {

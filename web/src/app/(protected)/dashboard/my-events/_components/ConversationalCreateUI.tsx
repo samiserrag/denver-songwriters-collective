@@ -34,6 +34,7 @@ import { normalizeDraftRecurrenceFields } from "@/lib/events/recurrenceDraftTool
 import { applyVenueTypeTitleDefault } from "@/lib/events/interpreterPostprocess";
 import { humanizeRecurrence } from "@/lib/recurrenceHumanizer";
 import { CropModal } from "@/components/gallery/CropModal";
+import { broadcastEventDraftSync } from "@/lib/events/eventDraftSync";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -1353,10 +1354,12 @@ export function ConversationalCreateUI({
       }
     : canShowCreateAction && !createdEventId
       ? {
-          label: "Ready to save",
+          label: isCreating ? "Saving draft" : "Draft ready",
           tone: "ready" as const,
-          title: "Review the key fields, then create the private draft.",
-          detail: "Use Confirm & Create Draft when the date, time, location, and cover look right.",
+          title: isCreating
+            ? "Saving a private draft you can inspect."
+            : "I drafted the event and will save the private draft automatically.",
+          detail: "Publishing stays separate. The editor and preview links will appear as soon as the draft is saved.",
         }
       : isClarificationTurn
         ? {
@@ -1386,8 +1389,7 @@ export function ConversationalCreateUI({
         : hostWorkflowStep.tone === "warning"
           ? "border-amber-500/25 bg-amber-500/10 text-amber-600"
           : "border-[var(--color-border-input)] bg-[var(--color-bg-secondary)]/45 text-[var(--color-text-secondary)]";
-  const hostSubmitIsSecondary =
-    isHostVariant && canShowCreateAction && !createdEventId && !isClarificationTurn;
+  const hostSubmitIsSecondary = false;
 
   // Occurrence edit apply guard (lab variant only — host variant forces create via effectiveMode)
   const canShowOccurrenceAction =
@@ -1740,15 +1742,28 @@ export function ConversationalCreateUI({
 
         // Phase 4B: Track last successful interpreter response for create action
         if (body.next_action && body.draft_payload) {
-          setLastInterpretResponse({
+          const nextInterpretResponse: LastInterpretResponse = {
             mode: effectiveMode,
             next_action: body.next_action as string,
             draft_payload: body.draft_payload as Record<string, unknown>,
-          });
+          };
+          setLastInterpretResponse(nextInterpretResponse);
           setHasUnappliedSeriesPatch(
             effectiveMode === "edit_series" &&
               ACTIONABLE_NEXT_ACTIONS.has(body.next_action as NextAction)
           );
+
+          if (
+            isHostVariant &&
+            writesEnabled &&
+            ACTIONABLE_NEXT_ACTIONS.has(body.next_action as NextAction)
+          ) {
+            if (effectiveMode === "create" && !createdEventId) {
+              await createEvent(nextInterpretResponse, { automatic: true });
+            } else if (effectiveMode === "edit_series" && createdEventId) {
+              await applySeriesPatch(nextInterpretResponse, { automatic: true });
+            }
+          }
         }
       }
     } catch (error) {
@@ -1854,6 +1869,7 @@ export function ConversationalCreateUI({
         type: "success",
         text: `Cover image applied to event ${targetEventId.slice(0, 8)}…`,
       });
+      broadcastEventDraftSync(targetEventId, "cover_updated");
     } catch (error) {
       setCoverMessage({
         type: "error",
@@ -1916,11 +1932,16 @@ export function ConversationalCreateUI({
     }
   }
 
-  async function applySeriesPatch() {
-    if (!canShowSeriesPatchAction || !lastInterpretResponse || !createdEventId) return;
+  async function applySeriesPatch(
+    sourceResponse: LastInterpretResponse | null = lastInterpretResponse,
+    options: { automatic?: boolean } = {}
+  ) {
+    if (!sourceResponse || !createdEventId) return;
+    if (!options.automatic && !canShowSeriesPatchAction) return;
+    if (isApplyingSeriesPatch) return;
 
     const intentText = collectUserIntentText(conversationHistory, message);
-    const mapResult = mapDraftToSeriesPatchPayload(lastInterpretResponse.draft_payload, intentText);
+    const mapResult = mapDraftToSeriesPatchPayload(sourceResponse.draft_payload, intentText);
     if (!mapResult.ok) {
       setCreateMessage({ type: "error", text: `I need one cleaner instruction before I can update the draft: ${mapResult.error}` });
       return;
@@ -1961,9 +1982,12 @@ export function ConversationalCreateUI({
       );
       setCreateMessage({
         type: "success",
-        text: "Draft updated. Nice, the tiny event paperwork mountain got smaller.",
+        text: options.automatic
+          ? "Draft updated and saved. Open tabs for this draft will refresh."
+          : "Draft updated. Nice, the tiny event paperwork mountain got smaller.",
       });
       setHasUnappliedSeriesPatch(false);
+      broadcastEventDraftSync(createdEventId, "updated");
     } catch (error) {
       setCreateMessage({
         type: "error",
@@ -1976,14 +2000,18 @@ export function ConversationalCreateUI({
 
   // ---- Phase 4B: Create event from interpreter draft (create mode only) ----
 
-  async function createEvent() {
-    if (!canShowCreateAction || !lastInterpretResponse) return;
+  async function createEvent(
+    sourceResponse: LastInterpretResponse | null = lastInterpretResponse,
+    options: { automatic?: boolean } = {}
+  ) {
+    if (!sourceResponse) return;
+    if (!options.automatic && !canShowCreateAction) return;
     if (isCreating || createdEventId) return;
 
     const intentText = collectUserIntentText(conversationHistory, message);
 
     // Map draft_payload to POST /api/my-events body
-    const mapResult = mapDraftToCreatePayload(lastInterpretResponse.draft_payload, intentText);
+    const mapResult = mapDraftToCreatePayload(sourceResponse.draft_payload, intentText);
     if (!mapResult.ok) {
       setCreateMessage({ type: "error", text: `Cannot create: ${mapResult.error}` });
       return;
@@ -2073,7 +2101,7 @@ export function ConversationalCreateUI({
 
       const newEventId = result.id as string;
       const slug = result.slug as string | undefined;
-      const draftSnapshot = lastInterpretResponse.draft_payload;
+      const draftSnapshot = sourceResponse.draft_payload;
       const reusedExisting = result.reused_existing === true;
       const isPublished = result.is_published === true;
       setCreatedEventId(newEventId);
@@ -2094,6 +2122,7 @@ export function ConversationalCreateUI({
             ? `This event already exists and is published.${venueCreateNote ?? ""}`
             : `I found the matching saved draft and reused it instead of creating a duplicate.${venueCreateNote ?? ""}`,
         });
+        broadcastEventDraftSync(newEventId, "updated");
         return;
       }
 
@@ -2130,6 +2159,7 @@ export function ConversationalCreateUI({
                   type: "warning",
                   text: `Event created but cover update failed.${venueCreateNote ?? ""}`,
                 });
+                broadcastEventDraftSync(newEventId, "created");
                 return;
               }
 
@@ -2137,8 +2167,11 @@ export function ConversationalCreateUI({
               setAppliedCoverCandidateId(effectiveCoverCandidateId);
               setCreateMessage({
                 type: "success",
-                text: `Event created as draft with cover.${venueCreateNote ?? ""}`,
+                text: options.automatic
+                  ? `Private draft saved with cover. Keep chatting here or open the editor/preview.${venueCreateNote ?? ""}`
+                  : `Event created as draft with cover.${venueCreateNote ?? ""}`,
               });
+              broadcastEventDraftSync(newEventId, "cover_updated");
               return;
             } else {
               // No session for cover upload — event still created
@@ -2147,6 +2180,7 @@ export function ConversationalCreateUI({
                 type: "warning",
                 text: `Event created but cover upload skipped.${venueCreateNote ?? ""}`,
               });
+              broadcastEventDraftSync(newEventId, "created");
               return;
             }
           } catch (coverError) {
@@ -2156,6 +2190,7 @@ export function ConversationalCreateUI({
               type: "warning",
               text: `Event created but cover upload failed.${venueCreateNote ?? ""}`,
             });
+            broadcastEventDraftSync(newEventId, "created");
             return;
           }
         }
@@ -2165,8 +2200,11 @@ export function ConversationalCreateUI({
       setCreatedSummary(buildCreatedEventSummary(newEventId, slug ?? null, draftSnapshot, false, null, { isPublished }));
       setCreateMessage({
         type: "success",
-        text: `Event created as draft.${venueCreateNote ?? ""}`,
+        text: options.automatic
+          ? `Private draft saved. Keep chatting here or open the editor/preview.${venueCreateNote ?? ""}`
+          : `Event created as draft.${venueCreateNote ?? ""}`,
       });
+      broadcastEventDraftSync(newEventId, "created");
     } catch (error) {
       setCreateMessage({
         type: "error",
@@ -2323,6 +2361,58 @@ export function ConversationalCreateUI({
                   ))
                 )}
                 <div ref={chatEndRef} aria-hidden="true" />
+              </div>
+            </div>
+          )}
+
+          {isHostVariant && responseGuidance && (
+            <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 p-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0 space-y-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-600">
+                    Draft result
+                  </p>
+                  <p className="text-sm text-[var(--color-text-primary)]">
+                    {responseGuidance.next_action === "ask_clarification"
+                      ? responseGuidance.clarification_question || "I need one detail before I can save this cleanly."
+                      : responseGuidance.human_summary || "Draft ready. I will save it as a private draft before publishing."}
+                  </p>
+                  {createMessage && createMessage.type !== "error" && (
+                    <p className={createMessage.type === "warning" ? "text-xs text-amber-500" : "text-xs text-emerald-500"}>
+                      {createMessage.text}
+                    </p>
+                  )}
+                  {responseGuidance.web_search_verification?.status === "searched" &&
+                    responseGuidance.web_search_verification.sources.length > 0 && (
+                      <p className="text-xs text-[var(--color-text-secondary)]">
+                        Checked online:{" "}
+                        {responseGuidance.web_search_verification.sources
+                          .slice(0, 3)
+                          .map((source) => source.domain || source.title || "source")
+                          .join(", ")}
+                      </p>
+                    )}
+                </div>
+                {createdSummary && createdPublicHref && (
+                  <div className="flex shrink-0 flex-wrap gap-2">
+                    <Link
+                      href={`/dashboard/my-events/${createdSummary.eventId}`}
+                      target="_blank"
+                      className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"
+                    >
+                      <FileText className="h-3.5 w-3.5" aria-hidden="true" />
+                      {createdSummary.isPublished ? "Edit event" : "Edit / publish"}
+                    </Link>
+                    <Link
+                      href={createdPublicHref}
+                      target="_blank"
+                      className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-[var(--color-border-input)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                      {createdSummary.isPublished ? "Open live page" : "Open draft preview"}
+                    </Link>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -2559,9 +2649,11 @@ export function ConversationalCreateUI({
             )}
 
             {/* Phase 4B+8D: Confirm & Create Draft — disabled after success to prevent duplicates */}
-            {canShowCreateAction && !createdEventId && (
+            {!isHostVariant && canShowCreateAction && !createdEventId && (
               <button
-                onClick={createEvent}
+                onClick={() => {
+                  void createEvent();
+                }}
                 disabled={isCreating || isSubmitting}
                 type="button"
                 className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 font-semibold text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
@@ -2575,9 +2667,11 @@ export function ConversationalCreateUI({
               </button>
             )}
 
-            {canShowSeriesPatchAction && (
+            {!isHostVariant && canShowSeriesPatchAction && (
               <button
-                onClick={applySeriesPatch}
+                onClick={() => {
+                  void applySeriesPatch();
+                }}
                 disabled={isApplyingSeriesPatch || isSubmitting}
                 type="button"
                 className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"

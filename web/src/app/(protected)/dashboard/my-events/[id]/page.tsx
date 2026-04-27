@@ -14,6 +14,7 @@ import PublishButton from "./_components/PublishButton";
 import EventManagementClient from "./_components/EventManagementClient";
 import CancelEventButton from "./_components/CancelEventButton";
 import { EventPhotosSection } from "@/components/events";
+import EventDraftSyncReloader from "@/components/events/EventDraftSyncReloader";
 
 export const dynamic = "force-dynamic";
 
@@ -230,6 +231,7 @@ export default async function EditEventPage({
 
   return (
     <main className="min-h-screen bg-[var(--color-background)] py-12 px-6">
+      <EventDraftSyncReloader eventId={eventId} />
       <div className="max-w-5xl mx-auto">
         {/* Success Banner for newly created events */}
         {/* Events start as drafts; banner tells user to publish when ready */}

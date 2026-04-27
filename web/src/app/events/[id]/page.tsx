@@ -39,6 +39,7 @@ import { getVenueDirectionsUrl } from "@/lib/venue/getDirectionsUrl";
 import { getSignupMeta } from "@/lib/events/signupMeta";
 import { isExternalEmbedsEnabled } from "@/lib/featureFlags";
 import { buildEventOgImageUrl } from "@/lib/events/sharePreview";
+import EventDraftSyncReloader from "@/components/events/EventDraftSyncReloader";
 
 export const dynamic = "force-dynamic";
 
@@ -885,6 +886,7 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
+      <EventDraftSyncReloader eventId={event.id} />
       {/* Status Banners */}
       {isCancelled && (
         <div className="mb-4 p-4 rounded-lg bg-red-900/30 border border-red-500/40 text-red-300">

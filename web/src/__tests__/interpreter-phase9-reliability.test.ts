@@ -248,7 +248,7 @@ describe("Phase 9B — event-type reliability", () => {
     expect(interpretRouteSource).toContain("export const maxDuration = 90");
     expect(interpretRouteSource).toContain("web-search service returned an upstream error");
     expect(interpretRouteSource).toContain("returned no usable verification text");
-    expect(interpretRouteSource).toContain("web-search verifier returned an unreadable result");
+    expect(interpretRouteSource).toContain("did not return a readable exact-event source");
     expect(interpretRouteSource).toContain("web-search step timed out");
   });
 

@@ -171,6 +171,39 @@ function extractResponseText(data: Record<string, unknown>): string | null {
   return null;
 }
 
+function parseJsonFromResponseText(outputText: string): unknown | null {
+  const trimmed = outputText.trim();
+  if (!trimmed) return null;
+
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    // Continue to tolerant extraction below. Some web-search responses have
+    // returned fenced JSON or a short prose preface despite the strict schema.
+  }
+
+  const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fenced) {
+    try {
+      return JSON.parse(fenced[1].trim());
+    } catch {
+      // Continue to brace extraction.
+    }
+  }
+
+  const start = trimmed.indexOf("{");
+  const end = trimmed.lastIndexOf("}");
+  if (start >= 0 && end > start) {
+    try {
+      return JSON.parse(trimmed.slice(start, end + 1));
+    } catch {
+      return null;
+    }
+  }
+
+  return null;
+}
+
 function extractHostname(value: string): string | null {
   try {
     return new URL(value).hostname.replace(/^www\./, "");
@@ -1244,17 +1277,15 @@ async function verifyEventDetailsWithWebSearch(input: {
         : null;
     }
 
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(outputText);
-    } catch {
+    const parsed = parseJsonFromResponseText(outputText);
+    if (!parsed) {
       console.warn("[events/interpret] web search verification returned non-json output", {
         traceId: input.traceId,
         outputPreview: redactEmails(truncate(outputText, 200)),
       });
       return input.returnNoReliableResult
         ? buildNoReliableWebSearchResult(
-            "Search was requested, but the web-search verifier returned an unreadable result."
+            "Search was requested, but it did not return a readable exact-event source. I used the flyer/post details instead."
           )
         : null;
     }
@@ -1396,7 +1427,7 @@ function buildSystemPrompt() {
     "- If web_search_verification status is no_reliable_sources and the latest user asked you to search, say briefly that search was attempted but did not find a reliable exact source. Do not ask again for a source link or flyer if the user already said they do not know; ask only for the specific missing publish-critical fact.",
     "- If web_search_verification conflicts with the user's flyer/post, preserve the user's supplied details and ask one targeted question only if the conflict would make publishing risky.",
     "- If search did not find an exact same-event match, do not use similar events as facts.",
-    "- Do not append conversational tails like 'anything else'.",
+    "- Do not append empty conversational tails. When the draft is usable, close with one useful optional-change invitation based on missing non-blocking details.",
     "- RSVP remains default platform behavior; do not disable it.",
     "- Timeslots are optional. Encourage for open_mic, jam_session, workshop when relevant.",
     "- Prefer safe scope when ambiguous: occurrence edits over series-wide edits.",
@@ -1423,6 +1454,7 @@ function buildSystemPrompt() {
     "- For gig events, do not add signup_time or performer slots unless explicitly requested.",
     "- Default timezone to America/Denver unless the source clearly says otherwise.",
     "- Keep human_summary concise, deterministic, friendly, and lightly encouraging. A tiny bit of humor is okay, but never at the expense of clarity or correctness.",
+    "- Default to filling the draft instead of waiting for confirmation. The user can inspect and edit the private draft before publishing.",
   ].join("\n");
 }
 
@@ -1436,6 +1468,36 @@ function stripOptionalExternalUrlAskFromSummary(summary: string): string {
     .trim();
 
   return cleaned || summary.trim();
+}
+
+function buildOptionalDraftFollowup(draft: Record<string, unknown>): string {
+  const missing: string[] = [];
+
+  if (!hasNonEmptyString(draft.cost_label) && draft.is_free !== true) {
+    missing.push("cost");
+  }
+  if (!hasNonEmptyString(draft.signup_url) && draft.signup_mode !== "none") {
+    missing.push("signup link");
+  }
+  if (!hasNonEmptyString(draft.external_url)) {
+    missing.push("source link");
+  }
+  if (!hasNonEmptyString(draft.age_policy)) {
+    missing.push("age policy");
+  }
+
+  if (missing.length === 0) {
+    return "Anything you want to add or change before publishing?";
+  }
+
+  return `Anything you want to add or change before publishing? Optional details not stated: ${missing.slice(0, 3).join(", ")}.`;
+}
+
+function appendOptionalDraftFollowup(summary: string, draft: Record<string, unknown>): string {
+  const trimmed = summary.trim();
+  const followup = buildOptionalDraftFollowup(draft);
+  if (trimmed.toLowerCase().includes("anything you want to add")) return trimmed;
+  return `${trimmed} ${followup}`;
 }
 
 function buildUserPrompt(input: {
@@ -2564,14 +2626,18 @@ export async function POST(request: Request) {
     appliedVerifierPatches.length > 0 && !highRiskVerificationIssue
       ? `${finalHumanSummary} I cleaned up ${appliedVerifierPatches.length === 1 ? "one draft detail" : `${appliedVerifierPatches.length} draft details`} before showing this to you.`
       : finalHumanSummary;
+  const finalVisibleHumanSummary =
+    resolvedNextAction !== "ask_clarification" && !highRiskVerificationIssue
+      ? appendOptionalDraftFollowup(visibleHumanSummary, sanitizedDraft)
+      : visibleHumanSummary;
 
   const response = {
     mode,
     next_action: resolvedNextAction,
     confidence: responsePayload.confidence,
     human_summary: highRiskVerificationIssue
-      ? `${visibleHumanSummary} I found one thing worth confirming before this goes live.`
-      : visibleHumanSummary,
+      ? `${finalVisibleHumanSummary} I found one thing worth confirming before this goes live.`
+      : finalVisibleHumanSummary,
     clarification_question: resolvedClarificationQuestion,
     blocking_fields: resolvedBlockingFields,
     draft_payload: sanitizedDraft,
