@@ -154,6 +154,21 @@ describe("INTERPRETER-14 — Host chat-first workspace", () => {
     expect(src).toContain("Selected original cover candidate");
   });
 
+  it("lets hosts switch a saved draft cover from staged images without re-uploading", () => {
+    expect(src).toContain("handleCoverCandidateSelect");
+    expect(src).toContain("applyCoverCandidate");
+    expect(src).toContain("Use as cover");
+    expect(src).toContain("Live cover");
+    expect(src).toContain('broadcastEventDraftSync(targetEventId, "cover_updated")');
+  });
+
+  it("understands simple chat requests to use another staged image as the cover", () => {
+    expect(src).toContain("findRequestedCoverCandidateId");
+    expect(src).toContain("other|different|alternate|another|switch");
+    expect(src).toContain("selected it below");
+    expect(src).toContain("dismissesCoverImageChange");
+  });
+
   it("keeps chat send controls above image attachment controls", () => {
     const textareaIdx = src.indexOf("<textarea");
     const sendButtonIdx = src.indexOf("runActionLabel", textareaIdx);

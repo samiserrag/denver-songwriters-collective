@@ -592,6 +592,60 @@ function collectUserIntentText(
   return [...userTurns, currentMessage].join("\n").toLowerCase();
 }
 
+function dismissesCoverImageChange(intentText: string): boolean {
+  return /\b(?:never\s*mind|nevermind|ignore|cancel|do\s+not|don't)\b.{0,80}\b(?:cover|image|picture|photo|flyer|poster)\b/i.test(
+    intentText
+  );
+}
+
+function findRequestedCoverCandidateId(input: {
+  intentText: string;
+  stagedImages: StagedImage[];
+  currentCoverCandidateId: string | null;
+  appliedCoverCandidateId: string | null;
+}): string | null {
+  const intentText = input.intentText.toLowerCase();
+  if (input.stagedImages.length < 2 || !intentText.trim()) return null;
+  if (dismissesCoverImageChange(intentText)) return null;
+
+  const hasCoverIntent =
+    /\bcover\b/i.test(intentText) ||
+    /\b(?:use|make|switch|change|set|select|choose|apply)\b.{0,70}\b(?:image|picture|photo|flyer|poster)\b/i.test(
+      intentText
+    ) ||
+    /\b(?:other|different|alternate|another|first|second|1st|2nd|just the flyer|flyer-only|clean flyer)\b.{0,60}\b(?:image|picture|photo|flyer|poster|cover)\b/i.test(
+      intentText
+    );
+  if (!hasCoverIntent) return null;
+
+  if (/\b(?:first|1st)\b/i.test(intentText)) {
+    return input.stagedImages[0]?.id ?? null;
+  }
+  if (/\b(?:second|2nd)\b/i.test(intentText)) {
+    return input.stagedImages[1]?.id ?? null;
+  }
+
+  if (
+    input.currentCoverCandidateId &&
+    input.currentCoverCandidateId !== input.appliedCoverCandidateId &&
+    /\b(?:selected it below|selected|this one|chosen)\b/i.test(intentText)
+  ) {
+    return input.currentCoverCandidateId;
+  }
+
+  const currentId = input.appliedCoverCandidateId ?? input.currentCoverCandidateId;
+  if (
+    /\b(?:other|different|alternate|another|switch)\b/i.test(intentText) ||
+    /\b(?:just the flyer|flyer-only|clean flyer|without (?:the )?(?:facebook|screenshot|post))\b/i.test(
+      intentText
+    )
+  ) {
+    return input.stagedImages.find((img) => img.id !== currentId)?.id ?? null;
+  }
+
+  return null;
+}
+
 function explicitlyRequestsTimeslots(intentText: string): boolean {
   if (!intentText.trim()) return false;
   const explicitSignals = [
@@ -1198,6 +1252,7 @@ export function ConversationalCreateUI({
   const [coverCandidateId, setCoverCandidateId] = useState<string | null>(null);
   const [appliedCoverCandidateId, setAppliedCoverCandidateId] = useState<string | null>(null);
   const [isApplyingCover, setIsApplyingCover] = useState(false);
+  const [applyingCoverCandidateId, setApplyingCoverCandidateId] = useState<string | null>(null);
   const [coverMessage, setCoverMessage] = useState<{
     type: "success" | "error";
     text: string;
@@ -1258,6 +1313,7 @@ export function ConversationalCreateUI({
   }, [responseBody]);
 
   const hasCreatedDraft = typeof createdEventId === "string" && createdEventId.length > 0;
+  const activeEventId = (createdEventId ?? eventId).trim();
   const chatMode: InterpretMode =
     isHostVariant && hasCreatedDraft ? "edit_series" : isHostVariant ? "create" : mode;
 
@@ -1303,7 +1359,7 @@ export function ConversationalCreateUI({
 
   // Derived: is current mode an edit mode with a valid eventId?
   const isEditMode = effectiveMode === "edit_series" || effectiveMode === "edit_occurrence";
-  const hasValidEventId = eventId.trim().length > 0;
+  const hasValidEventId = activeEventId.length > 0;
 
   // Can show cover controls (click-to-select thumbnails):
   // Edit mode: flag + edit mode + valid eventId + images
@@ -1679,6 +1735,31 @@ export function ConversationalCreateUI({
           })
         );
       }
+
+      if (isEditMode && targetEventId && stagedImages.length > 0) {
+        const coverIntentText = userTranscriptContent.toLowerCase();
+        const requestedCoverCandidateId =
+          findRequestedCoverCandidateId({
+            intentText: coverIntentText,
+            stagedImages,
+            currentCoverCandidateId: coverCandidateId,
+            appliedCoverCandidateId,
+          }) ??
+          (coverCandidateId &&
+          coverCandidateId !== appliedCoverCandidateId &&
+          !dismissesCoverImageChange(coverIntentText) &&
+          /\b(?:cover|image|picture|photo|flyer|poster|selected it below)\b/i.test(
+            coverIntentText
+          )
+            ? coverCandidateId
+            : null);
+
+        if (requestedCoverCandidateId) {
+          setCoverCandidateId(requestedCoverCandidateId);
+          await applyCoverCandidate(requestedCoverCandidateId, targetEventId);
+        }
+      }
+
       const res = await fetch("/api/events/interpret", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -1798,17 +1879,16 @@ export function ConversationalCreateUI({
 
   // ---- Phase 4A: Apply cover to event (edit mode only) ----
 
-  async function applyCover() {
-    // Guard: preconditions
-    if (!coverCandidateId || !isEditMode || !hasValidEventId) return;
-
-    const candidate = stagedImages.find((img) => img.id === coverCandidateId);
+  async function applyCoverCandidate(candidateId: string, targetEventId: string) {
+    const candidate = stagedImages.find((img) => img.id === candidateId);
     if (!candidate) {
       setCoverMessage({ type: "error", text: "Selected cover image no longer staged." });
       return;
     }
+    if (!targetEventId) return;
 
     setIsApplyingCover(true);
+    setApplyingCoverCandidateId(candidateId);
     setCoverMessage(null);
 
     try {
@@ -1820,8 +1900,6 @@ export function ConversationalCreateUI({
         setCoverMessage({ type: "error", text: "Not authenticated. Please log in again." });
         return;
       }
-
-      const targetEventId = eventId.trim();
 
       // 2. Fresh-fetch current event cover_image_url
       const { data: eventRow, error: fetchError } = await supabase
@@ -1870,13 +1948,13 @@ export function ConversationalCreateUI({
         await softDeleteCoverImageRow(supabase, targetEventId, previousCoverUrl);
       }
 
-      setAppliedCoverCandidateId(coverCandidateId);
+      setAppliedCoverCandidateId(candidateId);
       setCreatedSummary((prev) =>
         prev ? { ...prev, hasCover: true, coverNote: null } : prev
       );
       setCoverMessage({
         type: "success",
-        text: `Cover image applied to event ${targetEventId.slice(0, 8)}…`,
+        text: "Cover updated. Open tabs for this draft will refresh.",
       });
       broadcastEventDraftSync(targetEventId, "cover_updated");
     } catch (error) {
@@ -1886,7 +1964,21 @@ export function ConversationalCreateUI({
       });
     } finally {
       setIsApplyingCover(false);
+      setApplyingCoverCandidateId(null);
     }
+  }
+
+  async function applyCover() {
+    if (!coverCandidateId || !isEditMode || !hasValidEventId) return;
+    await applyCoverCandidate(coverCandidateId, activeEventId);
+  }
+
+  async function handleCoverCandidateSelect(candidateId: string) {
+    setCoverCandidateId(candidateId);
+    setCoverMessage(null);
+    if (!isEditMode || !hasValidEventId) return;
+    if (appliedCoverCandidateId === candidateId && createdSummary?.hasCover) return;
+    await applyCoverCandidate(candidateId, activeEventId);
   }
 
   // ---- Occurrence edit apply (edit_occurrence mode only, lab variant) ----
@@ -2611,45 +2703,88 @@ export function ConversationalCreateUI({
               <div className="flex gap-3 flex-wrap">
                 {stagedImages.map((img) => {
                   const isSelected = coverCandidateId === img.id;
+                  const isApplied =
+                    isEditMode &&
+                    Boolean(createdSummary?.hasCover) &&
+                    appliedCoverCandidateId === img.id;
+                  const isApplyingThis = applyingCoverCandidateId === img.id;
+                  const coverActionLabel = isApplyingThis
+                    ? "Applying..."
+                    : isApplied
+                      ? "Live cover"
+                      : isSelected
+                        ? effectiveMode === "create"
+                          ? "Cover selected"
+                          : "Use as cover"
+                        : "Use as cover";
                   return (
                     <div
                       key={img.id}
-                      className={`relative group w-24 h-24 rounded-lg overflow-hidden bg-[var(--color-bg-secondary)] transition-all ${
+                      className={`group w-28 overflow-hidden rounded-lg bg-[var(--color-bg-secondary)] transition-all ${
                         isSelected
                           ? "ring-2 ring-[var(--color-accent-primary)] border-2 border-[var(--color-accent-primary)]"
                           : "border border-[var(--color-border-input)]"
                       }`}
                     >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={img.previewUrl}
-                        alt="Staged"
-                        className={`w-full h-full bg-[var(--color-bg-tertiary)] object-contain ${
-                          canShowCoverControls ? "cursor-pointer" : ""
-                        }`}
-                        onClick={
-                          canShowCoverControls
-                            ? () => setCoverCandidateId(isSelected ? null : img.id)
-                            : undefined
-                        }
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeImage(img.id)}
-                        className="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/65 text-white opacity-0 transition-opacity group-hover:opacity-100 focus:opacity-100"
-                        aria-label="Remove image"
-                      >
-                        <X className="h-3.5 w-3.5" aria-hidden="true" />
-                      </button>
-                      {isSelected && (
-                        <span className="absolute top-1 left-1 inline-flex items-center gap-1 rounded bg-[var(--color-accent-primary)] px-1.5 py-0.5 text-[9px] font-bold text-[var(--color-background)]">
-                          <CheckCircle2 className="h-2.5 w-2.5" aria-hidden="true" />
-                          Cover
+                      <div className="relative h-28">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={img.previewUrl}
+                          alt="Staged"
+                          className={`h-full w-full bg-[var(--color-bg-tertiary)] object-contain ${
+                            canShowCoverControls ? "cursor-pointer" : ""
+                          }`}
+                          onClick={
+                            canShowCoverControls && !isApplyingCover && !isSubmitting
+                              ? () => {
+                                  void handleCoverCandidateSelect(img.id);
+                                }
+                              : undefined
+                          }
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeImage(img.id)}
+                          className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/65 text-white opacity-0 transition-opacity group-hover:opacity-100 focus:opacity-100"
+                          aria-label="Remove image"
+                        >
+                          <X className="h-3.5 w-3.5" aria-hidden="true" />
+                        </button>
+                        {isSelected && (
+                          <span className="absolute left-1 top-1 inline-flex items-center gap-1 rounded bg-[var(--color-accent-primary)] px-1.5 py-0.5 text-[9px] font-bold text-[var(--color-background)]">
+                            <CheckCircle2 className="h-2.5 w-2.5" aria-hidden="true" />
+                            Cover
+                          </span>
+                        )}
+                        <span className="absolute bottom-0 left-0 right-0 bg-black/50 px-1 text-center text-[10px] text-white truncate">
+                          {(img.file.size / 1024).toFixed(0)}KB
                         </span>
+                      </div>
+                      {canShowCoverControls && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            void handleCoverCandidateSelect(img.id);
+                          }}
+                          disabled={isApplyingCover || isSubmitting || isApplied}
+                          className={`flex min-h-9 w-full items-center justify-center gap-1.5 px-2 py-1.5 text-[11px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-75 ${
+                            isApplied
+                              ? "bg-emerald-600/20 text-emerald-300"
+                              : isSelected
+                                ? "bg-[var(--color-accent-primary)] text-[var(--color-background)] hover:opacity-90"
+                                : "bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                          }`}
+                        >
+                          {isApplyingThis ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                          ) : isApplied || isSelected ? (
+                            <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
+                          ) : (
+                            <Upload className="h-3.5 w-3.5" aria-hidden="true" />
+                          )}
+                          {coverActionLabel}
+                        </button>
                       )}
-                      <span className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[10px] text-center truncate px-1">
-                        {(img.file.size / 1024).toFixed(0)}KB
-                      </span>
                     </div>
                   );
                 })}
@@ -2678,7 +2813,7 @@ export function ConversationalCreateUI({
 
             {canShowCoverControls && stagedImages.length > 0 && !coverCandidateId && (
               <p className="text-xs text-[var(--color-text-tertiary)]">
-                Click a thumbnail to select it as the event cover image.
+                Pick which uploaded image should become the event cover.
               </p>
             )}
             {mode === "create" && stagedImages.length > 0 && coverCandidateId && (
