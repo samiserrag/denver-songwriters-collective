@@ -865,7 +865,7 @@ export default function EventDisplayPage() {
             )}
 
             {/* Now Playing - HUGE frame-filling layout */}
-            <div className={`${displayCoverImage ? "col-span-3" : "col-span-5"} flex flex-col min-h-0`}>
+            <div className={`${displayCoverImage ? "col-span-4" : "col-span-5"} flex flex-col min-h-0`}>
               <h2 className="text-2xl font-bold text-[var(--color-text-accent)] uppercase tracking-wider mb-3 flex-shrink-0">
                 NOW PLAYING
               </h2>
@@ -896,16 +896,16 @@ export default function EventDisplayPage() {
                     {/* QR code with prominent CTA */}
                     {nowPlayingSlot?.claim?.member && qrCodes.get(nowPlayingSlot.claim.member.id) && (
                       <div className="flex flex-col items-center">
-                        <div className="bg-white rounded-xl p-2 shadow-xl">
+                        <div className="bg-white rounded-lg p-1.5 shadow-xl">
                           <Image
                             src={qrCodes.get(nowPlayingSlot.claim.member.id)!}
                             alt="Profile QR"
-                            width={100}
-                            height={100}
+                            width={82}
+                            height={82}
                           />
                         </div>
                         {/* HUGE CTA text */}
-                        <p className="text-base text-[var(--color-text-accent)] mt-2 font-semibold">
+                        <p className="text-sm text-[var(--color-text-accent)] mt-2 font-semibold">
                           SCAN TO FOLLOW + TIP
                         </p>
                       </div>
@@ -922,7 +922,7 @@ export default function EventDisplayPage() {
             </div>
 
             {/* Phase 4.109: Up Next - 2-column layout when >10 slots, adaptive sizing */}
-            <div className={`${displayCoverImage ? "col-span-6" : "col-span-7"} flex flex-col min-h-0`}>
+            <div className={`${displayCoverImage ? "col-span-5" : "col-span-7"} flex flex-col min-h-0`}>
               <h2 className="text-xl font-bold text-gray-300 uppercase tracking-wider mb-3 flex-shrink-0">
                 UP NEXT
               </h2>
@@ -948,7 +948,7 @@ export default function EventDisplayPage() {
                             >
                               {/* Phase 4.110: Slot number badge - size varies by tier */}
                               <div className={`rounded-full bg-gray-800/80 flex items-center justify-center font-bold text-gray-400 flex-shrink-0 ${
-                                      slotTier === "large" ? "w-10 h-10 text-base" : slotTier === "medium" ? "w-7 h-7 text-xs" : "w-6 h-6 text-xs"
+                                slotTier === "large" ? "w-10 h-10 text-base" : slotTier === "medium" ? "w-7 h-7 text-xs" : "w-6 h-6 text-xs"
                               }`}>
                                 {slot.slot_index + 1}
                               </div>
