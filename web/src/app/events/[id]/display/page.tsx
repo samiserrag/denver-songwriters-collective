@@ -865,32 +865,32 @@ export default function EventDisplayPage() {
             )}
 
             {/* Now Playing - HUGE frame-filling layout */}
-            <div className={`${displayCoverImage ? "col-span-4" : "col-span-5"} flex flex-col min-h-0`}>
+            <div className={`${displayCoverImage ? "col-span-3" : "col-span-5"} flex flex-col min-h-0`}>
               <h2 className="text-2xl font-bold text-[var(--color-text-accent)] uppercase tracking-wider mb-3 flex-shrink-0">
                 NOW PLAYING
               </h2>
-              <div className="flex-1 bg-black/60 backdrop-blur-sm border-2 border-[var(--color-accent-primary)]/50 rounded-2xl p-6 min-h-0 flex flex-col">
+              <div className="flex-1 bg-black/60 backdrop-blur-sm border-2 border-[var(--color-accent-primary)]/50 rounded-2xl p-4 min-h-0 overflow-hidden flex flex-col">
                 {/* Phase 4.113: Now Playing - HUGE layout with frame-filling avatar */}
                 {hasClaimedPerformer(nowPlayingSlot?.claim) ? (
-                  <div className="flex flex-col items-center text-center flex-1 justify-center gap-4">
+                  <div className="flex flex-col items-center text-center flex-1 justify-center gap-3 min-h-0">
                     {/* Large avatar that dominates the frame */}
                     {nowPlayingSlot?.claim?.member?.avatar_url ? (
                       <Image
                         src={nowPlayingSlot.claim.member.avatar_url}
                         alt={getClaimDisplayName(nowPlayingSlot.claim)}
-                        width={180}
-                        height={180}
-                        className="rounded-full object-cover border-4 border-[var(--color-accent-primary)] shadow-2xl"
+                        width={160}
+                        height={160}
+                        className="h-auto w-[min(12rem,58%,34vh)] rounded-full object-cover border-4 border-[var(--color-accent-primary)] shadow-2xl"
                       />
                     ) : (
-                      <div className="w-44 h-44 rounded-full bg-[var(--color-accent-primary)]/30 flex items-center justify-center">
-                        <span className="text-7xl text-[var(--color-text-accent)]">
+                      <div className="aspect-square w-[min(12rem,58%,34vh)] rounded-full bg-[var(--color-accent-primary)]/30 flex items-center justify-center">
+                        <span className="text-5xl text-[var(--color-text-accent)]">
                           {getClaimInitial(nowPlayingSlot?.claim)}
                         </span>
                       </div>
                     )}
                     {/* HUGE performer name */}
-                    <h3 className="text-5xl font-bold text-white drop-shadow-lg leading-tight">
+                    <h3 className="text-3xl font-bold text-white drop-shadow-lg leading-tight break-words max-w-full">
                       {getClaimDisplayName(nowPlayingSlot?.claim)}
                     </h3>
                     {/* QR code with prominent CTA */}
@@ -905,7 +905,7 @@ export default function EventDisplayPage() {
                           />
                         </div>
                         {/* HUGE CTA text */}
-                        <p className="text-xl text-[var(--color-text-accent)] mt-3 font-semibold">
+                        <p className="text-base text-[var(--color-text-accent)] mt-2 font-semibold">
                           SCAN TO FOLLOW + TIP
                         </p>
                       </div>
@@ -922,7 +922,7 @@ export default function EventDisplayPage() {
             </div>
 
             {/* Phase 4.109: Up Next - 2-column layout when >10 slots, adaptive sizing */}
-            <div className={`${displayCoverImage ? "col-span-5" : "col-span-7"} flex flex-col min-h-0`}>
+            <div className={`${displayCoverImage ? "col-span-6" : "col-span-7"} flex flex-col min-h-0`}>
               <h2 className="text-xl font-bold text-gray-300 uppercase tracking-wider mb-3 flex-shrink-0">
                 UP NEXT
               </h2>
@@ -930,7 +930,7 @@ export default function EventDisplayPage() {
                 {hasRosterData ? (
                   (() => {
                     // Phase 4.110: Tier-specific styling (slotTier and use2Columns computed at component level for stability)
-                    const slotPadding = slotTier === "large" ? "p-2.5 gap-3" : slotTier === "medium" ? "p-1.5 gap-2" : "p-1 gap-1.5";
+                    const slotPadding = slotTier === "large" ? "p-2.5 gap-3" : slotTier === "medium" ? "p-2 gap-2" : "p-1 gap-1.5";
                     const slotRounding = slotTier === "large" ? "rounded-xl" : "rounded-lg";
                     const containerGap = slotTier === "large" ? "gap-2" : slotTier === "medium" ? "gap-1.5" : "gap-1";
 
@@ -948,7 +948,7 @@ export default function EventDisplayPage() {
                             >
                               {/* Phase 4.110: Slot number badge - size varies by tier */}
                               <div className={`rounded-full bg-gray-800/80 flex items-center justify-center font-bold text-gray-400 flex-shrink-0 ${
-                                slotTier === "large" ? "w-10 h-10 text-base" : slotTier === "medium" ? "w-8 h-8 text-sm" : "w-6 h-6 text-xs"
+                                      slotTier === "large" ? "w-10 h-10 text-base" : slotTier === "medium" ? "w-7 h-7 text-xs" : "w-6 h-6 text-xs"
                               }`}>
                                 {slot.slot_index + 1}
                               </div>
@@ -960,15 +960,15 @@ export default function EventDisplayPage() {
                                       <Image
                                         src={slot.claim.member.avatar_url}
                                         alt={getClaimDisplayName(slot.claim)}
-                                        width={slotTier === "large" ? 36 : 28}
-                                        height={slotTier === "large" ? 36 : 28}
+                                        width={slotTier === "large" ? 36 : 24}
+                                        height={slotTier === "large" ? 36 : 24}
                                         className="rounded-full object-cover flex-shrink-0"
                                       />
                                     ) : (
                                       <div className={`rounded-full bg-[var(--color-accent-primary)]/20 flex items-center justify-center flex-shrink-0 ${
-                                        slotTier === "large" ? "w-9 h-9" : "w-7 h-7"
+                                        slotTier === "large" ? "w-9 h-9" : "w-6 h-6"
                                       }`}>
-                                        <span className={`text-[var(--color-text-accent)] ${slotTier === "large" ? "text-sm" : "text-xs"}`}>
+                                        <span className={`text-[var(--color-text-accent)] ${slotTier === "large" ? "text-sm" : "text-[11px]"}`}>
                                           {getClaimInitial(slot.claim)}
                                         </span>
                                       </div>
@@ -976,11 +976,11 @@ export default function EventDisplayPage() {
                                   )}
                                   <div className="flex-1 min-w-0">
                                     {/* Phase 4.110: Name font size by tier */}
-                                    <p className={`font-semibold truncate ${
+                                    <p className={`font-semibold whitespace-normal break-words leading-tight ${
                                       slotTier === "large"
                                         ? (index === 0 ? "text-white text-lg" : "text-gray-300 text-base")
                                         : slotTier === "medium"
-                                          ? (index === 0 ? "text-white text-base" : "text-gray-300 text-sm")
+                                          ? (index === 0 ? "text-white text-base" : "text-gray-300 text-base")
                                           : (index === 0 ? "text-white text-sm" : "text-gray-300 text-xs")
                                     }`}>
                                       {getClaimDisplayName(slot.claim)}
@@ -991,7 +991,7 @@ export default function EventDisplayPage() {
                                     (() => {
                                       // Limit by claimed performers, not visual rows, so open slots do not hide later performer QRs.
                                       if (!visibleUpNextQrMemberIds.has(slot.claim.member.id)) return null;
-                                      const qrSize = slotTier === "large" ? 44 : slotTier === "medium" ? 36 : 28;
+                                      const qrSize = slotTier === "large" ? 44 : slotTier === "medium" ? 32 : 28;
                                       return (
                                         <div className="bg-white rounded-md p-0.5 flex-shrink-0">
                                           <Image
