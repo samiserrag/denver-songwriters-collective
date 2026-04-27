@@ -139,6 +139,13 @@ describe("INTERPRETER-14 — Host chat-first workspace", () => {
     expect(src).toContain("Draft result");
   });
 
+  it("separates the draft summary from follow-up questions and publish guidance", () => {
+    expect(src).toContain("followup_question");
+    expect(src).toContain("Optional follow-up");
+    expect(src).toContain("Please check the draft detail page linked below");
+    expect(src).toContain("hit save and publish to make it live on the site");
+  });
+
   it("shows an actual listing card preview and preserves original cover aspect ratio", () => {
     expect(src).toContain("Listing card preview");
     expect(src).toContain("<HappeningCard");
@@ -184,6 +191,14 @@ describe("INTERPRETER-14 — Host chat-first workspace", () => {
     expect(src).toContain("scrollIntoView");
     expect(src).toContain("Search tried");
     expect(src).toContain("Searched online:");
+  });
+
+  it("shows relaxed in-chat progress feedback while the agent is working", () => {
+    expect(src).toContain("Drafting this into shape. No action needed.");
+    expect(src).toContain("Reading flyer text");
+    expect(src).toContain("Checking dates and times");
+    expect(src).toContain("Building private draft");
+    expect(src).toContain("Working...");
   });
 
   it("uses the shared crop modal with save-original primary action for uploads", () => {

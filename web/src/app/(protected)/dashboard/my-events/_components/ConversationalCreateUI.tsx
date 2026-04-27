@@ -369,6 +369,7 @@ interface ResponseGuidance {
   next_action: string;
   human_summary: string | null;
   clarification_question: string | null;
+  followup_question: string | null;
   blocking_fields: string[];
   confidence: number | null;
   draft_payload: Record<string, unknown> | null;
@@ -1242,6 +1243,8 @@ export function ConversationalCreateUI({
       human_summary: typeof maybe.human_summary === "string" ? maybe.human_summary : null,
       clarification_question:
         typeof maybe.clarification_question === "string" ? maybe.clarification_question : null,
+      followup_question:
+        typeof maybe.followup_question === "string" ? maybe.followup_question : null,
       blocking_fields: blocking,
       confidence: typeof maybe.confidence === "number" ? maybe.confidence : null,
       draft_payload:
@@ -1726,6 +1729,11 @@ export function ConversationalCreateUI({
           body.clarification_question.trim().length > 0
         ) {
           assistantParts.push(`Question: ${body.clarification_question.trim()}`);
+        } else if (
+          typeof body.followup_question === "string" &&
+          body.followup_question.trim().length > 0
+        ) {
+          assistantParts.push(`Question: ${body.followup_question.trim()}`);
         }
 
         setConversationHistory((prev) => [
@@ -2361,6 +2369,33 @@ export function ConversationalCreateUI({
                     </div>
                   ))
                 )}
+                {isSubmitting && (
+                  <div className="flex gap-3" aria-live="polite">
+                    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)]">
+                      <Bot className="h-4 w-4" aria-hidden="true" />
+                    </span>
+                    <div className="max-w-[82%] rounded-lg border border-[var(--color-accent-primary)]/25 bg-[var(--color-bg-secondary)] px-3 py-3 text-sm text-[var(--color-text-primary)] shadow-sm">
+                      <div className="flex items-center gap-2 font-medium">
+                        <Sparkles className="h-4 w-4 animate-pulse text-[var(--color-accent-primary)]" aria-hidden="true" />
+                        Drafting this into shape. No action needed.
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-[var(--color-text-secondary)]">
+                        <span className="rounded-full bg-[var(--color-bg-primary)] px-2 py-1">
+                          Reading flyer text
+                        </span>
+                        <span className="rounded-full bg-[var(--color-bg-primary)] px-2 py-1">
+                          Checking dates and times
+                        </span>
+                        <span className="rounded-full bg-[var(--color-bg-primary)] px-2 py-1">
+                          Building private draft
+                        </span>
+                      </div>
+                      <p className="mt-2 text-xs text-[var(--color-text-tertiary)]">
+                        Tiny backstage clipboard noises are normal. I will pop the draft in here when it is ready.
+                      </p>
+                    </div>
+                  </div>
+                )}
                 <div ref={chatEndRef} aria-hidden="true" />
               </div>
             </div>
@@ -2369,15 +2404,40 @@ export function ConversationalCreateUI({
           {isHostVariant && responseGuidance && (
             <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 p-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div className="min-w-0 space-y-2">
+                <div className="min-w-0 flex-1 space-y-3">
                   <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-600">
                     Draft result
                   </p>
-                  <p className="text-sm text-[var(--color-text-primary)]">
-                    {responseGuidance.next_action === "ask_clarification"
-                      ? responseGuidance.clarification_question || "I need one detail before I can save this cleanly."
-                      : responseGuidance.human_summary || "Draft ready. I will save it as a private draft before publishing."}
-                  </p>
+                  {responseGuidance.human_summary && (
+                    <p className="text-sm text-[var(--color-text-primary)]">
+                      {responseGuidance.human_summary}
+                    </p>
+                  )}
+                  {responseGuidance.next_action === "ask_clarification" && (
+                    <div className="rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-2">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-600">
+                        Question
+                      </p>
+                      <p className="mt-1 text-sm font-medium text-[var(--color-text-primary)]">
+                        {responseGuidance.clarification_question || "What detail should I use to finish the draft?"}
+                      </p>
+                    </div>
+                  )}
+                  {responseGuidance.next_action !== "ask_clarification" && responseGuidance.followup_question && (
+                    <div className="rounded-lg border border-[var(--color-border-input)] bg-[var(--color-bg-secondary)]/55 px-3 py-2">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text-tertiary)]">
+                        Optional follow-up
+                      </p>
+                      <p className="mt-1 text-sm font-medium text-[var(--color-text-primary)]">
+                        {responseGuidance.followup_question}
+                      </p>
+                    </div>
+                  )}
+                  {createdSummary && !createdSummary.isPublished && (
+                    <p className="text-xs font-medium text-[var(--color-text-secondary)]">
+                      Please check the draft detail page linked below and if it all looks good, hit save and publish to make it live on the site.
+                    </p>
+                  )}
                   {createMessage && createMessage.type !== "error" && (
                     <p className={createMessage.type === "warning" ? "text-xs text-amber-500" : "text-xs text-emerald-500"}>
                       {createMessage.text}
@@ -2436,6 +2496,8 @@ export function ConversationalCreateUI({
               placeholder={isHostVariant
                 ? isClarificationTurn && responseGuidance?.clarification_question
                   ? responseGuidance.clarification_question
+                  : responseGuidance?.followup_question
+                    ? responseGuidance.followup_question
                   : hasCreatedDraft || hasAssistantResponse
                     ? "Ask me to search again, change a field, add a missing detail, or fix anything that looks off..."
                   : "e.g. Open mic night at Dazzle Jazz, every Tuesday at 7pm, $10 cover. Source: venue website..."
@@ -2502,7 +2564,7 @@ export function ConversationalCreateUI({
               ) : (
                 <Sparkles className="h-4 w-4" aria-hidden="true" />
               )}
-              {isSubmitting ? "Sending..." : runActionLabel}
+              {isSubmitting ? "Working..." : runActionLabel}
             </button>
 
             {conversationHistory.length > 0 && (

@@ -29,8 +29,6 @@ import {
   type EventType
 } from "@/types/events";
 
-// Categories for happenings (multi-select)
-const CATEGORIES = ["music", "comedy", "poetry", "variety", "other"];
 const HIDDEN_EVENT_TYPE_OPTIONS = new Set<EventType>(["kindred_group", "song_circle", "meetup", "showcase"]);
 const FORM_EVENT_TYPE_OPTIONS = Object.entries(EVENT_TYPE_CONFIG).filter(
   ([type]) => !HIDDEN_EVENT_TYPE_OPTIONS.has(type as EventType)
@@ -837,9 +835,6 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         if (formData.signup_deadline !== (event?.signup_deadline || "")) overridePatch.signup_deadline = formData.signup_deadline || null;
         if (formData.age_policy !== (event?.age_policy || "")) overridePatch.age_policy = formData.age_policy || null;
         if (formData.external_url.trim() !== (event?.external_url || "")) overridePatch.external_url = formData.external_url.trim() || null;
-        if (JSON.stringify(formData.categories) !== JSON.stringify(event?.categories || [])) {
-          overridePatch.categories = formData.categories.length > 0 ? formData.categories : null;
-        }
         if (coverImageUrl !== (event?.cover_image_url || null)) overridePatch.cover_image_url = coverImageUrl;
         if (formData.host_notes.trim() !== (event?.host_notes || "")) overridePatch.host_notes = formData.host_notes.trim() || null;
 
@@ -978,8 +973,6 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         external_url: formData.external_url.trim() || null,
         // Multi-embed URLs (replaces legacy youtube_url/spotify_url fields)
         media_embed_urls: mediaEmbedUrls,
-        // Categories (multi-select array)
-        categories: formData.categories.length > 0 ? formData.categories : null,
         // Phase 4.0: Location selection mode and custom location fields
         location_selection_mode: locationSelectionMode,
         venue_id: locationSelectionMode === "venue" ? formData.venue_id : null,
@@ -1109,18 +1102,6 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         return { ...prev, event_type: current.filter(t => t !== type) };
       }
       return { ...prev, event_type: [...current, type] };
-    });
-  };
-
-  // Handler for multi-select category checkboxes
-  const handleCategoryToggle = (cat: string) => {
-    setFormData(prev => {
-      const current = prev.categories || [];
-      if (current.includes(cat)) {
-        return { ...prev, categories: current.filter(c => c !== cat) };
-      } else {
-        return { ...prev, categories: [...current, cat] };
-      }
     });
   };
 
@@ -1365,35 +1346,9 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
             id="details"
             icon={<ListChecks className="h-4 w-4" aria-hidden="true" />}
             title="Listing identity"
-            description="Name the happening and add lightweight discovery tags."
+            description="Name the happening."
             tone="blue"
           >
-      {/* ============ SECTION 1b: CATEGORIES ============ */}
-      {/* Multi-select checkboxes for categorizing the happening */}
-      <div>
-        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-          Categories
-          <span className="font-normal ml-1">(select all that apply)</span>
-        </label>
-        <div className="flex flex-wrap gap-3">
-          {CATEGORIES.map(cat => (
-            <button
-              key={cat}
-              type="button"
-              onClick={() => handleCategoryToggle(cat)}
-              aria-pressed={formData.categories.includes(cat)}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors ${
-                formData.categories.includes(cat)
-                  ? "bg-[var(--color-accent-primary)]/20 border-[var(--color-accent-primary)] text-[var(--color-text-primary)]"
-                  : "bg-[var(--color-bg-secondary)] border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:border-[var(--color-accent-primary)]/50"
-              }`}
-            >
-              <span className="capitalize">{cat}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/* ============ SECTION 2: TITLE ============ */}
       <div>
         <label className="block text-sm font-medium mb-2">

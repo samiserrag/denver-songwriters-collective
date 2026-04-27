@@ -86,6 +86,7 @@ describe("Interpreter location hints", () => {
     expect(routeSource).toContain("Final guardrail: never 422");
     expect(routeSource).not.toContain("{ status: 422 }");
     expect(routeSource).toContain('resolvedNextAction = "ask_clarification"');
-    expect(routeSource).toContain("Please provide ${missingField} to continue.");
+    expect(routeSource).toContain("buildMissingFieldQuestion");
+    expect(routeSource).toContain("What kind of happening is this?");
   });
 });

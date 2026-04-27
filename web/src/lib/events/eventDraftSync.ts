@@ -5,7 +5,7 @@ export type EventDraftSyncReason = "created" | "updated" | "cover_updated" | "pu
 export const EVENT_DRAFT_SYNC_CHANNEL = "csc-event-draft-sync";
 export const EVENT_DRAFT_SYNC_STORAGE_KEY = "csc:event-draft-sync";
 
-interface EventDraftSyncPayload {
+export interface EventDraftSyncPayload {
   eventId: string;
   reason: EventDraftSyncReason;
   at: number;
@@ -95,4 +95,14 @@ export function subscribeEventDraftSync(
     window.removeEventListener("storage", handleStorage);
     channel?.close();
   };
+}
+
+export function readLatestEventDraftSyncPayload(eventId: string): EventDraftSyncPayload | null {
+  if (typeof window === "undefined" || !eventId.trim()) return null;
+  try {
+    const payload = parsePayload(window.localStorage.getItem(EVENT_DRAFT_SYNC_STORAGE_KEY));
+    return payload?.eventId === eventId ? payload : null;
+  } catch {
+    return null;
+  }
 }

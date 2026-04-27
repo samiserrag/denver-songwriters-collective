@@ -402,10 +402,6 @@ export function SeriesCard({ series, className }: SeriesCardProps) {
               {verificationState === "cancelled" && (
                 <Chip variant="danger">Cancelled</Chip>
               )}
-              {/* Categories (up to 3) */}
-              {event.categories && event.categories.length > 0 && event.categories.map((cat) => (
-                <Chip key={cat} variant="muted">{cat}</Chip>
-              ))}
               {/* Phase 5.08: Signup meta chip */}
               {signupMeta.show && <Chip variant="muted">{signupMeta.label}</Chip>}
             </div>

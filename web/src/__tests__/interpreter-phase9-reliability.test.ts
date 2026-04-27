@@ -244,9 +244,12 @@ describe("Phase 9B — event-type reliability", () => {
   it("does not silently drop explicit search requests when web search cannot produce sources", () => {
     expect(interpretRouteSource).toContain("buildNoReliableWebSearchResult");
     expect(interpretRouteSource).toContain('tool_choice: input.returnNoReliableResult ? "required" : "auto"');
-    expect(interpretRouteSource).toContain("const WEB_SEARCH_TIMEOUT_MS = 20_000");
-    expect(interpretRouteSource).toContain("const INTERPRETER_TIMEOUT_MS = 60_000");
-    expect(interpretRouteSource).toContain("const DRAFT_VERIFIER_TIMEOUT_MS = 15_000");
+    expect(interpretRouteSource).toContain("const ROUTE_SAFETY_MARGIN_MS = 8_000");
+    expect(interpretRouteSource).toContain("const WEB_SEARCH_TIMEOUT_MS = 16_000");
+    expect(interpretRouteSource).toContain("const INTERPRETER_TIMEOUT_MS = 85_000");
+    expect(interpretRouteSource).toContain("const DRAFT_VERIFIER_TIMEOUT_MS = 8_000");
+    expect(interpretRouteSource).toContain("getBoundedStepTimeoutMs");
+    expect(interpretRouteSource).toContain("canRunDraftVerifier");
     expect(interpretRouteSource).toContain("export const maxDuration = 120");
     expect(interpretRouteSource).toContain("web-search service returned an upstream error");
     expect(interpretRouteSource).toContain("returned no usable verification text");
@@ -254,11 +257,30 @@ describe("Phase 9B — event-type reliability", () => {
     expect(interpretRouteSource).toContain("web-search step timed out");
   });
 
+  it("keeps optional follow-up copy separate from the result summary", () => {
+    expect(interpretRouteSource).toContain("followup_question");
+    expect(interpretRouteSource).toContain("buildOptionalDraftFollowup");
+    expect(interpretRouteSource).not.toContain("appendOptionalDraftFollowup");
+  });
+
+  it("tolerates model JSON wrapped in prose or fenced blocks", () => {
+    expect(interpretRouteSource).toContain("function parseJsonFromResponseText");
+    expect(interpretRouteSource).toContain("const parsed = parseJsonFromResponseText(outputText)");
+    expect(interpretRouteSource).toContain("fenced");
+    expect(interpretRouteSource).toContain("trimmed.slice(start, end + 1)");
+  });
+
+  it("does not ask users for raw event_type when categories or source text already imply it", () => {
+    expect(interpretRouteSource).toContain("ensureEventTypeFromDraftSignals");
+    expect(interpretRouteSource).toContain("CATEGORY_TO_EVENT_TYPE");
+    expect(interpretRouteSource).toContain("What kind of happening is this?");
+  });
+
   it("supports default-on host web search without relying on magic user wording", () => {
     expect(interpretRouteSource).toContain("body.use_web_search !== false");
     expect(interpretRouteSource).toContain("const shouldUseWebSearch = useWebSearch || explicitWebSearchRequest");
     expect(interpretRouteSource).toContain("input.useWebSearch && combined.trim().length >= 20");
-    expect(interpretRouteSource).toContain("returnNoReliableResult: shouldUseWebSearch");
+    expect(interpretRouteSource).toContain("returnNoReliableResult: explicitWebSearchRequest");
   });
 
   it("gives the model a deterministic recurrence contract for unsupported schedules", () => {

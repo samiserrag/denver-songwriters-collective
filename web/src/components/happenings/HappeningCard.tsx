@@ -912,10 +912,6 @@ export function HappeningCard({
               <Chip variant="danger">Cancelled</Chip>
             )}
             <Chip variant="default">{eventTypeLabel}</Chip>
-            {/* Categories (up to 3) */}
-            {effectiveCategories && effectiveCategories.length > 0 && effectiveCategories.map((cat) => (
-              <Chip key={cat} variant="muted">{cat}</Chip>
-            ))}
             {ageDisplay && <Chip variant="muted">{ageDisplay}</Chip>}
             {signupMeta.show && <Chip variant="muted">{signupMeta.label}</Chip>}
             {availabilityDisplay && <Chip variant="muted">{availabilityDisplay}</Chip>}

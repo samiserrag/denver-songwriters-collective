@@ -25,6 +25,7 @@ import {
   type VenueResolutionOutcome,
 } from "@/lib/events/venueResolver";
 import { normalizeSignupMode } from "@/lib/events/signupModeContract";
+import { VALID_EVENT_TYPES, type ValidEventType } from "@/lib/events/eventTypeContract";
 import {
   detectsRecurrenceIntent,
   applyRecurrenceHintFromExtractedText,
@@ -49,9 +50,10 @@ const DEFAULT_INTERPRETER_MODEL = "gpt-5.5";
 const DEFAULT_VISION_EXTRACTION_MODEL = "gpt-4.1-mini";
 const DEFAULT_DRAFT_VERIFIER_MODEL = "gpt-5.5";
 const DEFAULT_WEB_SEARCH_VERIFIER_MODEL = "gpt-5.5";
-const WEB_SEARCH_TIMEOUT_MS = 20_000;
-const INTERPRETER_TIMEOUT_MS = 60_000;
-const DRAFT_VERIFIER_TIMEOUT_MS = 15_000;
+const ROUTE_SAFETY_MARGIN_MS = 8_000;
+const WEB_SEARCH_TIMEOUT_MS = 16_000;
+const INTERPRETER_TIMEOUT_MS = 85_000;
+const DRAFT_VERIFIER_TIMEOUT_MS = 8_000;
 const GOOGLE_GEOCODING_API_URL = "https://maps.googleapis.com/maps/api/geocode/json";
 type SupabaseServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>;
 
@@ -1169,6 +1171,20 @@ function getConfiguredReasoningEffort(): "minimal" | "low" | "medium" | "high" {
   return "medium";
 }
 
+function getRemainingRouteBudgetMs(startedAt: number): number {
+  return Math.max(maxDuration * 1000 - ROUTE_SAFETY_MARGIN_MS - (Date.now() - startedAt), 0);
+}
+
+function getBoundedStepTimeoutMs(input: {
+  startedAt: number;
+  preferredMs: number;
+  minimumUsefulMs: number;
+}): number {
+  const remaining = getRemainingRouteBudgetMs(input.startedAt);
+  if (remaining <= input.minimumUsefulMs) return remaining;
+  return Math.min(input.preferredMs, remaining);
+}
+
 async function verifyEventDetailsWithWebSearch(input: {
   openAiKey: string;
   searchModel: string;
@@ -1495,11 +1511,99 @@ function buildOptionalDraftFollowup(draft: Record<string, unknown>): string {
   return `Anything you want to add or change before publishing? Optional details not stated: ${missing.slice(0, 3).join(", ")}.`;
 }
 
-function appendOptionalDraftFollowup(summary: string, draft: Record<string, unknown>): string {
-  const trimmed = summary.trim();
-  const followup = buildOptionalDraftFollowup(draft);
-  if (trimmed.toLowerCase().includes("anything you want to add")) return trimmed;
-  return `${trimmed} ${followup}`;
+const CATEGORY_TO_EVENT_TYPE: Record<string, string> = {
+  music: "gig",
+  comedy: "comedy",
+  poetry: "poetry",
+  variety: "other",
+  other: "other",
+  "open mic": "open_mic",
+  open_mic: "open_mic",
+  "jam session": "jam_session",
+  jam_session: "jam_session",
+  jam: "jam_session",
+  blues: "blues",
+  irish: "irish",
+  bluegrass: "bluegrass",
+};
+
+function getDraftEventTypes(draft: Record<string, unknown>): string[] {
+  return Array.isArray(draft.event_type)
+    ? draft.event_type
+        .filter((value): value is string => typeof value === "string")
+        .map((value) => value.trim())
+        .filter(Boolean)
+    : [];
+}
+
+function ensureEventTypeFromDraftSignals(input: {
+  draft: Record<string, unknown>;
+  message: string;
+  conversationHistory: Array<{ role: "user" | "assistant"; content: string }>;
+  extractedImageText?: string;
+}): void {
+  const currentEventTypes = getDraftEventTypes(input.draft);
+  if (currentEventTypes.length > 0) {
+    const normalizedCurrent = currentEventTypes
+      .map((type) => CATEGORY_TO_EVENT_TYPE[type.toLowerCase()] ?? type)
+      .filter((type) => VALID_EVENT_TYPES.has(type as ValidEventType));
+    if (normalizedCurrent.length > 0) {
+      input.draft.event_type = [...new Set(normalizedCurrent)];
+      return;
+    }
+  }
+
+  applyEventTypeHint({
+    draft: input.draft,
+    message: input.message,
+    history: input.conversationHistory,
+    extractedImageText: input.extractedImageText,
+  });
+  if (getDraftEventTypes(input.draft).length > 0) return;
+
+  const categories = Array.isArray(input.draft.categories)
+    ? input.draft.categories
+        .filter((value): value is string => typeof value === "string")
+        .map((value) => value.trim().toLowerCase())
+    : [];
+  const mapped = categories
+    .map((category) => CATEGORY_TO_EVENT_TYPE[category])
+    .filter(
+      (value): value is string =>
+        typeof value === "string" &&
+        value.length > 0 &&
+        VALID_EVENT_TYPES.has(value as ValidEventType)
+    );
+  if (mapped.length > 0) {
+    input.draft.event_type = [...new Set(mapped)];
+    return;
+  }
+
+  const hasEnoughDraftShape =
+    hasNonEmptyString(input.draft.title) &&
+    hasNonEmptyString(input.draft.start_time) &&
+    (hasNonEmptyString(input.draft.start_date) || hasNonEmptyString(input.draft.event_date));
+  if (hasEnoughDraftShape) {
+    input.draft.event_type = ["other"];
+  }
+}
+
+function buildMissingFieldQuestion(field: string): string {
+  switch (field) {
+    case "title":
+      return "What should I call this happening?";
+    case "event_type":
+      return "What kind of happening is this? For example: open mic, jam session, workshop, show, poetry, or comedy.";
+    case "start_date":
+    case "event_date":
+      return "What date should this happen next?";
+    case "start_time":
+      return "What time should people show up or when does it start?";
+    case "series_mode":
+      return "Is this a one-time event or does it repeat?";
+    default:
+      return `What should I use for ${field.replace(/_/g, " ")}?`;
+  }
 }
 
 function buildUserPrompt(input: {
@@ -2000,6 +2104,8 @@ async function verifyDraftWithCritic(input: {
 }
 
 export async function POST(request: Request) {
+  const requestStartedAt = Date.now();
+
   if (process.env.ENABLE_NL_EVENTS_INTERPRETER !== "true") {
     return NextResponse.json(
       { error: "Conversational interpreter is disabled in this environment." },
@@ -2183,7 +2289,7 @@ export async function POST(request: Request) {
   });
   const shouldUseWebSearch = useWebSearch || explicitWebSearchRequest;
   const webSearchEnabled = isEventWebSearchEnabled();
-  if (shouldUseWebSearch && !webSearchEnabled) {
+  if (explicitWebSearchRequest && !webSearchEnabled) {
     webSearchVerification = buildNoReliableWebSearchResult(
       "Search was requested, but online search is disabled for this event assistant right now."
     );
@@ -2216,7 +2322,7 @@ export async function POST(request: Request) {
       currentEvent,
       currentDate,
       traceId,
-      returnNoReliableResult: shouldUseWebSearch,
+      returnNoReliableResult: explicitWebSearchRequest,
     });
 
     if (webSearchVerification) {
@@ -2261,8 +2367,22 @@ export async function POST(request: Request) {
     prompt: redactEmails(truncate(userPrompt, 1200)),
   });
 
+  const interpreterTimeoutMs = getBoundedStepTimeoutMs({
+    startedAt: requestStartedAt,
+    preferredMs: INTERPRETER_TIMEOUT_MS,
+    minimumUsefulMs: 35_000,
+  });
+  if (interpreterTimeoutMs < 35_000) {
+    console.warn("[events/interpret] not enough route budget for interpreter", {
+      userId: sessionUser.id,
+      traceId,
+      interpreterTimeoutMs,
+    });
+    return NextResponse.json({ error: "Interpreter timeout." }, { status: 504 });
+  }
+
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), INTERPRETER_TIMEOUT_MS);
+  const timeout = setTimeout(() => controller.abort(), interpreterTimeoutMs);
 
   let responsePayload: Record<string, unknown>;
   try {
@@ -2305,12 +2425,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Interpreter returned empty output." }, { status: 502 });
     }
 
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(outputText);
-    } catch (parseError) {
+    const parsed = parseJsonFromResponseText(outputText);
+    if (!parsed) {
       console.error("[events/interpret] non-json model output", {
-        parseError,
         outputPreview: redactEmails(truncate(outputText, 200)),
       });
       return NextResponse.json({ error: "Interpreter returned non-JSON output." }, { status: 502 });
@@ -2514,6 +2631,15 @@ export async function POST(request: Request) {
     applyVenueTypeTitleDefault(sanitizedDraft);
   }
 
+  if (mode === "create" || mode === "edit_series") {
+    ensureEventTypeFromDraftSignals({
+      draft: sanitizedDraft,
+      message: normalizedMessage,
+      conversationHistory,
+      extractedImageText,
+    });
+  }
+
   const futureDateGuardResult =
     mode === "create"
       ? applyFutureDateGuard({
@@ -2551,7 +2677,7 @@ export async function POST(request: Request) {
         resolvedBlockingFields.push(draftValidation.blockingField);
       }
       const missingField = draftValidation.blockingField || "required field";
-      resolvedClarificationQuestion = `Please provide ${missingField} to continue.`;
+      resolvedClarificationQuestion = buildMissingFieldQuestion(missingField);
     }
   }
 
@@ -2579,8 +2705,11 @@ export async function POST(request: Request) {
       ? `${humanSummary} Date adjusted to ${futureDateGuardResult.to} because the source date would otherwise be in the past.`
       : humanSummary;
 
+  const remainingBeforeVerifier = getRemainingRouteBudgetMs(requestStartedAt);
+  const canRunDraftVerifier =
+    remainingBeforeVerifier >= DRAFT_VERIFIER_TIMEOUT_MS + 4_000;
   const draftVerification =
-    (mode === "create" || mode === "edit_series") && resolvedNextAction !== "ask_clarification"
+    canRunDraftVerifier && (mode === "create" || mode === "edit_series") && resolvedNextAction !== "ask_clarification"
       ? await verifyDraftWithCritic({
           openAiKey,
           verifierModel,
@@ -2612,6 +2741,16 @@ export async function POST(request: Request) {
     resolvedBlockingFields = pruneSatisfiedBlockingFields(sanitizedDraft, resolvedBlockingFields);
   }
 
+  if (mode === "create" || mode === "edit_series") {
+    ensureEventTypeFromDraftSignals({
+      draft: sanitizedDraft,
+      message: normalizedMessage,
+      conversationHistory,
+      extractedImageText,
+    });
+    delete sanitizedDraft.categories;
+  }
+
   const patchedFields = new Set(appliedVerifierPatches.map((patch) => patch.field));
   const highRiskVerificationIssue =
     draftVerification?.issues.find((issue) => issue.severity === "high" && !patchedFields.has(issue.field)) ?? null;
@@ -2628,19 +2767,20 @@ export async function POST(request: Request) {
     appliedVerifierPatches.length > 0 && !highRiskVerificationIssue
       ? `${finalHumanSummary} I cleaned up ${appliedVerifierPatches.length === 1 ? "one draft detail" : `${appliedVerifierPatches.length} draft details`} before showing this to you.`
       : finalHumanSummary;
-  const finalVisibleHumanSummary =
+  const followupQuestion =
     resolvedNextAction !== "ask_clarification" && !highRiskVerificationIssue
-      ? appendOptionalDraftFollowup(visibleHumanSummary, sanitizedDraft)
-      : visibleHumanSummary;
+      ? buildOptionalDraftFollowup(sanitizedDraft)
+      : null;
 
   const response = {
     mode,
     next_action: resolvedNextAction,
     confidence: responsePayload.confidence,
     human_summary: highRiskVerificationIssue
-      ? `${finalVisibleHumanSummary} I found one thing worth confirming before this goes live.`
-      : finalVisibleHumanSummary,
+      ? `${visibleHumanSummary} I found one thing worth confirming before this goes live.`
+      : visibleHumanSummary,
     clarification_question: resolvedClarificationQuestion,
+    followup_question: followupQuestion,
     blocking_fields: resolvedBlockingFields,
     draft_payload: sanitizedDraft,
     quality_hints: qualityHints,

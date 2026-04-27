@@ -37,10 +37,14 @@ describe("host conversational draft sync", () => {
     expect(syncSource).toContain("BroadcastChannel");
     expect(syncSource).toContain("localStorage.setItem");
     expect(syncSource).toContain("window.addEventListener(\"storage\"");
+    expect(syncSource).toContain("readLatestEventDraftSyncPayload");
   });
 
   it("refreshes edit and draft preview pages when the matching draft changes", () => {
     expect(reloaderSource).toContain("window.location.reload()");
+    expect(reloaderSource).toContain("reloadIfMissedWhileBackgrounded");
+    expect(reloaderSource).toContain('window.addEventListener("focus"');
+    expect(reloaderSource).toContain('document.addEventListener("visibilitychange"');
     expect(editPageSource).toContain("<EventDraftSyncReloader eventId={eventId} />");
     expect(detailPageSource).toContain("<EventDraftSyncReloader eventId={event.id} />");
   });

@@ -90,6 +90,7 @@ export interface InterpretEventDraftResponse {
   confidence: number;
   human_summary: string;
   clarification_question: string | null;
+  followup_question?: string | null;
   blocking_fields: string[];
   draft_payload: Record<string, unknown>;
   quality_hints: QualityHint[];
