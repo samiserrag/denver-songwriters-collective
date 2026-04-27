@@ -30,6 +30,8 @@ interface Performer {
 interface TimeslotClaim {
   id: string;
   status: string;
+  guest_name: string | null;
+  guest_email: string | null;
   member: Performer | null;
 }
 
@@ -74,6 +76,18 @@ function formatSlotTime(startTime: string | null, offsetMinutes: number, duratio
   };
 
   return `${formatTime(startMinutes)} - ${formatTime(endMinutes)}`;
+}
+
+function getClaimDisplayName(claim: TimeslotClaim | null | undefined): string {
+  return claim?.member?.full_name || claim?.guest_name || "Anonymous";
+}
+
+function getClaimInitial(claim: TimeslotClaim | null | undefined): string {
+  return getClaimDisplayName(claim)[0]?.toUpperCase() || "?";
+}
+
+function hasClaimedPerformer(claim: TimeslotClaim | null | undefined): boolean {
+  return Boolean(claim?.member || claim?.guest_name);
 }
 
 /**
@@ -272,7 +286,7 @@ export default function LineupControlPage() {
         const { data: claims, error: claimsError } = await supabase
           .from("timeslot_claims")
           .select(`
-            id, timeslot_id, status,
+            id, timeslot_id, status, guest_name, guest_email,
             member:profiles!timeslot_claims_member_id_fkey(id, full_name, avatar_url)
           `)
           .in("timeslot_id", slotIds)
@@ -280,12 +294,14 @@ export default function LineupControlPage() {
 
         if (claimsError) throw claimsError;
 
-        type ClaimRow = { id: string; timeslot_id: string; status: string; member: Performer | null };
+        type ClaimRow = { id: string; timeslot_id: string; status: string; guest_name: string | null; guest_email: string | null; member: Performer | null };
         const claimsBySlot = new Map<string, TimeslotClaim>();
         ((claims || []) as ClaimRow[]).forEach((claim) => {
           claimsBySlot.set(claim.timeslot_id, {
             id: claim.id,
             status: claim.status,
+            guest_name: claim.guest_name,
+            guest_email: claim.guest_email,
             member: claim.member,
           });
         });
@@ -696,11 +712,11 @@ export default function LineupControlPage() {
                 <span className="text-red-400 font-semibold">LIVE</span>
               </div>
               <p className="text-[var(--color-text-primary)] text-lg font-medium">
-                Now Playing: {currentSlot?.claim?.member?.full_name || "Intermission"}
+                Now Playing: {hasClaimedPerformer(currentSlot?.claim) ? getClaimDisplayName(currentSlot?.claim) : "Intermission"}
               </p>
-              {nextSlot?.claim?.member && (
+              {hasClaimedPerformer(nextSlot?.claim) && (
                 <p className="text-[var(--color-text-secondary)] text-sm mt-1">
-                  Up Next: {nextSlot.claim.member.full_name}
+                  Up Next: {getClaimDisplayName(nextSlot?.claim)}
                 </p>
               )}
             </div>
@@ -769,9 +785,9 @@ export default function LineupControlPage() {
                     {slot.slot_index + 1}
                   </div>
 
-                  {slot.claim?.member ? (
+                  {hasClaimedPerformer(slot.claim) ? (
                     <div className="flex items-center gap-3 flex-1">
-                      {slot.claim.member.avatar_url ? (
+                      {slot.claim?.member?.avatar_url ? (
                         <Image
                           src={slot.claim.member.avatar_url}
                           alt=""
@@ -782,14 +798,19 @@ export default function LineupControlPage() {
                       ) : (
                         <div className="w-10 h-10 rounded-full bg-[var(--color-accent-primary)]/20 flex items-center justify-center">
                           <span className="text-[var(--color-text-accent)]">
-                            {slot.claim.member.full_name?.[0] || "?"}
+                            {getClaimInitial(slot.claim)}
                           </span>
                         </div>
                       )}
                       <div>
                         <p className={`font-medium ${isCurrent ? "text-[var(--color-text-accent)]" : "text-[var(--color-text-primary)]"}`}>
-                          {slot.claim.member.full_name || "Anonymous"}
+                          {getClaimDisplayName(slot.claim)}
                         </p>
+                        {!slot.claim?.member && slot.claim?.guest_email && (
+                          <p className="text-xs text-[var(--color-text-tertiary)] truncate">
+                            {slot.claim.guest_email}
+                          </p>
+                        )}
                         <p className="text-xs text-[var(--color-text-tertiary)]">
                           {formatSlotTime(event?.start_time || null, slot.start_offset_minutes, slot.duration_minutes)}
                         </p>

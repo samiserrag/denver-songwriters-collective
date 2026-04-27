@@ -42,6 +42,8 @@ interface TimeslotWithClaim {
   claim?: {
     id: string;
     status: string;
+    guest_name: string | null;
+    guest_email: string | null;
     member: Performer | null;
   } | null;
 }
@@ -101,6 +103,18 @@ function formatSlotTime(startTime: string | null, offsetMinutes: number, duratio
   };
 
   return `${formatTime(startMinutes)} - ${formatTime(endMinutes)}`;
+}
+
+function getClaimDisplayName(claim: TimeslotWithClaim["claim"]): string {
+  return claim?.member?.full_name || claim?.guest_name || "Anonymous";
+}
+
+function getClaimInitial(claim: TimeslotWithClaim["claim"]): string {
+  return getClaimDisplayName(claim)[0]?.toUpperCase() || "?";
+}
+
+function hasClaimedPerformer(claim: TimeslotWithClaim["claim"]): boolean {
+  return Boolean(claim?.member || claim?.guest_name);
 }
 
 /**
@@ -377,7 +391,7 @@ export default function EventDisplayPage() {
       const { data: claims, error: claimsError } = await supabase
         .from("timeslot_claims")
         .select(`
-          id, timeslot_id, status,
+          id, timeslot_id, status, guest_name, guest_email,
           member:profiles!timeslot_claims_member_id_fkey(id, slug, full_name, avatar_url)
         `)
         .in("timeslot_id", slotIds)
@@ -389,14 +403,18 @@ export default function EventDisplayPage() {
         id: string;
         timeslot_id: string;
         status: string;
+        guest_name: string | null;
+        guest_email: string | null;
         member: Performer | null;
       };
 
-      const claimsBySlot = new Map<string, { id: string; status: string; member: Performer | null }>();
+      const claimsBySlot = new Map<string, { id: string; status: string; guest_name: string | null; guest_email: string | null; member: Performer | null }>();
       ((claims || []) as ClaimRow[]).forEach((claim) => {
         claimsBySlot.set(claim.timeslot_id, {
           id: claim.id,
           status: claim.status,
+          guest_name: claim.guest_name,
+          guest_email: claim.guest_email,
           member: claim.member,
         });
       });
@@ -622,6 +640,19 @@ export default function EventDisplayPage() {
   };
   const slotTier = getSlotTier(timeslots.length);
   const use2Columns = timeslots.length > 10;
+  const visibleUpNextQrMemberIds = React.useMemo(() => {
+    const maxQrCodes = slotTier === "compact" ? 4 : slotTier === "medium" ? 6 : Number.POSITIVE_INFINITY;
+    const memberIds = new Set<string>();
+
+    for (const slot of upNextSlots) {
+      const memberId = slot.claim?.member?.id;
+      if (!memberId) continue;
+      if (memberIds.size >= maxQrCodes) break;
+      memberIds.add(memberId);
+    }
+
+    return memberIds;
+  }, [slotTier, upNextSlots]);
 
   if (loading) {
     return (
@@ -840,13 +871,13 @@ export default function EventDisplayPage() {
               </h2>
               <div className="flex-1 bg-black/60 backdrop-blur-sm border-2 border-[var(--color-accent-primary)]/50 rounded-2xl p-6 min-h-0 flex flex-col">
                 {/* Phase 4.113: Now Playing - HUGE layout with frame-filling avatar */}
-                {nowPlayingSlot?.claim?.member ? (
+                {hasClaimedPerformer(nowPlayingSlot?.claim) ? (
                   <div className="flex flex-col items-center text-center flex-1 justify-center gap-4">
                     {/* Large avatar that dominates the frame */}
-                    {nowPlayingSlot.claim.member.avatar_url ? (
+                    {nowPlayingSlot?.claim?.member?.avatar_url ? (
                       <Image
                         src={nowPlayingSlot.claim.member.avatar_url}
-                        alt={nowPlayingSlot.claim.member.full_name || "Performer"}
+                        alt={getClaimDisplayName(nowPlayingSlot.claim)}
                         width={180}
                         height={180}
                         className="rounded-full object-cover border-4 border-[var(--color-accent-primary)] shadow-2xl"
@@ -854,16 +885,16 @@ export default function EventDisplayPage() {
                     ) : (
                       <div className="w-44 h-44 rounded-full bg-[var(--color-accent-primary)]/30 flex items-center justify-center">
                         <span className="text-7xl text-[var(--color-text-accent)]">
-                          {nowPlayingSlot.claim.member.full_name?.[0] || "?"}
+                          {getClaimInitial(nowPlayingSlot?.claim)}
                         </span>
                       </div>
                     )}
                     {/* HUGE performer name */}
                     <h3 className="text-5xl font-bold text-white drop-shadow-lg leading-tight">
-                      {nowPlayingSlot.claim.member.full_name || "Anonymous"}
+                      {getClaimDisplayName(nowPlayingSlot?.claim)}
                     </h3>
                     {/* QR code with prominent CTA */}
-                    {qrCodes.get(nowPlayingSlot.claim.member.id) && (
+                    {nowPlayingSlot?.claim?.member && qrCodes.get(nowPlayingSlot.claim.member.id) && (
                       <div className="flex flex-col items-center">
                         <div className="bg-white rounded-xl p-2 shadow-xl">
                           <Image
@@ -921,14 +952,14 @@ export default function EventDisplayPage() {
                               }`}>
                                 {slot.slot_index + 1}
                               </div>
-                              {slot.claim?.member ? (
+                              {hasClaimedPerformer(slot.claim) ? (
                                 <>
                                   {/* Phase 4.110: Avatar - show in large/medium tier, hide in compact to save space */}
                                   {slotTier !== "compact" && (
-                                    slot.claim.member.avatar_url ? (
+                                    slot.claim?.member?.avatar_url ? (
                                       <Image
                                         src={slot.claim.member.avatar_url}
-                                        alt={slot.claim.member.full_name || ""}
+                                        alt={getClaimDisplayName(slot.claim)}
                                         width={slotTier === "large" ? 36 : 28}
                                         height={slotTier === "large" ? 36 : 28}
                                         className="rounded-full object-cover flex-shrink-0"
@@ -938,7 +969,7 @@ export default function EventDisplayPage() {
                                         slotTier === "large" ? "w-9 h-9" : "w-7 h-7"
                                       }`}>
                                         <span className={`text-[var(--color-text-accent)] ${slotTier === "large" ? "text-sm" : "text-xs"}`}>
-                                          {slot.claim.member.full_name?.[0] || "?"}
+                                          {getClaimInitial(slot.claim)}
                                         </span>
                                       </div>
                                     )
@@ -952,16 +983,14 @@ export default function EventDisplayPage() {
                                           ? (index === 0 ? "text-white text-base" : "text-gray-300 text-sm")
                                           : (index === 0 ? "text-white text-sm" : "text-gray-300 text-xs")
                                     }`}>
-                                      {slot.claim.member.full_name || "Anonymous"}
+                                      {getClaimDisplayName(slot.claim)}
                                     </p>
                                   </div>
                                   {/* Phase 4.110: QR for performers with profiles, adaptive sizing by tier */}
-                                  {qrCodes.get(slot.claim.member.id) && (
+                                  {slot.claim?.member && qrCodes.get(slot.claim.member.id) && (
                                     (() => {
-                                      // In compact mode, only show QR for first 4 performers
-                                      if (slotTier === "compact" && index > 3) return null;
-                                      // In medium mode, limit QR to first 6
-                                      if (slotTier === "medium" && index > 5) return null;
+                                      // Limit by claimed performers, not visual rows, so open slots do not hide later performer QRs.
+                                      if (!visibleUpNextQrMemberIds.has(slot.claim.member.id)) return null;
                                       const qrSize = slotTier === "large" ? 44 : slotTier === "medium" ? 36 : 28;
                                       return (
                                         <div className="bg-white rounded-md p-0.5 flex-shrink-0">
@@ -1005,12 +1034,12 @@ export default function EventDisplayPage() {
                             <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Already Performed</p>
                             <div className="flex flex-wrap gap-1.5">
                               {completedSlots.slice(0, 6).map(slot => (
-                                slot.claim?.member && (
+                                hasClaimedPerformer(slot.claim) && (
                                   <div
                                     key={slot.id}
                                     className="flex items-center gap-1.5 px-2 py-1 bg-black/30 rounded-full text-xs text-gray-500"
                                   >
-                                    {slot.claim.member.avatar_url ? (
+                                    {slot.claim?.member?.avatar_url ? (
                                       <Image
                                         src={slot.claim.member.avatar_url}
                                         alt=""
@@ -1021,7 +1050,7 @@ export default function EventDisplayPage() {
                                     ) : (
                                       <div className="w-5 h-5 rounded-full bg-gray-800" />
                                     )}
-                                    <span>{slot.claim.member.full_name}</span>
+                                    <span>{getClaimDisplayName(slot.claim)}</span>
                                   </div>
                                 )
                               ))}
@@ -1128,13 +1157,13 @@ export default function EventDisplayPage() {
           <h2 className="text-2xl font-semibold text-gray-400 uppercase tracking-wider mb-4">
             Now Playing
           </h2>
-          {nowPlayingSlot?.claim?.member ? (
+          {hasClaimedPerformer(nowPlayingSlot?.claim) ? (
             <div className="bg-gradient-to-br from-[var(--color-accent-primary)]/20 to-transparent border-2 border-[var(--color-accent-primary)] rounded-2xl p-8 h-[calc(100%-48px)]">
               <div className="flex flex-col items-center text-center h-full justify-center">
-                {nowPlayingSlot.claim.member.avatar_url ? (
+                {nowPlayingSlot?.claim?.member?.avatar_url ? (
                   <Image
                     src={nowPlayingSlot.claim.member.avatar_url}
-                    alt={nowPlayingSlot.claim.member.full_name || "Performer"}
+                    alt={getClaimDisplayName(nowPlayingSlot.claim)}
                     width={224}
                     height={224}
                     className="rounded-full object-cover border-4 border-[var(--color-accent-primary)] mb-6"
@@ -1142,19 +1171,21 @@ export default function EventDisplayPage() {
                 ) : (
                   <div className="w-56 h-56 rounded-full bg-[var(--color-accent-primary)]/30 flex items-center justify-center mb-6">
                     <span className="text-8xl text-[var(--color-text-accent)]">
-                      {nowPlayingSlot.claim.member.full_name?.[0] || "?"}
+                      {getClaimInitial(nowPlayingSlot?.claim)}
                     </span>
                   </div>
                 )}
                 {/* Phase 4.102: text-5xl for TV readability (was text-4xl) */}
                 <h3 className="text-5xl font-bold text-white mb-3">
-                  {nowPlayingSlot.claim.member.full_name || "Anonymous"}
+                  {getClaimDisplayName(nowPlayingSlot?.claim)}
                 </h3>
                 {/* Phase 4.102: text-2xl for TV readability (was text-xl) */}
                 <p className="text-2xl text-[var(--color-text-accent)]">
-                  {formatSlotTime(event?.start_time || null, nowPlayingSlot.start_offset_minutes, nowPlayingSlot.duration_minutes)}
+                  {nowPlayingSlot
+                    ? formatSlotTime(event?.start_time || null, nowPlayingSlot.start_offset_minutes, nowPlayingSlot.duration_minutes)
+                    : ""}
                 </p>
-                {qrCodes.get(nowPlayingSlot.claim.member.id) && (
+                {nowPlayingSlot?.claim?.member && qrCodes.get(nowPlayingSlot.claim.member.id) && (
                   <div className="mt-6">
                     <Image
                       src={qrCodes.get(nowPlayingSlot.claim.member.id)!}
@@ -1200,12 +1231,12 @@ export default function EventDisplayPage() {
                   <div className="w-14 h-14 rounded-full bg-gray-800 flex items-center justify-center text-xl font-bold text-gray-400">
                     {slot.slot_index + 1}
                   </div>
-                  {slot.claim?.member ? (
+                  {hasClaimedPerformer(slot.claim) ? (
                     <>
-                      {slot.claim.member.avatar_url ? (
+                      {slot.claim?.member?.avatar_url ? (
                         <Image
                           src={slot.claim.member.avatar_url}
-                          alt={slot.claim.member.full_name || ""}
+                          alt={getClaimDisplayName(slot.claim)}
                           width={56}
                           height={56}
                           className="rounded-full object-cover"
@@ -1213,20 +1244,20 @@ export default function EventDisplayPage() {
                       ) : (
                         <div className="w-14 h-14 rounded-full bg-[var(--color-accent-primary)]/20 flex items-center justify-center">
                           <span className="text-lg text-[var(--color-text-accent)]">
-                            {slot.claim.member.full_name?.[0] || "?"}
+                            {getClaimInitial(slot.claim)}
                           </span>
                         </div>
                       )}
                       <div className="flex-1">
                         {/* Phase 4.102: text-2xl for next up, text-xl for others */}
                         <p className={`font-semibold ${index === 0 ? "text-white text-2xl" : "text-gray-300 text-xl"}`}>
-                          {slot.claim.member.full_name || "Anonymous"}
+                          {getClaimDisplayName(slot.claim)}
                         </p>
                         <p className="text-base text-gray-500">
                           {formatSlotTime(event?.start_time || null, slot.start_offset_minutes, slot.duration_minutes)}
                         </p>
                       </div>
-                      {qrCodes.get(slot.claim.member.id) && index === 0 && (
+                      {slot.claim?.member && qrCodes.get(slot.claim.member.id) && index === 0 && (
                         <Image
                           src={qrCodes.get(slot.claim.member.id)!}
                           alt="QR"
@@ -1265,12 +1296,12 @@ export default function EventDisplayPage() {
               </h3>
               <div className="flex flex-wrap gap-3">
                 {completedSlots.map(slot => (
-                  slot.claim?.member && (
+                  hasClaimedPerformer(slot.claim) && (
                     <div
                       key={slot.id}
                       className="flex items-center gap-3 px-4 py-2 bg-gray-900/30 rounded-full text-base text-gray-500"
                     >
-                      {slot.claim.member.avatar_url ? (
+                      {slot.claim?.member?.avatar_url ? (
                         <Image
                           src={slot.claim.member.avatar_url}
                           alt=""
@@ -1281,7 +1312,7 @@ export default function EventDisplayPage() {
                       ) : (
                         <div className="w-7 h-7 rounded-full bg-gray-800" />
                       )}
-                      <span>{slot.claim.member.full_name}</span>
+                      <span>{getClaimDisplayName(slot.claim)}</span>
                     </div>
                   )
                 ))}

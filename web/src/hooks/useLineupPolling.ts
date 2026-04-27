@@ -14,6 +14,8 @@ interface Performer {
 interface TimeslotClaim {
   id: string;
   status: string;
+  guest_name: string | null;
+  guest_email: string | null;
   member: Performer | null;
 }
 
@@ -152,8 +154,8 @@ export function useLineupPolling({
 
         // Build select query based on whether we need slug
         const claimSelect = includePerformerSlug
-          ? `id, timeslot_id, status, member:profiles!timeslot_claims_member_id_fkey(id, slug, full_name, avatar_url)`
-          : `id, timeslot_id, status, member:profiles!timeslot_claims_member_id_fkey(id, full_name, avatar_url)`;
+          ? `id, timeslot_id, status, guest_name, guest_email, member:profiles!timeslot_claims_member_id_fkey(id, slug, full_name, avatar_url)`
+          : `id, timeslot_id, status, guest_name, guest_email, member:profiles!timeslot_claims_member_id_fkey(id, full_name, avatar_url)`;
 
         const { data: claims, error: claimsError } = await supabase
           .from("timeslot_claims")
@@ -163,12 +165,14 @@ export function useLineupPolling({
 
         if (claimsError) throw claimsError;
 
-        type ClaimRow = { id: string; timeslot_id: string; status: string; member: Performer | null };
+        type ClaimRow = { id: string; timeslot_id: string; status: string; guest_name: string | null; guest_email: string | null; member: Performer | null };
         const claimsBySlot = new Map<string, TimeslotClaim>();
         ((claims || []) as ClaimRow[]).forEach((claim) => {
           claimsBySlot.set(claim.timeslot_id, {
             id: claim.id,
             status: claim.status,
+            guest_name: claim.guest_name,
+            guest_email: claim.guest_email,
             member: claim.member,
           });
         });
