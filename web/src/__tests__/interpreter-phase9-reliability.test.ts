@@ -244,8 +244,10 @@ describe("Phase 9B — event-type reliability", () => {
   it("does not silently drop explicit search requests when web search cannot produce sources", () => {
     expect(interpretRouteSource).toContain("buildNoReliableWebSearchResult");
     expect(interpretRouteSource).toContain('tool_choice: input.returnNoReliableResult ? "required" : "auto"');
-    expect(interpretRouteSource).toContain("const WEB_SEARCH_TIMEOUT_MS = 40_000");
-    expect(interpretRouteSource).toContain("export const maxDuration = 90");
+    expect(interpretRouteSource).toContain("const WEB_SEARCH_TIMEOUT_MS = 20_000");
+    expect(interpretRouteSource).toContain("const INTERPRETER_TIMEOUT_MS = 60_000");
+    expect(interpretRouteSource).toContain("const DRAFT_VERIFIER_TIMEOUT_MS = 15_000");
+    expect(interpretRouteSource).toContain("export const maxDuration = 120");
     expect(interpretRouteSource).toContain("web-search service returned an upstream error");
     expect(interpretRouteSource).toContain("returned no usable verification text");
     expect(interpretRouteSource).toContain("did not return a readable exact-event source");

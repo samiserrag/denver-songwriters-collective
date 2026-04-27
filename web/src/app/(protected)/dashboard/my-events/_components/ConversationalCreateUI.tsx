@@ -1699,8 +1699,9 @@ export function ConversationalCreateUI({
           {
             role: "assistant",
             content:
-              `I hit a service timeout while reading that. Please try Generate Draft again with the same image and notes. ` +
-              `If it still stalls, paste the flyer text too and I will keep going from there. (${errorText})`,
+              errorText === "Interpreter timeout."
+                ? "I ran out of model time while structuring the draft. I kept your images attached, so send once more and I will continue from the same flyer instead of starting over."
+                : `I hit a service timeout while reading that. I kept your images attached, so send once more with the same image and notes. (${errorText})`,
           },
         ]);
       } else if (body) {
