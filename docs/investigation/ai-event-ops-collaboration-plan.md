@@ -190,6 +190,8 @@ Suggested image reference shape:
 }
 ```
 
+If `eventImageId` is absent, the image is staged in chat only and has not yet been persisted to `event_images`.
+
 ---
 
 ## 6. Track 1 Execution Order
@@ -555,3 +557,46 @@ Track 1 is ready for broad live use when:
 - telemetry captures enough detail to diagnose failures
 - prompt evals cover the common failure modes
 
+---
+
+## 13. Pre-Approved Remote Work
+
+The following scopes are pre-approved for cloud agents once they have read `AGENTS.md`, `docs/GOVERNANCE.md`, this collaboration plan, and created or updated `docs/investigation/track1-claims.md`.
+
+### 13.1 Pre-Approved Without Another Stop-Gate
+
+- PR 1: patch field registry and classification test, with no runtime behavior change.
+- PR 2: server-side diff utility, with no runtime behavior change.
+- PR 4: eval harness, with no runtime behavior change and no model-dependent CI gate.
+- PR 10: refresh instrumentation, debug-gated only and with no noisy default production logging.
+
+### 13.2 Requires Explicit Sami Approval
+
+Explicit approval is required before coding any work involving:
+
+- telemetry schema or runtime changes
+- prompt or interpreter contract rewrite
+- AI edit routes
+- entry-point UI
+- venue or image edit wiring
+- published-event gate
+- migrations
+- `web/src/app/api/events/interpret/route.ts`
+- `web/src/app/(protected)/dashboard/my-events/_components/ConversationalCreateUI.tsx`
+- production write behavior
+
+Default rule: when in doubt, treat the PR as requiring approval.
+
+### 13.3 Scope Creep Rule
+
+Pre-approved means pre-approved only for the stated scope. If a cloud agent discovers that a pre-approved PR needs schema changes, new dependencies, runtime behavior changes, or edits to a locked file, stop and ask in the PR before continuing.
+
+### 13.4 Blocked Rule
+
+When blocked on a judgment call, open the PR as a draft with the question clearly stated in the description or a PR comment. Do not improvise.
+
+### 13.5 Cloud Startup Defaults
+
+- Claude Code web starts PR 1 only.
+- Codex Cloud starts PR 4 only.
+- Both agents must create or update the claims doc before their first implementation edit.
