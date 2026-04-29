@@ -19,6 +19,7 @@ import type { SiteSocialLink } from "@/lib/site-social-links";
 // Phase 4.2: Open Mics link removed - use /happenings with type filter instead
 const navLinks = [
   { href: "/happenings", label: "Happenings" },
+  { href: "/venues", label: "Venues" },
   { href: "/members", label: "Members" },
   { href: "/friends-of-the-collective", label: "Friends" },
   { href: "/gallery", label: "Gallery" },
