@@ -17,6 +17,9 @@ Codex Cloud sandboxes — even when started with the GitHub repo selected — ha
 
 - `origin` remote configured ✅
 - Outbound access to `github.com` **blocked** at the network layer (CONNECT tunnel 403) ❌
+  This blocks `git fetch origin`, `git push`, `gh` API calls, and any other
+  HTTPS request to github.com. The repo is already cloned into the sandbox at
+  task launch — work from the preloaded clone, do not try to refresh it.
 - `gh` CLI **not installed** ❌
 - No `GITHUB_TOKEN` environment variable ❌
 
@@ -43,7 +46,11 @@ If your task requires touching one of these, stop and ask Sami before proceeding
 Since direct push is blocked, use this protocol:
 
 1. Verify remote at session start: `git remote -v`. If origin is not configured, stop and tell Sami.
-2. Branch from current `main`. Confirm base SHA before starting.
+   Do NOT run `git fetch origin` — it will 403. The sandbox is preloaded; HEAD already reflects the
+   commit Codex Cloud cloned at task launch.
+2. Branch from the preloaded `main` HEAD. Get the base SHA from `git rev-parse HEAD` BEFORE checking
+   out the new branch and record it in the claim entry. If main HEAD does not match the SHA the
+   coordinator gave you, use the actual sandbox HEAD and note the discrepancy in your claim entry.
 3. Branch name: `codex/<short-task>-pr<N>` per the task prompt.
 4. Update `docs/investigation/track1-claims.md` with your claim entry as your first commit.
 5. Implement work in focused commits. One logical change per commit.
@@ -124,6 +131,8 @@ Even though direct push is blocked, the remote should still be configured. If it
 ## What you do not do
 
 - Do not run `git push` (it will 403).
+- Do not run `git fetch origin` (it will also 403).
+- Do not run `gh` commands (CLI not installed; even if installed, no token).
 - Do not use `make_pr` or sandbox-internal PR staging.
 - Do not merge PRs.
 - Do not run migrations.
