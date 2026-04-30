@@ -285,19 +285,19 @@ export function buildAiPromptUserEnvelope(input: BuildUserPromptInput): string {
  * (dropping required draft_payload keys for edit modes) is deferred to
  * PR 9 per the approved scope.
  */
-export function buildAiPromptResponseSchema(): ReturnType<typeof buildInterpretResponseSchema> & {
+export interface AiPromptResponseSchema {
+  type: string;
+  additionalProperties: boolean;
   required: string[];
   properties: Record<string, unknown>;
-} {
-  const base = buildInterpretResponseSchema() as {
-    type: string;
-    additionalProperties: boolean;
-    required: string[];
-    properties: Record<string, unknown>;
-  };
+}
+
+export function buildAiPromptResponseSchema(): AiPromptResponseSchema {
+  const base = buildInterpretResponseSchema() as unknown as AiPromptResponseSchema;
 
   return {
-    ...base,
+    type: base.type,
+    additionalProperties: base.additionalProperties,
     required: [...base.required, "scope"],
     properties: {
       ...base.properties,
