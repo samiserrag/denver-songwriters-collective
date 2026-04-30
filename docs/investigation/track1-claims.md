@@ -22,29 +22,19 @@ Rules:
 
 ## Active claims
 
-### PR 8 — Venue resolution, venue enrichment, and image reference contract
+### PR 9 — Published-event gate for AI edits
 
-- **Branch:** `codex/venue-image-pr8`
+- **Branch:** `codex/published-event-gate-pr9`
 - **Owner:** Codex
-- **Base SHA:** `c6f5c5735a8e431e9894d87db1f2f63284d855d9`
+- **Base SHA:** `9676d39677cc999d8f9aa32653de48f7ff2ac790`
 - **Status:** `awaiting_review`
-- **Scope:** Use existing venue resolution for edit/create save paths, prevent custom-location duplicates when a deterministic canonical venue match exists, pass stable ordered image references on each interpret turn, support deterministic natural-language cover switching, and carry confidently verified venue enrichment fields through existing venue/custom-location write surfaces.
 - **Files claimed:**
-  - `docs/investigation/track1-claims.md`
-  - `web/src/app/api/events/interpret/route.ts`
-  - `web/src/lib/events/aiPromptContract.ts`
-  - `web/src/lib/events/interpretEventContract.ts`
-  - `web/src/lib/events/interpreterPostprocess.ts`
-  - `web/src/app/(protected)/dashboard/my-events/_components/ConversationalCreateUI.tsx`
-  - `web/src/app/api/my-events/route.ts`
   - `web/src/app/api/my-events/[id]/route.ts`
-  - `web/src/app/api/venues/route.ts`
-  - `web/src/app/api/admin/venues/route.ts`
-  - `web/src/__tests__/track1-pr8-venue-image-contract.test.ts`
-  - `web/src/__tests__/event-detail-type-badges.test.ts`
-  - `web/src/__tests__/interpreter-14-host-ux-polish.test.ts`
-  - `web/src/__tests__/interpreter-lab-create-write.test.ts`
-- **Forbidden scope reminders:** No migrations, no PR 9 published-event gate behavior, no telemetry runtime changes, no broad venue permission redesign, and no bypass of `allowExistingEventWrites={false}` edit-route safety.
+  - `web/src/app/(protected)/dashboard/my-events/_components/ConversationalCreateUI.tsx`
+  - `web/src/__tests__/track1-pr9-published-event-gate.test.ts`
+  - `docs/investigation/track1-claims.md`
+- **Notes:** Server-side gate for published high-risk AI auto-apply writes with explicit confirmation retry path; preserve PR 6/7 routes and PR 8 venue/image behavior.
+
 
 Next planned Track 1 order: PR 8 (venue/image edit wiring) → PR 9 (published-event gate).
 
