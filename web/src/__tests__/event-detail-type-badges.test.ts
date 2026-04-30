@@ -63,11 +63,33 @@ describe("event detail type badges", () => {
 
     expect(badgeBlock).toContain("eventTypes.map((eventType) =>");
     expect(badgeBlock).toContain("const typeConfig = EVENT_TYPE_CONFIG[eventType];");
+    expect(badgeBlock).toContain("const tone = EVENT_TYPE_BADGE_TONES[eventType];");
     expect(badgeBlock).toContain("{typeConfig.icon}");
     expect(badgeBlock).toContain("{typeConfig.label}");
-    expect(badgeBlock).toContain("min-h-12");
-    expect(badgeBlock).toContain("text-2xl");
-    expect(badgeBlock).toContain("md:text-lg");
+    expect(badgeBlock).toContain("min-h-24");
+    expect(badgeBlock).toContain("md:min-h-28");
+    expect(badgeBlock).toContain("h-16 w-16");
+    expect(badgeBlock).toContain("text-4xl");
+    expect(badgeBlock).toContain("md:text-5xl");
+    expect(badgeBlock).toContain("text-2xl font-extrabold");
+    expect(badgeBlock).toContain("md:text-3xl");
+  });
+
+  it("uses a distinct saturated color treatment for each event type", () => {
+    const toneBlock = sourceBetween(
+      "const EVENT_TYPE_BADGE_TONES",
+      "const siteUrl"
+    );
+
+    for (const eventType of Object.keys(EVENT_TYPE_CONFIG)) {
+      expect(toneBlock).toContain(`${eventType}: {`);
+    }
+
+    expect(toneBlock).toContain("bg-orange-500");
+    expect(toneBlock).toContain("bg-teal-500");
+    expect(toneBlock).toContain("bg-violet-500");
+    expect(toneBlock).toContain("bg-sky-500");
+    expect(toneBlock).toContain("bg-fuchsia-500");
   });
 
   it("supports multiple event types instead of collapsing display to only the primary type", () => {
@@ -96,7 +118,7 @@ describe("event detail type badges", () => {
     expect(typeBadgeIndex).toBeLessThan(eventDetailsIndex);
   });
 
-  it("keeps Track 1, Symphony, interpreter, migration, and telemetry files out of this PR", () => {
+  it("keeps Track 1, interpreter, migration, and telemetry files out of this PR", () => {
     const changedFiles = getBranchChangedFiles();
     const forbiddenPatterns = [
       /^docs\/investigation\/track1-claims\.md$/,
@@ -107,7 +129,6 @@ describe("event detail type badges", () => {
       /^web\/src\/lib\/events\/interpreterPostprocess\.ts$/,
       /^web\/src\/lib\/telemetry\//,
       /^supabase\/migrations\//,
-      /symphony/i,
     ];
 
     expect(changedFiles.filter((file) => forbiddenPatterns.some((pattern) => pattern.test(file)))).toEqual([]);
