@@ -58,8 +58,8 @@ async function resolveExistingVenueFromCustomLocation(input: {
 
   const { data: venueRows, error } = await input.supabase
     .from("venues")
-    .select("id, name, slug")
-    .order("name", { ascending: true })
+    .select("id, name, address, city, state, slug")
+    .ilike("name", "%")
     .limit(500);
 
   if (error) {
