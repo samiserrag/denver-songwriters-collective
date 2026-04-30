@@ -40,6 +40,10 @@ export default async function AIEditEventPage({ params }: PageProps) {
       initialMode="edit_series"
       initialEventId={eventId}
       allowExistingEventWrites={false}
+      pageTitle="Edit Happening With AI"
+      pageDescription="Ask AI to draft updates for this happening. Changes are not saved automatically yet."
+      backHref={`/dashboard/my-events/${eventId}`}
+      backLabel="Back to happening"
     />
   );
 }

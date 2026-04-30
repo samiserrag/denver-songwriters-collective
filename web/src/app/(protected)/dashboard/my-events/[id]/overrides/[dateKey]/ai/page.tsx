@@ -46,6 +46,10 @@ export default async function AIOccurrenceEditPage({ params }: PageProps) {
       initialEventId={eventId}
       initialDateKey={dateKey}
       allowExistingEventWrites={false}
+      pageTitle="Edit Occurrence With AI"
+      pageDescription="Ask AI to draft updates for this occurrence. Changes are not saved automatically yet."
+      backHref={`/dashboard/my-events/${eventId}/overrides/${dateKey}`}
+      backLabel="Back to occurrence"
     />
   );
 }

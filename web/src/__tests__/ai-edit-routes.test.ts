@@ -31,6 +31,10 @@ describe("AI edit route wrappers", () => {
     expect(seriesRouteSource).toContain('redirect("/dashboard")');
     expect(seriesRouteSource).toContain('initialMode="edit_series"');
     expect(seriesRouteSource).toContain("initialEventId={eventId}");
+    expect(seriesRouteSource).toContain('pageTitle="Edit Happening With AI"');
+    expect(seriesRouteSource).toContain("Ask AI to draft updates for this happening");
+    expect(seriesRouteSource).toContain("backHref={`/dashboard/my-events/${eventId}`}");
+    expect(seriesRouteSource).toContain('backLabel="Back to happening"');
   });
 
   it("adds the occurrence edit AI route with YYYY-MM-DD validation", () => {
@@ -41,6 +45,10 @@ describe("AI edit route wrappers", () => {
     expect(occurrenceRouteSource).toContain('initialMode="edit_occurrence"');
     expect(occurrenceRouteSource).toContain("initialEventId={eventId}");
     expect(occurrenceRouteSource).toContain("initialDateKey={dateKey}");
+    expect(occurrenceRouteSource).toContain('pageTitle="Edit Occurrence With AI"');
+    expect(occurrenceRouteSource).toContain("Ask AI to draft updates for this occurrence");
+    expect(occurrenceRouteSource).toContain("backHref={`/dashboard/my-events/${eventId}/overrides/${dateKey}`}");
+    expect(occurrenceRouteSource).toContain('backLabel="Back to occurrence"');
   });
 
   it("keeps existing-event route writes disabled until the published-event gate ships", () => {
@@ -85,5 +93,21 @@ describe("ConversationalCreateUI PR 6 edit-mode safety", () => {
     expect(componentSource).toContain("canWriteExistingEvent &&");
     expect(componentSource).toContain("isEditMode && targetEventId && canWriteExistingEvent");
     expect(componentSource).toContain("!hasValidEventId || !canWriteExistingEvent");
+  });
+
+  it("exposes minimal copy and navigation props with existing default copy", () => {
+    expect(componentSource).toContain("pageTitle?: string");
+    expect(componentSource).toContain("pageDescription?: string");
+    expect(componentSource).toContain("backHref?: string");
+    expect(componentSource).toContain("backLabel?: string");
+    expect(componentSource).toContain('pageTitle ?? (isHostVariant ? "Create Happening with AI"');
+    expect(componentSource).toContain("Turn a flyer, link, or rough notes into a private event draft");
+    expect(componentSource).toContain("Conversational Event Creator (Lab)");
+    expect(componentSource).toContain("/dashboard/my-events/new?classic=true");
+    expect(componentSource).toContain("Use classic form instead");
+    expect(componentSource).toContain("{effectivePageTitle}");
+    expect(componentSource).toContain("{effectivePageDescription}");
+    expect(componentSource).toContain("href={effectiveBackHref}");
+    expect(componentSource).toContain("{effectiveBackLabel}");
   });
 });

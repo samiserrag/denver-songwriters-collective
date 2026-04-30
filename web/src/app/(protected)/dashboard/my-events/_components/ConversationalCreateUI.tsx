@@ -1182,16 +1182,33 @@ export function ConversationalCreateUI({
   initialEventId = "",
   initialDateKey = "",
   allowExistingEventWrites = true,
+  pageTitle,
+  pageDescription,
+  backHref,
+  backLabel,
 }: {
   variant?: ConversationalCreateVariant;
   initialMode?: InterpretMode;
   initialEventId?: string;
   initialDateKey?: string;
   allowExistingEventWrites?: boolean;
+  pageTitle?: string;
+  pageDescription?: string;
+  backHref?: string;
+  backLabel?: string;
 }) {
   // Phase 8E: host variant forces create mode and enables writes without lab flag
   const isHostVariant = variant === "host";
   const writesEnabled = isHostVariant || LAB_WRITES_ENABLED;
+  const effectivePageTitle =
+    pageTitle ?? (isHostVariant ? "Create Happening with AI" : "Conversational Event Creator (Lab)");
+  const effectivePageDescription =
+    pageDescription ??
+    (isHostVariant
+      ? "Turn a flyer, link, or rough notes into a private event draft. You can keep chatting here until it is ready."
+      : "Testing surface for /api/events/interpret. Replies appear below, and each follow-up should be entered in the same message box.");
+  const effectiveBackHref = backHref ?? "/dashboard/my-events/new?classic=true";
+  const effectiveBackLabel = backLabel ?? "Use classic form instead";
 
   // ---- core state (unchanged from original) ----
   const [mode, setMode] = useState<InterpretMode>(initialMode);
@@ -2367,11 +2384,11 @@ export function ConversationalCreateUI({
                 <Bot className="h-5 w-5" aria-hidden="true" />
               </span>
               <h1 className="font-[var(--font-family-serif)] text-3xl text-[var(--color-text-primary)]">
-                Create Happening with AI
+                {effectivePageTitle}
               </h1>
             </div>
             <p className="max-w-3xl text-[var(--color-text-secondary)]">
-              Turn a flyer, link, or rough notes into a private event draft. You can keep chatting here until it is ready.
+              {effectivePageDescription}
             </p>
             <div className={`mt-4 rounded-lg border px-4 py-3 ${hostWorkflowToneClass}`}>
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
@@ -2392,21 +2409,27 @@ export function ConversationalCreateUI({
               </div>
             </div>
             <Link
-              href="/dashboard/my-events/new?classic=true"
+              href={effectiveBackHref}
               className="mt-2 inline-flex items-center gap-1.5 text-sm text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors"
               onClick={() => sendTelemetry("fallback_click")}
             >
               <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
-              Use classic form instead
+              {effectiveBackLabel}
             </Link>
           </div>
         ) : (
           <div>
             <h1 className="font-[var(--font-family-serif)] text-3xl text-[var(--color-text-primary)] mb-2">
-              Conversational Event Creator (Lab)
+              {effectivePageTitle}
             </h1>
             <p className="text-[var(--color-text-secondary)]">
-              Testing surface for <code>/api/events/interpret</code>. Replies appear below, and each follow-up should be entered in the same message box.
+              {pageDescription ? (
+                effectivePageDescription
+              ) : (
+                <>
+                  Testing surface for <code>/api/events/interpret</code>. Replies appear below, and each follow-up should be entered in the same message box.
+                </>
+              )}
             </p>
           </div>
         )}
