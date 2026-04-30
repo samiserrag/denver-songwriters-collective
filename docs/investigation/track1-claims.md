@@ -1,7 +1,7 @@
 # Track 1 Claims Doc
 
 **Status:** Living
-**Last updated:** 2026-04-29
+**Last updated:** 2026-04-30
 
 This file is the lightweight coordination ledger for Track 1 (AI edit and update existing events). Every active PR in Track 1 must list its branch, owner, scope, files claimed, base SHA, and status here so other agents know what is safe to touch.
 
@@ -22,31 +22,37 @@ Rules:
 
 ## Active claims
 
-### PR 2 — Server-side patch diff utility
+### PR 10 — Refresh instrumentation, debug-gated only
 
-- **Branch:** `claude/patch-diff-pr2`
-- **Owner:** Claude (web)
-- **Scope:** Pre-approved per collaboration plan §13.1. Server-side diff utility only. No runtime call sites are wired in this PR; the utility is consumed in PR 9 (published-event gate) and PR 11 (UI "What changed" section). No runtime behavior change, no migrations, no allowlist migration.
+- **Branch:** `codex/refresh-instrumentation-pr10`
+- **Owner:** Codex
+- **Scope:** Pre-approved per collaboration plan §13.1. Debug-gated instrumentation only inside `eventDraftSync.ts`; no call-site edits, no runtime behavior change when debug is off, no migrations.
 - **Files claimed (write):**
-  - `web/src/lib/events/computePatchDiff.ts`
-  - `web/src/lib/events/__tests__/computePatchDiff.test.ts`
+  - `web/src/lib/events/eventDraftSync.ts`
+  - `web/src/__tests__/eventDraftSync-instrumentation.test.ts`
   - `docs/investigation/track1-claims.md` (this file)
 - **Files referenced (read-only):**
-  - `web/src/lib/events/patchFieldRegistry.ts` — risk tier / scope / value kind source of truth (PR 1, merged)
-  - `web/src/lib/supabase/database.types.ts` — generated event row type
-- **Base SHA:** `c76e7c00c148efd62625042393d6bd88f79850a7`
+  - `web/src/__tests__/interpreter-host-draft-sync.test.ts`
+- **Base SHA:** `e143fac2e45bdce9eb3a33875dbd4825868bfd4f`
 - **Status:** `in_progress`
 - **Notes for the other agent:**
-  - Diffs use `PATCH_FIELD_REGISTRY` to determine `value_kind` (scalar vs array) per plan §6 PR 2.
-  - Array fields (`event_type`, `categories`, `custom_dates`) diff by added/removed values, **not positional order**. Order changes alone produce no change.
-  - Scalar values normalize null/undefined/empty-string as equivalent (matches the existing `lib/ops/eventDiff.ts` convention so the AI patch surface and CSV ops surface agree on emptiness).
-  - Patch fields outside the registry (system timestamps, `UNCLASSIFIED_BY_DESIGN`, made-up names) are returned in `unknownFields`. Callers must treat unknowns as high-risk + enforced per plan §5.1 — this utility does not silently drop them.
-  - The diff result includes per-field `risk_tier` and `enforcement_mode` snapshots so PR 3 telemetry and PR 9 gating can record the registry classification at decision time without a second lookup.
-  - Occurrence-scope diffs reject patches that touch series-only fields (e.g. `recurrence_*`, `is_published`); rejected fields are listed in `outOfScopeFields` and not included in `changedFields`.
+  - Coordinator expected `e143fac`; actual sandbox HEAD is `e143fac2e45bdce9eb3a33875dbd4825868bfd4f` (same short SHA prefix).
+  - Instrumentation is gated by a debug env flag and defaults off.
+
+
 
 ---
 
 ## Closed claims
+
+
+### PR 2 — Server-side patch diff utility
+
+- **Branch:** `claude/patch-diff-pr2`
+- **Owner:** Claude (web)
+- **End SHA:** merged via PR #126 → `992cb38c`
+- **Status:** `merged`
+- **Notes:** Server-side patch diff utility landed; runtime wiring deferred to later PRs per plan.
 
 ### PR 1 — Patch field registry + classification test
 

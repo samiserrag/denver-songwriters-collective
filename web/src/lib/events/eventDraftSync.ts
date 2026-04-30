@@ -5,10 +5,27 @@ export type EventDraftSyncReason = "created" | "updated" | "cover_updated" | "pu
 export const EVENT_DRAFT_SYNC_CHANNEL = "csc-event-draft-sync";
 export const EVENT_DRAFT_SYNC_STORAGE_KEY = "csc:event-draft-sync";
 
+const DRAFT_SYNC_DEBUG_FLAG = "NEXT_PUBLIC_DRAFT_SYNC_DEBUG";
+
 export interface EventDraftSyncPayload {
   eventId: string;
   reason: EventDraftSyncReason;
   at: number;
+}
+
+export interface EventDraftSyncLogPayload {
+  eventId: string;
+  reason: EventDraftSyncReason;
+  source?: string;
+}
+
+function isDraftSyncDebugEnabled(): boolean {
+  return process.env[DRAFT_SYNC_DEBUG_FLAG] === "1";
+}
+
+function debugLogDraftSync(kind: "broadcast" | "received", payload: EventDraftSyncLogPayload): void {
+  if (!isDraftSyncDebugEnabled()) return;
+  console.info("[eventDraftSync]", { kind, ...payload });
 }
 
 function isEventDraftSyncPayload(value: unknown): value is EventDraftSyncPayload {
@@ -33,7 +50,8 @@ function parsePayload(raw: string | null): EventDraftSyncPayload | null {
 
 export function broadcastEventDraftSync(
   eventId: string,
-  reason: EventDraftSyncReason
+  reason: EventDraftSyncReason,
+  source?: string
 ): void {
   if (typeof window === "undefined") return;
   if (!eventId.trim()) return;
@@ -43,6 +61,8 @@ export function broadcastEventDraftSync(
     reason,
     at: Date.now(),
   };
+
+  debugLogDraftSync("broadcast", { eventId, reason, source });
 
   try {
     window.localStorage.setItem(EVENT_DRAFT_SYNC_STORAGE_KEY, JSON.stringify(payload));
@@ -63,12 +83,14 @@ export function broadcastEventDraftSync(
 
 export function subscribeEventDraftSync(
   eventId: string,
-  onSync: (payload: EventDraftSyncPayload) => void
+  onSync: (payload: EventDraftSyncPayload) => void,
+  source?: string
 ): () => void {
   if (typeof window === "undefined" || !eventId.trim()) return () => undefined;
 
   const handlePayload = (payload: EventDraftSyncPayload | null) => {
     if (!payload || payload.eventId !== eventId) return;
+    debugLogDraftSync("received", { eventId: payload.eventId, reason: payload.reason, source });
     onSync(payload);
   };
 
