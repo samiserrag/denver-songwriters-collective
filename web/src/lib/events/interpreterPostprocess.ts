@@ -549,13 +549,13 @@ function findMatchingMonthDayMention(text: string, month: number, day: number): 
   return null;
 }
 
-function nextFutureMonthDayDate(month: number, day: number, todayIso: string): string | null {
+export function nextFutureMonthDayDate(month: number, day: number, todayIso: string): string | null {
   const today = parseIsoDateParts(todayIso);
   if (!today) return null;
 
   for (let year = today.year; year <= today.year + 2; year += 1) {
     const candidate = toIsoDate({ year, month, day });
-    if (compareIsoDate(candidate, todayIso) > 0) {
+    if (compareIsoDate(candidate, todayIso) >= 0) {
       return candidate;
     }
   }
