@@ -66,13 +66,14 @@ describe("event detail type badges", () => {
     expect(badgeBlock).toContain("const tone = EVENT_TYPE_BADGE_TONES[eventType];");
     expect(badgeBlock).toContain("{typeConfig.icon}");
     expect(badgeBlock).toContain("{typeConfig.label}");
-    expect(badgeBlock).toContain("min-h-24");
-    expect(badgeBlock).toContain("md:min-h-28");
-    expect(badgeBlock).toContain("h-16 w-16");
-    expect(badgeBlock).toContain("text-4xl");
-    expect(badgeBlock).toContain("md:text-5xl");
-    expect(badgeBlock).toContain("text-2xl font-extrabold");
+    expect(badgeBlock).toContain("min-h-14");
+    expect(badgeBlock).toContain("md:min-h-16");
+    expect(badgeBlock).toContain("rounded-full");
+    expect(badgeBlock).toContain("h-10 w-10");
+    expect(badgeBlock).toContain("text-2xl");
     expect(badgeBlock).toContain("md:text-3xl");
+    expect(badgeBlock).toContain("text-lg font-bold");
+    expect(badgeBlock).toContain("md:text-xl");
   });
 
   it("uses a distinct saturated color treatment for each event type", () => {
@@ -85,6 +86,7 @@ describe("event detail type badges", () => {
       expect(toneBlock).toContain(`${eventType}: {`);
     }
 
+    expect(toneBlock).toContain("shadow-[0_8px_20px");
     expect(toneBlock).toContain("bg-orange-500");
     expect(toneBlock).toContain("bg-teal-500");
     expect(toneBlock).toContain("bg-violet-500");

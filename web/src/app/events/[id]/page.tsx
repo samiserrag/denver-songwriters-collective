@@ -101,59 +101,59 @@ function getVisibleEventTypes(rawTypes: unknown): EventType[] {
 
 const EVENT_TYPE_BADGE_TONES: Record<EventType, { badge: string; icon: string }> = {
   song_circle: {
-    badge: "border-violet-300 bg-violet-500 text-white shadow-[0_18px_45px_rgba(139,92,246,0.30)]",
+    badge: "border-violet-300 bg-violet-500 text-white shadow-[0_8px_20px_rgba(139,92,246,0.24)]",
     icon: "border-violet-200 bg-violet-50 text-violet-950",
   },
   workshop: {
-    badge: "border-sky-300 bg-sky-500 text-slate-950 shadow-[0_18px_45px_rgba(14,165,233,0.28)]",
+    badge: "border-sky-300 bg-sky-500 text-slate-950 shadow-[0_8px_20px_rgba(14,165,233,0.22)]",
     icon: "border-sky-200 bg-sky-50 text-sky-950",
   },
   meetup: {
-    badge: "border-emerald-300 bg-emerald-500 text-slate-950 shadow-[0_18px_45px_rgba(16,185,129,0.28)]",
+    badge: "border-emerald-300 bg-emerald-500 text-slate-950 shadow-[0_8px_20px_rgba(16,185,129,0.22)]",
     icon: "border-emerald-200 bg-emerald-50 text-emerald-950",
   },
   showcase: {
-    badge: "border-fuchsia-300 bg-fuchsia-500 text-white shadow-[0_18px_45px_rgba(217,70,239,0.30)]",
+    badge: "border-fuchsia-300 bg-fuchsia-500 text-white shadow-[0_8px_20px_rgba(217,70,239,0.24)]",
     icon: "border-fuchsia-200 bg-fuchsia-50 text-fuchsia-950",
   },
   open_mic: {
-    badge: "border-orange-300 bg-orange-500 text-slate-950 shadow-[0_18px_45px_rgba(249,115,22,0.30)]",
+    badge: "border-orange-300 bg-orange-500 text-slate-950 shadow-[0_8px_20px_rgba(249,115,22,0.24)]",
     icon: "border-orange-200 bg-orange-50 text-orange-950",
   },
   gig: {
-    badge: "border-amber-300 bg-amber-400 text-slate-950 shadow-[0_18px_45px_rgba(245,158,11,0.30)]",
+    badge: "border-amber-300 bg-amber-400 text-slate-950 shadow-[0_8px_20px_rgba(245,158,11,0.24)]",
     icon: "border-amber-200 bg-amber-50 text-amber-950",
   },
   kindred_group: {
-    badge: "border-lime-300 bg-lime-500 text-slate-950 shadow-[0_18px_45px_rgba(132,204,22,0.28)]",
+    badge: "border-lime-300 bg-lime-500 text-slate-950 shadow-[0_8px_20px_rgba(132,204,22,0.22)]",
     icon: "border-lime-200 bg-lime-50 text-lime-950",
   },
   jam_session: {
-    badge: "border-teal-300 bg-teal-500 text-slate-950 shadow-[0_18px_45px_rgba(20,184,166,0.30)]",
+    badge: "border-teal-300 bg-teal-500 text-slate-950 shadow-[0_8px_20px_rgba(20,184,166,0.24)]",
     icon: "border-teal-200 bg-teal-50 text-teal-950",
   },
   poetry: {
-    badge: "border-rose-300 bg-rose-500 text-white shadow-[0_18px_45px_rgba(244,63,94,0.30)]",
+    badge: "border-rose-300 bg-rose-500 text-white shadow-[0_8px_20px_rgba(244,63,94,0.24)]",
     icon: "border-rose-200 bg-rose-50 text-rose-950",
   },
   irish: {
-    badge: "border-green-300 bg-green-600 text-white shadow-[0_18px_45px_rgba(22,163,74,0.30)]",
+    badge: "border-green-300 bg-green-600 text-white shadow-[0_8px_20px_rgba(22,163,74,0.24)]",
     icon: "border-green-200 bg-green-50 text-green-950",
   },
   blues: {
-    badge: "border-blue-300 bg-blue-600 text-white shadow-[0_18px_45px_rgba(37,99,235,0.30)]",
+    badge: "border-blue-300 bg-blue-600 text-white shadow-[0_8px_20px_rgba(37,99,235,0.24)]",
     icon: "border-blue-200 bg-blue-50 text-blue-950",
   },
   bluegrass: {
-    badge: "border-cyan-300 bg-cyan-500 text-slate-950 shadow-[0_18px_45px_rgba(6,182,212,0.28)]",
+    badge: "border-cyan-300 bg-cyan-500 text-slate-950 shadow-[0_8px_20px_rgba(6,182,212,0.22)]",
     icon: "border-cyan-200 bg-cyan-50 text-cyan-950",
   },
   comedy: {
-    badge: "border-pink-300 bg-pink-500 text-white shadow-[0_18px_45px_rgba(236,72,153,0.30)]",
+    badge: "border-pink-300 bg-pink-500 text-white shadow-[0_8px_20px_rgba(236,72,153,0.24)]",
     icon: "border-pink-200 bg-pink-50 text-pink-950",
   },
   other: {
-    badge: "border-slate-300 bg-slate-700 text-white shadow-[0_18px_45px_rgba(51,65,85,0.25)]",
+    badge: "border-slate-300 bg-slate-700 text-white shadow-[0_8px_20px_rgba(51,65,85,0.20)]",
     icon: "border-slate-200 bg-slate-50 text-slate-950",
   },
 };
@@ -1066,7 +1066,7 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
 
         <div className="p-6 md:p-8">
           {/* Prominent event type badges */}
-          <div data-testid="event-type-badges" className="mb-4 flex flex-wrap gap-3">
+          <div data-testid="event-type-badges" className="mb-4 flex flex-wrap gap-2.5">
             {eventTypes.map((eventType) => {
               const typeConfig = EVENT_TYPE_CONFIG[eventType];
               const tone = EVENT_TYPE_BADGE_TONES[eventType];
@@ -1075,15 +1075,15 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
                 <span
                   key={eventType}
                   data-event-type={eventType}
-                  className={`inline-flex min-h-24 w-full items-center gap-5 rounded-xl border px-5 py-5 shadow-lg sm:w-auto sm:min-w-[18rem] md:min-h-28 md:px-6 ${tone.badge}`}
+                  className={`inline-flex min-h-14 max-w-full items-center gap-3 rounded-full border px-4 py-2.5 sm:px-5 md:min-h-16 ${tone.badge}`}
                 >
                   <span
-                    className={`flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-lg border-2 text-4xl leading-none shadow-sm md:h-20 md:w-20 md:text-5xl ${tone.icon}`}
+                    className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border-2 text-2xl leading-none shadow-sm md:h-11 md:w-11 md:text-3xl ${tone.icon}`}
                     aria-hidden="true"
                   >
                     {typeConfig.icon}
                   </span>
-                  <span className="text-2xl font-extrabold leading-tight md:text-3xl">
+                  <span className="text-lg font-bold leading-tight md:text-xl">
                     {typeConfig.label}
                   </span>
                 </span>
