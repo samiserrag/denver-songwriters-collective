@@ -300,6 +300,13 @@ export default function OccurrenceEditor({
                     Preview
                   </Link>
 
+                  <Link
+                    href={`/dashboard/my-events/${eventId}/overrides/${occ.dateKey}/ai`}
+                    className="px-3 py-1.5 text-sm bg-[var(--color-bg-secondary)] hover:bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] rounded"
+                  >
+                    Edit with AI
+                  </Link>
+
                   {occ.isCancelled ? (
                     <button
                       onClick={() => handleRestore(occ.dateKey)}

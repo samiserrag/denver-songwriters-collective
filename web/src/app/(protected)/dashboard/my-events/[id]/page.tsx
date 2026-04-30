@@ -286,6 +286,12 @@ export default async function EditEventPage({
               status={event.status}
               hasSignupActivity={hasSignupActivity}
             />
+            <Link
+              href={`/dashboard/my-events/${eventId}/ai`}
+              className="px-3 py-1 bg-[var(--color-bg-secondary)] hover:bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] text-sm rounded"
+            >
+              Update with AI
+            </Link>
             {isPrimaryHost && (
               <CancelEventButton
                 eventId={eventId}
