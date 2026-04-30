@@ -504,7 +504,12 @@ type MonthDayMention = {
 
 export type FutureDateGuardResult =
   | { applied: false }
-  | { applied: true; from: string; to: string; reason: "month_day_without_year" | "future_intent" };
+  | {
+      applied: true;
+      from: string;
+      to: string;
+      reason: "month_day_without_year" | "future_intent" | "future_year_pullback";
+    };
 
 function parseIsoDateParts(value: unknown): IsoDateParts | null {
   if (typeof value !== "string") return null;
@@ -579,7 +584,9 @@ export function applyFutureDateGuard(input: {
         : null;
   const parsedDate = parseIsoDateParts(dateValue);
   if (!dateValue || !parsedDate) return { applied: false };
-  if (compareIsoDate(dateValue, todayIso) > 0) return { applied: false };
+  if (compareIsoDate(dateValue, todayIso) > 0) {
+    return applyOverEagerFutureYearPullback({ draft, message, history, extractedImageText, todayIso });
+  }
 
   const intentText = [
     message,
@@ -609,6 +616,52 @@ export function applyFutureDateGuard(input: {
     from: dateValue,
     to: nextDate,
     reason: hasFutureIntent ? "future_intent" : "month_day_without_year",
+  };
+}
+
+export function applyOverEagerFutureYearPullback(input: {
+  draft: Record<string, unknown>;
+  message: string;
+  history: Array<{ role: "user" | "assistant"; content: string }>;
+  extractedImageText?: string;
+  todayIso: string;
+}): FutureDateGuardResult {
+  const { draft, message, history, extractedImageText, todayIso } = input;
+  const dateValue =
+    typeof draft.start_date === "string" && draft.start_date.trim().length > 0
+      ? draft.start_date
+      : typeof draft.event_date === "string" && draft.event_date.trim().length > 0
+        ? draft.event_date
+        : null;
+  const parsedDate = parseIsoDateParts(dateValue);
+  const today = parseIsoDateParts(todayIso);
+  if (!dateValue || !parsedDate || !today) return { applied: false };
+  if (parsedDate.year <= today.year) return { applied: false };
+
+  const intentText = [
+    message,
+    ...history.filter((entry) => entry.role === "user").map((entry) => entry.content),
+    extractedImageText ?? "",
+  ].join("\n");
+  const matchingMention = findMatchingMonthDayMention(intentText, parsedDate.month, parsedDate.day);
+  const sourceSupportsLlmYear = matchingMention?.year === parsedDate.year;
+  if (sourceSupportsLlmYear) return { applied: false };
+
+  const thisYearCandidate = toIsoDate({ year: today.year, month: parsedDate.month, day: parsedDate.day });
+  if (compareIsoDate(thisYearCandidate, todayIso) < 0) return { applied: false };
+
+  if (typeof draft.start_date === "string" && draft.start_date.trim().length > 0) {
+    draft.start_date = thisYearCandidate;
+  }
+  if (typeof draft.event_date === "string" && draft.event_date.trim().length > 0) {
+    draft.event_date = thisYearCandidate;
+  }
+
+  return {
+    applied: true,
+    from: dateValue,
+    to: thisYearCandidate,
+    reason: "future_year_pullback",
   };
 }
 
