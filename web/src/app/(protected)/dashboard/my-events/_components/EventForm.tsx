@@ -1146,6 +1146,14 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     ? `/events/${event.slug || event.id}`
     : null;
   const eventPublicLinkLabel = formData.is_published ? "View live page" : "Preview draft";
+  const aiEditPath = mode !== "edit"
+    ? null
+    : occurrenceMode && occurrenceEventId && occurrenceDateKey
+      ? `/dashboard/my-events/${occurrenceEventId}/overrides/${occurrenceDateKey}/ai`
+      : event?.id
+        ? `/dashboard/my-events/${event.id}/ai`
+        : null;
+  const aiEditActionLabel = occurrenceMode ? "Edit occurrence with AI" : "Update with AI";
   const saveButtonLabel = loading
     ? "Saving..."
     : occurrenceMode
@@ -1195,6 +1203,16 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
           </div>
 
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            {aiEditPath && (
+              <button
+                type="button"
+                onClick={() => router.push(aiEditPath)}
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-[var(--color-border-default)] px-4 py-2.5 text-sm font-semibold text-[var(--color-text-primary)] transition-colors hover:border-[var(--color-border-accent)] hover:bg-[var(--color-bg-secondary)]"
+              >
+                <Wand2 className="h-4 w-4" aria-hidden="true" />
+                {aiEditActionLabel}
+              </button>
+            )}
             {eventPublicPath && (
               <a
                 href={eventPublicPath}
