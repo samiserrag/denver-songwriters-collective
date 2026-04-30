@@ -25,7 +25,7 @@ Rules:
 ### PR 5 — Prompt and interpreter contract rewrite
 
 - **Branch:** `claude/prompt-contract-rewrite-pr5`
-- **Owner:** Claude (web)
+- **Owner:** Claude (web), Codex takeover for rebase/quality gates
 - **Scope:** §13.2 (Sami-approved this session). Rewrite the prompt + interpreter contract surface so that:
   - current event state is passed as compact JSON, not prose
   - model output includes structured `scope: "series" | "occurrence" | "ambiguous"`; ambiguous forces server-side clarification even when a patch is also returned
@@ -50,8 +50,8 @@ Rules:
   - `web/src/lib/events/eventDraftSync.ts` (PR 10 lock)
   - any migration in `supabase/migrations/`
   - any telemetry runtime file (PR 3 scope)
-- **Base SHA:** `e143fac2` (current `main` HEAD as of this commit)
-- **Status:** `in_progress`
+- **Base SHA:** `243a6489` (current `origin/main` HEAD after PR #128 merge)
+- **Status:** `awaiting_review`
 - **Notes for the other agent:**
   - Field names in the patch contract reuse `patchFieldRegistry.ts` exactly (e.g. `event_date`, `start_time`, `recurrence_rule`, `cover_image_url`). No new field names are introduced.
   - The new `aiPromptContract.ts` module owns the system prompt, user prompt builder, image reference contract, scope ambiguity decision, and the response-schema augmentation that adds the required `scope` field. After this PR is committed, this file is single-writer locked per plan §8.2.
