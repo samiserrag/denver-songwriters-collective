@@ -20,6 +20,9 @@ when an approved issue is executed.
     "logs": ".symphony/logs",
     "state": ".symphony/state"
   },
+  "recovery": {
+    "stale_running_minutes": 240
+  },
   "codex": {
     "adapter": "codex-exec",
     "fallback": "codex exec --json"
@@ -72,6 +75,21 @@ The worker must follow the stop-gate protocol:
 
 If the issue does not clearly state approval for implementation, the
 worker must produce an investigation/handoff result and stop.
+
+Issue comments are part of the execution context. The runner must pass
+non-workpad issue comments into the Codex prompt so coordinator approvals,
+scope updates, and phone-side clarifications are visible to the worker.
+
+## Stale Running Recovery
+
+`symphony:running` is treated as an active lock until it is explicitly
+cleared. A runner may only move stale running issues to
+`symphony:blocked` through the explicit stale recovery command. Recovery
+must be dry-run first and real recovery must use the same execution gate
+as autonomous work.
+
+The stale threshold is configured as `stale_running_minutes`. Phase 1.1
+starts at 240 minutes to avoid recovering a genuinely active local run.
 
 ## Hard Safety Rules
 

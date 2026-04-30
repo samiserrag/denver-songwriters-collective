@@ -21,6 +21,7 @@ From the repository root:
 npm run symphony:doctor
 npm run symphony:dry-run
 npm run symphony:once
+npm run symphony:recover-stale
 npm run symphony:test
 ```
 
@@ -39,6 +40,16 @@ SYMPHONY_EXECUTION_APPROVED=1 node tools/symphony/cli.mjs once --execute
 
 `--execute` cannot be combined with `--mock-issues`; mock fixtures are
 offline dry-run input only.
+
+Stale `symphony:running` recovery is explicit and dry-run by default:
+
+```bash
+npm run symphony:recover-stale
+SYMPHONY_EXECUTION_APPROVED=1 node tools/symphony/cli.mjs recover-stale --execute
+```
+
+Recovery moves stale running issues to `symphony:blocked`; it does not
+start replacement work in the same command.
 
 Do not use real execution until:
 
@@ -69,6 +80,10 @@ the runner fetches `main:refs/remotes/origin/main`, verifies
 `origin/main^{commit}` exists, and then runs
 `git worktree add -b <branch> <path> origin/main`. It fails closed instead
 of falling back to the operator's current `HEAD`.
+
+`doctor` also checks that `origin/main` is resolvable and the current
+checkout is clean. Run Symphony from a clean control checkout, not from an
+active feature branch with uncommitted work.
 
 ## Adapter Boundary
 

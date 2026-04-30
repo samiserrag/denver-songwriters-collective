@@ -18,6 +18,9 @@ const validConfig = `<!-- symphony-config
     "logs": ".symphony/logs",
     "state": ".symphony/state"
   },
+  "recovery": {
+    "stale_running_minutes": 240
+  },
   "codex": {
     "adapter": "codex-exec"
   }
@@ -35,5 +38,12 @@ test("parseWorkflowMarkdown rejects unsafe concurrency", () => {
   assert.throws(
     () => parseWorkflowMarkdown(validConfig.replace('"max_concurrent_agents": 1', '"max_concurrent_agents": 2')),
     /max_concurrent_agents/
+  );
+});
+
+test("parseWorkflowMarkdown rejects unsafe stale recovery threshold", () => {
+  assert.throws(
+    () => parseWorkflowMarkdown(validConfig.replace('"stale_running_minutes": 240', '"stale_running_minutes": 0')),
+    /stale_running_minutes/
   );
 });

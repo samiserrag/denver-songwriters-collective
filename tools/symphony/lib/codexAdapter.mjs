@@ -1,6 +1,33 @@
 import { spawn } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { WORKPAD_MARKER } from "./issues.mjs";
+
+function truncateText(value, maxLength) {
+  const text = String(value || "");
+  if (text.length <= maxLength) {
+    return text;
+  }
+  return `${text.slice(0, maxLength)}\n[truncated ${text.length - maxLength} chars]`;
+}
+
+export function formatIssueComments(comments = []) {
+  const visibleComments = comments.filter((comment) => !String(comment.body || "").includes(WORKPAD_MARKER));
+  if (visibleComments.length === 0) {
+    return "(no issue comments)";
+  }
+
+  return visibleComments
+    .map((comment, index) => {
+      const author = comment.user?.login || "unknown";
+      const createdAt = comment.created_at || "unknown time";
+      return [
+        `Comment ${index + 1} by ${author} at ${createdAt}:`,
+        truncateText(comment.body || "(empty comment)", 6000)
+      ].join("\n");
+    })
+    .join("\n\n---\n\n");
+}
 
 export function buildCodexPrompt({ workflowText, issue }) {
   return [
@@ -11,6 +38,9 @@ export function buildCodexPrompt({ workflowText, issue }) {
     `#${issue.number} ${issue.title}`,
     "",
     issue.body || "(no issue body)",
+    "",
+    "GitHub issue comments:",
+    formatIssueComments(issue.comments),
     "",
     "Workflow policy:",
     workflowText
