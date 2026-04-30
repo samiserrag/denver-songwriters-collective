@@ -22,7 +22,29 @@ Rules:
 
 ## Active claims
 
-No active Track 1 claims at the moment.
+### PR 8 — Venue resolution, venue enrichment, and image reference contract
+
+- **Branch:** `codex/venue-image-pr8`
+- **Owner:** Codex
+- **Base SHA:** `c6f5c5735a8e431e9894d87db1f2f63284d855d9`
+- **Status:** `awaiting_review`
+- **Scope:** Use existing venue resolution for edit/create save paths, prevent custom-location duplicates when a deterministic canonical venue match exists, pass stable ordered image references on each interpret turn, support deterministic natural-language cover switching, and carry confidently verified venue enrichment fields through existing venue/custom-location write surfaces.
+- **Files claimed:**
+  - `docs/investigation/track1-claims.md`
+  - `web/src/app/api/events/interpret/route.ts`
+  - `web/src/lib/events/aiPromptContract.ts`
+  - `web/src/lib/events/interpretEventContract.ts`
+  - `web/src/lib/events/interpreterPostprocess.ts`
+  - `web/src/app/(protected)/dashboard/my-events/_components/ConversationalCreateUI.tsx`
+  - `web/src/app/api/my-events/route.ts`
+  - `web/src/app/api/my-events/[id]/route.ts`
+  - `web/src/app/api/venues/route.ts`
+  - `web/src/app/api/admin/venues/route.ts`
+  - `web/src/__tests__/track1-pr8-venue-image-contract.test.ts`
+  - `web/src/__tests__/event-detail-type-badges.test.ts`
+  - `web/src/__tests__/interpreter-14-host-ux-polish.test.ts`
+  - `web/src/__tests__/interpreter-lab-create-write.test.ts`
+- **Forbidden scope reminders:** No migrations, no PR 9 published-event gate behavior, no telemetry runtime changes, no broad venue permission redesign, and no bypass of `allowExistingEventWrites={false}` edit-route safety.
 
 Next planned Track 1 order: PR 8 (venue/image edit wiring) → PR 9 (published-event gate).
 

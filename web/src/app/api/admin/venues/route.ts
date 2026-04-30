@@ -85,7 +85,7 @@ export async function POST(request: Request) {
   const serviceClient = createServiceRoleClient();
 
   const body = await request.json();
-  const { name, address, city, state, zip, website_url, phone, google_maps_url } = body;
+  const { name, address, city, state, zip, website_url, phone, google_maps_url, latitude, longitude } = body;
 
   if (!name?.trim()) {
     return NextResponse.json({ error: "Venue name is required" }, { status: 400 });
@@ -100,6 +100,8 @@ export async function POST(request: Request) {
     website_url: website_url?.trim() || null,
     phone: phone?.trim() || null,
     google_maps_url: google_maps_url?.trim() || null,
+    latitude: typeof latitude === "number" && Number.isFinite(latitude) ? latitude : null,
+    longitude: typeof longitude === "number" && Number.isFinite(longitude) ? longitude : null,
   };
 
   // Ensure venue creation goes through the same geocoding pipeline as venue edits.

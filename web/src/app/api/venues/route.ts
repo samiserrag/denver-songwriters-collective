@@ -46,7 +46,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { name, address, city, state, zip, website_url, phone, google_maps_url } = body as {
+  const { name, address, city, state, zip, website_url, phone, google_maps_url, latitude, longitude } = body as {
     name?: string;
     address?: string;
     city?: string;
@@ -55,6 +55,8 @@ export async function POST(request: Request) {
     website_url?: string;
     phone?: string;
     google_maps_url?: string;
+    latitude?: number;
+    longitude?: number;
   };
 
   if (!name?.trim()) {
@@ -74,6 +76,8 @@ export async function POST(request: Request) {
     website_url: website_url?.trim() || null,
     phone: phone?.trim() || null,
     google_maps_url: google_maps_url?.trim() || null,
+    latitude: typeof latitude === "number" && Number.isFinite(latitude) ? latitude : null,
+    longitude: typeof longitude === "number" && Number.isFinite(longitude) ? longitude : null,
   };
 
   // Run through same geocoding pipeline as admin venue creation.

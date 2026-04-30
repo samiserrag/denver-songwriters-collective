@@ -167,7 +167,8 @@ describe("INTERPRETER-14 — Host chat-first workspace", () => {
 
   it("understands simple chat requests to use another staged image as the cover", () => {
     expect(src).toContain("findRequestedCoverCandidateId");
-    expect(src).toContain("other|different|alternate|another|switch");
+    expect(src).toContain("resolveNaturalLanguageImageReference");
+    expect(src).toContain('referenceDecision.status === "selected"');
     expect(src).toContain("selected it below");
     expect(src).toContain("dismissesCoverImageChange");
   });

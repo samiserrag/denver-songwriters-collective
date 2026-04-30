@@ -576,9 +576,6 @@ function applyLocationHintsToDraft(input: {
   const { draft, message, conversationHistory, extractedImageText, googleMapsHint } = input;
   const alreadyResolvedVenue = hasNonEmptyString(draft.venue_id);
   const isOnline = draft.location_mode === "online";
-  if (alreadyResolvedVenue || isOnline) {
-    return { applied: false };
-  }
 
   let applied = false;
   const addressHint =
@@ -586,6 +583,70 @@ function applyLocationHintsToDraft(input: {
     extractAddressFromText(
       [message, ...conversationHistory.map((h) => h.content), extractedImageText || ""].join("\n")
     );
+
+  const mapsUrl =
+    googleMapsHint?.final_url && /^https?:\/\//i.test(googleMapsHint.final_url)
+      ? googleMapsHint.final_url
+      : googleMapsHint?.source_url && /^https?:\/\//i.test(googleMapsHint.source_url)
+        ? googleMapsHint.source_url
+        : null;
+  if (mapsUrl) {
+    if (!hasNonEmptyString(draft.google_maps_url)) {
+      draft.google_maps_url = mapsUrl;
+      applied = true;
+    }
+    if (!hasNonEmptyString(draft.map_link)) {
+      draft.map_link = mapsUrl;
+      applied = true;
+    }
+  }
+
+  if (addressHint?.zip) {
+    if (!hasNonEmptyString(draft.zip)) {
+      draft.zip = addressHint.zip;
+      applied = true;
+    }
+    if (!alreadyResolvedVenue && !hasNonEmptyString(draft.custom_zip)) {
+      draft.custom_zip = addressHint.zip;
+      applied = true;
+    }
+  }
+
+  if (addressHint && alreadyResolvedVenue) {
+    if (!hasNonEmptyString(draft.address)) {
+      draft.address = addressHint.street;
+      applied = true;
+    }
+    if (!hasNonEmptyString(draft.city)) {
+      draft.city = addressHint.city;
+      applied = true;
+    }
+    if (!hasNonEmptyString(draft.state)) {
+      draft.state = addressHint.state;
+      applied = true;
+    }
+  }
+
+  if (alreadyResolvedVenue) {
+    if (
+      (draft.latitude === null || draft.latitude === undefined) &&
+      typeof googleMapsHint?.latitude === "number"
+    ) {
+      draft.latitude = googleMapsHint.latitude;
+      applied = true;
+    }
+    if (
+      (draft.longitude === null || draft.longitude === undefined) &&
+      typeof googleMapsHint?.longitude === "number"
+    ) {
+      draft.longitude = googleMapsHint.longitude;
+      applied = true;
+    }
+  }
+
+  if (alreadyResolvedVenue || isOnline) {
+    return { applied };
+  }
 
   if (addressHint) {
     if (!hasNonEmptyString(draft.custom_address)) {
@@ -598,6 +659,10 @@ function applyLocationHintsToDraft(input: {
     }
     if (!hasNonEmptyString(draft.custom_state)) {
       draft.custom_state = addressHint.state;
+      applied = true;
+    }
+    if (addressHint.zip && !hasNonEmptyString(draft.custom_zip)) {
+      draft.custom_zip = addressHint.zip;
       applied = true;
     }
 
@@ -1061,6 +1126,13 @@ function shouldAttemptEventWebSearch(input: {
   if (isExplicitEventWebSearchRequest(combined)) {
     return true;
   }
+  if (
+    input.useWebSearch &&
+    combined.trim().length >= 8 &&
+    /\b(?:venue|location|address|at|maps?|phone|website|zip)\b/i.test(combined)
+  ) {
+    return true;
+  }
   if (input.useWebSearch && combined.trim().length >= 20) {
     return true;
   }
@@ -1096,6 +1168,7 @@ function buildWebSearchVerificationPrompt(input: {
         "Run multiple targeted search angles when details are incomplete: event title + venue, venue + recurrence phrase, organizer/host + venue, and address + event type.",
         "Prioritize official venue, organizer, ticketing, social, and event-calendar sources. Use general search results only as pointers to those sources.",
         "When a flyer contains an address, search the address and venue name together before giving up.",
+        "For venue enrichment, look specifically for venue name, street address, city, state, ZIP, phone, official website URL, Google Maps URL, and coordinates when public sources make those facts clear.",
         "When a flyer contains a recurring phrase, search both the literal phrase and a normalized version, for example 'first and third Thursday open mic Ethos Pueblo'.",
         "Set status to searched only when at least one source appears to describe the exact same event or exact same recurring event series.",
         "If search finds only a similar venue, similar jam, different city, different date, or unrelated event, set status to no_reliable_sources, use an empty sources array, and summarize that no exact public match was found.",
@@ -1722,9 +1795,20 @@ function buildDraftVerifierPrompt(input: {
           "custom_dates",
           "venue_name",
           "custom_location_name",
+          "address",
+          "city",
+          "state",
           "custom_address",
           "custom_city",
           "custom_state",
+          "custom_zip",
+          "zip",
+          "phone",
+          "website_url",
+          "google_maps_url",
+          "map_link",
+          "latitude",
+          "longitude",
           "location_mode",
           "is_free",
           "cost_label",
@@ -1758,9 +1842,20 @@ const DRAFT_VERIFIER_PATCH_FIELDS = new Set([
   "custom_dates",
   "venue_name",
   "custom_location_name",
+  "address",
+  "city",
+  "state",
   "custom_address",
   "custom_city",
   "custom_state",
+  "custom_zip",
+  "zip",
+  "phone",
+  "website_url",
+  "google_maps_url",
+  "map_link",
+  "latitude",
+  "longitude",
   "location_mode",
   "is_free",
   "cost_label",
@@ -1882,7 +1977,11 @@ function applyDraftVerifierPatches(
   }
 
   if (applied.length > 0) {
-    if (hasNonEmptyString(draft.venue_name) && !hasNonEmptyString(draft.custom_location_name)) {
+    if (
+      !hasNonEmptyString(draft.venue_id) &&
+      hasNonEmptyString(draft.venue_name) &&
+      !hasNonEmptyString(draft.custom_location_name)
+    ) {
       draft.custom_location_name = draft.venue_name;
     }
     if (hasNonEmptyString(draft.custom_location_name) && !hasNonEmptyString(draft.location_mode)) {
@@ -1982,9 +2081,20 @@ async function verifyDraftWithCritic(input: {
                           "custom_dates",
                           "venue_name",
                           "custom_location_name",
+                          "address",
+                          "city",
+                          "state",
                           "custom_address",
                           "custom_city",
                           "custom_state",
+                          "custom_zip",
+                          "zip",
+                          "phone",
+                          "website_url",
+                          "google_maps_url",
+                          "map_link",
+                          "latitude",
+                          "longitude",
                           "location_mode",
                           "is_free",
                           "cost_label",
@@ -2169,6 +2279,7 @@ export async function POST(request: Request) {
       .select(`
         id, title, event_type, event_date, day_of_week, start_time, end_time, recurrence_rule,
         location_mode, venue_id, venue_name, is_free, cost_label,
+        custom_location_name, custom_address, custom_city, custom_state, custom_latitude, custom_longitude, location_notes,
         signup_mode, signup_url, signup_time, has_timeslots, total_slots, slot_duration_minutes,
         is_published, status, cover_image_url
       `)
@@ -2567,6 +2678,7 @@ export async function POST(request: Request) {
       "custom_address",
       "custom_city",
       "custom_state",
+      "custom_zip",
     ]);
     const filtered = resolvedBlockingFields.filter((f) => !redundant.has(f));
     resolvedBlockingFields = [...new Set(filtered)];

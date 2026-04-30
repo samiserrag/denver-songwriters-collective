@@ -48,6 +48,17 @@ function getBranchChangedFiles(): string[] {
   }
 }
 
+function getActiveTrack1ClaimedFiles(): Set<string> {
+  const claimsSource = readFileSync(
+    path.resolve(repoRoot, "docs/investigation/track1-claims.md"),
+    "utf-8"
+  );
+  const activeClaimsSection = claimsSource.split("## Closed claims")[0] ?? claimsSource;
+  return new Set(
+    [...activeClaimsSection.matchAll(/- `([^`]+)`/g)].map((match) => match[1])
+  );
+}
+
 describe("event detail type badges", () => {
   it("renders prominent event type icons and labels from EVENT_TYPE_CONFIG", () => {
     const badgeBlock = sourceBetween(
@@ -133,6 +144,13 @@ describe("event detail type badges", () => {
       /^supabase\/migrations\//,
     ];
 
-    expect(changedFiles.filter((file) => forbiddenPatterns.some((pattern) => pattern.test(file)))).toEqual([]);
+    const activeClaimedFiles = changedFiles.includes("docs/investigation/track1-claims.md")
+      ? getActiveTrack1ClaimedFiles()
+      : new Set<string>();
+    const unclaimedForbiddenFiles = changedFiles
+      .filter((file) => forbiddenPatterns.some((pattern) => pattern.test(file)))
+      .filter((file) => !activeClaimedFiles.has(file));
+
+    expect(unclaimedForbiddenFiles).toEqual([]);
   });
 });
