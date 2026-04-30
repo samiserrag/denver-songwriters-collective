@@ -22,47 +22,54 @@ Rules:
 
 ## Active claims
 
-### PR 5 — Prompt and interpreter contract rewrite
+### PR 6 — AI edit route wrappers
 
-- **Branch:** `claude/prompt-contract-rewrite-pr5`
-- **Owner:** Claude (web), Codex takeover for rebase/quality gates
-- **Scope:** §13.2 (Sami-approved this session). Rewrite the prompt + interpreter contract surface so that:
-  - current event state is passed as compact JSON, not prose
-  - model output includes structured `scope: "series" | "occurrence" | "ambiguous"`; ambiguous forces server-side clarification even when a patch is also returned
-  - edit-mode output is patch-only: missing fields are preserved, no field is cleared unless the user explicitly asked
-  - negative ambiguity examples are baked into the system prompt
-  - ordered image references with stable indices (`{ index, clientId, eventImageId?, fileName?, isCurrentCover }`) are passed every turn
-  - the model is instructed to ask ONE useful question only when truly blocked
+- **Branch:** `codex/ai-edit-routes-pr6`
+- **Owner:** Codex
+- **Scope:** §13.2 (Sami-approved this session). Add thin route wrappers for existing-event AI editing:
+  - `/dashboard/my-events/[id]/ai`
+  - `/dashboard/my-events/[id]/overrides/[dateKey]/ai`
+  - mount the existing conversational UI in `edit_series` or `edit_occurrence` mode with `eventId` and optional `dateKey`
+  - use `createSupabaseServerClient` + `canManageEvent` for the existing auth pattern
+  - validate occurrence `dateKey` as `YYYY-MM-DD`
+  - keep create-host behavior unchanged
+  - do not enable AI-generated patches to automatically save to an existing event before PR 9's published-event gate
 - **Single-writer locks claimed for this PR (per plan §8.2):**
-  - `web/src/app/api/events/interpret/route.ts`
-  - `web/src/lib/events/aiPromptContract.ts` (new prompt contract file; locked once committed)
+  - `web/src/app/(protected)/dashboard/my-events/_components/ConversationalCreateUI.tsx` (explicitly approved for minimum PR 6 edit-mode prop surface only)
 - **Files claimed (write):**
-  - `web/src/app/api/events/interpret/route.ts`
-  - `web/src/lib/events/aiPromptContract.ts` (new)
-  - `web/src/__tests__/aiPromptContract.test.ts` (new)
+  - `web/src/app/(protected)/dashboard/my-events/[id]/ai/page.tsx` (new)
+  - `web/src/app/(protected)/dashboard/my-events/[id]/overrides/[dateKey]/ai/page.tsx` (new)
+  - `web/src/app/(protected)/dashboard/my-events/_components/ConversationalCreateUI.tsx`
+  - `web/src/__tests__/ai-edit-routes.test.ts` (new)
   - `docs/investigation/track1-claims.md` (this file)
 - **Files referenced (read-only):**
-  - `web/src/lib/events/patchFieldRegistry.ts` — field name / scope / value-kind source of truth (PR 1, merged)
-  - `web/src/lib/events/interpretEventContract.ts` — base response schema; wrapped by `aiPromptContract.ts` for the new `scope` field
-  - `web/src/lib/events/evals/runTrack1EvalHarness.ts` — eval harness (PR 4, merged) used to validate fixtures
+  - `web/src/app/(protected)/dashboard/my-events/[id]/edit/page.tsx` — current event auth/loading pattern
+  - `web/src/app/(protected)/dashboard/my-events/[id]/overrides/[dateKey]/edit/page.tsx` — occurrence auth/date route pattern
+  - `web/src/app/(protected)/dashboard/my-events/create/CreateEventClient.tsx` — existing create-host mount behavior
 - **Files locked / forbidden in this PR:**
-  - `web/src/app/(protected)/dashboard/my-events/_components/ConversationalCreateUI.tsx` (plan §8.2)
+  - `web/src/app/api/events/interpret/route.ts`
+  - `web/src/lib/events/aiPromptContract.ts`
   - `web/src/lib/events/eventDraftSync.ts` (PR 10 lock)
   - any migration in `supabase/migrations/`
   - any telemetry runtime file (PR 3 scope)
-- **Base SHA:** `243a6489` (current `origin/main` HEAD after PR #128 merge)
+- **Base SHA:** `0e49798b603d8206d67995a139d39981f4b6003b` (current `origin/main` HEAD after PR #127 merge)
 - **Status:** `awaiting_review`
 - **Notes for the other agent:**
-  - Field names in the patch contract reuse `patchFieldRegistry.ts` exactly (e.g. `event_date`, `start_time`, `recurrence_rule`, `cover_image_url`). No new field names are introduced.
-  - The new `aiPromptContract.ts` module owns the system prompt, user prompt builder, image reference contract, scope ambiguity decision, and the response-schema augmentation that adds the required `scope` field. After this PR is committed, this file is single-writer locked per plan §8.2.
-  - When `scope === "ambiguous"`, the route forces `next_action = "ask_clarification"` even if `draft_payload` is also present. The patch is preserved in the response but is gated behind a clarification turn.
-  - Patch-only semantics are enforced via prompt instructions (model must omit fields the user did not change). The schema's structural required-keys list is intentionally not loosened in this PR; that is a structural patch surface that belongs to PR 9 (published-event gate). Downstream save paths still respect the existing `sanitizeInterpretDraftPayload` allowlist.
-  - Image references are accepted as part of the request body (client-supplied) and threaded into the user prompt with stable indices. No new persistence path is wired in this PR.
-  - Eval harness (`web/src/lib/events/evals`) is run in tests against representative fixtures. Pass/total summary is included in the PR body.
+  - The new routes are wrappers only; entry-point buttons/copy belong to PR 7.
+  - Existing-event AI must not seed `createdEventId` or use the create-flow auto-PATCH shortcut.
+  - If route mounting requires write behavior beyond passing edit context, stop and ask.
 
 ---
 
 ## Closed claims
+
+### PR 5 — Prompt and interpreter contract rewrite
+
+- **Branch:** `claude/prompt-contract-rewrite-pr5`
+- **Owner:** Claude (web), Codex takeover for rebase/quality gates
+- **End SHA:** merged via PR #127 → `0e49798b`
+- **Status:** `merged`
+- **Notes:** Prompt and interpreter contract rewrite for current event JSON, structured scope, patch-only edit semantics, ambiguity clarification, ordered image references, and one-question clarification behavior.
 
 ### PR 10 — Refresh instrumentation, debug-gated only
 

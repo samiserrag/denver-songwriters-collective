@@ -1178,18 +1178,43 @@ export type ConversationalCreateVariant = "lab" | "host";
 
 export function ConversationalCreateUI({
   variant = "lab",
+  initialMode = "create",
+  initialEventId = "",
+  initialDateKey = "",
+  allowExistingEventWrites = true,
+  pageTitle,
+  pageDescription,
+  backHref,
+  backLabel,
 }: {
   variant?: ConversationalCreateVariant;
+  initialMode?: InterpretMode;
+  initialEventId?: string;
+  initialDateKey?: string;
+  allowExistingEventWrites?: boolean;
+  pageTitle?: string;
+  pageDescription?: string;
+  backHref?: string;
+  backLabel?: string;
 }) {
   // Phase 8E: host variant forces create mode and enables writes without lab flag
   const isHostVariant = variant === "host";
   const writesEnabled = isHostVariant || LAB_WRITES_ENABLED;
+  const effectivePageTitle =
+    pageTitle ?? (isHostVariant ? "Create Happening with AI" : "Conversational Event Creator (Lab)");
+  const effectivePageDescription =
+    pageDescription ??
+    (isHostVariant
+      ? "Turn a flyer, link, or rough notes into a private event draft. You can keep chatting here until it is ready."
+      : "Testing surface for /api/events/interpret. Replies appear below, and each follow-up should be entered in the same message box.");
+  const effectiveBackHref = backHref ?? "/dashboard/my-events/new?classic=true";
+  const effectiveBackLabel = backLabel ?? "Use classic form instead";
 
   // ---- core state (unchanged from original) ----
-  const [mode, setMode] = useState<InterpretMode>("create");
+  const [mode, setMode] = useState<InterpretMode>(initialMode);
   const [message, setMessage] = useState("");
-  const [eventId, setEventId] = useState("");
-  const [dateKey, setDateKey] = useState("");
+  const [eventId, setEventId] = useState(initialEventId);
+  const [dateKey, setDateKey] = useState(initialDateKey);
   const [statusCode, setStatusCode] = useState<number | null>(null);
   const [responseBody, setResponseBody] = useState<unknown>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -1314,8 +1339,9 @@ export function ConversationalCreateUI({
 
   const hasCreatedDraft = typeof createdEventId === "string" && createdEventId.length > 0;
   const activeEventId = (createdEventId ?? eventId).trim();
-  const chatMode: InterpretMode =
-    isHostVariant && hasCreatedDraft ? "edit_series" : isHostVariant ? "create" : mode;
+  const isInitialEditMode = initialMode === "edit_series" || initialMode === "edit_occurrence";
+  const hostChatMode: InterpretMode = hasCreatedDraft ? "edit_series" : isInitialEditMode ? initialMode : "create";
+  const chatMode: InterpretMode = isHostVariant ? hostChatMode : mode;
 
   const hasAssistantResponse = conversationHistory.some((entry) => entry.role === "assistant");
 
@@ -1360,6 +1386,8 @@ export function ConversationalCreateUI({
   // Derived: is current mode an edit mode with a valid eventId?
   const isEditMode = effectiveMode === "edit_series" || effectiveMode === "edit_occurrence";
   const hasValidEventId = activeEventId.length > 0;
+  const isExistingEventEditSession = isEditMode && !hasCreatedDraft && eventId.trim().length > 0;
+  const canWriteExistingEvent = allowExistingEventWrites || !isExistingEventEditSession;
 
   // Can show cover controls (click-to-select thumbnails):
   // Edit mode: flag + edit mode + valid eventId + images
@@ -1368,7 +1396,7 @@ export function ConversationalCreateUI({
     writesEnabled &&
     stagedImages.length > 0 &&
     (
-      (isEditMode && hasValidEventId) ||
+      (isEditMode && hasValidEventId && canWriteExistingEvent) ||
       effectiveMode === "create"
     );
 
@@ -1455,6 +1483,7 @@ export function ConversationalCreateUI({
     writesEnabled &&
     effectiveMode === "edit_occurrence" &&
     lastInterpretResponse !== null &&
+    canWriteExistingEvent &&
     eventId.trim().length > 0 &&
     DATE_KEY_PATTERN.test(dateKey.trim()) &&
     ACTIONABLE_NEXT_ACTIONS.has(lastInterpretResponse.next_action as NextAction);
@@ -1736,7 +1765,7 @@ export function ConversationalCreateUI({
         );
       }
 
-      if (isEditMode && targetEventId && stagedImages.length > 0) {
+      if (isEditMode && targetEventId && canWriteExistingEvent && stagedImages.length > 0) {
         const coverIntentText = userTranscriptContent.toLowerCase();
         const requestedCoverCandidateId =
           findRequestedCoverCandidateId({
@@ -1969,14 +1998,14 @@ export function ConversationalCreateUI({
   }
 
   async function applyCover() {
-    if (!coverCandidateId || !isEditMode || !hasValidEventId) return;
+    if (!coverCandidateId || !isEditMode || !hasValidEventId || !canWriteExistingEvent) return;
     await applyCoverCandidate(coverCandidateId, activeEventId);
   }
 
   async function handleCoverCandidateSelect(candidateId: string) {
     setCoverCandidateId(candidateId);
     setCoverMessage(null);
-    if (!isEditMode || !hasValidEventId) return;
+    if (!isEditMode || !hasValidEventId || !canWriteExistingEvent) return;
     if (appliedCoverCandidateId === candidateId && createdSummary?.hasCover) return;
     await applyCoverCandidate(candidateId, activeEventId);
   }
@@ -2355,11 +2384,11 @@ export function ConversationalCreateUI({
                 <Bot className="h-5 w-5" aria-hidden="true" />
               </span>
               <h1 className="font-[var(--font-family-serif)] text-3xl text-[var(--color-text-primary)]">
-                Create Happening with AI
+                {effectivePageTitle}
               </h1>
             </div>
             <p className="max-w-3xl text-[var(--color-text-secondary)]">
-              Turn a flyer, link, or rough notes into a private event draft. You can keep chatting here until it is ready.
+              {effectivePageDescription}
             </p>
             <div className={`mt-4 rounded-lg border px-4 py-3 ${hostWorkflowToneClass}`}>
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
@@ -2380,21 +2409,27 @@ export function ConversationalCreateUI({
               </div>
             </div>
             <Link
-              href="/dashboard/my-events/new?classic=true"
+              href={effectiveBackHref}
               className="mt-2 inline-flex items-center gap-1.5 text-sm text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors"
               onClick={() => sendTelemetry("fallback_click")}
             >
               <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
-              Use classic form instead
+              {effectiveBackLabel}
             </Link>
           </div>
         ) : (
           <div>
             <h1 className="font-[var(--font-family-serif)] text-3xl text-[var(--color-text-primary)] mb-2">
-              Conversational Event Creator (Lab)
+              {effectivePageTitle}
             </h1>
             <p className="text-[var(--color-text-secondary)]">
-              Testing surface for <code>/api/events/interpret</code>. Replies appear below, and each follow-up should be entered in the same message box.
+              {pageDescription ? (
+                effectivePageDescription
+              ) : (
+                <>
+                  Testing surface for <code>/api/events/interpret</code>. Replies appear below, and each follow-up should be entered in the same message box.
+                </>
+              )}
             </p>
           </div>
         )}
