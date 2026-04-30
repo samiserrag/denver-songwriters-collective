@@ -834,6 +834,14 @@ export default async function HappeningsPage({
             <p className="text-lg text-white/80 mt-2 drop-shadow">
               Open mics, workshops, showcases, jams, and community shows around Denver
             </p>
+            <div className="mt-5 flex justify-center">
+              <Link
+                href="/dashboard/my-events/new"
+                className="inline-flex min-h-10 items-center justify-center rounded-full bg-[var(--color-accent-primary)] px-5 py-2.5 text-sm font-semibold text-[var(--color-text-on-accent)] shadow-lg transition-colors hover:bg-[var(--color-accent-hover)]"
+              >
+                + Add Happening
+              </Link>
+            </div>
           </div>
         </HeroSection>
       )}
@@ -841,9 +849,17 @@ export default async function HappeningsPage({
       <PageContainer className={showHero ? "" : "pt-8"}>
         {/* Page header with title */}
         {!showHero && pageTitle && (
-          <h1 className="text-2xl md:text-3xl font-[var(--font-family-display)] font-bold text-[var(--color-text-primary)] mb-3">
-            {pageTitle}
-          </h1>
+          <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <h1 className="text-2xl md:text-3xl font-[var(--font-family-display)] font-bold text-[var(--color-text-primary)]">
+              {pageTitle}
+            </h1>
+            <Link
+              href="/dashboard/my-events/new"
+              className="inline-flex min-h-10 w-fit items-center justify-center rounded-full bg-[var(--color-accent-primary)] px-5 py-2.5 text-sm font-semibold text-[var(--color-text-on-accent)] transition-colors hover:bg-[var(--color-accent-hover)]"
+            >
+              + Add Happening
+            </Link>
+          </div>
         )}
 
         {/* Sticky Filter + Jump Controls */}

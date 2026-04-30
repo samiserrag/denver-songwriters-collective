@@ -480,6 +480,12 @@ export default async function HomePage() {
               See All Happenings
             </Link>
             <Link
+              href="/dashboard/my-events/new"
+              className="inline-flex items-center justify-center px-6 py-3 bg-white/20 backdrop-blur text-white font-semibold rounded-full hover:bg-white/30 transition-colors border border-white/30"
+            >
+              + Add Happening
+            </Link>
+            <Link
               href="/happenings?type=open_mic"
               className="inline-flex items-center justify-center px-6 py-3 bg-white/20 backdrop-blur text-white font-semibold rounded-full hover:bg-white/30 transition-colors border border-white/30"
             >
