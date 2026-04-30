@@ -36,15 +36,23 @@ export function mergeIssuesByNumber(...issueLists) {
   return [...issuesByNumber.values()];
 }
 
-async function loadCandidateIssues({ repoRoot, config, mockIssuesPath, env }) {
+async function loadCandidateIssues({
+  repoRoot,
+  config,
+  mockIssuesPath,
+  env,
+  client: providedClient = null,
+  repo: providedRepo = null,
+  tokenInfo: providedTokenInfo = null
+}) {
   if (mockIssuesPath) {
     const absolute = path.resolve(repoRoot, mockIssuesPath);
     return readJsonFile(absolute);
   }
 
-  const tokenInfo = await resolveGitHubToken(env);
-  const repo = await detectRepositorySlug(repoRoot);
-  const client = new GitHubClient({ token: tokenInfo.token });
+  const tokenInfo = providedTokenInfo || (providedClient ? null : await resolveGitHubToken(env));
+  const repo = providedRepo || await detectRepositorySlug(repoRoot);
+  const client = providedClient || new GitHubClient({ token: tokenInfo.token });
   const [readyIssues, runningIssues] = await Promise.all([
     client.listIssuesByLabel(repo, config.labels.ready),
     client.listIssuesByLabel(repo, config.labels.running)
@@ -151,11 +159,21 @@ async function upsertWorkpadComment({ client, repo, issueNumber, body }) {
   if (!comments.ok) {
     throw new Error(comments.detail);
   }
-  const existing = comments.data.find((comment) => String(comment.body || "").includes(WORKPAD_MARKER));
+  const existingWorkpads = comments.data.filter((comment) => String(comment.body || "").includes(WORKPAD_MARKER));
+  const existing = existingWorkpads[0];
   if (existing) {
     const updated = await client.updateComment(repo, existing.id, body);
     if (!updated.ok) {
       throw new Error(updated.detail);
+    }
+    for (const duplicate of existingWorkpads.slice(1)) {
+      if (typeof client.deleteComment !== "function") {
+        throw new Error("GitHub client cannot delete duplicate Symphony workpad comments");
+      }
+      const deleted = await client.deleteComment(repo, duplicate.id);
+      if (!deleted.ok) {
+        throw new Error(deleted.detail);
+      }
     }
     return updated;
   }
@@ -191,6 +209,19 @@ function plannedManifestData(planned) {
       .filter((plan) => plan.logPath)
       .map((plan) => ({ issueNumber: plan.issue.number, path: plan.logPath }))
   };
+}
+
+async function writeManifestSafely({ writeManifest, context, updates, now }) {
+  try {
+    const manifestPath = await writeManifest({ context, updates, now });
+    return { ok: true, manifestPath };
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    return {
+      ok: false,
+      reason: `manifest write failed: ${detail}`
+    };
+  }
 }
 
 function recoveryDetail(assessment, staleRunningMinutes) {
@@ -403,7 +434,14 @@ export async function runOnce({
   execute = false,
   mockIssuesPath = null,
   env = process.env,
-  skipLock = false
+  skipLock = false,
+  client: providedClient = null,
+  repo: providedRepo = null,
+  tokenInfo: providedTokenInfo = null,
+  gitSnapshot: providedGitSnapshot = null,
+  writeManifest = writeRunManifest,
+  createWorktreeFn = createWorktree,
+  runCodexAdapter = runCodexExecAdapter
 }) {
   const mode = execute && !dryRun ? "execute" : "dry-run";
   if (mode === "execute" && mockIssuesPath) {
@@ -420,7 +458,6 @@ export async function runOnce({
   const config = resolveConfig(repoRoot, workflow.config, env);
   const manifestContext = await createRunManifestContext({ repoRoot, config, command: "once", mode });
   let lock = null;
-  let issues;
   let planned = {
     runningCount: 0,
     eligibleCount: 0,
@@ -441,91 +478,77 @@ export async function runOnce({
       manifestContext.manifest.lock = { ...lock, release: undefined };
     }
 
-    issues = await loadCandidateIssues({ repoRoot, config, mockIssuesPath, env });
-  } catch (error) {
-    const detail = error.message;
-    const result = {
-      ok: false,
-      mode: execute && !dryRun ? "execute" : "dry-run",
-      runningCount: 0,
-      plans: [],
-      skipped: [],
-      manifestPath: manifestContext.manifestPath,
-      reason: detail,
-      lock: error instanceof RunnerLockError ? error.detail : undefined
-    };
-    await writeRunManifest({
-      context: manifestContext,
-      updates: {
-        lock: result.lock || manifestContext.manifest.lock,
-        outcome: {
+    const issues = await loadCandidateIssues({
+      repoRoot,
+      config,
+      mockIssuesPath,
+      env,
+      client: providedClient,
+      repo: providedRepo,
+      tokenInfo: providedTokenInfo
+    });
+    planned = planIssues({ issues, config });
+    for (const plan of planned.plans) {
+      plan.logPath = path.join(config.logRoot, `issue-${plan.issue.number}.jsonl`);
+    }
+
+    if (mode === "dry-run") {
+      const manifestWrite = await writeManifestSafely({
+        writeManifest,
+        context: manifestContext,
+        updates: {
+          ...plannedManifestData(planned),
+          outcome: {
+            ok: true,
+            reason: planned.reason || "dry-run planned eligible issues"
+          }
+        }
+      });
+      if (!manifestWrite.ok) {
+        return {
           ok: false,
-          reason: detail
-        }
+          mode,
+          ...planned,
+          manifestPath: manifestContext.manifestPath,
+          reason: manifestWrite.reason
+        };
       }
-    });
-    await lock?.release();
-    return result;
-  }
+      return {
+        ok: true,
+        mode,
+        ...planned,
+        manifestPath: manifestContext.manifestPath
+      };
+    }
 
-  planned = planIssues({ issues, config });
-  for (const plan of planned.plans) {
-    plan.logPath = path.join(config.logRoot, `issue-${plan.issue.number}.jsonl`);
-  }
-
-  if (mode === "dry-run") {
-    const result = {
-      ok: true,
-      mode,
-      ...planned,
-      manifestPath: manifestContext.manifestPath
-    };
-    await writeRunManifest({
-      context: manifestContext,
-      updates: {
-        ...plannedManifestData(planned),
-        outcome: {
-          ok: true,
-          reason: planned.reason || "dry-run planned eligible issues"
+    if (env.SYMPHONY_EXECUTION_APPROVED !== "1") {
+      const result = {
+        ok: false,
+        mode,
+        runningCount: planned.runningCount,
+        plans: planned.plans,
+        skipped: planned.skipped,
+        manifestPath: manifestContext.manifestPath,
+        reason: "real execution requires SYMPHONY_EXECUTION_APPROVED=1"
+      };
+      const manifestWrite = await writeManifestSafely({
+        writeManifest,
+        context: manifestContext,
+        updates: {
+          ...plannedManifestData(planned),
+          outcome: {
+            ok: false,
+            reason: result.reason
+          }
         }
-      }
-    });
-    await lock?.release();
-    return result;
-  }
+      });
+      return manifestWrite.ok ? result : { ...result, reason: manifestWrite.reason };
+    }
 
-  if (env.SYMPHONY_EXECUTION_APPROVED !== "1") {
-    const result = {
-      ok: false,
-      mode,
-      runningCount: planned.runningCount,
-      plans: planned.plans,
-      skipped: planned.skipped,
-      manifestPath: manifestContext.manifestPath,
-      reason: "real execution requires SYMPHONY_EXECUTION_APPROVED=1"
-    };
-    await writeRunManifest({
-      context: manifestContext,
-      updates: {
-        ...plannedManifestData(planned),
-        outcome: {
-          ok: false,
-          reason: result.reason
-        }
-      }
-    });
-    await lock?.release();
-    return result;
-  }
-
-  let tokenInfo;
-  let repo;
-  let client;
-  try {
-    tokenInfo = await resolveGitHubToken(env);
-    repo = await detectRepositorySlug(repoRoot);
-    client = new GitHubClient({ token: tokenInfo.token });
-    const gitSnapshot = await readGitSnapshot(repoRoot);
+    const tokenInfo = providedTokenInfo || (providedClient ? null : await resolveGitHubToken(env));
+    const repo = providedRepo || await detectRepositorySlug(repoRoot);
+    const client = providedClient || new GitHubClient({ token: tokenInfo.token });
+    const gitSnapshot = providedGitSnapshot || await readGitSnapshot(repoRoot);
     const preflight = await runExecutePreflight({ repoRoot, config, client, repo, tokenInfo, planned, gitSnapshot });
     if (!preflight.ok) {
       const result = {
@@ -538,7 +561,8 @@ export async function runOnce({
         preflight,
         reason: `execute preflight failed: ${preflight.failures.join("; ")}`
       };
-      await writeRunManifest({
+      const manifestWrite = await writeManifestSafely({
+        writeManifest,
         context: manifestContext,
         updates: {
           ...plannedManifestData(planned),
@@ -549,9 +573,170 @@ export async function runOnce({
           }
         }
       });
-      await lock?.release();
-      return result;
+      return manifestWrite.ok ? result : { ...result, reason: manifestWrite.reason };
     }
+
+    const initialManifestWrite = await writeManifestSafely({
+      writeManifest,
+      context: manifestContext,
+      updates: {
+        ...plannedManifestData(planned),
+        outcome: {
+          ok: false,
+          reason: "execute preflight passed; external mutations starting",
+          preflight
+        }
+      }
+    });
+    if (!initialManifestWrite.ok) {
+      return {
+        ok: false,
+        mode,
+        runningCount: planned.runningCount,
+        plans: planned.plans,
+        skipped: planned.skipped,
+        manifestPath: manifestContext.manifestPath,
+        preflight,
+        reason: initialManifestWrite.reason
+      };
+    }
+
+    const results = [];
+
+    for (const plan of planned.plans) {
+      try {
+        await applyLabelTransition({
+          client,
+          repo,
+          issueNumber: plan.issue.number,
+          transition: plan.transition
+        });
+        await upsertWorkpadComment({
+          client,
+          repo,
+          issueNumber: plan.issue.number,
+          body: buildWorkpadBody({
+            state: "running",
+            issue: plan.issue,
+            branchName: plan.branchName,
+            worktreePath: plan.worktreePath,
+            logPath: plan.logPath,
+            manifestPath: manifestContext.manifestPath,
+            command: "once",
+            mode,
+            nextAction: "Wait for Codex to finish, then review the issue workpad and resulting branch.",
+            detail: "claimed by Symphony runner"
+          })
+        });
+        const issueComments = await loadIssueComments({ client, repo, issueNumber: plan.issue.number });
+        await createWorktreeFn({ repoRoot, worktreePath: plan.worktreePath, branchName: plan.branchName });
+        const prompt = buildCodexPrompt({
+          workflowText: workflow.markdown,
+          issue: {
+            ...plan.issue,
+            comments: issueComments
+          }
+        });
+        const codexResult = await runCodexAdapter({
+          worktreePath: plan.worktreePath,
+          prompt,
+          logPath: plan.logPath
+        });
+        const finalState = codexResult.ok ? "human-review" : "blocked";
+        const blockedReason = codexResult.ok ? "" : `Codex failed with exit ${codexResult.code}`;
+        await applyLabelTransition({
+          client,
+          repo,
+          issueNumber: plan.issue.number,
+          transition: labelTransitionFor(finalState, config.labels)
+        });
+        await upsertWorkpadComment({
+          client,
+          repo,
+          issueNumber: plan.issue.number,
+          body: buildWorkpadBody({
+            state: finalState,
+            issue: plan.issue,
+            branchName: plan.branchName,
+            worktreePath: plan.worktreePath,
+            logPath: plan.logPath,
+            manifestPath: manifestContext.manifestPath,
+            command: "once",
+            mode,
+            blockedReason,
+            nextAction: codexResult.ok
+              ? "Review the local branch/worktree and open a PR only after normal quality gates pass."
+              : "Read the local log and decide whether to retry, recover, or edit the issue.",
+            detail: codexResult.ok
+              ? `Codex finished. Local log: ${codexResult.logPath}`
+              : `Codex failed with exit ${codexResult.code}. Local log: ${codexResult.logPath}`
+          })
+        });
+        results.push({ ...plan, finalState, codexResult });
+      } catch (error) {
+        const detail = error instanceof Error ? error.message : String(error);
+        try {
+          await applyLabelTransition({
+            client,
+            repo,
+            issueNumber: plan.issue.number,
+            transition: labelTransitionFor("blocked", config.labels)
+          });
+          await upsertWorkpadComment({
+            client,
+            repo,
+            issueNumber: plan.issue.number,
+            body: buildWorkpadBody({
+              state: "blocked",
+              issue: plan.issue,
+              branchName: plan.branchName,
+              worktreePath: plan.worktreePath,
+              logPath: plan.logPath,
+              manifestPath: manifestContext.manifestPath,
+              command: "once",
+              mode,
+              blockedReason: detail,
+              nextAction: "Read the blocked reason and decide whether to retry after fixing the cause.",
+              detail
+            })
+          });
+        } catch {
+          // Preserve the original failure. The local result still records that the issue is blocked.
+        }
+        results.push({
+          ...plan,
+          finalState: "blocked",
+          codexResult: {
+            ok: false,
+            error: detail
+          }
+        });
+      }
+    }
+
+    const result = {
+      ok: results.every((result) => result.codexResult.ok),
+      mode,
+      runningCount: planned.runningCount,
+      plans: results,
+      skipped: planned.skipped,
+      manifestPath: manifestContext.manifestPath,
+      reason: planned.reason
+    };
+    const manifestWrite = await writeManifestSafely({
+      writeManifest,
+      context: manifestContext,
+      updates: {
+        ...plannedManifestData({ ...planned, plans: results }),
+        outcome: {
+          ok: result.ok,
+          reason: result.reason || "execute completed"
+        }
+      }
+    });
+    return manifestWrite.ok
+      ? result
+      : { ...result, ok: false, reason: manifestWrite.reason };
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
     const result = {
@@ -561,11 +746,14 @@ export async function runOnce({
       plans: planned.plans,
       skipped: planned.skipped,
       manifestPath: manifestContext.manifestPath,
-      reason: detail
+      reason: detail,
+      lock: error instanceof RunnerLockError ? error.detail : undefined
     };
-    await writeRunManifest({
+    const manifestWrite = await writeManifestSafely({
+      writeManifest,
       context: manifestContext,
       updates: {
+        lock: result.lock || manifestContext.manifest.lock,
         ...plannedManifestData(planned),
         outcome: {
           ok: false,
@@ -573,144 +761,10 @@ export async function runOnce({
         }
       }
     });
+    return manifestWrite.ok ? result : { ...result, reason: manifestWrite.reason };
+  } finally {
     await lock?.release();
-    return result;
   }
-
-  const results = [];
-
-  for (const plan of planned.plans) {
-    try {
-      await applyLabelTransition({
-        client,
-        repo,
-        issueNumber: plan.issue.number,
-        transition: plan.transition
-      });
-      await upsertWorkpadComment({
-        client,
-        repo,
-        issueNumber: plan.issue.number,
-        body: buildWorkpadBody({
-          state: "running",
-          issue: plan.issue,
-          branchName: plan.branchName,
-          worktreePath: plan.worktreePath,
-          logPath: plan.logPath,
-          manifestPath: manifestContext.manifestPath,
-          command: "once",
-          mode,
-          nextAction: "Wait for Codex to finish, then review the issue workpad and resulting branch.",
-          detail: "claimed by Symphony runner"
-        })
-      });
-      const issueComments = await loadIssueComments({ client, repo, issueNumber: plan.issue.number });
-      await createWorktree({ repoRoot, worktreePath: plan.worktreePath, branchName: plan.branchName });
-      const prompt = buildCodexPrompt({
-        workflowText: workflow.markdown,
-        issue: {
-          ...plan.issue,
-          comments: issueComments
-        }
-      });
-      const codexResult = await runCodexExecAdapter({
-        worktreePath: plan.worktreePath,
-        prompt,
-        logPath: plan.logPath
-      });
-      const finalState = codexResult.ok ? "human-review" : "blocked";
-      const blockedReason = codexResult.ok ? "" : `Codex failed with exit ${codexResult.code}`;
-      await applyLabelTransition({
-        client,
-        repo,
-        issueNumber: plan.issue.number,
-        transition: labelTransitionFor(finalState, config.labels)
-      });
-      await upsertWorkpadComment({
-        client,
-        repo,
-        issueNumber: plan.issue.number,
-        body: buildWorkpadBody({
-          state: finalState,
-          issue: plan.issue,
-          branchName: plan.branchName,
-          worktreePath: plan.worktreePath,
-          logPath: plan.logPath,
-          manifestPath: manifestContext.manifestPath,
-          command: "once",
-          mode,
-          blockedReason,
-          nextAction: codexResult.ok
-            ? "Review the local branch/worktree and open a PR only after normal quality gates pass."
-            : "Read the local log and decide whether to retry, recover, or edit the issue.",
-          detail: codexResult.ok
-            ? `Codex finished. Local log: ${codexResult.logPath}`
-            : `Codex failed with exit ${codexResult.code}. Local log: ${codexResult.logPath}`
-        })
-      });
-      results.push({ ...plan, finalState, codexResult });
-    } catch (error) {
-      const detail = error instanceof Error ? error.message : String(error);
-      try {
-        await applyLabelTransition({
-          client,
-          repo,
-          issueNumber: plan.issue.number,
-          transition: labelTransitionFor("blocked", config.labels)
-        });
-        await upsertWorkpadComment({
-          client,
-          repo,
-          issueNumber: plan.issue.number,
-          body: buildWorkpadBody({
-            state: "blocked",
-            issue: plan.issue,
-            branchName: plan.branchName,
-            worktreePath: plan.worktreePath,
-            logPath: plan.logPath,
-            manifestPath: manifestContext.manifestPath,
-            command: "once",
-            mode,
-            blockedReason: detail,
-            nextAction: "Read the blocked reason and decide whether to retry after fixing the cause.",
-            detail
-          })
-        });
-      } catch {
-        // Preserve the original failure. The local result still records that the issue is blocked.
-      }
-      results.push({
-        ...plan,
-        finalState: "blocked",
-        codexResult: {
-          ok: false,
-          error: detail
-        }
-      });
-    }
-  }
-
-  const result = {
-    ok: results.every((result) => result.codexResult.ok),
-    mode,
-    runningCount: planned.runningCount,
-    plans: results,
-    skipped: planned.skipped,
-    manifestPath: manifestContext.manifestPath,
-    reason: planned.reason
-  };
-  await writeRunManifest({
-    context: manifestContext,
-    updates: {
-      ...plannedManifestData({ ...planned, plans: results }),
-      outcome: {
-        ok: result.ok,
-        reason: result.reason || "execute completed"
-      }
-    }
-  });
-  await lock?.release();
-  return result;
 }
 
 export async function runDaemon({ repoRoot, dryRun = true, intervalSeconds = 120, env = process.env }) {

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { access, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -35,6 +35,74 @@ function approvedBody(writeSet = "docs/runbooks/symphony.md") {
     "- The requested change is complete.",
     "- Tests pass."
   ].join("\n");
+}
+
+async function makeRepoRoot() {
+  const repoRoot = await mkdtemp(path.join(os.tmpdir(), "symphony-runner-"));
+  await writeFile(path.join(repoRoot, "WORKFLOW.md"), await readFile("WORKFLOW.md", "utf8"), "utf8");
+  return repoRoot;
+}
+
+function cleanGitSnapshot() {
+  return {
+    head: "control-head",
+    originMain: "origin-main",
+    clean: true,
+    dirtyFiles: [],
+    statusError: ""
+  };
+}
+
+function makeExecuteClient({ issueBody = approvedBody("tools/symphony/**"), comments = [], calls = [] } = {}) {
+  const issue = {
+    number: 41,
+    title: "Ready execute",
+    state: "open",
+    body: issueBody,
+    labels: [{ name: "symphony:ready" }]
+  };
+  return {
+    calls,
+    async listIssuesByLabel(_repo, label) {
+      return label === "symphony:ready" ? [issue] : [];
+    },
+    async getLabel() {
+      return { ok: true };
+    },
+    async listComments() {
+      return { ok: true, data: comments };
+    },
+    async addLabels(_repo, issueNumber, labels) {
+      calls.push(["addLabels", issueNumber, labels]);
+      return { ok: true };
+    },
+    async removeLabel(_repo, issueNumber, label) {
+      calls.push(["removeLabel", issueNumber, label]);
+      return { ok: true };
+    },
+    async createComment(_repo, issueNumber, body) {
+      calls.push(["createComment", issueNumber, body]);
+      return { ok: true, data: { id: 100, body } };
+    },
+    async updateComment(_repo, commentId, body) {
+      calls.push(["updateComment", commentId, body]);
+      return { ok: true, data: { id: commentId, body } };
+    },
+    async deleteComment(_repo, commentId) {
+      calls.push(["deleteComment", commentId]);
+      return { ok: true };
+    }
+  };
+}
+
+function mutatingCalls(calls) {
+  return calls.filter(([name]) => (
+    name === "addLabels" ||
+    name === "removeLabel" ||
+    name === "createComment" ||
+    name === "updateComment" ||
+    name === "deleteComment"
+  ));
 }
 
 test("planIssues plans only one eligible issue", () => {
@@ -192,6 +260,86 @@ test("runOnce rejects execute with mock issues before reading workflow or GitHub
   assert.match(result.reason, /mock mode is dry-run only/);
 });
 
+test("runOnce execute fails closed without mutation when preflight fails", async () => {
+  const repoRoot = await makeRepoRoot();
+  const calls = [];
+  const client = makeExecuteClient({ calls });
+  const result = await runOnce({
+    repoRoot,
+    dryRun: false,
+    execute: true,
+    env: { SYMPHONY_EXECUTION_APPROVED: "1" },
+    client,
+    repo: "owner/repo",
+    tokenInfo: { token: "test-token" },
+    gitSnapshot: {
+      ...cleanGitSnapshot(),
+      clean: false
+    },
+    skipLock: true
+  });
+
+  assert.equal(result.ok, false);
+  assert.match(result.reason, /execute preflight failed/);
+  assert.deepEqual(mutatingCalls(calls), []);
+});
+
+test("runOnce execute writes manifest before mutation and fails closed if it cannot", async () => {
+  const repoRoot = await makeRepoRoot();
+  const calls = [];
+  const client = makeExecuteClient({ calls });
+  const result = await runOnce({
+    repoRoot,
+    dryRun: false,
+    execute: true,
+    env: { SYMPHONY_EXECUTION_APPROVED: "1" },
+    client,
+    repo: "owner/repo",
+    tokenInfo: { token: "test-token" },
+    gitSnapshot: cleanGitSnapshot(),
+    writeManifest: async () => {
+      throw new Error("read-only manifest root");
+    },
+    createWorktreeFn: async () => {
+      throw new Error("worktree should not be created");
+    },
+    runCodexAdapter: async () => {
+      throw new Error("codex should not run");
+    },
+    skipLock: true
+  });
+
+  assert.equal(result.ok, false);
+  assert.match(result.reason, /manifest write failed: read-only manifest root/);
+  assert.deepEqual(mutatingCalls(calls), []);
+});
+
+test("runOnce releases runner lock when execution fails", async () => {
+  const repoRoot = await makeRepoRoot();
+  const calls = [];
+  const client = makeExecuteClient({ calls });
+  const result = await runOnce({
+    repoRoot,
+    dryRun: false,
+    execute: true,
+    env: { SYMPHONY_EXECUTION_APPROVED: "1" },
+    client,
+    repo: "owner/repo",
+    tokenInfo: { token: "test-token" },
+    gitSnapshot: cleanGitSnapshot(),
+    createWorktreeFn: async () => {
+      throw new Error("worktree failed");
+    },
+    runCodexAdapter: async () => {
+      throw new Error("codex should not run");
+    }
+  });
+
+  assert.equal(result.ok, false);
+  assert.match(JSON.stringify(result.plans), /worktree failed/);
+  await assert.rejects(() => access(path.join(repoRoot, ".symphony/state/runner.lock")), /ENOENT/);
+});
+
 test("recoverStaleRunningIssues moves stale running issues to blocked when executed", async () => {
   const calls = [];
   const client = {
@@ -255,6 +403,74 @@ test("recoverStaleRunningIssues moves stale running issues to blocked when execu
   assert.deepEqual(calls[3], ["removeLabel", 33, "symphony:human-review"]);
   assert.equal(calls[4][0], "updateComment");
   assert.match(calls[4][2], /stale running recovery/);
+});
+
+test("recoverStaleRunningIssues removes duplicate workpad comments on update", async () => {
+  const calls = [];
+  const client = {
+    async listIssuesByLabel(_repo, label) {
+      assert.equal(label, "symphony:running");
+      return [
+        {
+          number: 34,
+          title: "Duplicate workpads",
+          state: "open",
+          body: "Runner died.",
+          created_at: "2026-04-30T00:00:00.000Z",
+          updated_at: "2026-04-30T00:00:00.000Z",
+          labels: [{ name: "symphony:running" }]
+        }
+      ];
+    },
+    async listComments() {
+      return {
+        ok: true,
+        data: [
+          {
+            id: 101,
+            body: "<!-- symphony-workpad -->\n- Last Updated: 2026-04-30T00:00:00.000Z",
+            updated_at: "2026-04-30T00:00:00.000Z"
+          },
+          {
+            id: 102,
+            body: "<!-- symphony-workpad -->\n- Last Updated: 2026-04-30T00:10:00.000Z",
+            updated_at: "2026-04-30T00:10:00.000Z"
+          }
+        ]
+      };
+    },
+    async addLabels(_repo, issueNumber, labels) {
+      calls.push(["addLabels", issueNumber, labels]);
+      return { ok: true };
+    },
+    async removeLabel(_repo, issueNumber, label) {
+      calls.push(["removeLabel", issueNumber, label]);
+      return { ok: true };
+    },
+    async updateComment(_repo, commentId, body) {
+      calls.push(["updateComment", commentId, body]);
+      return { ok: true };
+    },
+    async deleteComment(_repo, commentId) {
+      calls.push(["deleteComment", commentId]);
+      return { ok: true };
+    }
+  };
+
+  const result = await recoverStaleRunningIssues({
+    repoRoot: process.cwd(),
+    dryRun: false,
+    execute: true,
+    env: { SYMPHONY_EXECUTION_APPROVED: "1" },
+    now: new Date("2026-04-30T06:00:00.000Z"),
+    client,
+    repo: "owner/repo",
+    skipLock: true
+  });
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(calls.find((call) => call[0] === "updateComment").slice(0, 2), ["updateComment", 101]);
+  assert.deepEqual(calls.find((call) => call[0] === "deleteComment"), ["deleteComment", 102]);
 });
 
 test("recoverStaleRunningIssues execute mode requires approval gate before GitHub access", async () => {

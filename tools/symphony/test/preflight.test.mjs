@@ -22,6 +22,42 @@ test("parseApprovedWriteSet and parseAcceptanceCriteria read issue sections", ()
   assert.deepEqual(parseAcceptanceCriteria(approvedBody), ["The runner writes a manifest.", "Tests pass."]);
 });
 
+test("parseApprovedWriteSet stops at the next section even when empty", () => {
+  const body = [
+    "## Approved write set",
+    "",
+    "## Acceptance criteria",
+    "- Done."
+  ].join("\n");
+
+  assert.deepEqual(parseApprovedWriteSet(body), []);
+  assert.deepEqual(parseAcceptanceCriteria(body), ["Done."]);
+});
+
+test("diagnoseIssueEligibility rejects vague approved write set entries", () => {
+  const diagnostic = diagnoseIssueEligibility({
+    number: 14,
+    title: "Vague scope",
+    state: "open",
+    labels: [{ name: DEFAULT_LABELS.ready }],
+    body: [
+      "## Approved write set",
+      "- repo files",
+      "- whatever is needed",
+      "- docs",
+      "- source code",
+      "- all files",
+      "",
+      "## Acceptance criteria",
+      "- Done."
+    ].join("\n")
+  }, DEFAULT_LABELS);
+
+  assert.equal(diagnostic.eligible, false);
+  assert.match(diagnostic.reasons.join("\n"), /missing approved write set/);
+  assert.match(diagnostic.reasons.join("\n"), /ambiguous approved write set entries/);
+});
+
 test("diagnoseIssueEligibility reports deterministic skip reasons", () => {
   const diagnostic = diagnoseIssueEligibility({
     number: 12,
@@ -52,6 +88,68 @@ test("diagnoseIssueEligibility blocks high-risk write sets without explicit appr
 
   assert.equal(diagnostic.eligible, false);
   assert.match(diagnostic.reasons.join("\n"), /high-risk scope/);
+});
+
+test("diagnoseIssueEligibility requires high-risk approval to mention the risky scope", () => {
+  const diagnostic = diagnoseIssueEligibility({
+    number: 15,
+    title: "Unrelated approval",
+    state: "open",
+    labels: [{ name: DEFAULT_LABELS.ready }],
+    body: [
+      "## Approved write set",
+      "- web/src/app/page.tsx",
+      "",
+      "## Acceptance criteria",
+      "- Page updates.",
+      "",
+      "Telemetry is explicitly approved."
+    ].join("\n")
+  }, DEFAULT_LABELS);
+
+  assert.equal(diagnostic.eligible, false);
+  assert.match(diagnostic.reasons.join("\n"), /production app runtime/);
+});
+
+test("diagnoseIssueEligibility rejects negated high-risk approval wording", () => {
+  const diagnostic = diagnoseIssueEligibility({
+    number: 16,
+    title: "Negated approval",
+    state: "open",
+    labels: [{ name: DEFAULT_LABELS.ready }],
+    body: [
+      "## Approved write set",
+      "- web/src/app/page.tsx",
+      "",
+      "## Acceptance criteria",
+      "- Page updates.",
+      "",
+      "web/src/app/page.tsx is not explicitly approved."
+    ].join("\n")
+  }, DEFAULT_LABELS);
+
+  assert.equal(diagnostic.eligible, false);
+  assert.match(diagnostic.reasons.join("\n"), /production app runtime/);
+});
+
+test("diagnoseIssueEligibility accepts specific positive high-risk approval", () => {
+  const diagnostic = diagnoseIssueEligibility({
+    number: 17,
+    title: "Specific approval",
+    state: "open",
+    labels: [{ name: DEFAULT_LABELS.ready }],
+    body: [
+      "## Approved write set",
+      "- web/src/app/page.tsx",
+      "",
+      "## Acceptance criteria",
+      "- Page updates.",
+      "",
+      "web/src/app/page.tsx is explicitly approved for this issue."
+    ].join("\n")
+  }, DEFAULT_LABELS);
+
+  assert.equal(diagnostic.eligible, true);
 });
 
 test("runExecutePreflight fails closed on dirty checkout and multiple eligible issues", async () => {
