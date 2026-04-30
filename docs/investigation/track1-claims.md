@@ -22,46 +22,52 @@ Rules:
 
 ## Active claims
 
-### PR 6 — AI edit route wrappers
+### PR 7 — AI edit entry points and copy
 
-- **Branch:** `codex/ai-edit-routes-pr6`
+- **Branch:** `codex/ai-edit-entry-points-pr7`
 - **Owner:** Codex
-- **Scope:** §13.2 (Sami-approved this session). Add thin route wrappers for existing-event AI editing:
-  - `/dashboard/my-events/[id]/ai`
-  - `/dashboard/my-events/[id]/overrides/[dateKey]/ai`
-  - mount the existing conversational UI in `edit_series` or `edit_occurrence` mode with `eventId` and optional `dateKey`
-  - use `createSupabaseServerClient` + `canManageEvent` for the existing auth pattern
-  - validate occurrence `dateKey` as `YYYY-MM-DD`
-  - keep create-host behavior unchanged
-  - do not enable AI-generated patches to automatically save to an existing event before PR 9's published-event gate
-- **Single-writer locks claimed for this PR (per plan §8.2):**
-  - `web/src/app/(protected)/dashboard/my-events/_components/ConversationalCreateUI.tsx` (explicitly approved for minimum PR 6 edit-mode prop surface only)
+- **Scope:** §13.2 (Sami-approved this session). Add entry links/buttons only for the PR 6 AI edit routes:
+  - add `Update with AI` from `/dashboard/my-events/[id]` to `/dashboard/my-events/[id]/ai`
+  - add EventForm edit-mode AI actions for series and occurrence edit contexts
+  - add `Edit with AI` to each occurrence row action
+  - keep copy honest: no URL schedule import promise, no automatic published-event mutation promise, no completed write/apply behavior promise
 - **Files claimed (write):**
-  - `web/src/app/(protected)/dashboard/my-events/[id]/ai/page.tsx` (new)
-  - `web/src/app/(protected)/dashboard/my-events/[id]/overrides/[dateKey]/ai/page.tsx` (new)
-  - `web/src/app/(protected)/dashboard/my-events/_components/ConversationalCreateUI.tsx`
-  - `web/src/__tests__/ai-edit-routes.test.ts` (new)
+  - `web/src/app/(protected)/dashboard/my-events/[id]/page.tsx`
+  - `web/src/app/(protected)/dashboard/my-events/_components/EventForm.tsx`
+  - `web/src/app/(protected)/dashboard/my-events/[id]/overrides/_components/OccurrenceEditor.tsx`
+  - `web/src/__tests__/ai-edit-entry-points.test.ts` (new)
   - `docs/investigation/track1-claims.md` (this file)
 - **Files referenced (read-only):**
-  - `web/src/app/(protected)/dashboard/my-events/[id]/edit/page.tsx` — current event auth/loading pattern
-  - `web/src/app/(protected)/dashboard/my-events/[id]/overrides/[dateKey]/edit/page.tsx` — occurrence auth/date route pattern
-  - `web/src/app/(protected)/dashboard/my-events/create/CreateEventClient.tsx` — existing create-host mount behavior
+  - `web/src/app/(protected)/dashboard/my-events/[id]/ai/page.tsx` — PR 6 series AI route shape
+  - `web/src/app/(protected)/dashboard/my-events/[id]/overrides/[dateKey]/ai/page.tsx` — PR 6 occurrence AI route shape
+  - `web/src/__tests__/ai-edit-routes.test.ts` — PR 6 route/copy prop surface assertions
 - **Files locked / forbidden in this PR:**
+  - `web/src/app/(protected)/dashboard/my-events/_components/ConversationalCreateUI.tsx`
   - `web/src/app/api/events/interpret/route.ts`
   - `web/src/lib/events/aiPromptContract.ts`
   - `web/src/lib/events/eventDraftSync.ts` (PR 10 lock)
   - any migration in `supabase/migrations/`
   - any telemetry runtime file (PR 3 scope)
-- **Base SHA:** `0e49798b603d8206d67995a139d39981f4b6003b` (current `origin/main` HEAD after PR #127 merge)
-- **Status:** `awaiting_review`
+  - published-event gate files
+  - Symphony files (`WORKFLOW.md`, `tools/symphony/**`, `docs/runbooks/symphony.md`, Symphony package scripts, Symphony `.gitignore` changes)
+- **Base SHA:** `d5aa0bfbdc2fb91b88b6ad2d14e65ad7346797ec` (current `origin/main` HEAD after PR #129 merge)
+- **Status:** `in_progress`
 - **Notes for the other agent:**
-  - The new routes are wrappers only; entry-point buttons/copy belong to PR 7.
-  - Existing-event AI must not seed `createdEventId` or use the create-flow auto-PATCH shortcut.
-  - If route mounting requires write behavior beyond passing edit context, stop and ask.
+  - PR 7 must not reopen `ConversationalCreateUI.tsx`.
+  - PR 7 is entry-point UI only and must not change AI write behavior.
+  - If an entry point implies AI changes are saved automatically, stop and ask.
 
 ---
 
 ## Closed claims
+
+### PR 6 — AI edit route wrappers
+
+- **Branch:** `codex/ai-edit-routes-pr6`
+- **Owner:** Codex
+- **End SHA:** merged via PR #129 → `d5aa0bfb`
+- **Status:** `merged`
+- **Notes:** Added thin authenticated AI edit route wrappers for series and occurrence contexts. Existing-event writes remain disabled pending later safety gates.
 
 ### PR 5 — Prompt and interpreter contract rewrite
 
