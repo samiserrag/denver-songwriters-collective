@@ -78,6 +78,27 @@ function buildCanonicalEventPath(eventIdentifier: string, selectedDateKey?: stri
   return `/events/${eventIdentifier}`;
 }
 
+function isEventType(value: unknown): value is EventType {
+  return typeof value === "string" && value in EVENT_TYPE_CONFIG;
+}
+
+function getVisibleEventTypes(rawTypes: unknown): EventType[] {
+  const seenTypes = new Set<EventType>();
+  const visibleTypes: EventType[] = [];
+  const rawTypeList = Array.isArray(rawTypes) ? rawTypes : [rawTypes];
+
+  for (const rawType of rawTypeList) {
+    if (!isEventType(rawType) || seenTypes.has(rawType)) {
+      continue;
+    }
+
+    seenTypes.add(rawType);
+    visibleTypes.push(rawType);
+  }
+
+  return visibleTypes.length > 0 ? visibleTypes : ["other"];
+}
+
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://denver-songwriters-collective.vercel.app";
 
 export async function generateMetadata({
@@ -108,8 +129,8 @@ export async function generateMetadata({
     };
   }
 
-  const metaTypes = Array.isArray(event.event_type) ? event.event_type : [event.event_type].filter(Boolean);
-  const config = EVENT_TYPE_CONFIG[getPrimaryEventType(metaTypes as EventType[])] || EVENT_TYPE_CONFIG.other;
+  const metaTypes = getVisibleEventTypes(event.event_type);
+  const config = EVENT_TYPE_CONFIG[getPrimaryEventType(metaTypes)] || EVENT_TYPE_CONFIG.other;
   const title = `${event.title} | ${config.label}`;
   const description = event.description
     ? event.description.slice(0, 155) + (event.description.length > 155 ? "..." : "")
@@ -810,8 +831,13 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
   // Phase 4.32: Check if signup lane exists (only shown to managers)
   const signupLaneExists = hasSignupLane(event, timeslotCount);
 
-  const pageTypes = Array.isArray(event.event_type) ? event.event_type : [event.event_type].filter(Boolean);
-  const config = EVENT_TYPE_CONFIG[getPrimaryEventType(pageTypes as EventType[])] || EVENT_TYPE_CONFIG.other;
+  const eventTypes = getVisibleEventTypes(event.event_type);
+  const config = EVENT_TYPE_CONFIG[getPrimaryEventType(eventTypes)] || EVENT_TYPE_CONFIG.other;
+  const showStatusBadges =
+    event.is_dsc_event ||
+    verificationState === "confirmed" ||
+    showUnconfirmedBadge ||
+    verificationState === "cancelled";
 
   // Phase 5.06: Use getVenueDirectionsUrl for "Get Directions" button (returns /maps/dir/ format)
   // For custom locations, use lat/lng or name+address fallback
@@ -980,45 +1006,69 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
         />
 
         <div className="p-6 md:p-8">
-          {/* Event type, CSC, and verification badges */}
-          <div className="flex items-center gap-2 mb-4 flex-wrap">
-            <span className="px-2 py-1 bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] text-sm rounded flex items-center gap-1.5">
-              <span>{config.icon}</span> {config.label}
-            </span>
-            {event.is_dsc_event && (
-              <span className="px-2 py-1 bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] text-sm rounded font-medium">
-                CSC Event
-              </span>
-            )}
-            {/* Phase 4.39: Always-visible verification pill (matches HappeningCard) */}
-            {/* P0 Fix: Use showUnconfirmedBadge to suppress for CSC TEST events */}
-            {/* Phase 4.89: Added confirmed date display */}
-            {verificationState === "confirmed" && (
-              <>
-                <span className="inline-flex items-center px-2 py-1 text-sm font-medium rounded bg-[var(--pill-bg-success)] text-[var(--pill-fg-success)] border border-[var(--pill-border-success)]">
-                  <svg className="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
-                  Confirmed
-                </span>
-                {formatVerifiedDate(event.last_verified_at) && (
-                  <span className="text-sm text-[var(--color-text-secondary)]">
-                    Confirmed: {formatVerifiedDate(event.last_verified_at)}
+          {/* Prominent event type badges */}
+          <div data-testid="event-type-badges" className="mb-4 flex flex-wrap gap-3">
+            {eventTypes.map((eventType) => {
+              const typeConfig = EVENT_TYPE_CONFIG[eventType];
+
+              return (
+                <span
+                  key={eventType}
+                  data-event-type={eventType}
+                  className="inline-flex min-h-12 items-center gap-3 rounded-lg border border-[var(--color-border-accent)]/50 bg-[var(--color-accent-primary)]/10 px-4 py-3 text-[var(--color-text-primary)] shadow-sm"
+                >
+                  <span
+                    className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-md border border-[var(--color-border-default)] bg-[var(--color-bg-primary)] text-2xl leading-none"
+                    aria-hidden="true"
+                  >
+                    {typeConfig.icon}
                   </span>
-                )}
-              </>
-            )}
-            {showUnconfirmedBadge && (
-              <span className="inline-flex items-center px-2 py-1 text-sm font-medium rounded bg-[var(--pill-bg-warning)] text-[var(--pill-fg-warning)] border border-[var(--pill-border-warning)]">
-                Unconfirmed
-              </span>
-            )}
-            {verificationState === "cancelled" && (
-              <span className="inline-flex items-center px-2 py-1 text-sm font-medium rounded bg-red-500/20 text-red-400 border border-red-500/30">
-                Cancelled
-              </span>
-            )}
+                  <span className="text-base font-semibold leading-tight md:text-lg">
+                    {typeConfig.label}
+                  </span>
+                </span>
+              );
+            })}
           </div>
+
+          {/* CSC and verification badges */}
+          {showStatusBadges && (
+            <div className="flex items-center gap-2 mb-5 flex-wrap">
+              {event.is_dsc_event && (
+                <span className="px-2 py-1 bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] text-sm rounded font-medium">
+                  CSC Event
+                </span>
+              )}
+              {/* Phase 4.39: Always-visible verification pill (matches HappeningCard) */}
+              {/* P0 Fix: Use showUnconfirmedBadge to suppress for CSC TEST events */}
+              {/* Phase 4.89: Added confirmed date display */}
+              {verificationState === "confirmed" && (
+                <>
+                  <span className="inline-flex items-center px-2 py-1 text-sm font-medium rounded bg-[var(--pill-bg-success)] text-[var(--pill-fg-success)] border border-[var(--pill-border-success)]">
+                    <svg className="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Confirmed
+                  </span>
+                  {formatVerifiedDate(event.last_verified_at) && (
+                    <span className="text-sm text-[var(--color-text-secondary)]">
+                      Confirmed: {formatVerifiedDate(event.last_verified_at)}
+                    </span>
+                  )}
+                </>
+              )}
+              {showUnconfirmedBadge && (
+                <span className="inline-flex items-center px-2 py-1 text-sm font-medium rounded bg-[var(--pill-bg-warning)] text-[var(--pill-fg-warning)] border border-[var(--pill-border-warning)]">
+                  Unconfirmed
+                </span>
+              )}
+              {verificationState === "cancelled" && (
+                <span className="inline-flex items-center px-2 py-1 text-sm font-medium rounded bg-red-500/20 text-red-400 border border-red-500/30">
+                  Cancelled
+                </span>
+              )}
+            </div>
+          )}
 
           <h1 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-text-primary)] mb-4">
             {displayTitle}
