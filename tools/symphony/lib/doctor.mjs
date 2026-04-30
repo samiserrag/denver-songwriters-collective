@@ -25,6 +25,36 @@ async function checkWritableDirectory(directory) {
   await rm(probe, { force: true });
 }
 
+async function checkOriginMain(repoRoot) {
+  const result = await runCommand("git", ["rev-parse", "--verify", "origin/main^{commit}"], { cwd: repoRoot });
+  if (!result.ok) {
+    return check("fail", "origin/main base", result.stderr || result.stdout || "origin/main is not resolvable");
+  }
+  return check("pass", "origin/main base", result.stdout);
+}
+
+export function summarizePorcelainStatus(stdout) {
+  const entries = String(stdout || "")
+    .split("\n")
+    .map((line) => line.trimEnd())
+    .filter(Boolean);
+  if (entries.length === 0) {
+    return "";
+  }
+  const shown = entries.slice(0, 8).join("; ");
+  const suffix = entries.length > 8 ? `; ... ${entries.length - 8} more` : "";
+  return `${entries.length} dirty path(s): ${shown}${suffix}`;
+}
+
+async function checkCleanWorktree(repoRoot) {
+  const result = await runCommand("git", ["status", "--porcelain=v1"], { cwd: repoRoot });
+  if (!result.ok) {
+    return check("fail", "clean worktree", result.stderr || result.stdout || "git status failed");
+  }
+  const summary = summarizePorcelainStatus(result.stdout);
+  return summary ? check("fail", "clean worktree", summary) : check("pass", "clean worktree", "no local changes");
+}
+
 async function checkLabels({ tokenInfo, repo, labels, createLabels }) {
   if (!tokenInfo?.token) {
     return [check("fail", "GitHub labels", "skipped because GitHub auth/token is not valid")];
@@ -88,6 +118,9 @@ export async function runDoctor({ repoRoot, createLabels = false, env = process.
       }
     }
   }
+
+  checks.push(await checkOriginMain(repoRoot));
+  checks.push(await checkCleanWorktree(repoRoot));
 
   checks.push(await checkCommand("codex", ["--version"]));
   checks.push(await checkCommand("codex", ["app-server", "--help"]));

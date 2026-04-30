@@ -14,6 +14,10 @@ export const DEFAULT_WORKSPACE = Object.freeze({
   state: ".symphony/state"
 });
 
+export const DEFAULT_RECOVERY = Object.freeze({
+  staleRunningMinutes: 240
+});
+
 export function resolveConfig(repoRoot, workflowConfig = {}, env = process.env) {
   const workspace = {
     ...DEFAULT_WORKSPACE,
@@ -25,6 +29,11 @@ export function resolveConfig(repoRoot, workflowConfig = {}, env = process.env) 
     ...(workflowConfig.labels || {})
   };
 
+  const recovery = workflowConfig.recovery || {};
+  const staleRunningMinutes = Number(
+    env.SYMPHONY_STALE_RUNNING_MINUTES || recovery.stale_running_minutes || DEFAULT_RECOVERY.staleRunningMinutes
+  );
+
   return {
     version: workflowConfig.version || 1,
     maxConcurrentAgents: Number(workflowConfig.max_concurrent_agents || 1),
@@ -32,6 +41,8 @@ export function resolveConfig(repoRoot, workflowConfig = {}, env = process.env) 
     workspaceRoot: path.resolve(repoRoot, env.SYMPHONY_WORKSPACE_ROOT || workspace.root),
     logRoot: path.resolve(repoRoot, env.SYMPHONY_LOG_ROOT || workspace.logs),
     stateRoot: path.resolve(repoRoot, env.SYMPHONY_STATE_ROOT || workspace.state),
+    staleRunningMinutes,
+    staleRunningMs: staleRunningMinutes * 60 * 1000,
     codexAdapter: workflowConfig.codex?.adapter || "codex-exec"
   };
 }

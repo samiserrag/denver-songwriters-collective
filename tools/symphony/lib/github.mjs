@@ -46,13 +46,14 @@ export async function resolveGitHubToken(env = process.env) {
 }
 
 export class GitHubClient {
-  constructor({ token, apiBase = "https://api.github.com" }) {
+  constructor({ token, apiBase = "https://api.github.com", fetchImpl = fetch }) {
     this.token = token;
     this.apiBase = apiBase;
+    this.fetchImpl = fetchImpl;
   }
 
   async request(pathname, options = {}) {
-    const response = await fetch(`${this.apiBase}${pathname}`, {
+    const response = await this.fetchImpl(`${this.apiBase}${pathname}`, {
       ...options,
       headers: {
         Accept: "application/vnd.github+json",
@@ -81,6 +82,34 @@ export class GitHubClient {
     return { ok: true, status: response.status, data };
   }
 
+  async paginatedRequest(pathname, { perPage = 100 } = {}) {
+    const separator = pathname.includes("?") ? "&" : "?";
+    const allData = [];
+    let lastStatus = 200;
+
+    for (let page = 1; ; page += 1) {
+      const result = await this.request(`${pathname}${separator}per_page=${perPage}&page=${page}`);
+      lastStatus = result.status;
+      if (!result.ok) {
+        return result;
+      }
+      if (!Array.isArray(result.data)) {
+        return {
+          ok: false,
+          status: result.status,
+          detail: "expected paginated GitHub response to be an array",
+          data: result.data
+        };
+      }
+      allData.push(...result.data);
+      if (result.data.length < perPage) {
+        break;
+      }
+    }
+
+    return { ok: true, status: lastStatus, data: allData };
+  }
+
   getLabel(repo, label) {
     return this.request(`/repos/${repo}/labels/${encodeURIComponent(label)}`);
   }
@@ -97,9 +126,7 @@ export class GitHubClient {
   }
 
   async listIssuesByLabel(repo, label) {
-    const result = await this.request(
-      `/repos/${repo}/issues?state=open&per_page=50&labels=${encodeURIComponent(label)}`
-    );
+    const result = await this.paginatedRequest(`/repos/${repo}/issues?state=open&labels=${encodeURIComponent(label)}`);
     if (!result.ok) {
       throw new Error(result.detail);
     }
@@ -127,7 +154,7 @@ export class GitHubClient {
   }
 
   listComments(repo, issueNumber) {
-    return this.request(`/repos/${repo}/issues/${issueNumber}/comments?per_page=100`);
+    return this.paginatedRequest(`/repos/${repo}/issues/${issueNumber}/comments`);
   }
 
   updateComment(repo, commentId, body) {

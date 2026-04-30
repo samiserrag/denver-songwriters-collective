@@ -72,6 +72,10 @@ npm run symphony:doctor -- --create-labels
    npm run symphony:dry-run
    ```
 
+`doctor` fails if `origin/main` is not resolvable or the current
+checkout has local changes. Run Symphony from a clean control checkout so
+active Track 1 work cannot bleed into runner operations.
+
 ## Real Execution Gate
 
 Do not launch autonomous code-writing until Sami separately approves the
@@ -108,8 +112,25 @@ If a run fails:
 
 1. Stop the runner.
 2. Read the issue workpad comment and `.symphony/logs/issue-<n>.jsonl`.
-3. Move the issue to `symphony:blocked` if the runner did not do so.
-4. Remove any stale local worktree only after confirming it has no needed
+3. Dry-run stale running recovery:
+
+   ```bash
+   npm run symphony:recover-stale
+   ```
+
+4. If the dry-run identifies stale `symphony:running` issues and Sami has
+   approved recovery, move them to `symphony:blocked`:
+
+   ```bash
+   SYMPHONY_EXECUTION_APPROVED=1 node tools/symphony/cli.mjs recover-stale --execute
+   ```
+
+   Recovery only clears stale running locks by blocking the issue; it
+   does not launch replacement Codex work.
+
+5. Move the issue to `symphony:blocked` manually if the runner did not do
+   so and recovery is not appropriate.
+6. Remove any stale local worktree only after confirming it has no needed
    changes:
 
    ```bash
@@ -117,7 +138,7 @@ If a run fails:
    git worktree remove .symphony/worktrees/issue-<n>-<slug>
    ```
 
-5. Re-run `npm run symphony:doctor` before another execution attempt.
+7. Re-run `npm run symphony:doctor` before another execution attempt.
 
 ## Remote Access
 

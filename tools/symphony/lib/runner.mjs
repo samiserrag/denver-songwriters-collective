@@ -4,6 +4,7 @@ import { buildCodexPrompt, runCodexExecAdapter } from "./codexAdapter.mjs";
 import { resolveConfig } from "./config.mjs";
 import { detectRepositorySlug, GitHubClient, resolveGitHubToken, runCommand } from "./github.mjs";
 import {
+  assessRunningIssue,
   buildWorkpadBody,
   countRunningIssues,
   filterEligibleIssues,
@@ -139,6 +140,116 @@ async function upsertWorkpadComment({ client, repo, issueNumber, body }) {
   return created;
 }
 
+async function loadIssueComments({ client, repo, issueNumber }) {
+  const comments = await client.listComments(repo, issueNumber);
+  if (!comments.ok) {
+    throw new Error(comments.detail);
+  }
+  return comments.data;
+}
+
+function recoveryDetail(assessment, staleRunningMinutes) {
+  const ageMinutes = assessment.ageMs === null ? "unknown" : Math.floor(assessment.ageMs / 60000);
+  return `stale running recovery after ${ageMinutes} minutes; threshold is ${staleRunningMinutes} minutes`;
+}
+
+async function loadRunningIssueAssessments({ client, repo, config, now = new Date() }) {
+  const issues = await client.listIssuesByLabel(repo, config.labels.running);
+  const assessments = [];
+  for (const issue of issues) {
+    const comments = await loadIssueComments({ client, repo, issueNumber: issue.number });
+    assessments.push({
+      issue,
+      comments,
+      assessment: assessRunningIssue({
+        issue,
+        comments,
+        labels: config.labels,
+        now,
+        staleMs: config.staleRunningMs
+      })
+    });
+  }
+  return assessments;
+}
+
+export async function recoverStaleRunningIssues({
+  repoRoot,
+  dryRun = true,
+  execute = false,
+  env = process.env,
+  now = new Date(),
+  client: providedClient = null,
+  repo: providedRepo = null
+}) {
+  const mode = execute && !dryRun ? "execute" : "dry-run";
+  if (mode === "execute" && env.SYMPHONY_EXECUTION_APPROVED !== "1") {
+    return {
+      ok: false,
+      mode,
+      stale: [],
+      active: [],
+      reason: "stale recovery requires SYMPHONY_EXECUTION_APPROVED=1"
+    };
+  }
+
+  const workflow = await loadWorkflow(path.join(repoRoot, "WORKFLOW.md"));
+  const config = resolveConfig(repoRoot, workflow.config, env);
+  const tokenInfo = providedClient ? null : await resolveGitHubToken(env);
+  const repo = providedRepo || await detectRepositorySlug(repoRoot);
+  const client = providedClient || new GitHubClient({ token: tokenInfo.token });
+  const assessments = await loadRunningIssueAssessments({ client, repo, config, now });
+  const stale = assessments.filter((item) => item.assessment.isStale);
+  const active = assessments.filter((item) => !item.assessment.isStale);
+
+  if (mode === "dry-run") {
+    return {
+      ok: true,
+      mode,
+      stale: stale.map((item) => item.assessment),
+      active: active.map((item) => item.assessment),
+      reason: stale.length === 0 ? "no stale running issues found" : ""
+    };
+  }
+
+  const recovered = [];
+  for (const item of stale) {
+    const branchName = branchNameForIssue(item.issue);
+    const worktreePath = workspacePathForIssue(config.workspaceRoot, item.issue);
+    const detail = recoveryDetail(item.assessment, config.staleRunningMinutes);
+    await applyLabelTransition({
+      client,
+      repo,
+      issueNumber: item.issue.number,
+      transition: labelTransitionFor("blocked", config.labels)
+    });
+    await upsertWorkpadComment({
+      client,
+      repo,
+      issueNumber: item.issue.number,
+      body: buildWorkpadBody({
+        state: "blocked",
+        issue: item.issue,
+        branchName,
+        worktreePath,
+        detail
+      })
+    });
+    recovered.push({
+      ...item.assessment,
+      finalState: "blocked"
+    });
+  }
+
+  return {
+    ok: true,
+    mode,
+    stale: recovered,
+    active: active.map((item) => item.assessment),
+    reason: recovered.length === 0 ? "no stale running issues found" : ""
+  };
+}
+
 export async function runOnce({
   repoRoot,
   dryRun = true,
@@ -216,9 +327,16 @@ export async function runOnce({
           detail: "claimed by Symphony runner"
         })
       });
+      const issueComments = await loadIssueComments({ client, repo, issueNumber: plan.issue.number });
       await createWorktree({ repoRoot, worktreePath: plan.worktreePath, branchName: plan.branchName });
       const logPath = path.join(config.logRoot, `issue-${plan.issue.number}.jsonl`);
-      const prompt = buildCodexPrompt({ workflowText: workflow.markdown, issue: plan.issue });
+      const prompt = buildCodexPrompt({
+        workflowText: workflow.markdown,
+        issue: {
+          ...plan.issue,
+          comments: issueComments
+        }
+      });
       const codexResult = await runCodexExecAdapter({
         worktreePath: plan.worktreePath,
         prompt,

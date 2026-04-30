@@ -1,4 +1,5 @@
 export const WORKPAD_MARKER = "<!-- symphony-workpad -->";
+const WORKPAD_UPDATED_PATTERN = /-\s*Last Updated:\s*`?([^`\n]+)`?/i;
 
 export function labelNames(issue) {
   return (issue.labels || []).map((label) => (typeof label === "string" ? label : label.name));
@@ -31,6 +32,45 @@ export function countRunningIssues(issues, labels) {
   return issues.filter((issue) => issue.state === "open" && hasLabel(issue, labels.running)).length;
 }
 
+export function findWorkpadComment(comments = []) {
+  return comments.find((comment) => String(comment.body || "").includes(WORKPAD_MARKER)) || null;
+}
+
+export function parseWorkpadUpdatedAt(body = "") {
+  const match = String(body).match(WORKPAD_UPDATED_PATTERN);
+  if (!match) {
+    return null;
+  }
+  const parsed = new Date(match[1]);
+  return Number.isNaN(parsed.valueOf()) ? null : parsed;
+}
+
+export function runningIssueLastUpdatedAt({ issue, comments = [] }) {
+  const workpad = findWorkpadComment(comments);
+  if (workpad) {
+    return parseWorkpadUpdatedAt(workpad.body) || new Date(workpad.updated_at || workpad.created_at);
+  }
+  return new Date(issue.updated_at || issue.created_at);
+}
+
+export function assessRunningIssue({ issue, comments = [], labels, now = new Date(), staleMs }) {
+  const lastUpdatedAt = runningIssueLastUpdatedAt({ issue, comments });
+  const lastUpdatedTime = lastUpdatedAt.valueOf();
+  const ageMs = Number.isNaN(lastUpdatedTime) ? null : now.valueOf() - lastUpdatedTime;
+  const isRunning = issue.state === "open" && hasLabel(issue, labels.running);
+  const isStale = isRunning && ageMs !== null && ageMs >= staleMs;
+
+  return {
+    issueNumber: issue.number,
+    title: issue.title,
+    isRunning,
+    isStale,
+    ageMs,
+    lastUpdatedAt: Number.isNaN(lastUpdatedTime) ? null : lastUpdatedAt.toISOString(),
+    source: findWorkpadComment(comments) ? "workpad" : "issue"
+  };
+}
+
 export function labelTransitionFor(state, labels) {
   if (state === "claim") {
     return {
@@ -54,12 +94,14 @@ export function labelTransitionFor(state, labels) {
 }
 
 export function buildWorkpadBody({ state, issue, branchName, worktreePath, detail }) {
+  const now = new Date().toISOString();
   return [
     WORKPAD_MARKER,
     "## Codex Workpad",
     "",
     `- Issue: #${issue.number} ${issue.title}`,
     `- State: ${state}`,
+    `- Last Updated: ${now}`,
     branchName ? `- Branch: \`${branchName}\`` : "- Branch: pending",
     worktreePath ? `- Worktree: \`${worktreePath}\`` : "- Worktree: pending",
     detail ? `- Detail: ${detail}` : "- Detail: pending",

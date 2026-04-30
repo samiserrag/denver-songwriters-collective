@@ -3,6 +3,7 @@
     "symphony:doctor": "node tools/symphony/cli.mjs doctor",
     "symphony:dry-run": "node tools/symphony/cli.mjs once --dry-run",
     "symphony:once": "node tools/symphony/cli.mjs once",
+    "symphony:recover-stale": "node tools/symphony/cli.mjs recover-stale --dry-run",
     "symphony:test": "node --test tools/symphony/test/*.test.mjs"
   },
   "dependencies": {

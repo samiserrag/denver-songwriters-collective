@@ -41,6 +41,12 @@ export function validateWorkflowConfig(config) {
   if (!config.workspace?.root || !config.workspace?.logs || !config.workspace?.state) {
     throw new Error("workspace.root, workspace.logs, and workspace.state are required");
   }
+  if (
+    config.recovery?.stale_running_minutes !== undefined &&
+    (!Number.isInteger(config.recovery.stale_running_minutes) || config.recovery.stale_running_minutes < 1)
+  ) {
+    throw new Error("recovery.stale_running_minutes must be a positive integer");
+  }
   if (config.codex?.adapter !== "codex-exec") {
     throw new Error("Phase 1 supports only the codex-exec adapter");
   }

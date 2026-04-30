@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { runDoctor } from "./lib/doctor.mjs";
-import { runDaemon, runOnce } from "./lib/runner.mjs";
+import { recoverStaleRunningIssues, runDaemon, runOnce } from "./lib/runner.mjs";
 
 function parseArgs(argv) {
   const flags = {
@@ -44,6 +44,7 @@ function printHelp() {
 Usage:
   node tools/symphony/cli.mjs doctor [--create-labels] [--json]
   node tools/symphony/cli.mjs once [--dry-run] [--execute] [--mock-issues path] [--json]
+  node tools/symphony/cli.mjs recover-stale [--dry-run] [--execute] [--json]
   node tools/symphony/cli.mjs daemon [--dry-run] [--interval-seconds n]
 
 Notes:
@@ -93,6 +94,29 @@ function printOnce(result, asJson) {
   }
 }
 
+function printRecovery(result, asJson) {
+  if (asJson) {
+    console.log(JSON.stringify(result, null, 2));
+    return;
+  }
+
+  console.log(`Symphony recover-stale: ${result.mode}`);
+  if (result.reason) {
+    console.log(result.reason);
+  }
+  if (result.stale.length > 0) {
+    console.log("Stale running issues:");
+    for (const item of result.stale) {
+      const lastUpdated = item.lastUpdatedAt || "unknown";
+      const finalState = item.finalState ? ` -> ${item.finalState}` : "";
+      console.log(`#${item.issueNumber} ${item.title} (last updated ${lastUpdated})${finalState}`);
+    }
+  }
+  if (result.active.length > 0) {
+    console.log(`Active running issues: ${result.active.length}`);
+  }
+}
+
 async function main() {
   const [command = "help", ...rest] = process.argv.slice(2);
   const flags = parseArgs(rest);
@@ -123,6 +147,18 @@ async function main() {
       env: process.env
     });
     printOnce(result, flags.json);
+    process.exitCode = result.ok ? 0 : 1;
+    return;
+  }
+
+  if (command === "recover-stale") {
+    const result = await recoverStaleRunningIssues({
+      repoRoot,
+      dryRun: !flags.execute || flags.dryRun,
+      execute: flags.execute,
+      env: process.env
+    });
+    printRecovery(result, flags.json);
     process.exitCode = result.ok ? 0 : 1;
     return;
   }
