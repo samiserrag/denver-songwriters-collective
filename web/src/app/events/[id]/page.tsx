@@ -78,6 +78,86 @@ function buildCanonicalEventPath(eventIdentifier: string, selectedDateKey?: stri
   return `/events/${eventIdentifier}`;
 }
 
+function isEventType(value: unknown): value is EventType {
+  return typeof value === "string" && value in EVENT_TYPE_CONFIG;
+}
+
+function getVisibleEventTypes(rawTypes: unknown): EventType[] {
+  const seenTypes = new Set<EventType>();
+  const visibleTypes: EventType[] = [];
+  const rawTypeList = Array.isArray(rawTypes) ? rawTypes : [rawTypes];
+
+  for (const rawType of rawTypeList) {
+    if (!isEventType(rawType) || seenTypes.has(rawType)) {
+      continue;
+    }
+
+    seenTypes.add(rawType);
+    visibleTypes.push(rawType);
+  }
+
+  return visibleTypes.length > 0 ? visibleTypes : ["other"];
+}
+
+const EVENT_TYPE_BADGE_TONES: Record<EventType, { badge: string; icon: string }> = {
+  song_circle: {
+    badge: "border-violet-300 bg-violet-500 text-white shadow-[0_18px_45px_rgba(139,92,246,0.30)]",
+    icon: "border-violet-200 bg-violet-50 text-violet-950",
+  },
+  workshop: {
+    badge: "border-sky-300 bg-sky-500 text-slate-950 shadow-[0_18px_45px_rgba(14,165,233,0.28)]",
+    icon: "border-sky-200 bg-sky-50 text-sky-950",
+  },
+  meetup: {
+    badge: "border-emerald-300 bg-emerald-500 text-slate-950 shadow-[0_18px_45px_rgba(16,185,129,0.28)]",
+    icon: "border-emerald-200 bg-emerald-50 text-emerald-950",
+  },
+  showcase: {
+    badge: "border-fuchsia-300 bg-fuchsia-500 text-white shadow-[0_18px_45px_rgba(217,70,239,0.30)]",
+    icon: "border-fuchsia-200 bg-fuchsia-50 text-fuchsia-950",
+  },
+  open_mic: {
+    badge: "border-orange-300 bg-orange-500 text-slate-950 shadow-[0_18px_45px_rgba(249,115,22,0.30)]",
+    icon: "border-orange-200 bg-orange-50 text-orange-950",
+  },
+  gig: {
+    badge: "border-amber-300 bg-amber-400 text-slate-950 shadow-[0_18px_45px_rgba(245,158,11,0.30)]",
+    icon: "border-amber-200 bg-amber-50 text-amber-950",
+  },
+  kindred_group: {
+    badge: "border-lime-300 bg-lime-500 text-slate-950 shadow-[0_18px_45px_rgba(132,204,22,0.28)]",
+    icon: "border-lime-200 bg-lime-50 text-lime-950",
+  },
+  jam_session: {
+    badge: "border-teal-300 bg-teal-500 text-slate-950 shadow-[0_18px_45px_rgba(20,184,166,0.30)]",
+    icon: "border-teal-200 bg-teal-50 text-teal-950",
+  },
+  poetry: {
+    badge: "border-rose-300 bg-rose-500 text-white shadow-[0_18px_45px_rgba(244,63,94,0.30)]",
+    icon: "border-rose-200 bg-rose-50 text-rose-950",
+  },
+  irish: {
+    badge: "border-green-300 bg-green-600 text-white shadow-[0_18px_45px_rgba(22,163,74,0.30)]",
+    icon: "border-green-200 bg-green-50 text-green-950",
+  },
+  blues: {
+    badge: "border-blue-300 bg-blue-600 text-white shadow-[0_18px_45px_rgba(37,99,235,0.30)]",
+    icon: "border-blue-200 bg-blue-50 text-blue-950",
+  },
+  bluegrass: {
+    badge: "border-cyan-300 bg-cyan-500 text-slate-950 shadow-[0_18px_45px_rgba(6,182,212,0.28)]",
+    icon: "border-cyan-200 bg-cyan-50 text-cyan-950",
+  },
+  comedy: {
+    badge: "border-pink-300 bg-pink-500 text-white shadow-[0_18px_45px_rgba(236,72,153,0.30)]",
+    icon: "border-pink-200 bg-pink-50 text-pink-950",
+  },
+  other: {
+    badge: "border-slate-300 bg-slate-700 text-white shadow-[0_18px_45px_rgba(51,65,85,0.25)]",
+    icon: "border-slate-200 bg-slate-50 text-slate-950",
+  },
+};
+
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://denver-songwriters-collective.vercel.app";
 
 export async function generateMetadata({
@@ -108,8 +188,8 @@ export async function generateMetadata({
     };
   }
 
-  const metaTypes = Array.isArray(event.event_type) ? event.event_type : [event.event_type].filter(Boolean);
-  const config = EVENT_TYPE_CONFIG[getPrimaryEventType(metaTypes as EventType[])] || EVENT_TYPE_CONFIG.other;
+  const metaTypes = getVisibleEventTypes(event.event_type);
+  const config = EVENT_TYPE_CONFIG[getPrimaryEventType(metaTypes)] || EVENT_TYPE_CONFIG.other;
   const title = `${event.title} | ${config.label}`;
   const description = event.description
     ? event.description.slice(0, 155) + (event.description.length > 155 ? "..." : "")
@@ -810,8 +890,13 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
   // Phase 4.32: Check if signup lane exists (only shown to managers)
   const signupLaneExists = hasSignupLane(event, timeslotCount);
 
-  const pageTypes = Array.isArray(event.event_type) ? event.event_type : [event.event_type].filter(Boolean);
-  const config = EVENT_TYPE_CONFIG[getPrimaryEventType(pageTypes as EventType[])] || EVENT_TYPE_CONFIG.other;
+  const eventTypes = getVisibleEventTypes(event.event_type);
+  const config = EVENT_TYPE_CONFIG[getPrimaryEventType(eventTypes)] || EVENT_TYPE_CONFIG.other;
+  const showStatusBadges =
+    event.is_dsc_event ||
+    verificationState === "confirmed" ||
+    showUnconfirmedBadge ||
+    verificationState === "cancelled";
 
   // Phase 5.06: Use getVenueDirectionsUrl for "Get Directions" button (returns /maps/dir/ format)
   // For custom locations, use lat/lng or name+address fallback
@@ -980,45 +1065,70 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
         />
 
         <div className="p-6 md:p-8">
-          {/* Event type, CSC, and verification badges */}
-          <div className="flex items-center gap-2 mb-4 flex-wrap">
-            <span className="px-2 py-1 bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] text-sm rounded flex items-center gap-1.5">
-              <span>{config.icon}</span> {config.label}
-            </span>
-            {event.is_dsc_event && (
-              <span className="px-2 py-1 bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] text-sm rounded font-medium">
-                CSC Event
-              </span>
-            )}
-            {/* Phase 4.39: Always-visible verification pill (matches HappeningCard) */}
-            {/* P0 Fix: Use showUnconfirmedBadge to suppress for CSC TEST events */}
-            {/* Phase 4.89: Added confirmed date display */}
-            {verificationState === "confirmed" && (
-              <>
-                <span className="inline-flex items-center px-2 py-1 text-sm font-medium rounded bg-[var(--pill-bg-success)] text-[var(--pill-fg-success)] border border-[var(--pill-border-success)]">
-                  <svg className="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
-                  Confirmed
-                </span>
-                {formatVerifiedDate(event.last_verified_at) && (
-                  <span className="text-sm text-[var(--color-text-secondary)]">
-                    Confirmed: {formatVerifiedDate(event.last_verified_at)}
+          {/* Prominent event type badges */}
+          <div data-testid="event-type-badges" className="mb-4 flex flex-wrap gap-3">
+            {eventTypes.map((eventType) => {
+              const typeConfig = EVENT_TYPE_CONFIG[eventType];
+              const tone = EVENT_TYPE_BADGE_TONES[eventType];
+
+              return (
+                <span
+                  key={eventType}
+                  data-event-type={eventType}
+                  className={`inline-flex min-h-24 w-full items-center gap-5 rounded-xl border px-5 py-5 shadow-lg sm:w-auto sm:min-w-[18rem] md:min-h-28 md:px-6 ${tone.badge}`}
+                >
+                  <span
+                    className={`flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-lg border-2 text-4xl leading-none shadow-sm md:h-20 md:w-20 md:text-5xl ${tone.icon}`}
+                    aria-hidden="true"
+                  >
+                    {typeConfig.icon}
                   </span>
-                )}
-              </>
-            )}
-            {showUnconfirmedBadge && (
-              <span className="inline-flex items-center px-2 py-1 text-sm font-medium rounded bg-[var(--pill-bg-warning)] text-[var(--pill-fg-warning)] border border-[var(--pill-border-warning)]">
-                Unconfirmed
-              </span>
-            )}
-            {verificationState === "cancelled" && (
-              <span className="inline-flex items-center px-2 py-1 text-sm font-medium rounded bg-red-500/20 text-red-400 border border-red-500/30">
-                Cancelled
-              </span>
-            )}
+                  <span className="text-2xl font-extrabold leading-tight md:text-3xl">
+                    {typeConfig.label}
+                  </span>
+                </span>
+              );
+            })}
           </div>
+
+          {/* CSC and verification badges */}
+          {showStatusBadges && (
+            <div className="flex items-center gap-2 mb-5 flex-wrap">
+              {event.is_dsc_event && (
+                <span className="px-2 py-1 bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] text-sm rounded font-medium">
+                  CSC Event
+                </span>
+              )}
+              {/* Phase 4.39: Always-visible verification pill (matches HappeningCard) */}
+              {/* P0 Fix: Use showUnconfirmedBadge to suppress for CSC TEST events */}
+              {/* Phase 4.89: Added confirmed date display */}
+              {verificationState === "confirmed" && (
+                <>
+                  <span className="inline-flex items-center px-2 py-1 text-sm font-medium rounded bg-[var(--pill-bg-success)] text-[var(--pill-fg-success)] border border-[var(--pill-border-success)]">
+                    <svg className="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Confirmed
+                  </span>
+                  {formatVerifiedDate(event.last_verified_at) && (
+                    <span className="text-sm text-[var(--color-text-secondary)]">
+                      Confirmed: {formatVerifiedDate(event.last_verified_at)}
+                    </span>
+                  )}
+                </>
+              )}
+              {showUnconfirmedBadge && (
+                <span className="inline-flex items-center px-2 py-1 text-sm font-medium rounded bg-[var(--pill-bg-warning)] text-[var(--pill-fg-warning)] border border-[var(--pill-border-warning)]">
+                  Unconfirmed
+                </span>
+              )}
+              {verificationState === "cancelled" && (
+                <span className="inline-flex items-center px-2 py-1 text-sm font-medium rounded bg-red-500/20 text-red-400 border border-red-500/30">
+                  Cancelled
+                </span>
+              )}
+            </div>
+          )}
 
           <h1 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-text-primary)] mb-4">
             {displayTitle}
