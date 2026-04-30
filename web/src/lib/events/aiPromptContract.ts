@@ -65,6 +65,18 @@ export interface OrderedImageReference {
   isCurrentCover: boolean;
 }
 
+export type ImageReferenceSelectionOutcome =
+  | {
+      status: "selected";
+      reference: OrderedImageReference;
+      reason: "ordinal" | "current_selection" | "other";
+    }
+  | {
+      status: "ambiguous";
+      reason: "missing_reference" | "other_without_current" | "multiple_other_candidates";
+    }
+  | { status: "no_intent" };
+
 const IMAGE_REFERENCE_MAX_COUNT = 12;
 const IMAGE_REFERENCE_FILENAME_MAX = 200;
 const IMAGE_REFERENCE_ID_MAX = 80;
@@ -113,6 +125,69 @@ export function buildOrderedImageReferences(input: unknown): OrderedImageReferen
   return refs;
 }
 
+function hasImageSelectionIntent(message: string): boolean {
+  if (!message.trim()) return false;
+  const hasImageNoun = /\b(?:cover|image|picture|photo|flyer|poster)\b/i.test(message);
+  const hasSelectionVerb =
+    /\b(?:use|make|switch|change|set|select|choose|apply|replace)\b/i.test(message);
+  const hasReferenceWord =
+    /\b(?:first|1st|second|2nd|third|3rd|other|different|alternate|another|selected|chosen|this one)\b/i.test(
+      message,
+    );
+  return hasImageNoun && (hasSelectionVerb || hasReferenceWord);
+}
+
+function requestedOrdinalIndex(message: string): number | null {
+  const pairs: Array<[number, RegExp]> = [
+    [0, /\b(?:first|1st|image\s*(?:#\s*)?1|photo\s*(?:#\s*)?1|flyer\s*(?:#\s*)?1)\b/i],
+    [1, /\b(?:second|2nd|image\s*(?:#\s*)?2|photo\s*(?:#\s*)?2|flyer\s*(?:#\s*)?2)\b/i],
+    [2, /\b(?:third|3rd|image\s*(?:#\s*)?3|photo\s*(?:#\s*)?3|flyer\s*(?:#\s*)?3)\b/i],
+  ];
+
+  return pairs.find(([, pattern]) => pattern.test(message))?.[0] ?? null;
+}
+
+/**
+ * Resolve a natural-language image selection against the ordered reference
+ * contract. "Other" is deterministic only when exactly one reference is
+ * current and exactly one non-current reference exists.
+ */
+export function resolveNaturalLanguageImageReference(input: {
+  message: string;
+  imageReferences: ReadonlyArray<OrderedImageReference>;
+}): ImageReferenceSelectionOutcome {
+  const message = input.message.trim();
+  if (!hasImageSelectionIntent(message)) return { status: "no_intent" };
+
+  const ordinalIndex = requestedOrdinalIndex(message);
+  if (ordinalIndex !== null) {
+    const reference = input.imageReferences.find((ref) => ref.index === ordinalIndex);
+    return reference
+      ? { status: "selected", reference, reason: "ordinal" }
+      : { status: "ambiguous", reason: "missing_reference" };
+  }
+
+  const currentRefs = input.imageReferences.filter((ref) => ref.isCurrentCover);
+  if (/\b(?:selected|chosen|this one)\b/i.test(message) && currentRefs.length === 1) {
+    return { status: "selected", reference: currentRefs[0], reason: "current_selection" };
+  }
+
+  if (/\b(?:other|different|alternate|another|switch)\b/i.test(message)) {
+    if (currentRefs.length !== 1) {
+      return { status: "ambiguous", reason: "other_without_current" };
+    }
+
+    const otherRefs = input.imageReferences.filter((ref) => !ref.isCurrentCover);
+    if (otherRefs.length === 1) {
+      return { status: "selected", reference: otherRefs[0], reason: "other" };
+    }
+
+    return { status: "ambiguous", reason: "multiple_other_candidates" };
+  }
+
+  return { status: "no_intent" };
+}
+
 // ---------------------------------------------------------------------------
 // System prompt (additive layering — plan §5.3, §5.4, §5.5)
 // ---------------------------------------------------------------------------
@@ -146,6 +221,13 @@ const SCOPE_AND_PATCH_RULES: readonly string[] = [
   "- Resolve natural-language image instructions (for example 'use the other one', 'use the second image', 'switch to the flyer') against this list deterministically by index.",
   "- When setting cover_image_url from an image_references entry, prefer the entry's eventImageId where present; otherwise leave cover_image_url null and indicate the chosen image's index in human_summary so the client can resolve a staged file.",
   "- If the request is image-related and image_references is empty or has fewer entries than the request implies (for example user says 'use the other one' but only one entry exists), set scope to 'ambiguous' and ask one clarifying question.",
+  "- 'Other image' is deterministic only when exactly one image_references entry is marked isCurrentCover and exactly one other entry exists. If there are multiple other candidates or no current cover marker, set scope='ambiguous'.",
+  // Venue enrichment (PR 8)
+  "Venue enrichment: when web_search_verification or google_maps_hint supplies public venue facts, populate the writable venue fields instead of merely echoing the user's text.",
+  "- Canonical venue fields you may emit when supported by public verification or source text: venue_name, address, city, state, zip, phone, website_url, google_maps_url, map_link, latitude, longitude. For custom-location fallback, use custom_location_name, custom_address, custom_city, custom_state, custom_zip, custom_latitude, custom_longitude, and location_notes.",
+  "- Prefer Google Maps hints for google_maps_url and coordinates. Prefer official venue/organizer sources for phone and website_url.",
+  "- Do not say ZIP, phone, website, Google Maps URL, or coordinates were applied unless those exact values are present in draft_payload on this turn.",
+  "- When a canonical venue match exists, keep venue_id/venue_name and do not also emit custom_location_name/custom_address duplicates. Use custom location fields only when no canonical venue is appropriate.",
   // Ask-one-question rule
   "One-question rule: ask AT MOST one clarifying question, and only when publishing the result would be materially wrong without the answer. Never ask multiple questions in the same turn. If multiple things are missing, pick the single most blocking one and leave the rest for follow-up turns.",
 ];
@@ -408,6 +490,9 @@ export const AI_PROMPT_CURRENT_EVENT_FIELDS = [
   "custom_address",
   "custom_city",
   "custom_state",
+  "custom_latitude",
+  "custom_longitude",
+  "location_notes",
   "custom_location_name",
   "online_url",
   "is_free",

@@ -14,6 +14,7 @@ import { Database } from "@/lib/supabase/database.types";
 import { warmEventSharePreview } from "@/lib/events/sharePreview";
 import { normalizeDraftRecurrenceFields } from "@/lib/events/recurrenceDraftTools";
 import { applyVenueTypeTitleDefault } from "@/lib/events/interpreterPostprocess";
+import { resolveVenue, type VenueCatalogEntry } from "@/lib/events/venueResolver";
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>;
 
@@ -40,6 +41,8 @@ type VenueCandidateMatchResult =
   | { kind: "strong_match"; venue: VenuePromotionCandidate }
   | { kind: "ambiguous"; candidates: VenuePromotionCandidate[] }
   | { kind: "no_match" };
+
+type ExistingVenueResolution = { id: string; name: string } | null;
 
 function normalizeMatchToken(value: unknown): string {
   return typeof value === "string" ? value.trim().toLowerCase().replace(/\s+/g, " ") : "";
@@ -131,6 +134,77 @@ function cleanStreetAddress(address: string, city: string, zip: string | null): 
   if (zip) cleaned = cleaned.replace(new RegExp(`\\b${zip.replace("-", "\\-")}\\b`, "i"), "").trim();
   if (city) cleaned = cleaned.replace(new RegExp(`\\b${city.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b\\s*$`, "i"), "").trim();
   return cleaned.replace(/[,\s]+$/g, "").trim();
+}
+
+function clearCustomLocationBody(body: Record<string, unknown>): void {
+  body.custom_location_name = null;
+  body.custom_address = null;
+  body.custom_city = null;
+  body.custom_state = null;
+  body.custom_zip = null;
+  body.custom_latitude = null;
+  body.custom_longitude = null;
+  body.location_notes = null;
+}
+
+async function resolveExistingVenueFromCustomLocation(input: {
+  supabase: SupabaseServerClient;
+  body: Record<string, unknown>;
+  traceId: string | null;
+}): Promise<ExistingVenueResolution> {
+  if (typeof input.body.venue_id === "string" && input.body.venue_id.trim().length > 0) {
+    return null;
+  }
+
+  const customName =
+    typeof input.body.custom_location_name === "string"
+      ? input.body.custom_location_name.trim()
+      : "";
+  if (!customName) return null;
+
+  const { data: venueRows, error } = await input.supabase
+    .from("venues")
+    .select("id, name, slug")
+    .order("name", { ascending: true })
+    .limit(500);
+
+  if (error) {
+    console.warn(
+      "[POST /api/my-events] Existing venue resolver lookup failed:",
+      error.message,
+      "| traceId:",
+      input.traceId,
+    );
+    return null;
+  }
+
+  const venueCatalog: VenueCatalogEntry[] = (venueRows || []).map((venue) => ({
+    id: venue.id,
+    name: venue.name,
+    slug: venue.slug ?? null,
+  }));
+  const userMessage = [
+    customName,
+    input.body.custom_address,
+    input.body.custom_city,
+    input.body.custom_state,
+    input.body.custom_zip,
+  ]
+    .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+    .join(", ");
+
+  const resolution = resolveVenue({
+    draftVenueId: null,
+    draftVenueName: customName,
+    userMessage,
+    venueCatalog,
+    draftLocationMode: input.body.location_mode as string | null | undefined,
+    draftOnlineUrl: input.body.online_url as string | null | undefined,
+    isCustomLocation: true,
+  });
+
+  if (resolution.status !== "resolved") return null;
+  return { id: resolution.venueId, name: resolution.venueName };
 }
 
 // GET - Get events where user is host/cohost
@@ -533,6 +607,21 @@ export async function POST(request: Request) {
     body.custom_location_name = inferredCustomLocationName;
   }
 
+  const existingVenueResolution = await resolveExistingVenueFromCustomLocation({
+    supabase,
+    body,
+    traceId,
+  });
+  if (existingVenueResolution) {
+    body.venue_id = existingVenueResolution.id;
+    body.venue_name = existingVenueResolution.name;
+    clearCustomLocationBody(body);
+    hasVenue = true;
+    hasCustomLocation = false;
+    body.location_mode =
+      requestedLocationMode === "hybrid" && hasOnlineUrlForHybrid ? "hybrid" : "venue";
+  }
+
   // Phase 10.1: Auto-promote conversational custom locations to canonical venues.
   // If a create request has custom location details but no venue_id, attempt to:
   // 1) Reuse an existing venue by name
@@ -618,8 +707,13 @@ export async function POST(request: Request) {
           state: customState,
           zip: customZip,
           google_maps_url:
-            typeof body.google_maps_url === "string" ? body.google_maps_url.trim() || null : null,
-          website_url: null,
+            (typeof body.google_maps_url === "string" ? body.google_maps_url.trim() || null : null) ??
+            (typeof body.map_link === "string" ? body.map_link.trim() || null : null),
+          website_url:
+            typeof body.website_url === "string" ? body.website_url.trim() || null : null,
+          phone: typeof body.phone === "string" ? body.phone.trim() || null : null,
+          latitude: typeof body.custom_latitude === "number" ? body.custom_latitude : null,
+          longitude: typeof body.custom_longitude === "number" ? body.custom_longitude : null,
         };
 
         const { updates: geocodedInsertRaw } = await processVenueGeocodingWithStatus(
@@ -667,12 +761,7 @@ export async function POST(request: Request) {
       if (promotedVenue) {
         body.venue_id = promotedVenue.id;
         body.venue_name = promotedVenue.name;
-        body.custom_location_name = null;
-        body.custom_address = null;
-        body.custom_city = null;
-        body.custom_state = null;
-        body.custom_latitude = null;
-        body.custom_longitude = null;
+        clearCustomLocationBody(body);
         hasVenue = true;
         hasCustomLocation = false;
         body.location_mode =

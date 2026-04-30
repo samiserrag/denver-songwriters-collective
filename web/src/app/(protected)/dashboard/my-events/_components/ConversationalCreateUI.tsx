@@ -22,6 +22,10 @@ import {
   type ImageInput,
   IMAGE_INPUT_LIMITS,
 } from "@/lib/events/interpretEventContract";
+import {
+  resolveNaturalLanguageImageReference,
+  type OrderedImageReference,
+} from "@/lib/events/aiPromptContract";
 import { HappeningCard, type HappeningEvent } from "@/components/happenings/HappeningCard";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
@@ -53,6 +57,13 @@ interface ConversationEntry {
   role: "user" | "assistant";
   content: string;
 }
+
+const ASSISTANT_RESPONSE_ATTENTION_CLASS =
+  "ring-2 ring-amber-300/80 bg-amber-500/10 shadow-sm motion-safe:animate-pulse";
+const ASSISTANT_STATUS_ATTENTION_CLASS =
+  "ring-2 ring-amber-300/80 bg-amber-500/10 shadow-sm motion-safe:animate-pulse";
+const RESPONSE_PANEL_ATTENTION_CLASS =
+  "ring-2 ring-amber-300/70 bg-amber-500/10 shadow-md motion-safe:animate-pulse";
 
 interface QualityHint {
   field: string;
@@ -494,7 +505,18 @@ const CREATE_PASSTHROUGH_OPTIONALS = [
   "host_notes",
   "online_url",
   "venue_name",
+  "address",
+  "city",
+  "state",
   "day_of_week",
+  "custom_zip",
+  "zip",
+  "phone",
+  "website_url",
+  "google_maps_url",
+  "map_link",
+  "latitude",
+  "longitude",
 ] as const;
 
 const SERIES_PATCH_OPTIONALS = [
@@ -532,13 +554,24 @@ const SERIES_PATCH_OPTIONALS = [
   "allow_guests",
   "venue_id",
   "venue_name",
+  "address",
+  "city",
+  "state",
   "custom_location_name",
   "custom_address",
   "custom_city",
   "custom_state",
+  "custom_zip",
   "custom_latitude",
   "custom_longitude",
   "location_notes",
+  "zip",
+  "phone",
+  "website_url",
+  "google_maps_url",
+  "map_link",
+  "latitude",
+  "longitude",
 ] as const;
 
 type MapResult =
@@ -598,14 +631,29 @@ function dismissesCoverImageChange(intentText: string): boolean {
   );
 }
 
+function buildClientImageReferences(input: {
+  stagedImages: StagedImage[];
+  currentCoverCandidateId: string | null;
+  appliedCoverCandidateId: string | null;
+}): OrderedImageReference[] {
+  const currentClientId = input.appliedCoverCandidateId ?? input.currentCoverCandidateId;
+  return input.stagedImages.map((image, index) => ({
+    index,
+    clientId: image.id,
+    eventImageId: null,
+    fileName: image.file.name,
+    isCurrentCover: currentClientId ? image.id === currentClientId : false,
+  }));
+}
+
 function findRequestedCoverCandidateId(input: {
   intentText: string;
-  stagedImages: StagedImage[];
+  imageReferences: OrderedImageReference[];
   currentCoverCandidateId: string | null;
   appliedCoverCandidateId: string | null;
 }): string | null {
   const intentText = input.intentText.toLowerCase();
-  if (input.stagedImages.length < 2 || !intentText.trim()) return null;
+  if (input.imageReferences.length === 0 || !intentText.trim()) return null;
   if (dismissesCoverImageChange(intentText)) return null;
 
   const hasCoverIntent =
@@ -618,11 +666,15 @@ function findRequestedCoverCandidateId(input: {
     );
   if (!hasCoverIntent) return null;
 
-  if (/\b(?:first|1st)\b/i.test(intentText)) {
-    return input.stagedImages[0]?.id ?? null;
+  const referenceDecision = resolveNaturalLanguageImageReference({
+    message: intentText,
+    imageReferences: input.imageReferences,
+  });
+  if (referenceDecision.status === "selected") {
+    return referenceDecision.reference.clientId;
   }
-  if (/\b(?:second|2nd)\b/i.test(intentText)) {
-    return input.stagedImages[1]?.id ?? null;
+  if (referenceDecision.status === "ambiguous") {
+    return null;
   }
 
   if (
@@ -631,16 +683,6 @@ function findRequestedCoverCandidateId(input: {
     /\b(?:selected it below|selected|this one|chosen)\b/i.test(intentText)
   ) {
     return input.currentCoverCandidateId;
-  }
-
-  const currentId = input.appliedCoverCandidateId ?? input.currentCoverCandidateId;
-  if (
-    /\b(?:other|different|alternate|another|switch)\b/i.test(intentText) ||
-    /\b(?:just the flyer|flyer-only|clean flyer|without (?:the )?(?:facebook|screenshot|post))\b/i.test(
-      intentText
-    )
-  ) {
-    return input.stagedImages.find((img) => img.id !== currentId)?.id ?? null;
   }
 
   return null;
@@ -675,6 +717,63 @@ function shouldCreateReusableVenueForDraft(body: Record<string, unknown>): boole
     typeof body.recurrence_rule === "string" && body.recurrence_rule.trim().length > 0;
   const hasCustomDates = Array.isArray(body.custom_dates) && body.custom_dates.length > 0;
   return seriesMode !== "single" || hasRecurringRule || hasCustomDates;
+}
+
+function coerceNumber(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function buildVenueEnrichmentPatch(draft: Record<string, unknown>): Record<string, unknown> {
+  const patch: Record<string, unknown> = {};
+  const stringFields: Array<[string, unknown]> = [
+    ["name", coerceString(draft.venue_name) ?? coerceString(draft.custom_location_name)],
+    ["address", coerceString(draft.address) ?? coerceString(draft.custom_address)],
+    ["city", coerceString(draft.city) ?? coerceString(draft.custom_city)],
+    ["state", coerceString(draft.state) ?? coerceString(draft.custom_state)],
+    ["zip", coerceString(draft.zip) ?? coerceString(draft.custom_zip)],
+    ["phone", coerceString(draft.phone)],
+    ["website_url", coerceString(draft.website_url)],
+    ["google_maps_url", coerceString(draft.google_maps_url) ?? coerceString(draft.map_link)],
+    ["map_link", coerceString(draft.map_link) ?? coerceString(draft.google_maps_url)],
+  ];
+
+  for (const [field, value] of stringFields) {
+    if (value) patch[field] = value;
+  }
+
+  const latitude = coerceNumber(draft.latitude) ?? coerceNumber(draft.custom_latitude);
+  const longitude = coerceNumber(draft.longitude) ?? coerceNumber(draft.custom_longitude);
+  if (latitude !== null) patch.latitude = latitude;
+  if (longitude !== null) patch.longitude = longitude;
+
+  return patch;
+}
+
+async function applyVenueEnrichmentPatch(input: {
+  venueId: string | null;
+  draft: Record<string, unknown>;
+}): Promise<string | null> {
+  if (!input.venueId) return null;
+  const patch = buildVenueEnrichmentPatch(input.draft);
+  const changedFields = Object.keys(patch);
+  if (changedFields.length === 0) return null;
+
+  try {
+    const venueRes = await fetch(`/api/venues/${input.venueId}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(patch),
+    });
+
+    if (!venueRes.ok) {
+      return " Venue details were found, but I could not update the venue record with your current permissions.";
+    }
+
+    return ` Venue details updated: ${changedFields.slice(0, 4).join(", ")}${changedFields.length > 4 ? ", ..." : ""}.`;
+  } catch {
+    return " Venue details were found, but the venue record update failed.";
+  }
 }
 
 function extractGoogleMapsUrl(intentText: string): string | null {
@@ -948,10 +1047,22 @@ function mapDraftToCreatePayload(
     body.custom_location_name = (draft.custom_location_name as string).trim();
     body.location_mode = normalizeLocationMode(draft.location_mode, "venue");
     // Pass through optional custom location fields
-    for (const f of ["custom_address", "custom_city", "custom_state", "custom_latitude", "custom_longitude", "location_notes"] as const) {
+    for (const f of ["custom_address", "custom_city", "custom_state", "custom_zip", "custom_latitude", "custom_longitude", "location_notes"] as const) {
       if (draft[f] !== undefined && draft[f] !== null) {
         body[f] = draft[f];
       }
+    }
+    if (body.custom_zip === undefined && typeof draft.zip === "string" && draft.zip.trim().length > 0) {
+      body.custom_zip = draft.zip.trim();
+    }
+    if (body.custom_address === undefined && typeof draft.address === "string" && draft.address.trim().length > 0) {
+      body.custom_address = draft.address.trim();
+    }
+    if (body.custom_city === undefined && typeof draft.city === "string" && draft.city.trim().length > 0) {
+      body.custom_city = draft.city.trim();
+    }
+    if (body.custom_state === undefined && typeof draft.state === "string" && draft.state.trim().length > 0) {
+      body.custom_state = draft.state.trim();
     }
   } else if (hasOnlineUrl) {
     body.location_mode = normalizeLocationMode(draft.location_mode, "online");
@@ -1265,6 +1376,9 @@ export function ConversationalCreateUI({
 
   // ---- conversation history ----
   const [conversationHistory, setConversationHistory] = useState<ConversationEntry[]>([]);
+  const [highlightedAssistantMessageIndex, setHighlightedAssistantMessageIndex] = useState<
+    number | null
+  >(null);
   const [useWebSearch, setUseWebSearch] = useState(true);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -1272,6 +1386,23 @@ export function ConversationalCreateUI({
     if (!isHostVariant) return;
     chatEndRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
   }, [conversationHistory, isSubmitting, isHostVariant]);
+
+  useEffect(() => {
+    const latestIndex = conversationHistory.length - 1;
+    if (latestIndex < 0 || conversationHistory[latestIndex]?.role !== "assistant") {
+      setHighlightedAssistantMessageIndex(null);
+      return;
+    }
+
+    setHighlightedAssistantMessageIndex(latestIndex);
+    const timeout = window.setTimeout(() => {
+      setHighlightedAssistantMessageIndex((current) =>
+        current === latestIndex ? null : current
+      );
+    }, 2200);
+
+    return () => window.clearTimeout(timeout);
+  }, [conversationHistory]);
 
   // ---- Phase 4A: cover candidate state ----
   const [coverCandidateId, setCoverCandidateId] = useState<string | null>(null);
@@ -1364,6 +1495,7 @@ export function ConversationalCreateUI({
     !isSubmitting && (message.trim().length > 0 || stagedImages.length > 0);
   const selectedCoverImage =
     coverCandidateId ? stagedImages.find((img) => img.id === coverCandidateId) ?? null : null;
+  const isResponsePanelHighlighted = highlightedAssistantMessageIndex !== null;
   const draftPreviewEvent = useMemo(
     () =>
       buildDraftPreviewEvent({
@@ -1735,6 +1867,12 @@ export function ConversationalCreateUI({
         use_web_search: useWebSearch,
         trace_id: traceId,
       };
+      const imageReferences = buildClientImageReferences({
+        stagedImages,
+        currentCoverCandidateId: coverCandidateId,
+        appliedCoverCandidateId,
+      });
+      payload.image_references = imageReferences;
 
       const targetEventId = createdEventId ?? eventId.trim();
       if (effectiveMode !== "create" && targetEventId) {
@@ -1770,7 +1908,7 @@ export function ConversationalCreateUI({
         const requestedCoverCandidateId =
           findRequestedCoverCandidateId({
             intentText: coverIntentText,
-            stagedImages,
+            imageReferences,
             currentCoverCandidateId: coverCandidateId,
             appliedCoverCandidateId,
           }) ??
@@ -2097,6 +2235,11 @@ export function ConversationalCreateUI({
         return;
       }
 
+      const venueEnrichmentNote = await applyVenueEnrichmentPatch({
+        venueId: coerceString(mapResult.body.venue_id) ?? coerceString(result.venue_id),
+        draft: sourceResponse.draft_payload,
+      });
+
       setCreatedSummary(
         buildCreatedEventSummary(
           createdEventId,
@@ -2113,8 +2256,8 @@ export function ConversationalCreateUI({
       setCreateMessage({
         type: "success",
         text: options.automatic
-          ? "Draft updated and saved. Open tabs for this draft will refresh."
-          : "Draft updated. Nice, the tiny event paperwork mountain got smaller.",
+          ? `Draft updated and saved. Open tabs for this draft will refresh.${venueEnrichmentNote ?? ""}`
+          : `Draft updated. Nice, the tiny event paperwork mountain got smaller.${venueEnrichmentNote ?? ""}`,
       });
       setHasUnappliedSeriesPatch(false);
       broadcastEventDraftSync(createdEventId, "updated");
@@ -2163,25 +2306,45 @@ export function ConversationalCreateUI({
         typeof createBody.custom_location_name === "string" &&
         createBody.custom_location_name.trim().length > 0
       ) {
-        const mapsUrl = extractGoogleMapsUrl(intentText);
+        const mapsUrl =
+          coerceString(createBody.google_maps_url) ??
+          coerceString(createBody.map_link) ??
+          extractGoogleMapsUrl(intentText);
         const externalUrlValue =
           typeof createBody.external_url === "string" ? createBody.external_url.trim() : "";
         const websiteUrl =
-          externalUrlValue.length > 0 && !isGoogleMapsUrl(externalUrlValue)
+          coerceString(createBody.website_url) ??
+          (externalUrlValue.length > 0 && !isGoogleMapsUrl(externalUrlValue)
             ? externalUrlValue
-            : null;
+            : null);
+        const latitude =
+          typeof createBody.custom_latitude === "number"
+            ? createBody.custom_latitude
+            : typeof createBody.latitude === "number"
+              ? createBody.latitude
+              : null;
+        const longitude =
+          typeof createBody.custom_longitude === "number"
+            ? createBody.custom_longitude
+            : typeof createBody.longitude === "number"
+              ? createBody.longitude
+              : null;
 
         const venuePayload = {
           name: createBody.custom_location_name,
-          address: (createBody.custom_address as string) || "",
-          city: (createBody.custom_city as string) || "",
-          state: (createBody.custom_state as string) || "",
+          address: coerceString(createBody.custom_address) ?? coerceString(createBody.address) ?? "",
+          city: coerceString(createBody.custom_city) ?? coerceString(createBody.city) ?? "",
+          state: coerceString(createBody.custom_state) ?? coerceString(createBody.state) ?? "",
+          zip: coerceString(createBody.custom_zip) ?? coerceString(createBody.zip),
+          phone: coerceString(createBody.phone),
           website_url: websiteUrl,
           google_maps_url: mapsUrl,
+          latitude,
+          longitude,
         };
 
         try {
-          const venueRes = await fetch("/api/admin/venues", {
+          const venueRes = await fetch("/api/venues", {
             method: "POST",
             headers: { "content-type": "application/json" },
             credentials: "include",
@@ -2199,8 +2362,14 @@ export function ConversationalCreateUI({
               delete createBody.custom_address;
               delete createBody.custom_city;
               delete createBody.custom_state;
+              delete createBody.custom_zip;
               delete createBody.custom_latitude;
               delete createBody.custom_longitude;
+              delete createBody.zip;
+              delete createBody.phone;
+              delete createBody.website_url;
+              delete createBody.google_maps_url;
+              delete createBody.map_link;
               venueCreateNote = ` Venue added to directory: ${createBody.venue_name}.`;
             }
           } else {
@@ -2234,6 +2403,15 @@ export function ConversationalCreateUI({
       const draftSnapshot = sourceResponse.draft_payload;
       const reusedExisting = result.reused_existing === true;
       const isPublished = result.is_published === true;
+      if (!venueCreateNote?.includes("Venue added")) {
+        const venueEnrichmentNote = await applyVenueEnrichmentPatch({
+          venueId: coerceString(result.venue_id) ?? coerceString(createBody.venue_id),
+          draft: draftSnapshot,
+        });
+        if (venueEnrichmentNote) {
+          venueCreateNote = `${venueCreateNote ?? ""}${venueEnrichmentNote}`;
+        }
+      }
       setCreatedEventId(newEventId);
       setEventId(newEventId);
 
@@ -2474,56 +2652,70 @@ export function ConversationalCreateUI({
                     </div>
                   </div>
                 ) : (
-                  conversationHistory.map((entry, i) => (
-                    <div
-                      key={i}
-                      className={`flex gap-3 ${entry.role === "user" ? "justify-end" : "justify-start"}`}
-                    >
-                      {entry.role === "assistant" && (
-                        <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)]">
-                          <Bot className="h-4 w-4" aria-hidden="true" />
-                        </span>
-                      )}
-                      {entry.role === "assistant" ? (
-                        <div className="max-w-[82%] space-y-2">
-                          {entry.content.split("\n\n").map((part, partIndex) => {
-                            const questionText = part.replace(/^Question:\s*/i, "").trim();
-                            const isQuestion = /^Question:\s*/i.test(part);
-                            return (
-                              <div
-                                key={`${i}-${partIndex}`}
-                                className={`whitespace-pre-wrap rounded-lg border px-3 py-2 text-sm ${
-                                  isQuestion
-                                    ? "border-amber-500/30 bg-amber-500/10 text-[var(--color-text-primary)]"
-                                    : "border-cyan-400/20 bg-cyan-500/10 text-[var(--color-text-primary)]"
-                                }`}
-                              >
-                                {isQuestion && (
-                                  <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-amber-500">
-                                    Question
-                                  </p>
-                                )}
-                                {isQuestion ? questionText : part}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      ) : (
-                        <div className="max-w-[82%] whitespace-pre-wrap rounded-lg bg-[var(--color-accent-primary)] px-3 py-2 text-sm text-[var(--color-text-on-accent)]">
-                          {entry.content}
-                        </div>
-                      )}
-                    </div>
-                  ))
+                  conversationHistory.map((entry, i) => {
+                    const isNewAssistantResponse =
+                      entry.role === "assistant" && highlightedAssistantMessageIndex === i;
+
+                    return (
+                      <div
+                        key={i}
+                        className={`flex gap-3 ${entry.role === "user" ? "justify-end" : "justify-start"}`}
+                      >
+                        {entry.role === "assistant" && (
+                          <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)]">
+                            <Bot className="h-4 w-4" aria-hidden="true" />
+                          </span>
+                        )}
+                        {entry.role === "assistant" ? (
+                          <div
+                            className="max-w-[82%] space-y-2"
+                            role={isNewAssistantResponse ? "status" : undefined}
+                            aria-live={isNewAssistantResponse ? "polite" : undefined}
+                          >
+                            {entry.content.split("\n\n").map((part, partIndex) => {
+                              const questionText = part.replace(/^Question:\s*/i, "").trim();
+                              const isQuestion = /^Question:\s*/i.test(part);
+                              return (
+                                <div
+                                  key={`${i}-${partIndex}`}
+                                  className={`whitespace-pre-wrap rounded-lg border px-3 py-2 text-sm transition-colors duration-300 ${
+                                    isQuestion
+                                      ? "border-amber-500/30 bg-amber-500/10 text-[var(--color-text-primary)]"
+                                      : "border-cyan-400/20 bg-cyan-500/10 text-[var(--color-text-primary)]"
+                                  } ${isNewAssistantResponse ? ASSISTANT_RESPONSE_ATTENTION_CLASS : ""}`}
+                                >
+                                  {isQuestion && (
+                                    <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-amber-500">
+                                      Question
+                                    </p>
+                                  )}
+                                  {isQuestion ? questionText : part}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="max-w-[82%] whitespace-pre-wrap rounded-lg bg-[var(--color-accent-primary)] px-3 py-2 text-sm text-[var(--color-text-on-accent)]">
+                            {entry.content}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
                 )}
                 {isSubmitting && (
-                  <div className="flex gap-3" aria-live="polite">
+                  <div
+                    className="flex gap-3"
+                    role="status"
+                    aria-live="polite"
+                    aria-label="Assistant is working"
+                  >
                     <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)]">
                       <Bot className="h-4 w-4" aria-hidden="true" />
                     </span>
-                    <div className="max-w-[82%] rounded-lg border border-[var(--color-accent-primary)]/25 bg-[var(--color-bg-secondary)] px-3 py-3 text-sm text-[var(--color-text-primary)] shadow-sm">
+                    <div className={`max-w-[82%] rounded-lg border border-[var(--color-accent-primary)]/25 bg-[var(--color-bg-secondary)] px-3 py-3 text-sm text-[var(--color-text-primary)] transition-colors duration-300 ${ASSISTANT_STATUS_ATTENTION_CLASS}`}>
                       <div className="flex items-center gap-2 font-medium">
-                        <Sparkles className="h-4 w-4 animate-pulse text-[var(--color-accent-primary)]" aria-hidden="true" />
+                        <Sparkles className="h-4 w-4 motion-safe:animate-pulse text-[var(--color-accent-primary)]" aria-hidden="true" />
                         Drafting this into shape. No action needed.
                       </div>
                       <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-[var(--color-text-secondary)]">
@@ -2549,7 +2741,13 @@ export function ConversationalCreateUI({
           )}
 
           {isHostVariant && responseGuidance && (
-            <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 p-4">
+            <div
+              className={`rounded-lg border border-blue-500/20 bg-blue-500/5 p-4 transition-colors duration-300 ${
+                isResponsePanelHighlighted ? RESPONSE_PANEL_ATTENTION_CLASS : ""
+              }`}
+              role={isResponsePanelHighlighted ? "status" : undefined}
+              aria-live={isResponsePanelHighlighted ? "polite" : undefined}
+            >
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0 flex-1 space-y-3">
                   <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-600">
@@ -2699,9 +2897,11 @@ export function ConversationalCreateUI({
               onClick={submit}
               disabled={!canSubmitInterpret}
               className={
-                hostSubmitIsSecondary
-                  ? "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-[var(--color-border-input)] px-4 py-2 font-semibold text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)] disabled:cursor-not-allowed disabled:opacity-60"
-                  : "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[var(--color-accent-primary)] px-4 py-2 font-semibold text-[var(--color-text-on-accent)] transition-colors hover:bg-[var(--color-accent-hover)] disabled:cursor-not-allowed disabled:opacity-60"
+                `${
+                  hostSubmitIsSecondary
+                    ? "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-[var(--color-border-input)] px-4 py-2 font-semibold text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)] disabled:cursor-not-allowed disabled:opacity-60"
+                    : "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[var(--color-accent-primary)] px-4 py-2 font-semibold text-[var(--color-text-on-accent)] transition-colors hover:bg-[var(--color-accent-hover)] disabled:cursor-not-allowed disabled:opacity-60"
+                } ${isSubmitting ? ASSISTANT_STATUS_ATTENTION_CLASS : ""}`
               }
             >
               {isSubmitting ? (
@@ -2711,7 +2911,9 @@ export function ConversationalCreateUI({
               ) : (
                 <Sparkles className="h-4 w-4" aria-hidden="true" />
               )}
-              {isSubmitting ? "Working..." : runActionLabel}
+              <span role={isSubmitting ? "status" : undefined} aria-live={isSubmitting ? "polite" : undefined}>
+                {isSubmitting ? "Working..." : runActionLabel}
+              </span>
             </button>
 
             {conversationHistory.length > 0 && (
@@ -2958,7 +3160,13 @@ export function ConversationalCreateUI({
           </div>
 
           {!isHostVariant && statusCode === 200 && responseGuidance && (
-            <div className="rounded-lg border border-[var(--color-border-input)] bg-[var(--color-bg-secondary)]/50 p-3 space-y-2">
+            <div
+              className={`rounded-lg border border-[var(--color-border-input)] bg-[var(--color-bg-secondary)]/50 p-3 space-y-2 transition-colors duration-300 ${
+                isResponsePanelHighlighted ? RESPONSE_PANEL_ATTENTION_CLASS : ""
+              }`}
+              role={isResponsePanelHighlighted ? "status" : undefined}
+              aria-live={isResponsePanelHighlighted ? "polite" : undefined}
+            >
               <div className="flex items-center justify-between gap-3">
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text-tertiary)]">
                   Draft Status
@@ -3431,7 +3639,13 @@ export function ConversationalCreateUI({
 
         {/* ---- Phase 8B: Human-readable guidance (primary) ---- */}
         {!isHostVariant && statusCode === 200 && responseGuidance && (
-          <div className="card-base p-6 space-y-4">
+          <div
+            className={`card-base p-6 space-y-4 transition-colors duration-300 ${
+              isResponsePanelHighlighted ? RESPONSE_PANEL_ATTENTION_CLASS : ""
+            }`}
+            role={isResponsePanelHighlighted ? "status" : undefined}
+            aria-live={isResponsePanelHighlighted ? "polite" : undefined}
+          >
             {/* Status header with next_action badge + confidence */}
             <div className="flex items-center gap-3 flex-wrap">
               <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
@@ -3621,21 +3835,28 @@ export function ConversationalCreateUI({
               {isHostVariant ? "Previous Messages" : "Conversation History"}
             </h2>
             <div className="space-y-2 max-h-64 overflow-auto">
-              {conversationHistory.map((entry, i) => (
-                <div
-                  key={i}
-                  className={`text-xs p-2 rounded ${
-                    entry.role === "user"
-                      ? "bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)]"
-                      : "bg-[var(--color-accent-primary)]/10 text-[var(--color-text-secondary)]"
-                  }`}
-                >
-                  <span className={isHostVariant ? "font-bold" : "font-mono font-bold"}>
-                    {isHostVariant ? (entry.role === "user" ? "You:" : "AI:") : `${entry.role}:`}
-                  </span>{" "}
-                  {entry.content}
-                </div>
-              ))}
+              {conversationHistory.map((entry, i) => {
+                const isNewAssistantResponse =
+                  entry.role === "assistant" && highlightedAssistantMessageIndex === i;
+
+                return (
+                  <div
+                    key={i}
+                    className={`text-xs p-2 rounded transition-colors duration-300 ${
+                      entry.role === "user"
+                        ? "bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)]"
+                        : "bg-[var(--color-accent-primary)]/10 text-[var(--color-text-secondary)]"
+                    } ${isNewAssistantResponse ? ASSISTANT_RESPONSE_ATTENTION_CLASS : ""}`}
+                    role={isNewAssistantResponse ? "status" : undefined}
+                    aria-live={isNewAssistantResponse ? "polite" : undefined}
+                  >
+                    <span className={isHostVariant ? "font-bold" : "font-mono font-bold"}>
+                      {isHostVariant ? (entry.role === "user" ? "You:" : "AI:") : `${entry.role}:`}
+                    </span>{" "}
+                    {entry.content}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

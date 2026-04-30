@@ -37,6 +37,17 @@ export interface InterpretEventRequestBody {
   conversationHistory?: Array<{ role: "user" | "assistant"; content: string }>;
   locked_draft?: Record<string, unknown>;
   image_inputs?: ImageInput[];
+  image_references?: Array<{
+    index?: number;
+    clientId?: string;
+    client_id?: string;
+    eventImageId?: string | null;
+    event_image_id?: string | null;
+    fileName?: string | null;
+    file_name?: string | null;
+    isCurrentCover?: boolean;
+    is_current_cover?: boolean;
+  }>;
   use_web_search?: boolean;
   trace_id?: string;
 }
@@ -107,6 +118,9 @@ const CREATE_PAYLOAD_ALLOWLIST = new Set([
   "host_notes",
   "venue_id",
   "venue_name",
+  "address",
+  "city",
+  "state",
   "day_of_week",
   "start_time",
   "event_date",
@@ -137,9 +151,17 @@ const CREATE_PAYLOAD_ALLOWLIST = new Set([
   "custom_address",
   "custom_city",
   "custom_state",
+  "custom_zip",
   "custom_latitude",
   "custom_longitude",
   "location_notes",
+  "zip",
+  "phone",
+  "website_url",
+  "google_maps_url",
+  "map_link",
+  "latitude",
+  "longitude",
   "series_mode",
   "start_date",
   "occurrence_count",
@@ -184,9 +206,20 @@ const EDIT_SERIES_PAYLOAD_ALLOWLIST = new Set([
   "custom_address",
   "custom_city",
   "custom_state",
+  "custom_zip",
+  "address",
+  "city",
+  "state",
   "custom_latitude",
   "custom_longitude",
   "location_notes",
+  "zip",
+  "phone",
+  "website_url",
+  "google_maps_url",
+  "map_link",
+  "latitude",
+  "longitude",
 ]);
 
 const OCCURRENCE_PAYLOAD_ALLOWLIST = new Set([

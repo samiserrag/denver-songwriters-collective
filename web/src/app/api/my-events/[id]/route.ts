@@ -14,8 +14,10 @@ import { upsertMediaEmbeds } from "@/lib/mediaEmbedsServer";
 import { sendAdminEventAlert } from "@/lib/email/adminEventAlerts";
 import { warmEventSharePreview } from "@/lib/events/sharePreview";
 import { normalizeDraftRecurrenceFields } from "@/lib/events/recurrenceDraftTools";
+import { resolveVenue, type VenueCatalogEntry } from "@/lib/events/venueResolver";
 
 const LEGACY_VERIFICATION_STATUSES = new Set(["needs_verification", "unverified"]);
+type SupabaseServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>;
 
 function normalizeLocationMode(value: unknown): "venue" | "online" | "hybrid" {
   if (typeof value !== "string") return "venue";
@@ -26,6 +28,75 @@ function normalizeLocationMode(value: unknown): "venue" | "online" | "hybrid" {
   if (mode === "online" || mode === "virtual") return "online";
   if (mode === "hybrid") return "hybrid";
   return "venue";
+}
+
+function clearCustomLocationBody(body: Record<string, unknown>): void {
+  body.custom_location_name = null;
+  body.custom_address = null;
+  body.custom_city = null;
+  body.custom_state = null;
+  body.custom_zip = null;
+  body.custom_latitude = null;
+  body.custom_longitude = null;
+  body.location_notes = null;
+}
+
+async function resolveExistingVenueFromCustomLocation(input: {
+  supabase: SupabaseServerClient;
+  body: Record<string, unknown>;
+  eventId: string;
+}): Promise<{ id: string; name: string } | null> {
+  if (typeof input.body.venue_id === "string" && input.body.venue_id.trim().length > 0) {
+    return null;
+  }
+
+  const customName =
+    typeof input.body.custom_location_name === "string"
+      ? input.body.custom_location_name.trim()
+      : "";
+  if (!customName) return null;
+
+  const { data: venueRows, error } = await input.supabase
+    .from("venues")
+    .select("id, name, slug")
+    .order("name", { ascending: true })
+    .limit(500);
+
+  if (error) {
+    console.warn(
+      `[PATCH /api/my-events/${input.eventId}] Existing venue resolver lookup failed:`,
+      error.message,
+    );
+    return null;
+  }
+
+  const venueCatalog: VenueCatalogEntry[] = (venueRows || []).map((venue) => ({
+    id: venue.id,
+    name: venue.name,
+    slug: venue.slug ?? null,
+  }));
+  const userMessage = [
+    customName,
+    input.body.custom_address,
+    input.body.custom_city,
+    input.body.custom_state,
+    input.body.custom_zip,
+  ]
+    .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+    .join(", ");
+
+  const resolution = resolveVenue({
+    draftVenueId: null,
+    draftVenueName: customName,
+    userMessage,
+    venueCatalog,
+    draftLocationMode: input.body.location_mode as string | null | undefined,
+    draftOnlineUrl: input.body.online_url as string | null | undefined,
+    isCustomLocation: true,
+  });
+
+  if (resolution.status !== "resolved") return null;
+  return { id: resolution.venueId, name: resolution.venueName };
 }
 const NOTIFICATION_IGNORED_FIELDS = new Set([
   "updated_at",
@@ -312,7 +383,7 @@ export async function PATCH(
   }
 
   // Phase 4.0: Handle mutual exclusivity of venue_id and custom_location_name
-  const hasVenue = !!body.venue_id;
+  let hasVenue = !!body.venue_id;
   const customLocationNameInput =
     typeof body.custom_location_name === "string" ? body.custom_location_name.trim() : "";
   const customCityInput =
@@ -321,7 +392,24 @@ export async function PATCH(
     typeof body.custom_state === "string" ? body.custom_state.trim() : "";
   const inferredCustomLocationName =
     customLocationNameInput || (customCityInput && customStateInput ? `${customCityInput}, ${customStateInput}` : "");
-  const hasCustomLocation = inferredCustomLocationName.length > 0;
+  let hasCustomLocation = inferredCustomLocationName.length > 0;
+
+  const existingVenueResolution = await resolveExistingVenueFromCustomLocation({
+    supabase,
+    body,
+    eventId,
+  });
+  if (existingVenueResolution) {
+    body.venue_id = existingVenueResolution.id;
+    body.venue_name = existingVenueResolution.name;
+    clearCustomLocationBody(body);
+    hasVenue = true;
+    hasCustomLocation = false;
+    body.location_mode =
+      body.location_mode === "hybrid" && typeof body.online_url === "string" && body.online_url.trim().length > 0
+        ? "hybrid"
+        : "venue";
+  }
 
   // Validate mutual exclusivity
   if (hasVenue && hasCustomLocation) {

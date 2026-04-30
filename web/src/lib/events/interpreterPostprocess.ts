@@ -716,6 +716,7 @@ export function enforceVenueCustomExclusivity(draft: Record<string, unknown>): v
     draft.custom_address = null;
     draft.custom_city = null;
     draft.custom_state = null;
+    draft.custom_zip = null;
     draft.custom_latitude = null;
     draft.custom_longitude = null;
   }
@@ -785,6 +786,7 @@ const CONTEXT_PRESERVE_FIELDS = [
   "custom_address",
   "custom_city",
   "custom_state",
+  "custom_zip",
   "custom_latitude",
   "custom_longitude",
   "location_mode",
@@ -858,6 +860,7 @@ export function mergeLockedCreateDraft(input: {
       draft.custom_address = null;
       draft.custom_city = null;
       draft.custom_state = null;
+      draft.custom_zip = null;
       draft.custom_latitude = null;
       draft.custom_longitude = null;
     } else if (
@@ -868,6 +871,7 @@ export function mergeLockedCreateDraft(input: {
       draft.custom_address = lockedDraft.custom_address ?? null;
       draft.custom_city = lockedDraft.custom_city ?? null;
       draft.custom_state = lockedDraft.custom_state ?? null;
+      draft.custom_zip = lockedDraft.custom_zip ?? null;
       draft.custom_latitude = lockedDraft.custom_latitude ?? null;
       draft.custom_longitude = lockedDraft.custom_longitude ?? null;
       draft.location_mode = "venue";
@@ -953,6 +957,9 @@ function isBlockingFieldSatisfied(draft: Record<string, unknown>, field: string)
       return hasNonEmptyString(draft.custom_city);
     case "custom_state":
       return hasNonEmptyString(draft.custom_state);
+    case "custom_zip":
+    case "zip":
+      return hasNonEmptyString(draft.custom_zip) || hasNonEmptyString(draft.zip);
     // Phase 9C: additional explicit cases to reduce unnecessary clarification turns.
     case "description":
       return hasNonEmptyString(draft.description);
