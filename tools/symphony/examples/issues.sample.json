@@ -1,0 +1,21 @@
+[
+  {
+    "number": 201,
+    "title": "Add a small docs-only smoke note",
+    "state": "open",
+    "body": "Docs-only test issue for Symphony dry-run planning.",
+    "labels": [
+      { "name": "symphony:ready" }
+    ]
+  },
+  {
+    "number": 202,
+    "title": "Blocked issue",
+    "state": "open",
+    "body": "This issue should not be planned because it is blocked.",
+    "labels": [
+      { "name": "symphony:ready" },
+      { "name": "symphony:blocked" }
+    ]
+  }
+]

@@ -1,4 +1,10 @@
 {
+  "scripts": {
+    "symphony:doctor": "node tools/symphony/cli.mjs doctor",
+    "symphony:dry-run": "node tools/symphony/cli.mjs once --dry-run",
+    "symphony:once": "node tools/symphony/cli.mjs once",
+    "symphony:test": "node --test tools/symphony/test/*.test.mjs"
+  },
   "dependencies": {
     "@supabase/ssr": "^0.1.0",
     "@supabase/supabase-js": "^2.84.0"
