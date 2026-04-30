@@ -22,6 +22,15 @@ const POSTPROCESS_PATH = path.resolve(
 );
 const postprocessSource = fs.readFileSync(POSTPROCESS_PATH, "utf-8");
 
+// Track 1 PR 5: prompt envelope build moved into aiPromptContract.ts. The
+// route still owns wiring; literal contract strings are owned by the lib.
+const PROMPT_CONTRACT_PATH = path.resolve(
+  __dirname,
+  "../lib/events/aiPromptContract.ts"
+);
+const promptContractSource = fs.readFileSync(PROMPT_CONTRACT_PATH, "utf-8");
+const combinedInterpretSource = `${interpretRouteSource}\n${promptContractSource}`;
+
 // ---------------------------------------------------------------------------
 // A) Creative title extraction
 // ---------------------------------------------------------------------------
@@ -227,9 +236,13 @@ describe("Phase 9B — event-type reliability", () => {
 
   it("feeds sourced web facts into both draft and verifier prompts", () => {
     expect(interpretRouteSource).toContain("webSearchVerification");
-    expect(interpretRouteSource).toContain("Use sourced facts to reduce unnecessary questions");
+    // PR 5: web_search_note literal moved into aiPromptContract.ts
+    // (buildAiPromptUserEnvelope). The verifier prompt literals remain in
+    // the route since the verifier prompt is not part of the §13.2
+    // prompt-contract surface.
+    expect(combinedInterpretSource).toContain("Use sourced facts to reduce unnecessary questions");
     expect(interpretRouteSource).toContain("Check the draft against source_message, extracted_image_text, web_search_verification");
-    expect(interpretRouteSource).toContain("If status is no_reliable_sources, treat it as an attempted search");
+    expect(combinedInterpretSource).toContain("If status is no_reliable_sources, treat it as an attempted search");
   });
 
   it("passes attempted no-result searches through when the user explicitly asks", () => {

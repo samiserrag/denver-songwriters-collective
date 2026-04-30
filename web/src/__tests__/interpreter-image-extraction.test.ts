@@ -15,6 +15,15 @@ const ROUTE_PATH = path.resolve(
 );
 const routeSource = fs.readFileSync(ROUTE_PATH, "utf-8");
 
+// Track 1 PR 5: prompt envelope build moved into aiPromptContract.ts. The
+// route still owns wiring; literal contract strings are owned by the lib.
+const PROMPT_CONTRACT_PATH = path.resolve(
+  __dirname,
+  "../lib/events/aiPromptContract.ts"
+);
+const promptContractSource = fs.readFileSync(PROMPT_CONTRACT_PATH, "utf-8");
+const combinedInterpretSource = `${routeSource}\n${promptContractSource}`;
+
 describe("Interpreter image extraction (Phase 3 route)", () => {
   it("exports maxDuration = 120 for Vercel function timeout", () => {
     expect(routeSource).toContain("export const maxDuration = 120");
@@ -71,8 +80,10 @@ describe("Interpreter image extraction (Phase 3 route)", () => {
 
   it("feeds extracted text into Phase B user prompt", () => {
     expect(routeSource).toContain("extractedImageText");
-    expect(routeSource).toContain("extracted_image_text");
-    expect(routeSource).toContain("image_extraction_note");
+    // PR 5: extracted_image_text + image_extraction_note literals now live
+    // in aiPromptContract.ts (the prompt envelope builder).
+    expect(combinedInterpretSource).toContain("extracted_image_text");
+    expect(combinedInterpretSource).toContain("image_extraction_note");
   });
 
   it("includes extraction_metadata in response when images present", () => {
@@ -82,9 +93,11 @@ describe("Interpreter image extraction (Phase 3 route)", () => {
   it("includes cover_image_url in event context query", () => {
     // In the select query string
     expect(routeSource).toContain("cover_image_url");
-    // In the pickCurrentEventContext fields
-    const contextMatch = routeSource.match(
-      /pickCurrentEventContext[\s\S]*?contextFields\s*=\s*\[[\s\S]*?\]/
+    // PR 5: pickCurrentEventContext is now an alias to
+    // projectCurrentEventForPrompt; the field whitelist lives in
+    // aiPromptContract.ts under AI_PROMPT_CURRENT_EVENT_FIELDS.
+    const contextMatch = promptContractSource.match(
+      /AI_PROMPT_CURRENT_EVENT_FIELDS\s*=\s*\[[\s\S]*?\]/
     );
     expect(contextMatch).not.toBeNull();
     expect(contextMatch![0]).toContain("cover_image_url");

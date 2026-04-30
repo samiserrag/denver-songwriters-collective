@@ -14,6 +14,15 @@ const ROUTE_PATH = path.resolve(
 );
 const routeSource = fs.readFileSync(ROUTE_PATH, "utf-8");
 
+// Track 1 PR 5: prompt envelope build moved into aiPromptContract.ts. The
+// route still owns wiring; literal contract strings are owned by the lib.
+const PROMPT_CONTRACT_PATH = path.resolve(
+  __dirname,
+  "../lib/events/aiPromptContract.ts"
+);
+const promptContractSource = fs.readFileSync(PROMPT_CONTRACT_PATH, "utf-8");
+const combinedInterpretSource = `${routeSource}\n${promptContractSource}`;
+
 describe("Interpreter location hints", () => {
   it("detects Google Maps URLs", () => {
     expect(routeSource).toContain("GOOGLE_MAPS_URL_REGEX");
@@ -27,8 +36,10 @@ describe("Interpreter location hints", () => {
   });
 
   it("injects google_maps_hint into LLM prompt payload", () => {
-    expect(routeSource).toContain("google_maps_hint");
-    expect(routeSource).toContain("google_maps_note");
+    // PR 5: google_maps_hint + google_maps_note literals moved into
+    // aiPromptContract.ts (buildAiPromptUserEnvelope).
+    expect(combinedInterpretSource).toContain("google_maps_hint");
+    expect(combinedInterpretSource).toContain("google_maps_note");
   });
 
   it("hydrates custom location fields from deterministic hints", () => {

@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { canManageEvent } from "@/lib/events/eventManageAuth";
 import {
-  buildInterpretResponseSchema,
   buildQualityHints,
   IMAGE_INPUT_LIMITS,
   sanitizeInterpretDraftPayload,
@@ -18,6 +17,16 @@ import {
   type WebSearchVerificationResult,
   type WebSearchVerificationSource,
 } from "@/lib/events/interpretEventContract";
+import {
+  appendAiPromptContractAdditions,
+  buildAiPromptResponseSchema,
+  buildAiPromptUserEnvelope,
+  buildOrderedImageReferences,
+  decideScopeAmbiguity,
+  isAiInterpretScope,
+  projectCurrentEventForPrompt,
+  type OrderedImageReference,
+} from "@/lib/events/aiPromptContract";
 import {
   resolveVenue,
   shouldResolveVenue,
@@ -1607,7 +1616,7 @@ function buildMissingFieldQuestion(field: string): string {
 }
 
 function buildUserPrompt(input: {
-  mode: string;
+  mode: "create" | "edit_series" | "edit_occurrence";
   message: string;
   dateKey?: string;
   eventId?: string;
@@ -1618,89 +1627,31 @@ function buildUserPrompt(input: {
   extractedImageText?: string;
   googleMapsHint?: GoogleMapsHint | null;
   webSearchVerification?: WebSearchVerificationResult | null;
+  imageReferences: OrderedImageReference[];
+  currentDate: string;
 }) {
-  // Send only id+name to the LLM (slug is used server-side for resolution only)
-  const llmVenueCatalog = input.venueCatalog.map((v) => ({ id: v.id, name: v.name }));
-  return JSON.stringify(
-    {
-      task: "interpret_event_message",
-      current_date: new Date().toLocaleDateString("en-CA", { timeZone: "America/Denver" }),
-      current_timezone: "America/Denver",
-      mode: input.mode,
-      message: input.message,
-      date_key: input.dateKey ?? null,
-      event_id: input.eventId ?? null,
-      current_event: input.currentEvent,
-      locked_draft: input.lockedDraft ?? null,
-      venue_catalog: llmVenueCatalog,
-      conversation_history: input.conversationHistory,
-      ...(input.extractedImageText
-        ? {
-            extracted_image_text: input.extractedImageText,
-            image_extraction_note:
-              "The user attached image(s) of an event flyer. The extracted_image_text field contains OCR/vision output from those images. Use this data to populate the draft_payload fields. The user's message may provide additional context or corrections.",
-          }
-        : {}),
-      ...(input.googleMapsHint
-        ? {
-            google_maps_hint: input.googleMapsHint,
-            google_maps_note:
-              "A Google Maps link was detected and server-expanded. Prefer this hint for location/address fields when present. Do not ask for address again if full address is already available in this hint.",
-          }
-        : {}),
-      ...(input.webSearchVerification
-        ? {
-            web_search_verification: input.webSearchVerification,
-            web_search_note:
-              "Online search was performed by a separate verifier. Use sourced facts to reduce unnecessary questions. If status is no_reliable_sources, treat it as an attempted search with no exact public source found.",
-          }
-        : {}),
-      required_output_shape: {
-        next_action: "ask_clarification | show_preview | await_confirmation | done",
-        confidence: "number 0..1",
-        human_summary: "string",
-        clarification_question: "string|null",
-        blocking_fields: "string[]",
-        draft_payload: "object",
-      },
-    },
-    null,
-    2
-  );
+  // Prompt-contract surface (system prompt + user envelope + scope rules)
+  // is owned by web/src/lib/events/aiPromptContract.ts (plan §8.2 lock).
+  return buildAiPromptUserEnvelope({
+    mode: input.mode,
+    message: input.message,
+    dateKey: input.dateKey,
+    eventId: input.eventId,
+    conversationHistory: input.conversationHistory,
+    venueCatalog: input.venueCatalog.map((v) => ({ id: v.id, name: v.name })),
+    currentEvent: input.currentEvent,
+    lockedDraft: input.lockedDraft,
+    extractedImageText: input.extractedImageText,
+    googleMapsHint: input.googleMapsHint ?? undefined,
+    webSearchVerification: input.webSearchVerification ?? undefined,
+    imageReferences: input.imageReferences,
+    currentDate: input.currentDate,
+  });
 }
 
-function pickCurrentEventContext(event: Record<string, unknown>): Record<string, unknown> {
-  const contextFields = [
-    "id",
-    "title",
-    "event_type",
-    "event_date",
-    "day_of_week",
-    "start_time",
-    "end_time",
-    "recurrence_rule",
-    "location_mode",
-    "venue_id",
-    "venue_name",
-    "is_free",
-    "cost_label",
-    "signup_mode",
-    "signup_url",
-    "signup_time",
-    "has_timeslots",
-    "total_slots",
-    "slot_duration_minutes",
-    "is_published",
-    "status",
-    "cover_image_url",
-  ];
-
-  const safe: Record<string, unknown> = {};
-  for (const field of contextFields) {
-    if (event[field] !== undefined) safe[field] = event[field];
-  }
-  return safe;
-}
+// Compact current-event projection now lives in aiPromptContract.ts so the
+// prompt-contract surface owns the field whitelist (plan §5.4 + §8.2 lock).
+const pickCurrentEventContext = projectCurrentEventForPrompt;
 
 function buildDraftVerifierPrompt(input: {
   message: string;
@@ -2178,6 +2129,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: imageValidation.error }, { status: imageValidation.status });
   }
   const validatedImages = imageValidation.images;
+
+  // Ordered image references for natural-language image selection
+  // (plan §5.5). Caller-supplied; reindexed to a stable 0-based ordering.
+  const imageReferences = buildOrderedImageReferences(
+    (body as { image_references?: unknown }).image_references,
+  );
   const rawMessage = typeof body?.message === "string" ? body.message.trim() : "";
   if (rawMessage.length === 0 && validatedImages.length === 0) {
     return NextResponse.json({ error: "message or image is required." }, { status: 400 });
@@ -2351,6 +2308,8 @@ export async function POST(request: Request) {
     extractedImageText,
     googleMapsHint,
     webSearchVerification,
+    imageReferences,
+    currentDate,
   });
 
   console.info("[events/interpret] request", {
@@ -2395,7 +2354,7 @@ export async function POST(request: Request) {
       signal: controller.signal,
       body: JSON.stringify({
         model,
-        instructions: buildSystemPrompt(),
+        instructions: appendAiPromptContractAdditions(buildSystemPrompt()),
         input: userPrompt,
         max_output_tokens: 2500,
         text: {
@@ -2403,7 +2362,7 @@ export async function POST(request: Request) {
             type: "json_schema",
             name: "event_interpretation",
             strict: true,
-            schema: buildInterpretResponseSchema(),
+            schema: buildAiPromptResponseSchema(),
           },
         },
       }),
@@ -2463,6 +2422,13 @@ export async function POST(request: Request) {
   if (!Array.isArray(responsePayload.blocking_fields) || responsePayload.blocking_fields.some((f) => typeof f !== "string")) {
     return NextResponse.json({ error: "Interpreter output has invalid blocking_fields." }, { status: 502 });
   }
+  if (!isAiInterpretScope(responsePayload.scope)) {
+    return NextResponse.json(
+      { error: "Interpreter output missing valid scope (series | occurrence | ambiguous)." },
+      { status: 502 },
+    );
+  }
+  const modelScope = responsePayload.scope;
 
   const sanitizedDraft = sanitizeInterpretDraftPayload(mode, responsePayload.draft_payload, dateKey);
   const locationHintResult = applyLocationHintsToDraft({
@@ -2483,6 +2449,23 @@ export async function POST(request: Request) {
     typeof responsePayload.clarification_question === "string"
       ? responsePayload.clarification_question.trim()
       : null;
+
+  // Plan §5.3: when the model returns scope='ambiguous' on edit modes, the
+  // server forces a clarification turn even if a patch is also returned.
+  // The decision is captured in scopeDecision so the response can carry
+  // both the suppressed-patch flag and the resolved values.
+  const scopeDecision = decideScopeAmbiguity({
+    mode,
+    scope: modelScope,
+    modelNextAction: responsePayload.next_action,
+    modelClarificationQuestion: resolvedClarificationQuestion,
+    modelBlockingFields: resolvedBlockingFields,
+  });
+  if (scopeDecision.forced) {
+    resolvedNextAction = scopeDecision.nextAction;
+    resolvedClarificationQuestion = scopeDecision.clarificationQuestion;
+    resolvedBlockingFields = scopeDecision.blockingFields;
+  }
 
   if (
     shouldResolveVenue({
@@ -2775,6 +2758,7 @@ export async function POST(request: Request) {
   const response = {
     mode,
     next_action: resolvedNextAction,
+    scope: modelScope,
     confidence: responsePayload.confidence,
     human_summary: highRiskVerificationIssue
       ? `${visibleHumanSummary} I found one thing worth confirming before this goes live.`
@@ -2784,6 +2768,15 @@ export async function POST(request: Request) {
     blocking_fields: resolvedBlockingFields,
     draft_payload: sanitizedDraft,
     quality_hints: qualityHints,
+    ...(scopeDecision.forced
+      ? {
+          scope_decision: {
+            forced: true,
+            reason: scopeDecision.reason,
+            patch_suppressed: scopeDecision.patchSuppressed,
+          },
+        }
+      : {}),
     ...(extractionMetadata ? { extraction_metadata: extractionMetadata } : {}),
     ...(highRiskVerificationIssue && draftVerification ? { draft_verification: draftVerification } : {}),
     ...(webSearchVerification ? { web_search_verification: webSearchVerification } : {}),
