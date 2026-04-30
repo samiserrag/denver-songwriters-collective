@@ -35,6 +35,7 @@ import {
 import type { NextAction } from "@/lib/events/interpretEventContract";
 import { normalizeSignupMode } from "@/lib/events/signupModeContract";
 import { normalizeDraftRecurrenceFields } from "@/lib/events/recurrenceDraftTools";
+import { canSendExplicitConfirmation } from "./publishedRiskConfirmation";
 import { applyVenueTypeTitleDefault } from "@/lib/events/interpreterPostprocess";
 import { humanizeRecurrence } from "@/lib/recurrenceHumanizer";
 import { CropModal } from "@/components/gallery/CropModal";
@@ -1419,6 +1420,8 @@ export function ConversationalCreateUI({
   const [isCreating, setIsCreating] = useState(false);
   const [isApplyingSeriesPatch, setIsApplyingSeriesPatch] = useState(false);
   const [hasUnappliedSeriesPatch, setHasUnappliedSeriesPatch] = useState(false);
+  const [pendingPublishedRiskConfirmation, setPendingPublishedRiskConfirmation] = useState(false);
+  const [pendingPublishedRiskPatchFingerprint, setPendingPublishedRiskPatchFingerprint] = useState<string | null>(null);
   const [createdEventId, setCreatedEventId] = useState<string | null>(null);
   const [createdSummary, setCreatedSummary] = useState<CreatedEventSummary | null>(null);
   const [createMessage, setCreateMessage] = useState<{
@@ -1632,6 +1635,11 @@ export function ConversationalCreateUI({
     setCoverMessage(null);
   }, [mode, eventId]);
 
+  useEffect(() => {
+    setPendingPublishedRiskConfirmation(false);
+    setPendingPublishedRiskPatchFingerprint(null);
+  }, [mode, eventId, dateKey]);
+
   // Clear create state when mode changes
   useEffect(() => {
     setLastInterpretResponse(null);
@@ -1639,6 +1647,7 @@ export function ConversationalCreateUI({
     setCreatedEventId(null);
     setCreatedSummary(null);
     setHasUnappliedSeriesPatch(false);
+    setPendingPublishedRiskConfirmation(false);
     setAppliedCoverCandidateId(null);
   }, [mode]);
 
@@ -1652,6 +1661,7 @@ export function ConversationalCreateUI({
       setCreatedEventId(null);
       setCreatedSummary(null);
       setHasUnappliedSeriesPatch(false);
+      setPendingPublishedRiskConfirmation(false);
       setAppliedCoverCandidateId(null);
     }
   }, [mode, stagedImages.length, createdEventId]);
@@ -2005,6 +2015,8 @@ export function ConversationalCreateUI({
             draft_payload: body.draft_payload as Record<string, unknown>,
           };
           setLastInterpretResponse(nextInterpretResponse);
+          setPendingPublishedRiskConfirmation(false);
+          setPendingPublishedRiskPatchFingerprint(null);
           setHasUnappliedSeriesPatch(
             effectiveMode === "edit_series" &&
               ACTIONABLE_NEXT_ACTIONS.has(body.next_action as NextAction)
@@ -2215,19 +2227,48 @@ export function ConversationalCreateUI({
       return;
     }
 
+    const patchFingerprint = JSON.stringify(mapResult.body);
+    const canSendExplicitConfirmationValue = canSendExplicitConfirmation({
+      automatic: options.automatic === true,
+      pendingPublishedRiskConfirmation,
+      pendingPublishedRiskPatchFingerprint,
+      currentPatchFingerprint: patchFingerprint,
+    });
+
     setIsApplyingSeriesPatch(true);
     setCreateMessage(null);
 
     try {
+      const patchBody: Record<string, unknown> = {
+        ...mapResult.body,
+        ai_write_source: "conversational_create_ui_auto_apply",
+      };
+      if (canSendExplicitConfirmationValue) {
+        patchBody.ai_confirm_published_high_risk = true;
+      }
+
       const res = await fetch(`/api/my-events/${createdEventId}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(mapResult.body),
+        body: JSON.stringify(patchBody),
       });
 
       const result = await res.json().catch(() => ({ error: "Non-JSON response" }));
       if (!res.ok) {
+        if (res.status === 409 && result.requires_confirmation === true) {
+          const blockedFields = Array.isArray(result.blocked_fields) ? result.blocked_fields.join(", ") : "high-risk fields";
+          setPendingPublishedRiskConfirmation(true);
+          setPendingPublishedRiskPatchFingerprint(patchFingerprint);
+          setHasUnappliedSeriesPatch(true);
+          setCreateMessage({
+            type: "warning",
+            text: `Review required: this published event change touches ${blockedFields}. Click Update Draft again to confirm and apply these changes.`,
+          });
+          return;
+        }
+        setPendingPublishedRiskConfirmation(false);
+        setPendingPublishedRiskPatchFingerprint(null);
         setCreateMessage({
           type: "error",
           text: `I couldn't apply that yet (${res.status}): ${result.error || JSON.stringify(result)}`,
@@ -2260,8 +2301,12 @@ export function ConversationalCreateUI({
           : `Draft updated. Nice, the tiny event paperwork mountain got smaller.${venueEnrichmentNote ?? ""}`,
       });
       setHasUnappliedSeriesPatch(false);
+      setPendingPublishedRiskConfirmation(false);
+      setPendingPublishedRiskPatchFingerprint(null);
       broadcastEventDraftSync(createdEventId, "updated");
     } catch (error) {
+      setPendingPublishedRiskConfirmation(false);
+      setPendingPublishedRiskPatchFingerprint(null);
       setCreateMessage({
         type: "error",
         text: error instanceof Error ? error.message : "Draft update failed.",
@@ -2514,6 +2559,8 @@ export function ConversationalCreateUI({
       });
       broadcastEventDraftSync(newEventId, "created");
     } catch (error) {
+      setPendingPublishedRiskConfirmation(false);
+      setPendingPublishedRiskPatchFingerprint(null);
       setCreateMessage({
         type: "error",
         text: error instanceof Error ? error.message : "Create request failed.",

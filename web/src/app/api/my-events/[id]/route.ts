@@ -15,9 +15,61 @@ import { sendAdminEventAlert } from "@/lib/email/adminEventAlerts";
 import { warmEventSharePreview } from "@/lib/events/sharePreview";
 import { normalizeDraftRecurrenceFields } from "@/lib/events/recurrenceDraftTools";
 import { resolveVenue, type VenueCatalogEntry } from "@/lib/events/venueResolver";
+import { computePatchDiff } from "@/lib/events/computePatchDiff";
 
 const LEGACY_VERIFICATION_STATUSES = new Set(["needs_verification", "unverified"]);
 type SupabaseServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>;
+
+const AI_WRITE_SOURCE_CONVERSATIONAL = "conversational_create_ui_auto_apply";
+
+export function parseAiWriteMetadata(body: Record<string, unknown>): {
+  aiWriteSource: string | null;
+  aiConfirmation: boolean;
+  isAiAutoApply: boolean;
+  sanitizedBody: Record<string, unknown>;
+} {
+  const aiWriteSource = typeof body.ai_write_source === "string" ? body.ai_write_source : null;
+  const aiConfirmation = body.ai_confirm_published_high_risk === true;
+  const sanitizedBody = { ...body };
+  delete sanitizedBody.ai_write_source;
+  delete sanitizedBody.ai_confirm_published_high_risk;
+  return {
+    aiWriteSource,
+    aiConfirmation,
+    isAiAutoApply: aiWriteSource === AI_WRITE_SOURCE_CONVERSATIONAL,
+    sanitizedBody,
+  };
+}
+
+export function evaluatePublishedAiSafetyGate(params: {
+  prevEvent: Record<string, unknown> | null | undefined;
+  updates: Record<string, unknown>;
+  isAiAutoApply: boolean;
+  aiConfirmation: boolean;
+}) {
+  const { prevEvent, updates, isAiAutoApply, aiConfirmation } = params;
+  if (!(prevEvent?.is_published === true && isAiAutoApply && !aiConfirmation)) {
+    return { blocked: false as const };
+  }
+  const diff = computePatchDiff(prevEvent, updates);
+  const blocked = diff.changedFields.filter(
+    (field) => field.risk_tier === "high" && field.enforcement_mode === "enforced"
+  );
+  if (blocked.length === 0) {
+    return { blocked: false as const };
+  }
+  return {
+    blocked: true as const,
+    response: {
+      error: "Published events require explicit confirmation before applying high-risk AI changes.",
+      requires_confirmation: true,
+      confirmation_token: "published_high_risk",
+      blocked_fields: blocked.map((field) => field.field),
+      risk_summary: diff.summary,
+    },
+  };
+}
+
 
 function normalizeLocationMode(value: unknown): "venue" | "online" | "hybrid" {
   if (typeof value !== "string") return "venue";
@@ -345,7 +397,9 @@ export async function PATCH(
   const isAdmin = profile?.role === "admin";
   const canCreateCSC = isApprovedHost || isAdmin;
 
-  const body = await request.json();
+  const requestBody = (await request.json()) as Record<string, unknown>;
+  const { aiConfirmation, isAiAutoApply, sanitizedBody } = parseAiWriteMetadata(requestBody);
+  const body = sanitizedBody as Record<string, any>;
   if (body.location_mode !== undefined) {
     body.location_mode = normalizeLocationMode(body.location_mode);
   }
@@ -637,6 +691,16 @@ export async function PATCH(
     .select("*")
     .eq("id", eventId)
     .single();
+
+  const aiGate = evaluatePublishedAiSafetyGate({
+    prevEvent,
+    updates,
+    isAiAutoApply,
+    aiConfirmation,
+  });
+  if (aiGate.blocked) {
+    return NextResponse.json(aiGate.response, { status: 409 });
+  }
 
   const isUnpublishTransition = prevEvent?.is_published === true && body.is_published === false;
   if (isUnpublishTransition) {
