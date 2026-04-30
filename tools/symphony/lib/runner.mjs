@@ -257,7 +257,8 @@ export async function recoverStaleRunningIssues({
   now = new Date(),
   client: providedClient = null,
   repo: providedRepo = null,
-  skipLock = false
+  skipLock = false,
+  writeManifest = writeRunManifest
 }) {
   const mode = execute && !dryRun ? "execute" : "dry-run";
   const workflow = await loadWorkflow(path.join(repoRoot, "WORKFLOW.md"));
@@ -287,7 +288,7 @@ export async function recoverStaleRunningIssues({
         manifestPath: manifestContext.manifestPath,
         reason: "stale recovery requires SYMPHONY_EXECUTION_APPROVED=1"
       };
-      await writeRunManifest({
+      await writeManifest({
         context: manifestContext,
         updates: {
           outcome: {
@@ -316,7 +317,7 @@ export async function recoverStaleRunningIssues({
         manifestPath: manifestContext.manifestPath,
         reason: stale.length === 0 ? "no stale running issues found" : ""
       };
-      await writeRunManifest({
+      await writeManifest({
         context: manifestContext,
         updates: {
           plannedIssues: result.stale.map((item) => ({ number: item.issueNumber, title: item.title })),
@@ -333,6 +334,37 @@ export async function recoverStaleRunningIssues({
         now
       });
       return result;
+    }
+
+    const initialManifestWrite = await writeManifestSafely({
+      writeManifest,
+      context: manifestContext,
+      updates: {
+        plannedIssues: stale.map((item) => ({
+          number: item.assessment.issueNumber,
+          title: item.assessment.title
+        })),
+        skippedIssues: active.map((item) => ({
+          number: item.assessment.issueNumber,
+          title: item.assessment.title,
+          reasons: ["running issue is not stale"]
+        })),
+        outcome: {
+          ok: false,
+          reason: "stale recovery preflight passed; external mutations starting"
+        }
+      },
+      now
+    });
+    if (!initialManifestWrite.ok) {
+      return {
+        ok: false,
+        mode,
+        stale: stale.map((item) => item.assessment),
+        active: active.map((item) => item.assessment),
+        manifestPath: manifestContext.manifestPath,
+        reason: initialManifestWrite.reason
+      };
     }
 
     const recovered = [];
@@ -379,7 +411,7 @@ export async function recoverStaleRunningIssues({
       manifestPath: manifestContext.manifestPath,
       reason: recovered.length === 0 ? "no stale running issues found" : ""
     };
-    await writeRunManifest({
+    await writeManifest({
       context: manifestContext,
       updates: {
         plannedIssues: recovered.map((item) => ({ number: item.issueNumber, title: item.title })),
@@ -411,7 +443,7 @@ export async function recoverStaleRunningIssues({
       reason: detail,
       lock: error instanceof RunnerLockError ? error.detail : undefined
     };
-    await writeRunManifest({
+    await writeManifest({
       context: manifestContext,
       updates: {
         lock: result.lock || manifestContext.manifest.lock,

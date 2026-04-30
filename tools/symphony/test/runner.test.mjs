@@ -473,6 +473,68 @@ test("recoverStaleRunningIssues removes duplicate workpad comments on update", a
   assert.deepEqual(calls.find((call) => call[0] === "deleteComment"), ["deleteComment", 102]);
 });
 
+test("recoverStaleRunningIssues execute proves manifest writable before mutation", async () => {
+  const calls = [];
+  const client = {
+    async listIssuesByLabel(_repo, label) {
+      assert.equal(label, "symphony:running");
+      return [
+        {
+          number: 35,
+          title: "Stale runner without manifest",
+          state: "open",
+          body: "Runner died.",
+          created_at: "2026-04-30T00:00:00.000Z",
+          updated_at: "2026-04-30T00:00:00.000Z",
+          labels: [{ name: "symphony:running" }]
+        }
+      ];
+    },
+    async listComments() {
+      return {
+        ok: true,
+        data: [
+          {
+            id: 103,
+            body: "<!-- symphony-workpad -->\n- Last Updated: 2026-04-30T00:00:00.000Z",
+            updated_at: "2026-04-30T00:00:00.000Z"
+          }
+        ]
+      };
+    },
+    async addLabels(_repo, issueNumber, labels) {
+      calls.push(["addLabels", issueNumber, labels]);
+      return { ok: true };
+    },
+    async removeLabel(_repo, issueNumber, label) {
+      calls.push(["removeLabel", issueNumber, label]);
+      return { ok: true };
+    },
+    async updateComment(_repo, commentId, body) {
+      calls.push(["updateComment", commentId, body]);
+      return { ok: true };
+    }
+  };
+
+  const result = await recoverStaleRunningIssues({
+    repoRoot: process.cwd(),
+    dryRun: false,
+    execute: true,
+    env: { SYMPHONY_EXECUTION_APPROVED: "1" },
+    now: new Date("2026-04-30T06:00:00.000Z"),
+    client,
+    repo: "owner/repo",
+    skipLock: true,
+    writeManifest: async () => {
+      throw new Error("read-only manifest root");
+    }
+  });
+
+  assert.equal(result.ok, false);
+  assert.match(result.reason, /manifest write failed: read-only manifest root/);
+  assert.deepEqual(mutatingCalls(calls), []);
+});
+
 test("recoverStaleRunningIssues execute mode requires approval gate before GitHub access", async () => {
   const result = await recoverStaleRunningIssues({
     repoRoot: process.cwd(),
