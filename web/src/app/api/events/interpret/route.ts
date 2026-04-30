@@ -1532,8 +1532,10 @@ function buildSystemPrompt() {
     "- Timeslots are optional. Encourage for open_mic, jam_session, workshop when relevant.",
     "- Prefer safe scope when ambiguous: occurrence edits over series-wide edits.",
     "- Use date format YYYY-MM-DD and 24h times HH:MM:SS when possible.",
-    "- The current date is provided in the user prompt as current_date in America/Denver. Never draft a past date for a new create-mode event unless the user clearly says it already happened, is a recap, or is archival.",
-    "- Flyer dates often omit a year. If a month/day date from a flyer would be in the past for current_date, advance it to the next upcoming future occurrence of that month/day.",
+    "- The current date is provided in the user prompt as current_date in America/Denver. current_date itself is NOT a past date — it is today and is a valid event date. Compare dates by calendar date only, never by time of day.",
+    "- Never draft a date strictly before current_date for a new create-mode event unless the user clearly says it already happened, is a recap, or is archival.",
+    "- Flyer dates often omit a year. When a month/day from a flyer has no year in the source text: if that month/day in the CURRENT year is current_date or later, use the current year. Only advance to next year when the month/day in the current year is STRICTLY before current_date.",
+    "- Do not advance a flyer's month/day past the current year unless the flyer or user message explicitly states a year that is later than the current year.",
     "- If the user says 'tonight', 'tomorrow', 'next', 'upcoming', or 'if this is in the past', resolve that relative date yourself from current_date instead of asking for the year.",
     "- If venue match is uncertain, leave venue_id null and set venue_name to your best guess of the venue the user intended. The server will attempt deterministic resolution.",
     "- For recurring in-person events at a venue that is not in the catalog, set venue_name/custom_location_name plus any address/city/state you can extract. Do not describe it as a one-off custom location; say it can be added as a reusable venue when saved.",
@@ -2797,7 +2799,9 @@ export async function POST(request: Request) {
     : responsePayload.human_summary.trim();
   const finalHumanSummary =
     futureDateGuardResult.applied && !humanSummary.includes(futureDateGuardResult.to)
-      ? `${humanSummary} Date adjusted to ${futureDateGuardResult.to} because the source date would otherwise be in the past.`
+      ? futureDateGuardResult.reason === "future_year_pullback"
+        ? `${humanSummary} Date set to ${futureDateGuardResult.to} (current year) — the source did not specify ${futureDateGuardResult.from.slice(0, 4)}.`
+        : `${humanSummary} Date adjusted to ${futureDateGuardResult.to} because the source date would otherwise be in the past.`
       : humanSummary;
 
   const remainingBeforeVerifier = getRemainingRouteBudgetMs(requestStartedAt);

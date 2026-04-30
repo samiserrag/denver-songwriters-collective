@@ -22,6 +22,20 @@ Rules:
 
 ## Active claims
 
+### Interpreter today-date rollover fix (P1)
+
+- **Branch:** `codex/interpreter-today-date-fix`
+- **Owner:** Codex
+- **Base SHA:** `248be7dc86bc017d1c525246ba0c4fe38299ae8f`
+- **Status:** `awaiting_review`
+- **Files claimed:**
+  - `web/src/lib/events/interpreterPostprocess.ts`
+  - `web/src/app/api/events/interpret/route.ts`
+  - `web/src/__tests__/interpreter-postprocess-future-date.test.ts` (new)
+  - `web/src/__tests__/interpret-prompt-date-rules.test.ts` (new)
+  - `docs/investigation/track1-claims.md`
+- **Notes:** One-line off-by-one fix in `nextFutureMonthDayDate` to treat today's date as a valid future occurrence. No prompt or interpreter route changes. Extended scope (2026-04-30): also tightens interpret prompt date rules and adds postprocessor pull-back guard for LLM over-eager future-year picks. Acquires temporary single-writer claim on `route.ts` for prompt-string edits only — no behavioral changes to interpret route logic.
+
 ### PR 9 — Published-event gate for AI edits
 
 - **Branch:** `codex/implement-published-event-gate-for-ai-edits`
