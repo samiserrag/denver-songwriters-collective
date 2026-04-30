@@ -251,7 +251,7 @@ describe("Phase 4B — createEvent handler", () => {
 
   it("attempts venue directory creation when user explicitly requests new venue", () => {
     expect(labSource).toContain("explicitlyRequestsVenueDirectoryCreate(intentText)");
-    expect(labSource).toContain('fetch("/api/admin/venues"');
+    expect(labSource).toContain('fetch("/api/venues"');
     expect(labSource).toContain("createBody.venue_id = venueData.id");
   });
 });

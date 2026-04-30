@@ -41,6 +41,9 @@ Rules:
   - `web/src/app/api/venues/route.ts`
   - `web/src/app/api/admin/venues/route.ts`
   - `web/src/__tests__/track1-pr8-venue-image-contract.test.ts`
+  - `web/src/__tests__/event-detail-type-badges.test.ts`
+  - `web/src/__tests__/interpreter-14-host-ux-polish.test.ts`
+  - `web/src/__tests__/interpreter-lab-create-write.test.ts`
 - **Forbidden scope reminders:** No migrations, no PR 9 published-event gate behavior, no telemetry runtime changes, no broad venue permission redesign, and no bypass of `allowExistingEventWrites={false}` edit-route safety.
 
 Next planned Track 1 order: PR 8 (venue/image edit wiring) → PR 9 (published-event gate).
