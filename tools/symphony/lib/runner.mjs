@@ -17,6 +17,16 @@ async function readJsonFile(filePath) {
   return JSON.parse(await readFile(filePath, "utf8"));
 }
 
+export function mergeIssuesByNumber(...issueLists) {
+  const issuesByNumber = new Map();
+  for (const issues of issueLists) {
+    for (const issue of issues) {
+      issuesByNumber.set(issue.number, issue);
+    }
+  }
+  return [...issuesByNumber.values()];
+}
+
 async function loadCandidateIssues({ repoRoot, config, mockIssuesPath, env }) {
   if (mockIssuesPath) {
     const absolute = path.resolve(repoRoot, mockIssuesPath);
@@ -26,7 +36,11 @@ async function loadCandidateIssues({ repoRoot, config, mockIssuesPath, env }) {
   const tokenInfo = await resolveGitHubToken(env);
   const repo = await detectRepositorySlug(repoRoot);
   const client = new GitHubClient({ token: tokenInfo.token });
-  return client.listIssuesByLabel(repo, config.labels.ready);
+  const [readyIssues, runningIssues] = await Promise.all([
+    client.listIssuesByLabel(repo, config.labels.ready),
+    client.listIssuesByLabel(repo, config.labels.running)
+  ]);
+  return mergeIssuesByNumber(readyIssues, runningIssues);
 }
 
 export function planIssues({ issues, config }) {
@@ -66,7 +80,22 @@ export function planIssues({ issues, config }) {
 
 async function createWorktree({ repoRoot, worktreePath, branchName }) {
   await mkdir(path.dirname(worktreePath), { recursive: true });
-  const result = await runCommand("git", ["worktree", "add", "-b", branchName, worktreePath, "HEAD"], {
+  const fetchResult = await runCommand("git", ["fetch", "origin", "main:refs/remotes/origin/main"], {
+    cwd: repoRoot,
+    timeout: 60000
+  });
+  if (!fetchResult.ok) {
+    throw new Error(fetchResult.stderr || fetchResult.stdout || "failed to fetch origin/main");
+  }
+
+  const verifyResult = await runCommand("git", ["rev-parse", "--verify", "origin/main^{commit}"], {
+    cwd: repoRoot
+  });
+  if (!verifyResult.ok) {
+    throw new Error(verifyResult.stderr || verifyResult.stdout || "origin/main is not resolvable");
+  }
+
+  const result = await runCommand("git", ["worktree", "add", "-b", branchName, worktreePath, "origin/main"], {
     cwd: repoRoot,
     timeout: 60000
   });
@@ -117,6 +146,17 @@ export async function runOnce({
   mockIssuesPath = null,
   env = process.env
 }) {
+  const mode = execute && !dryRun ? "execute" : "dry-run";
+  if (mode === "execute" && mockIssuesPath) {
+    return {
+      ok: false,
+      mode,
+      runningCount: 0,
+      plans: [],
+      reason: "--execute cannot be combined with --mock-issues; mock mode is dry-run only"
+    };
+  }
+
   const workflow = await loadWorkflow(path.join(repoRoot, "WORKFLOW.md"));
   const config = resolveConfig(repoRoot, workflow.config, env);
   let issues;
@@ -132,7 +172,6 @@ export async function runOnce({
     };
   }
   const planned = planIssues({ issues, config });
-  const mode = execute && !dryRun ? "execute" : "dry-run";
 
   if (mode === "dry-run") {
     return {

@@ -37,6 +37,9 @@ Real execution is intentionally gated:
 SYMPHONY_EXECUTION_APPROVED=1 node tools/symphony/cli.mjs once --execute
 ```
 
+`--execute` cannot be combined with `--mock-issues`; mock fixtures are
+offline dry-run input only.
+
 Do not use real execution until:
 
 1. `npm run symphony:doctor` passes.
@@ -60,6 +63,12 @@ labels unless you pass `--create-labels`.
 
 The runner uses `.symphony/` for local worktrees, logs, and state. That
 directory is ignored by git.
+
+Real worktrees are always created from an explicit `origin/main` base:
+the runner fetches `main:refs/remotes/origin/main`, verifies
+`origin/main^{commit}` exists, and then runs
+`git worktree add -b <branch> <path> origin/main`. It fails closed instead
+of falling back to the operator's current `HEAD`.
 
 ## Adapter Boundary
 

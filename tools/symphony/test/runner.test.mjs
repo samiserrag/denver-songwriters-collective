@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
+import { mkdtemp } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import test from "node:test";
 import { resolveConfig } from "../lib/config.mjs";
-import { planIssues } from "../lib/runner.mjs";
+import { mergeIssuesByNumber, planIssues, runOnce } from "../lib/runner.mjs";
 
 const config = resolveConfig("/repo", {
   version: 1,
@@ -69,4 +72,46 @@ test("planIssues does not plan when concurrency is occupied", () => {
   assert.equal(result.runningCount, 1);
   assert.equal(result.plans.length, 0);
   assert.match(result.reason, /already reached/);
+});
+
+test("mergeIssuesByNumber keeps ready and running issues visible to planning", () => {
+  const issues = mergeIssuesByNumber(
+    [
+      {
+        number: 2,
+        title: "Ready",
+        state: "open",
+        labels: [{ name: "symphony:ready" }]
+      }
+    ],
+    [
+      {
+        number: 1,
+        title: "Running",
+        state: "open",
+        labels: [{ name: "symphony:running" }]
+      }
+    ]
+  );
+
+  const result = planIssues({ config, issues });
+
+  assert.equal(result.runningCount, 1);
+  assert.equal(result.plans.length, 0);
+  assert.match(result.reason, /already reached/);
+});
+
+test("runOnce rejects execute with mock issues before reading workflow or GitHub auth", async () => {
+  const repoRoot = await mkdtemp(path.join(os.tmpdir(), "symphony-runner-"));
+  const result = await runOnce({
+    repoRoot,
+    dryRun: false,
+    execute: true,
+    mockIssuesPath: "mock.json",
+    env: {}
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.mode, "execute");
+  assert.match(result.reason, /mock mode is dry-run only/);
 });
