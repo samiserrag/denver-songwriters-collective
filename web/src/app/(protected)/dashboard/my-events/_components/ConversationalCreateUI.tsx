@@ -35,6 +35,7 @@ import {
 import type { NextAction } from "@/lib/events/interpretEventContract";
 import { normalizeSignupMode } from "@/lib/events/signupModeContract";
 import { normalizeDraftRecurrenceFields } from "@/lib/events/recurrenceDraftTools";
+import { canSendExplicitConfirmation } from "./publishedRiskConfirmation";
 import { applyVenueTypeTitleDefault } from "@/lib/events/interpreterPostprocess";
 import { humanizeRecurrence } from "@/lib/recurrenceHumanizer";
 import { CropModal } from "@/components/gallery/CropModal";
@@ -2227,10 +2228,12 @@ export function ConversationalCreateUI({
     }
 
     const patchFingerprint = JSON.stringify(mapResult.body);
-    const canSendExplicitConfirmation =
-      !options.automatic &&
-      pendingPublishedRiskConfirmation &&
-      pendingPublishedRiskPatchFingerprint === patchFingerprint;
+    const canSendExplicitConfirmationValue = canSendExplicitConfirmation({
+      automatic: options.automatic === true,
+      pendingPublishedRiskConfirmation,
+      pendingPublishedRiskPatchFingerprint,
+      currentPatchFingerprint: patchFingerprint,
+    });
 
     setIsApplyingSeriesPatch(true);
     setCreateMessage(null);
@@ -2240,7 +2243,7 @@ export function ConversationalCreateUI({
         ...mapResult.body,
         ai_write_source: "conversational_create_ui_auto_apply",
       };
-      if (canSendExplicitConfirmation) {
+      if (canSendExplicitConfirmationValue) {
         patchBody.ai_confirm_published_high_risk = true;
       }
 

@@ -22,6 +22,25 @@ type SupabaseServerClient = Awaited<ReturnType<typeof createSupabaseServerClient
 
 const AI_WRITE_SOURCE_CONVERSATIONAL = "conversational_create_ui_auto_apply";
 
+export function parseAiWriteMetadata(body: Record<string, unknown>): {
+  aiWriteSource: string | null;
+  aiConfirmation: boolean;
+  isAiAutoApply: boolean;
+  sanitizedBody: Record<string, unknown>;
+} {
+  const aiWriteSource = typeof body.ai_write_source === "string" ? body.ai_write_source : null;
+  const aiConfirmation = body.ai_confirm_published_high_risk === true;
+  const sanitizedBody = { ...body };
+  delete sanitizedBody.ai_write_source;
+  delete sanitizedBody.ai_confirm_published_high_risk;
+  return {
+    aiWriteSource,
+    aiConfirmation,
+    isAiAutoApply: aiWriteSource === AI_WRITE_SOURCE_CONVERSATIONAL,
+    sanitizedBody,
+  };
+}
+
 export function evaluatePublishedAiSafetyGate(params: {
   prevEvent: Record<string, unknown> | null | undefined;
   updates: Record<string, unknown>;
@@ -378,12 +397,9 @@ export async function PATCH(
   const isAdmin = profile?.role === "admin";
   const canCreateCSC = isApprovedHost || isAdmin;
 
-  const body = await request.json();
-  const aiWriteSource = typeof body.ai_write_source === "string" ? body.ai_write_source : null;
-  const aiConfirmation = body.ai_confirm_published_high_risk === true;
-  const isAiAutoApply = aiWriteSource === AI_WRITE_SOURCE_CONVERSATIONAL;
-  delete body.ai_write_source;
-  delete body.ai_confirm_published_high_risk;
+  const requestBody = (await request.json()) as Record<string, unknown>;
+  const { aiConfirmation, isAiAutoApply, sanitizedBody } = parseAiWriteMetadata(requestBody);
+  const body = sanitizedBody as Record<string, any>;
   if (body.location_mode !== undefined) {
     body.location_mode = normalizeLocationMode(body.location_mode);
   }

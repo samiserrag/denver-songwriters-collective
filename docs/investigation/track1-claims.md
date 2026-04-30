@@ -24,9 +24,9 @@ Rules:
 
 ### PR 9 — Published-event gate for AI edits
 
-- **Branch:** `codex/published-event-gate-pr9`
+- **Branch:** `codex/implement-published-event-gate-for-ai-edits`
 - **Owner:** Codex
-- **Base SHA:** `9676d39677cc999d8f9aa32653de48f7ff2ac790`
+- **Base SHA:** `6a957f0724e52c8fb471748db6b66881661c1e48`
 - **Status:** `awaiting_review`
 - **Files claimed:**
   - `web/src/app/api/my-events/[id]/route.ts`

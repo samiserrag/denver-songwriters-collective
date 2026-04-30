@@ -1,13 +1,9 @@
 import { describe, expect, it } from "vitest";
-import * as fs from "node:fs";
-import * as path from "node:path";
-import { evaluatePublishedAiSafetyGate } from "@/app/api/my-events/[id]/route";
-
-const UI_PATH = path.resolve(
-  __dirname,
-  "../app/(protected)/dashboard/my-events/_components/ConversationalCreateUI.tsx"
-);
-const uiSource = fs.readFileSync(UI_PATH, "utf-8");
+import {
+  evaluatePublishedAiSafetyGate,
+  parseAiWriteMetadata,
+} from "@/app/api/my-events/[id]/route";
+import { canSendExplicitConfirmation } from "@/app/(protected)/dashboard/my-events/_components/publishedRiskConfirmation";
 
 describe("Track 1 PR 9 published-event AI safety gate behavior", () => {
   it("blocks published high-risk AI auto-apply writes with structured 409 payload shape", () => {
@@ -59,15 +55,120 @@ describe("Track 1 PR 9 published-event AI safety gate behavior", () => {
   });
 });
 
-describe("Track 1 PR 9 explicit confirmation loop client guard", () => {
-  it("never sends confirmation during automatic apply paths", () => {
-    expect(uiSource).toContain("const canSendExplicitConfirmation =");
-    expect(uiSource).toContain("!options.automatic &&");
+describe("parseAiWriteMetadata", () => {
+  it("parses both AI metadata keys and strips them from sanitizedBody", () => {
+    const body = {
+      title: "Updated title",
+      ai_write_source: "conversational_create_ui_auto_apply",
+      ai_confirm_published_high_risk: true,
+    };
+
+    const parsed = parseAiWriteMetadata(body);
+
+    expect(parsed.aiWriteSource).toBe("conversational_create_ui_auto_apply");
+    expect(parsed.aiConfirmation).toBe(true);
+    expect(parsed.isAiAutoApply).toBe(true);
+    expect(parsed.sanitizedBody).toEqual({ title: "Updated title" });
   });
 
-  it("binds pending confirmation to the exact patch fingerprint", () => {
-    expect(uiSource).toContain("pendingPublishedRiskPatchFingerprint");
-    expect(uiSource).toContain("const patchFingerprint = JSON.stringify(mapResult.body)");
-    expect(uiSource).toContain("pendingPublishedRiskPatchFingerprint === patchFingerprint");
+  it("treats non-string ai_write_source as null and not auto-apply", () => {
+    expect(parseAiWriteMetadata({ ai_write_source: 42 }).aiWriteSource).toBeNull();
+    expect(parseAiWriteMetadata({ ai_write_source: { src: "x" } }).isAiAutoApply).toBe(false);
+  });
+
+  it("requires strict boolean true for ai_confirm_published_high_risk", () => {
+    const parsed = parseAiWriteMetadata({ ai_confirm_published_high_risk: "true" });
+    expect(parsed.aiConfirmation).toBe(false);
+  });
+
+  it("returns defaults and unchanged deep-equal body when metadata keys are absent", () => {
+    const body = { title: "Only title", categories: ["open_mic"] };
+    const parsed = parseAiWriteMetadata(body);
+
+    expect(parsed.aiWriteSource).toBeNull();
+    expect(parsed.aiConfirmation).toBe(false);
+    expect(parsed.isAiAutoApply).toBe(false);
+    expect(parsed.sanitizedBody).toEqual(body);
+  });
+
+  it("does not mutate caller input object", () => {
+    const body = {
+      title: "Keep me",
+      ai_write_source: "conversational_create_ui_auto_apply",
+      ai_confirm_published_high_risk: true,
+    } as Record<string, unknown>;
+
+    const parsed = parseAiWriteMetadata(body);
+
+    expect(Object.prototype.hasOwnProperty.call(body, "ai_write_source")).toBe(true);
+    expect(Object.prototype.hasOwnProperty.call(body, "ai_confirm_published_high_risk")).toBe(true);
+    expect(parsed.sanitizedBody).toEqual({ title: "Keep me" });
+  });
+
+  it("keeps persistence payload free of AI metadata", () => {
+    const body = {
+      title: "Updated title",
+      ai_write_source: "conversational_create_ui_auto_apply",
+      ai_confirm_published_high_risk: true,
+    };
+    const { sanitizedBody } = parseAiWriteMetadata(body);
+    expect(sanitizedBody).toEqual({ title: "Updated title" });
+  });
+});
+
+describe("canSendExplicitConfirmation", () => {
+  it("returns false for automatic apply even when pending state matches", () => {
+    expect(
+      canSendExplicitConfirmation({
+        automatic: true,
+        pendingPublishedRiskConfirmation: true,
+        pendingPublishedRiskPatchFingerprint: "abc",
+        currentPatchFingerprint: "abc",
+      })
+    ).toBe(false);
+  });
+
+  it("returns true only for manual apply with matching pending fingerprint", () => {
+    expect(
+      canSendExplicitConfirmation({
+        automatic: false,
+        pendingPublishedRiskConfirmation: true,
+        pendingPublishedRiskPatchFingerprint: "abc",
+        currentPatchFingerprint: "abc",
+      })
+    ).toBe(true);
+  });
+
+  it("returns false when fingerprint mismatches", () => {
+    expect(
+      canSendExplicitConfirmation({
+        automatic: false,
+        pendingPublishedRiskConfirmation: true,
+        pendingPublishedRiskPatchFingerprint: "abc",
+        currentPatchFingerprint: "xyz",
+      })
+    ).toBe(false);
+  });
+
+  it("returns false when pending confirmation is false", () => {
+    expect(
+      canSendExplicitConfirmation({
+        automatic: false,
+        pendingPublishedRiskConfirmation: false,
+        pendingPublishedRiskPatchFingerprint: "abc",
+        currentPatchFingerprint: "abc",
+      })
+    ).toBe(false);
+  });
+
+  it("returns false when pending fingerprint is null", () => {
+    expect(
+      canSendExplicitConfirmation({
+        automatic: false,
+        pendingPublishedRiskConfirmation: true,
+        pendingPublishedRiskPatchFingerprint: null,
+        currentPatchFingerprint: "abc",
+      })
+    ).toBe(false);
   });
 });
