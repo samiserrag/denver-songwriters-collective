@@ -22,29 +22,55 @@ Rules:
 
 ## Active claims
 
-### PR 10 — Refresh instrumentation, debug-gated only
+### PR 5 — Prompt and interpreter contract rewrite
 
-- **Branch:** `codex/refresh-instrumentation-pr10`
-- **Owner:** Codex
-- **Scope:** Pre-approved per collaboration plan §13.1. Debug-gated instrumentation only inside `eventDraftSync.ts`; no call-site edits, no runtime behavior change when debug is off, no migrations.
+- **Branch:** `claude/prompt-contract-rewrite-pr5`
+- **Owner:** Claude (web)
+- **Scope:** §13.2 (Sami-approved this session). Rewrite the prompt + interpreter contract surface so that:
+  - current event state is passed as compact JSON, not prose
+  - model output includes structured `scope: "series" | "occurrence" | "ambiguous"`; ambiguous forces server-side clarification even when a patch is also returned
+  - edit-mode output is patch-only: missing fields are preserved, no field is cleared unless the user explicitly asked
+  - negative ambiguity examples are baked into the system prompt
+  - ordered image references with stable indices (`{ index, clientId, eventImageId?, fileName?, isCurrentCover }`) are passed every turn
+  - the model is instructed to ask ONE useful question only when truly blocked
+- **Single-writer locks claimed for this PR (per plan §8.2):**
+  - `web/src/app/api/events/interpret/route.ts`
+  - `web/src/lib/events/aiPromptContract.ts` (new prompt contract file; locked once committed)
 - **Files claimed (write):**
-  - `web/src/lib/events/eventDraftSync.ts`
-  - `web/src/__tests__/eventDraftSync-instrumentation.test.ts`
+  - `web/src/app/api/events/interpret/route.ts`
+  - `web/src/lib/events/aiPromptContract.ts` (new)
+  - `web/src/__tests__/aiPromptContract.test.ts` (new)
   - `docs/investigation/track1-claims.md` (this file)
 - **Files referenced (read-only):**
-  - `web/src/__tests__/interpreter-host-draft-sync.test.ts`
-- **Base SHA:** `e143fac2e45bdce9eb3a33875dbd4825868bfd4f`
+  - `web/src/lib/events/patchFieldRegistry.ts` — field name / scope / value-kind source of truth (PR 1, merged)
+  - `web/src/lib/events/interpretEventContract.ts` — base response schema; wrapped by `aiPromptContract.ts` for the new `scope` field
+  - `web/src/lib/events/evals/runTrack1EvalHarness.ts` — eval harness (PR 4, merged) used to validate fixtures
+- **Files locked / forbidden in this PR:**
+  - `web/src/app/(protected)/dashboard/my-events/_components/ConversationalCreateUI.tsx` (plan §8.2)
+  - `web/src/lib/events/eventDraftSync.ts` (PR 10 lock)
+  - any migration in `supabase/migrations/`
+  - any telemetry runtime file (PR 3 scope)
+- **Base SHA:** `e143fac2` (current `main` HEAD as of this commit)
 - **Status:** `in_progress`
 - **Notes for the other agent:**
-  - Coordinator expected `e143fac`; actual sandbox HEAD is `e143fac2e45bdce9eb3a33875dbd4825868bfd4f` (same short SHA prefix).
-  - Instrumentation is gated by a debug env flag and defaults off.
-
-
+  - Field names in the patch contract reuse `patchFieldRegistry.ts` exactly (e.g. `event_date`, `start_time`, `recurrence_rule`, `cover_image_url`). No new field names are introduced.
+  - The new `aiPromptContract.ts` module owns the system prompt, user prompt builder, image reference contract, scope ambiguity decision, and the response-schema augmentation that adds the required `scope` field. After this PR is committed, this file is single-writer locked per plan §8.2.
+  - When `scope === "ambiguous"`, the route forces `next_action = "ask_clarification"` even if `draft_payload` is also present. The patch is preserved in the response but is gated behind a clarification turn.
+  - Patch-only semantics are enforced via prompt instructions (model must omit fields the user did not change). The schema's structural required-keys list is intentionally not loosened in this PR; that is a structural patch surface that belongs to PR 9 (published-event gate). Downstream save paths still respect the existing `sanitizeInterpretDraftPayload` allowlist.
+  - Image references are accepted as part of the request body (client-supplied) and threaded into the user prompt with stable indices. No new persistence path is wired in this PR.
+  - Eval harness (`web/src/lib/events/evals`) is run in tests against representative fixtures. Pass/total summary is included in the PR body.
 
 ---
 
 ## Closed claims
 
+### PR 10 — Refresh instrumentation, debug-gated only
+
+- **Branch:** `codex/refresh-instrumentation-pr10`
+- **Owner:** Codex
+- **End SHA:** merged via PR #128 → `243a6489`
+- **Status:** `merged`
+- **Notes:** Debug-gated instrumentation only inside `eventDraftSync.ts`; no call-site edits, no runtime behavior change when debug is off, no migrations.
 
 ### PR 2 — Server-side patch diff utility
 
@@ -52,7 +78,7 @@ Rules:
 - **Owner:** Claude (web)
 - **End SHA:** merged via PR #126 → `992cb38c`
 - **Status:** `merged`
-- **Notes:** Server-side patch diff utility landed; runtime wiring deferred to later PRs per plan.
+- **Notes:** Server-side diff utility (`computePatchDiff`) using `PATCH_FIELD_REGISTRY`. No runtime call sites wired; will be consumed by PR 9 (published-event gate) and PR 11 (UI "What changed" section).
 
 ### PR 1 — Patch field registry + classification test
 
