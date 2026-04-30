@@ -53,7 +53,7 @@ Rules:
   - any migration in `supabase/migrations/`
   - any telemetry runtime file (PR 3 scope)
 - **Base SHA:** `0e49798b603d8206d67995a139d39981f4b6003b` (current `origin/main` HEAD after PR #127 merge)
-- **Status:** `in_progress`
+- **Status:** `awaiting_review`
 - **Notes for the other agent:**
   - The new routes are wrappers only; entry-point buttons/copy belong to PR 7.
   - Existing-event AI must not seed `createdEventId` or use the create-flow auto-PATCH shortcut.
