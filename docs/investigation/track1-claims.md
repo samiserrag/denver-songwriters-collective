@@ -1,7 +1,7 @@
 # Track 1 Claims Doc
 
 **Status:** Living
-**Last updated:** 2026-04-30
+**Last updated:** 2026-04-30 (post-PR-8 merge confirmation)
 
 This file is the lightweight coordination ledger for Track 1 (AI edit and update existing events). Every active PR in Track 1 must list its branch, owner, scope, files claimed, base SHA, and status here so other agents know what is safe to touch.
 
@@ -22,31 +22,9 @@ Rules:
 
 ## Active claims
 
-### PR 8 — Venue resolution, venue enrichment, and image reference contract
+_None. PR 9 work is local-only on a builder workstation and has not been pushed to the remote; once `codex/published-event-gate-pr9` is pushed and a PR is opened, re-add it here._
 
-- **Branch:** `codex/venue-image-pr8`
-- **Owner:** Codex
-- **Base SHA:** `c6f5c5735a8e431e9894d87db1f2f63284d855d9`
-- **Status:** `awaiting_review`
-- **Scope:** Use existing venue resolution for edit/create save paths, prevent custom-location duplicates when a deterministic canonical venue match exists, pass stable ordered image references on each interpret turn, support deterministic natural-language cover switching, and carry confidently verified venue enrichment fields through existing venue/custom-location write surfaces.
-- **Files claimed:**
-  - `docs/investigation/track1-claims.md`
-  - `web/src/app/api/events/interpret/route.ts`
-  - `web/src/lib/events/aiPromptContract.ts`
-  - `web/src/lib/events/interpretEventContract.ts`
-  - `web/src/lib/events/interpreterPostprocess.ts`
-  - `web/src/app/(protected)/dashboard/my-events/_components/ConversationalCreateUI.tsx`
-  - `web/src/app/api/my-events/route.ts`
-  - `web/src/app/api/my-events/[id]/route.ts`
-  - `web/src/app/api/venues/route.ts`
-  - `web/src/app/api/admin/venues/route.ts`
-  - `web/src/__tests__/track1-pr8-venue-image-contract.test.ts`
-  - `web/src/__tests__/event-detail-type-badges.test.ts`
-  - `web/src/__tests__/interpreter-14-host-ux-polish.test.ts`
-  - `web/src/__tests__/interpreter-lab-create-write.test.ts`
-- **Forbidden scope reminders:** No migrations, no PR 9 published-event gate behavior, no telemetry runtime changes, no broad venue permission redesign, and no bypass of `allowExistingEventWrites={false}` edit-route safety.
-
-Next planned Track 1 order: PR 8 (venue/image edit wiring) → PR 9 (published-event gate).
+Next planned Track 1 order: PR 9 (published-event gate) → PR 11 (UI polish, "What changed" diff clarity) → PR 3 (telemetry).
 
 PR 8 venue requirement clarification from Sami:
 
@@ -60,6 +38,15 @@ PR 8 venue requirement clarification from Sami:
 ---
 
 ## Closed claims
+
+### PR 8 — Venue resolution, venue enrichment, and image reference contract
+
+- **Branch:** `codex/venue-image-pr8`
+- **Owner:** Codex
+- **End SHA:** merged via PR #135 → `cc213ec9`
+- **Merge commit on `main`:** `518b36bb` (2026-04-30T04:29:23Z, merged by `samiserrag`)
+- **Status:** `merged`
+- **Notes:** Venue resolution for edit/create save paths, deterministic ordered image references and cover switching, duplicate custom-location prevention, canonical venue enrichment (address/city/state/zip/phone/website_url/google_maps_url/map_link/lat/lng) and custom-location fallback fields wired through writable payloads, and assistant attention affordance in `ConversationalCreateUI.tsx`. Geocoding pipeline preserved (`geocode_source` / `geocoded_at` remain system-managed). PR 9 gate behavior was not introduced.
 
 ### PR 7 — AI edit entry points and copy
 
