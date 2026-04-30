@@ -56,6 +56,12 @@ Do not use real execution until:
 1. `npm run symphony:doctor` passes.
 2. Sami has separately approved the test issue/auth setup.
 3. The issue has the explicit `symphony:ready` label.
+4. The issue body has `Approved write set` and `Acceptance criteria`
+   sections.
+
+Dry-runs now show both planned issues and skipped/ineligible issues with
+deterministic reasons. Every `once` run and stale recovery dry-run writes
+a JSON manifest under `.symphony/state/manifests`.
 
 ## Labels
 
@@ -75,6 +81,16 @@ labels unless you pass `--create-labels`.
 The runner uses `.symphony/` for local worktrees, logs, and state. That
 directory is ignored by git.
 
+Local run manifests are written under `.symphony/state/manifests`. They
+record run id, command, mode, timestamps, repository slug, current HEAD,
+`origin/main`, clean/dirty status, planned and skipped issues, label
+transitions, worktree/log paths, and final outcome. Token-like values are
+redacted before writing.
+
+The runner lock lives at `.symphony/state/runner.lock`. Symphony commands
+refuse to start when another lock is present and report stale lock
+metadata instead of deleting it automatically.
+
 Real worktrees are always created from an explicit `origin/main` base:
 the runner fetches `main:refs/remotes/origin/main`, verifies
 `origin/main^{commit}` exists, and then runs
@@ -84,6 +100,22 @@ of falling back to the operator's current `HEAD`.
 `doctor` also checks that `origin/main` is resolvable and the current
 checkout is clean. Run Symphony from a clean control checkout, not from an
 active feature branch with uncommitted work.
+
+Activation issue minimum template:
+
+```markdown
+## Approved write set
+- docs/runbooks/symphony.md
+
+## Acceptance criteria
+- The requested note is present.
+- `npm run symphony:test` passes.
+```
+
+If the write set includes high-risk scope such as `web/**`, Supabase
+migrations, telemetry, prompt contracts, production runtime behavior, or
+Track 1 files, the issue must explicitly approve that scope. Otherwise
+execute preflight fails closed.
 
 ## Adapter Boundary
 

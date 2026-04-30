@@ -93,7 +93,19 @@ export function labelTransitionFor(state, labels) {
   throw new Error(`unknown label transition state: ${state}`);
 }
 
-export function buildWorkpadBody({ state, issue, branchName, worktreePath, detail }) {
+export function buildWorkpadBody({
+  state,
+  issue,
+  branchName,
+  worktreePath,
+  logPath,
+  manifestPath,
+  command,
+  mode,
+  detail,
+  blockedReason,
+  nextAction
+}) {
   const now = new Date().toISOString();
   return [
     WORKPAD_MARKER,
@@ -102,8 +114,14 @@ export function buildWorkpadBody({ state, issue, branchName, worktreePath, detai
     `- Issue: #${issue.number} ${issue.title}`,
     `- State: ${state}`,
     `- Last Updated: ${now}`,
+    command ? `- Command: \`${command}\`` : "- Command: pending",
+    mode ? `- Mode: \`${mode}\`` : "- Mode: pending",
     branchName ? `- Branch: \`${branchName}\`` : "- Branch: pending",
     worktreePath ? `- Worktree: \`${worktreePath}\`` : "- Worktree: pending",
+    logPath ? `- Log: \`${logPath}\`` : "- Log: pending",
+    manifestPath ? `- Run Manifest: \`${manifestPath}\`` : "- Run Manifest: pending",
+    nextAction ? `- Next Human Action: ${nextAction}` : "- Next Human Action: pending",
+    blockedReason ? `- Blocked Reason: ${blockedReason}` : "- Blocked Reason: none",
     detail ? `- Detail: ${detail}` : "- Detail: pending",
     "",
     "This comment is maintained by the local Symphony runner."

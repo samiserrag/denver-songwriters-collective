@@ -111,8 +111,15 @@ test("buildWorkpadBody includes a parseable last-updated marker", () => {
     issue: { number: 11, title: "Workpad" },
     branchName: "symphony/issue-11-workpad",
     worktreePath: "/tmp/workpad",
+    logPath: "/tmp/log.jsonl",
+    manifestPath: "/tmp/manifest.json",
+    command: "once",
+    mode: "dry-run",
+    nextAction: "Review the dry-run.",
     detail: "claimed"
   });
 
   assert.ok(parseWorkpadUpdatedAt(body) instanceof Date);
+  assert.match(body, /Run Manifest: `\/tmp\/manifest\.json`/);
+  assert.match(body, /Next Human Action: Review the dry-run\./);
 });

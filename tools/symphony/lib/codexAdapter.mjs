@@ -30,13 +30,28 @@ export function formatIssueComments(comments = []) {
 }
 
 export function buildCodexPrompt({ workflowText, issue }) {
+  const approvedWriteSet = issue.approvedWriteSet?.length
+    ? issue.approvedWriteSet.map((item) => `- ${item}`).join("\n")
+    : "(missing)";
+  const acceptanceCriteria = issue.acceptanceCriteria?.length
+    ? issue.acceptanceCriteria.map((item) => `- ${item}`).join("\n")
+    : "(missing)";
+
   return [
     "You are running inside the repository's Symphony workflow.",
     "Follow WORKFLOW.md and all repo governance files before making changes.",
+    "Stop immediately if the issue's approved write set is missing, ambiguous, or does not cover the requested edits.",
     "",
     "GitHub issue:",
     `#${issue.number} ${issue.title}`,
     "",
+    "Approved write set:",
+    approvedWriteSet,
+    "",
+    "Acceptance criteria / done condition:",
+    acceptanceCriteria,
+    "",
+    "Issue body:",
     issue.body || "(no issue body)",
     "",
     "GitHub issue comments:",

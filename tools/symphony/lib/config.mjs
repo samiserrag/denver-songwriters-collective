@@ -18,6 +18,10 @@ export const DEFAULT_RECOVERY = Object.freeze({
   staleRunningMinutes: 240
 });
 
+export const DEFAULT_LOCK = Object.freeze({
+  staleMinutes: 240
+});
+
 export function resolveConfig(repoRoot, workflowConfig = {}, env = process.env) {
   const workspace = {
     ...DEFAULT_WORKSPACE,
@@ -33,6 +37,11 @@ export function resolveConfig(repoRoot, workflowConfig = {}, env = process.env) 
   const staleRunningMinutes = Number(
     env.SYMPHONY_STALE_RUNNING_MINUTES || recovery.stale_running_minutes || DEFAULT_RECOVERY.staleRunningMinutes
   );
+  const lock = workflowConfig.lock || {};
+  const lockStaleMinutes = Number(
+    env.SYMPHONY_LOCK_STALE_MINUTES || lock.stale_minutes || DEFAULT_LOCK.staleMinutes
+  );
+  const stateRoot = path.resolve(repoRoot, env.SYMPHONY_STATE_ROOT || workspace.state);
 
   return {
     version: workflowConfig.version || 1,
@@ -40,7 +49,11 @@ export function resolveConfig(repoRoot, workflowConfig = {}, env = process.env) 
     labels,
     workspaceRoot: path.resolve(repoRoot, env.SYMPHONY_WORKSPACE_ROOT || workspace.root),
     logRoot: path.resolve(repoRoot, env.SYMPHONY_LOG_ROOT || workspace.logs),
-    stateRoot: path.resolve(repoRoot, env.SYMPHONY_STATE_ROOT || workspace.state),
+    stateRoot,
+    manifestRoot: path.join(stateRoot, "manifests"),
+    lockPath: path.join(stateRoot, "runner.lock"),
+    lockStaleMinutes,
+    lockStaleMs: lockStaleMinutes * 60 * 1000,
     staleRunningMinutes,
     staleRunningMs: staleRunningMinutes * 60 * 1000,
     codexAdapter: workflowConfig.codex?.adapter || "codex-exec"

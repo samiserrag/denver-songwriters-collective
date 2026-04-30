@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp } from "node:fs/promises";
+import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -26,6 +26,17 @@ const config = resolveConfig("/repo", {
   }
 });
 
+function approvedBody(writeSet = "docs/runbooks/symphony.md") {
+  return [
+    "## Approved write set",
+    `- ${writeSet}`,
+    "",
+    "## Acceptance criteria",
+    "- The requested change is complete.",
+    "- Tests pass."
+  ].join("\n");
+}
+
 test("planIssues plans only one eligible issue", () => {
   const result = planIssues({
     config,
@@ -34,12 +45,14 @@ test("planIssues plans only one eligible issue", () => {
         number: 9,
         title: "Second ready",
         state: "open",
+        body: approvedBody(),
         labels: [{ name: "symphony:ready" }]
       },
       {
         number: 8,
         title: "First ready",
         state: "open",
+        body: approvedBody(),
         labels: [{ name: "symphony:ready" }]
       }
     ]
@@ -58,12 +71,14 @@ test("planIssues does not plan when concurrency is occupied", () => {
         number: 1,
         title: "Running",
         state: "open",
+        body: approvedBody(),
         labels: [{ name: "symphony:running" }]
       },
       {
         number: 2,
         title: "Ready",
         state: "open",
+        body: approvedBody(),
         labels: [{ name: "symphony:ready" }]
       }
     ]
@@ -81,6 +96,7 @@ test("mergeIssuesByNumber keeps ready and running issues visible to planning", (
         number: 2,
         title: "Ready",
         state: "open",
+        body: approvedBody(),
         labels: [{ name: "symphony:ready" }]
       }
     ],
@@ -89,6 +105,7 @@ test("mergeIssuesByNumber keeps ready and running issues visible to planning", (
         number: 1,
         title: "Running",
         state: "open",
+        body: approvedBody(),
         labels: [{ name: "symphony:running" }]
       }
     ]
@@ -99,6 +116,65 @@ test("mergeIssuesByNumber keeps ready and running issues visible to planning", (
   assert.equal(result.runningCount, 1);
   assert.equal(result.plans.length, 0);
   assert.match(result.reason, /already reached/);
+});
+
+test("planIssues reports ineligible ready issue reasons", () => {
+  const result = planIssues({
+    config,
+    issues: [
+      {
+        number: 4,
+        title: "No criteria",
+        state: "open",
+        body: "Missing required sections.",
+        labels: [{ name: "symphony:ready" }]
+      }
+    ]
+  });
+
+  assert.equal(result.plans.length, 0);
+  assert.equal(result.skipped.length, 1);
+  assert.deepEqual(result.skipped[0].reasons, ["missing approved write set", "missing acceptance criteria"]);
+});
+
+test("runOnce dry-run writes a manifest with planned and skipped issue reasons", async () => {
+  const fixtureRoot = await mkdtemp(path.join(os.tmpdir(), "symphony-fixture-"));
+  const fixturePath = path.join(fixtureRoot, "issues.json");
+  await writeFile(fixturePath, JSON.stringify([
+    {
+      number: 1,
+      title: "Ready",
+      state: "open",
+      body: approvedBody(),
+      labels: [{ name: "symphony:ready" }]
+    },
+    {
+      number: 2,
+      title: "Missing metadata",
+      state: "open",
+      body: "No required sections.",
+      labels: [{ name: "symphony:ready" }]
+    }
+  ]), "utf8");
+
+  const result = await runOnce({
+    repoRoot: process.cwd(),
+    dryRun: true,
+    execute: false,
+    mockIssuesPath: fixturePath,
+    env: {},
+    skipLock: true
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.plans.length, 1);
+  assert.equal(result.skipped.length, 1);
+  assert.match(result.skipped[0].reasons.join("\n"), /missing approved write set/);
+  const manifest = JSON.parse(await readFile(result.manifestPath, "utf8"));
+  assert.equal(manifest.command, "once");
+  assert.equal(manifest.mode, "dry-run");
+  assert.equal(manifest.plannedIssues[0].number, 1);
+  assert.equal(manifest.skippedIssues[0].number, 2);
 });
 
 test("runOnce rejects execute with mock issues before reading workflow or GitHub auth", async () => {
@@ -166,7 +242,8 @@ test("recoverStaleRunningIssues moves stale running issues to blocked when execu
     env: { SYMPHONY_EXECUTION_APPROVED: "1" },
     now: new Date("2026-04-30T06:00:00.000Z"),
     client,
-    repo: "owner/repo"
+    repo: "owner/repo",
+    skipLock: true
   });
 
   assert.equal(result.ok, true);
@@ -191,7 +268,8 @@ test("recoverStaleRunningIssues execute mode requires approval gate before GitHu
         throw new Error("should not be called");
       }
     },
-    repo: "owner/repo"
+    repo: "owner/repo",
+    skipLock: true
   });
 
   assert.equal(result.ok, false);

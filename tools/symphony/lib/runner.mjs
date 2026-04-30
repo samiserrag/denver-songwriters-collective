@@ -2,15 +2,23 @@ import { mkdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { buildCodexPrompt, runCodexExecAdapter } from "./codexAdapter.mjs";
 import { resolveConfig } from "./config.mjs";
+import { readGitSnapshot } from "./gitState.mjs";
 import { detectRepositorySlug, GitHubClient, resolveGitHubToken, runCommand } from "./github.mjs";
 import {
   assessRunningIssue,
   buildWorkpadBody,
   countRunningIssues,
-  filterEligibleIssues,
   labelTransitionFor,
   WORKPAD_MARKER
 } from "./issues.mjs";
+import { acquireRunnerLock, RunnerLockError } from "./lock.mjs";
+import {
+  createRunManifestContext,
+  manifestIssuePlan,
+  manifestSkippedIssue,
+  writeRunManifest
+} from "./manifest.mjs";
+import { diagnoseIssueEligibility, runExecutePreflight } from "./preflight.mjs";
 import { branchNameForIssue, workspacePathForIssue } from "./workspace.mjs";
 import { loadWorkflow } from "./workflow.mjs";
 
@@ -46,29 +54,47 @@ async function loadCandidateIssues({ repoRoot, config, mockIssuesPath, env }) {
 
 export function planIssues({ issues, config }) {
   const runningCount = countRunningIssues(issues, config.labels);
+  const diagnostics = issues.map((issue) => diagnoseIssueEligibility(issue, config.labels));
+  const eligibleDiagnostics = diagnostics
+    .filter((item) => item.eligible)
+    .sort((left, right) => left.issue.number - right.issue.number);
+  const selectedDiagnostics = runningCount >= config.maxConcurrentAgents
+    ? []
+    : eligibleDiagnostics.slice(0, config.maxConcurrentAgents - runningCount);
+  const selectedIssueNumbers = new Set(selectedDiagnostics.map((item) => item.issue.number));
+  const skipped = diagnostics
+    .filter((item) => !selectedIssueNumbers.has(item.issue.number))
+    .map((item) => ({
+      ...item,
+      reasons: item.reasons.length > 0 ? item.reasons : ["not selected: concurrency limit"]
+    }));
+
   if (runningCount >= config.maxConcurrentAgents) {
     return {
       runningCount,
+      eligibleCount: eligibleDiagnostics.length,
       plans: [],
+      skipped,
       reason: `max_concurrent_agents=${config.maxConcurrentAgents} already reached`
     };
   }
 
-  const eligible = filterEligibleIssues(issues, config.labels)
-    .sort((left, right) => left.number - right.number)
-    .slice(0, config.maxConcurrentAgents - runningCount);
-
   return {
     runningCount,
-    reason: eligible.length === 0 ? "no issue has the required ready-only label state" : "",
-    plans: eligible.map((issue) => {
+    eligibleCount: eligibleDiagnostics.length,
+    reason: selectedDiagnostics.length === 0 ? "no issue has the required ready label state and issue metadata" : "",
+    skipped,
+    plans: selectedDiagnostics.map((diagnostic) => {
+      const issue = diagnostic.issue;
       const branchName = branchNameForIssue(issue);
       const worktreePath = workspacePathForIssue(config.workspaceRoot, issue);
       return {
         issue: {
           number: issue.number,
           title: issue.title,
-          body: issue.body || ""
+          body: issue.body || "",
+          approvedWriteSet: diagnostic.approvedWriteSet,
+          acceptanceCriteria: diagnostic.acceptanceCriteria
         },
         branchName,
         worktreePath,
@@ -148,6 +174,25 @@ async function loadIssueComments({ client, repo, issueNumber }) {
   return comments.data;
 }
 
+function plannedManifestData(planned) {
+  return {
+    plannedIssues: planned.plans.map(manifestIssuePlan),
+    skippedIssues: planned.skipped.map(manifestSkippedIssue),
+    labelTransitions: planned.plans.map((plan) => ({
+      issueNumber: plan.issue.number,
+      transition: plan.transition
+    })),
+    worktrees: planned.plans.map((plan) => ({
+      issueNumber: plan.issue.number,
+      path: plan.worktreePath,
+      branchName: plan.branchName
+    })),
+    logs: planned.plans
+      .filter((plan) => plan.logPath)
+      .map((plan) => ({ issueNumber: plan.issue.number, path: plan.logPath }))
+  };
+}
+
 function recoveryDetail(assessment, staleRunningMinutes) {
   const ageMinutes = assessment.ageMs === null ? "unknown" : Math.floor(assessment.ageMs / 60000);
   return `stale running recovery after ${ageMinutes} minutes; threshold is ${staleRunningMinutes} minutes`;
@@ -180,74 +225,176 @@ export async function recoverStaleRunningIssues({
   env = process.env,
   now = new Date(),
   client: providedClient = null,
-  repo: providedRepo = null
+  repo: providedRepo = null,
+  skipLock = false
 }) {
   const mode = execute && !dryRun ? "execute" : "dry-run";
-  if (mode === "execute" && env.SYMPHONY_EXECUTION_APPROVED !== "1") {
-    return {
+  const workflow = await loadWorkflow(path.join(repoRoot, "WORKFLOW.md"));
+  const config = resolveConfig(repoRoot, workflow.config, env);
+  const manifestContext = await createRunManifestContext({ repoRoot, config, command: "recover-stale", mode, now });
+  let lock = null;
+
+  try {
+    if (!skipLock) {
+      lock = await acquireRunnerLock({
+        lockPath: config.lockPath,
+        command: "recover-stale",
+        mode,
+        runId: manifestContext.runId,
+        staleMs: config.lockStaleMs,
+        now
+      });
+      manifestContext.manifest.lock = { ...lock, release: undefined };
+    }
+
+    if (mode === "execute" && env.SYMPHONY_EXECUTION_APPROVED !== "1") {
+      const result = {
+        ok: false,
+        mode,
+        stale: [],
+        active: [],
+        manifestPath: manifestContext.manifestPath,
+        reason: "stale recovery requires SYMPHONY_EXECUTION_APPROVED=1"
+      };
+      await writeRunManifest({
+        context: manifestContext,
+        updates: {
+          outcome: {
+            ok: false,
+            reason: result.reason
+          }
+        },
+        now
+      });
+      return result;
+    }
+
+    const tokenInfo = providedClient ? null : await resolveGitHubToken(env);
+    const repo = providedRepo || await detectRepositorySlug(repoRoot);
+    const client = providedClient || new GitHubClient({ token: tokenInfo.token });
+    const assessments = await loadRunningIssueAssessments({ client, repo, config, now });
+    const stale = assessments.filter((item) => item.assessment.isStale);
+    const active = assessments.filter((item) => !item.assessment.isStale);
+
+    if (mode === "dry-run") {
+      const result = {
+        ok: true,
+        mode,
+        stale: stale.map((item) => item.assessment),
+        active: active.map((item) => item.assessment),
+        manifestPath: manifestContext.manifestPath,
+        reason: stale.length === 0 ? "no stale running issues found" : ""
+      };
+      await writeRunManifest({
+        context: manifestContext,
+        updates: {
+          plannedIssues: result.stale.map((item) => ({ number: item.issueNumber, title: item.title })),
+          skippedIssues: result.active.map((item) => ({
+            number: item.issueNumber,
+            title: item.title,
+            reasons: ["running issue is not stale"]
+          })),
+          outcome: {
+            ok: true,
+            reason: result.reason || "stale running issues found"
+          }
+        },
+        now
+      });
+      return result;
+    }
+
+    const recovered = [];
+    for (const item of stale) {
+      const branchName = branchNameForIssue(item.issue);
+      const worktreePath = workspacePathForIssue(config.workspaceRoot, item.issue);
+      const detail = recoveryDetail(item.assessment, config.staleRunningMinutes);
+      const transition = labelTransitionFor("blocked", config.labels);
+      await applyLabelTransition({
+        client,
+        repo,
+        issueNumber: item.issue.number,
+        transition
+      });
+      await upsertWorkpadComment({
+        client,
+        repo,
+        issueNumber: item.issue.number,
+        body: buildWorkpadBody({
+          state: "blocked",
+          issue: item.issue,
+          branchName,
+          worktreePath,
+          manifestPath: manifestContext.manifestPath,
+          command: "recover-stale",
+          mode,
+          blockedReason: detail,
+          nextAction: "Review the blocked issue and clear labels manually if recovery was expected.",
+          detail
+        })
+      });
+      recovered.push({
+        ...item.assessment,
+        finalState: "blocked",
+        transition
+      });
+    }
+
+    const result = {
+      ok: true,
+      mode,
+      stale: recovered,
+      active: active.map((item) => item.assessment),
+      manifestPath: manifestContext.manifestPath,
+      reason: recovered.length === 0 ? "no stale running issues found" : ""
+    };
+    await writeRunManifest({
+      context: manifestContext,
+      updates: {
+        plannedIssues: recovered.map((item) => ({ number: item.issueNumber, title: item.title })),
+        skippedIssues: result.active.map((item) => ({
+          number: item.issueNumber,
+          title: item.title,
+          reasons: ["running issue is not stale"]
+        })),
+        labelTransitions: recovered.map((item) => ({
+          issueNumber: item.issueNumber,
+          transition: item.transition
+        })),
+        outcome: {
+          ok: true,
+          reason: result.reason || "stale running issues recovered"
+        }
+      },
+      now
+    });
+    return result;
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    const result = {
       ok: false,
       mode,
       stale: [],
       active: [],
-      reason: "stale recovery requires SYMPHONY_EXECUTION_APPROVED=1"
+      manifestPath: manifestContext.manifestPath,
+      reason: detail,
+      lock: error instanceof RunnerLockError ? error.detail : undefined
     };
-  }
-
-  const workflow = await loadWorkflow(path.join(repoRoot, "WORKFLOW.md"));
-  const config = resolveConfig(repoRoot, workflow.config, env);
-  const tokenInfo = providedClient ? null : await resolveGitHubToken(env);
-  const repo = providedRepo || await detectRepositorySlug(repoRoot);
-  const client = providedClient || new GitHubClient({ token: tokenInfo.token });
-  const assessments = await loadRunningIssueAssessments({ client, repo, config, now });
-  const stale = assessments.filter((item) => item.assessment.isStale);
-  const active = assessments.filter((item) => !item.assessment.isStale);
-
-  if (mode === "dry-run") {
-    return {
-      ok: true,
-      mode,
-      stale: stale.map((item) => item.assessment),
-      active: active.map((item) => item.assessment),
-      reason: stale.length === 0 ? "no stale running issues found" : ""
-    };
-  }
-
-  const recovered = [];
-  for (const item of stale) {
-    const branchName = branchNameForIssue(item.issue);
-    const worktreePath = workspacePathForIssue(config.workspaceRoot, item.issue);
-    const detail = recoveryDetail(item.assessment, config.staleRunningMinutes);
-    await applyLabelTransition({
-      client,
-      repo,
-      issueNumber: item.issue.number,
-      transition: labelTransitionFor("blocked", config.labels)
+    await writeRunManifest({
+      context: manifestContext,
+      updates: {
+        lock: result.lock || manifestContext.manifest.lock,
+        outcome: {
+          ok: false,
+          reason: detail
+        }
+      },
+      now
     });
-    await upsertWorkpadComment({
-      client,
-      repo,
-      issueNumber: item.issue.number,
-      body: buildWorkpadBody({
-        state: "blocked",
-        issue: item.issue,
-        branchName,
-        worktreePath,
-        detail
-      })
-    });
-    recovered.push({
-      ...item.assessment,
-      finalState: "blocked"
-    });
+    return result;
+  } finally {
+    await lock?.release();
   }
-
-  return {
-    ok: true,
-    mode,
-    stale: recovered,
-    active: active.map((item) => item.assessment),
-    reason: recovered.length === 0 ? "no stale running issues found" : ""
-  };
 }
 
 export async function runOnce({
@@ -255,7 +402,8 @@ export async function runOnce({
   dryRun = true,
   execute = false,
   mockIssuesPath = null,
-  env = process.env
+  env = process.env,
+  skipLock = false
 }) {
   const mode = execute && !dryRun ? "execute" : "dry-run";
   if (mode === "execute" && mockIssuesPath) {
@@ -270,41 +418,165 @@ export async function runOnce({
 
   const workflow = await loadWorkflow(path.join(repoRoot, "WORKFLOW.md"));
   const config = resolveConfig(repoRoot, workflow.config, env);
+  const manifestContext = await createRunManifestContext({ repoRoot, config, command: "once", mode });
+  let lock = null;
   let issues;
+  let planned = {
+    runningCount: 0,
+    eligibleCount: 0,
+    plans: [],
+    skipped: [],
+    reason: ""
+  };
+
   try {
+    if (!skipLock) {
+      lock = await acquireRunnerLock({
+        lockPath: config.lockPath,
+        command: "once",
+        mode,
+        runId: manifestContext.runId,
+        staleMs: config.lockStaleMs
+      });
+      manifestContext.manifest.lock = { ...lock, release: undefined };
+    }
+
     issues = await loadCandidateIssues({ repoRoot, config, mockIssuesPath, env });
   } catch (error) {
-    return {
+    const detail = error.message;
+    const result = {
       ok: false,
       mode: execute && !dryRun ? "execute" : "dry-run",
       runningCount: 0,
       plans: [],
-      reason: error.message
+      skipped: [],
+      manifestPath: manifestContext.manifestPath,
+      reason: detail,
+      lock: error instanceof RunnerLockError ? error.detail : undefined
     };
+    await writeRunManifest({
+      context: manifestContext,
+      updates: {
+        lock: result.lock || manifestContext.manifest.lock,
+        outcome: {
+          ok: false,
+          reason: detail
+        }
+      }
+    });
+    await lock?.release();
+    return result;
   }
-  const planned = planIssues({ issues, config });
+
+  planned = planIssues({ issues, config });
+  for (const plan of planned.plans) {
+    plan.logPath = path.join(config.logRoot, `issue-${plan.issue.number}.jsonl`);
+  }
 
   if (mode === "dry-run") {
-    return {
+    const result = {
       ok: true,
       mode,
-      ...planned
+      ...planned,
+      manifestPath: manifestContext.manifestPath
     };
+    await writeRunManifest({
+      context: manifestContext,
+      updates: {
+        ...plannedManifestData(planned),
+        outcome: {
+          ok: true,
+          reason: planned.reason || "dry-run planned eligible issues"
+        }
+      }
+    });
+    await lock?.release();
+    return result;
   }
 
   if (env.SYMPHONY_EXECUTION_APPROVED !== "1") {
-    return {
+    const result = {
       ok: false,
       mode,
       runningCount: planned.runningCount,
       plans: planned.plans,
+      skipped: planned.skipped,
+      manifestPath: manifestContext.manifestPath,
       reason: "real execution requires SYMPHONY_EXECUTION_APPROVED=1"
     };
+    await writeRunManifest({
+      context: manifestContext,
+      updates: {
+        ...plannedManifestData(planned),
+        outcome: {
+          ok: false,
+          reason: result.reason
+        }
+      }
+    });
+    await lock?.release();
+    return result;
   }
 
-  const tokenInfo = await resolveGitHubToken(env);
-  const repo = await detectRepositorySlug(repoRoot);
-  const client = new GitHubClient({ token: tokenInfo.token });
+  let tokenInfo;
+  let repo;
+  let client;
+  try {
+    tokenInfo = await resolveGitHubToken(env);
+    repo = await detectRepositorySlug(repoRoot);
+    client = new GitHubClient({ token: tokenInfo.token });
+    const gitSnapshot = await readGitSnapshot(repoRoot);
+    const preflight = await runExecutePreflight({ repoRoot, config, client, repo, tokenInfo, planned, gitSnapshot });
+    if (!preflight.ok) {
+      const result = {
+        ok: false,
+        mode,
+        runningCount: planned.runningCount,
+        plans: planned.plans,
+        skipped: planned.skipped,
+        manifestPath: manifestContext.manifestPath,
+        preflight,
+        reason: `execute preflight failed: ${preflight.failures.join("; ")}`
+      };
+      await writeRunManifest({
+        context: manifestContext,
+        updates: {
+          ...plannedManifestData(planned),
+          outcome: {
+            ok: false,
+            reason: result.reason,
+            preflight
+          }
+        }
+      });
+      await lock?.release();
+      return result;
+    }
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    const result = {
+      ok: false,
+      mode,
+      runningCount: planned.runningCount,
+      plans: planned.plans,
+      skipped: planned.skipped,
+      manifestPath: manifestContext.manifestPath,
+      reason: detail
+    };
+    await writeRunManifest({
+      context: manifestContext,
+      updates: {
+        ...plannedManifestData(planned),
+        outcome: {
+          ok: false,
+          reason: detail
+        }
+      }
+    });
+    await lock?.release();
+    return result;
+  }
+
   const results = [];
 
   for (const plan of planned.plans) {
@@ -324,12 +596,16 @@ export async function runOnce({
           issue: plan.issue,
           branchName: plan.branchName,
           worktreePath: plan.worktreePath,
+          logPath: plan.logPath,
+          manifestPath: manifestContext.manifestPath,
+          command: "once",
+          mode,
+          nextAction: "Wait for Codex to finish, then review the issue workpad and resulting branch.",
           detail: "claimed by Symphony runner"
         })
       });
       const issueComments = await loadIssueComments({ client, repo, issueNumber: plan.issue.number });
       await createWorktree({ repoRoot, worktreePath: plan.worktreePath, branchName: plan.branchName });
-      const logPath = path.join(config.logRoot, `issue-${plan.issue.number}.jsonl`);
       const prompt = buildCodexPrompt({
         workflowText: workflow.markdown,
         issue: {
@@ -340,9 +616,10 @@ export async function runOnce({
       const codexResult = await runCodexExecAdapter({
         worktreePath: plan.worktreePath,
         prompt,
-        logPath
+        logPath: plan.logPath
       });
       const finalState = codexResult.ok ? "human-review" : "blocked";
+      const blockedReason = codexResult.ok ? "" : `Codex failed with exit ${codexResult.code}`;
       await applyLabelTransition({
         client,
         repo,
@@ -358,6 +635,14 @@ export async function runOnce({
           issue: plan.issue,
           branchName: plan.branchName,
           worktreePath: plan.worktreePath,
+          logPath: plan.logPath,
+          manifestPath: manifestContext.manifestPath,
+          command: "once",
+          mode,
+          blockedReason,
+          nextAction: codexResult.ok
+            ? "Review the local branch/worktree and open a PR only after normal quality gates pass."
+            : "Read the local log and decide whether to retry, recover, or edit the issue.",
           detail: codexResult.ok
             ? `Codex finished. Local log: ${codexResult.logPath}`
             : `Codex failed with exit ${codexResult.code}. Local log: ${codexResult.logPath}`
@@ -382,6 +667,12 @@ export async function runOnce({
             issue: plan.issue,
             branchName: plan.branchName,
             worktreePath: plan.worktreePath,
+            logPath: plan.logPath,
+            manifestPath: manifestContext.manifestPath,
+            command: "once",
+            mode,
+            blockedReason: detail,
+            nextAction: "Read the blocked reason and decide whether to retry after fixing the cause.",
             detail
           })
         });
@@ -399,13 +690,27 @@ export async function runOnce({
     }
   }
 
-  return {
+  const result = {
     ok: results.every((result) => result.codexResult.ok),
     mode,
     runningCount: planned.runningCount,
     plans: results,
+    skipped: planned.skipped,
+    manifestPath: manifestContext.manifestPath,
     reason: planned.reason
   };
+  await writeRunManifest({
+    context: manifestContext,
+    updates: {
+      ...plannedManifestData({ ...planned, plans: results }),
+      outcome: {
+        ok: result.ok,
+        reason: result.reason || "execute completed"
+      }
+    }
+  });
+  await lock?.release();
+  return result;
 }
 
 export async function runDaemon({ repoRoot, dryRun = true, intervalSeconds = 120, env = process.env }) {
@@ -417,10 +722,34 @@ export async function runDaemon({ repoRoot, dryRun = true, intervalSeconds = 120
     };
   }
 
-  while (true) {
-    await runOnce({ repoRoot, dryRun, execute: !dryRun, env });
-    await new Promise((resolve) => {
-      setTimeout(resolve, intervalSeconds * 1000);
+  const workflow = await loadWorkflow(path.join(repoRoot, "WORKFLOW.md"));
+  const config = resolveConfig(repoRoot, workflow.config, env);
+  let lock;
+  try {
+    lock = await acquireRunnerLock({
+      lockPath: config.lockPath,
+      command: "daemon",
+      mode: dryRun ? "dry-run" : "execute",
+      runId: `daemon-${process.pid}-${Date.now()}`,
+      staleMs: config.lockStaleMs
     });
+  } catch (error) {
+    return {
+      ok: false,
+      mode: "daemon",
+      reason: error instanceof Error ? error.message : String(error),
+      lock: error instanceof RunnerLockError ? error.detail : undefined
+    };
+  }
+
+  try {
+    while (true) {
+      await runOnce({ repoRoot, dryRun, execute: !dryRun, env, skipLock: true });
+      await new Promise((resolve) => {
+        setTimeout(resolve, intervalSeconds * 1000);
+      });
+    }
+  } finally {
+    await lock.release();
   }
 }
