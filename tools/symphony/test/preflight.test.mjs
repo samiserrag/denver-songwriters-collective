@@ -152,6 +152,127 @@ test("diagnoseIssueEligibility accepts specific positive high-risk approval", ()
   assert.equal(diagnostic.eligible, true);
 });
 
+test("diagnoseIssueEligibility blocks symphony self-edit without high-risk approval", () => {
+  const diagnostic = diagnoseIssueEligibility({
+    number: 18,
+    title: "Self edit",
+    state: "open",
+    labels: [{ name: DEFAULT_LABELS.ready }],
+    body: [
+      "## Approved write set",
+      "- tools/symphony/lib/preflight.mjs",
+      "",
+      "## Acceptance criteria",
+      "- Preflight blocks Symphony self-edits without explicit high-risk approval."
+    ].join("\n")
+  }, DEFAULT_LABELS);
+
+  assert.equal(diagnostic.eligible, false);
+  assert.match(diagnostic.reasons.join("\n"), /symphony self-edit/);
+});
+
+test("diagnoseIssueEligibility allows symphony self-edit with explicit high-risk approval", () => {
+  const diagnostic = diagnoseIssueEligibility({
+    number: 19,
+    title: "Approved self edit",
+    state: "open",
+    labels: [{ name: DEFAULT_LABELS.ready }],
+    body: [
+      "## Approved write set",
+      "- tools/symphony/lib/preflight.mjs",
+      "",
+      "## Acceptance criteria",
+      "- Preflight blocks Symphony self-edits unless explicitly approved.",
+      "",
+      "Explicitly approved high-risk scope: tools/symphony self-edit."
+    ].join("\n")
+  }, DEFAULT_LABELS);
+
+  assert.equal(diagnostic.eligible, true);
+});
+
+test("diagnoseIssueEligibility blocks symphony self-edit with negated approval", () => {
+  const diagnostic = diagnoseIssueEligibility({
+    number: 20,
+    title: "Negated self edit",
+    state: "open",
+    labels: [{ name: DEFAULT_LABELS.ready }],
+    body: [
+      "## Approved write set",
+      "- tools/symphony/lib/preflight.mjs",
+      "",
+      "## Acceptance criteria",
+      "- Preflight blocks negated Symphony self-edit approval.",
+      "",
+      "Do not approve tools/symphony self-edit."
+    ].join("\n")
+  }, DEFAULT_LABELS);
+
+  assert.equal(diagnostic.eligible, false);
+  assert.match(diagnostic.reasons.join("\n"), /symphony self-edit/);
+});
+
+test("diagnoseIssueEligibility requires approval for each high-risk scope", () => {
+  const bodyWithBothApprovals = [
+    "## Approved write set",
+    "- tools/symphony/**",
+    "- web/src/app/page.tsx",
+    "",
+    "## Acceptance criteria",
+    "- Preflight blocks high-risk scopes unless each one is explicitly approved.",
+    "",
+    "Explicitly approved high-risk scope: tools/symphony self-edit.",
+    "Explicitly approved high-risk scope: web/** production app runtime."
+  ].join("\n");
+  const bodyWithOneApproval = [
+    "## Approved write set",
+    "- tools/symphony/**",
+    "- web/src/app/page.tsx",
+    "",
+    "## Acceptance criteria",
+    "- Preflight blocks high-risk scopes unless each one is explicitly approved.",
+    "",
+    "Explicitly approved high-risk scope: tools/symphony self-edit."
+  ].join("\n");
+
+  assert.equal(diagnoseIssueEligibility({
+    number: 21,
+    title: "Both high-risk scopes approved",
+    state: "open",
+    labels: [{ name: DEFAULT_LABELS.ready }],
+    body: bodyWithBothApprovals
+  }, DEFAULT_LABELS).eligible, true);
+
+  const partialApproval = diagnoseIssueEligibility({
+    number: 22,
+    title: "One high-risk scope approved",
+    state: "open",
+    labels: [{ name: DEFAULT_LABELS.ready }],
+    body: bodyWithOneApproval
+  }, DEFAULT_LABELS);
+
+  assert.equal(partialApproval.eligible, false);
+  assert.match(partialApproval.reasons.join("\n"), /production app runtime/);
+});
+
+test("diagnoseIssueEligibility does not treat runbook docs as symphony self-edit", () => {
+  const diagnostic = diagnoseIssueEligibility({
+    number: 23,
+    title: "Runbook docs",
+    state: "open",
+    labels: [{ name: DEFAULT_LABELS.ready }],
+    body: [
+      "## Approved write set",
+      "- docs/runbooks/symphony.md",
+      "",
+      "## Acceptance criteria",
+      "- The runbook documents the requested behavior."
+    ].join("\n")
+  }, DEFAULT_LABELS);
+
+  assert.equal(diagnostic.eligible, true);
+});
+
 test("runExecutePreflight fails closed on dirty checkout and multiple eligible issues", async () => {
   const client = {
     async getLabel() {

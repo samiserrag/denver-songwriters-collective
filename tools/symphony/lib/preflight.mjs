@@ -8,6 +8,11 @@ const HIGH_RISK_WRITE_SET = [
     approvalPattern: /track\s*1|track1|docs\/investigation\/track1-claims\.md/i
   },
   {
+    name: "symphony self-edit",
+    pattern: /^tools\/symphony\/|tools\/symphony\//,
+    approvalPattern: /tools\s*\/\s*symphony|symphony\s+self[-\s]?edit/i
+  },
+  {
     name: "production app runtime",
     pattern: /^web\/|web\/|production app|runtime/i,
     approvalPattern: /\bweb\/|production app|runtime/i
