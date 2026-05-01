@@ -3,7 +3,7 @@
     "number": 201,
     "title": "Add a small docs-only smoke note",
     "state": "open",
-    "body": "Docs-only test issue for Symphony dry-run planning.",
+    "body": "Docs-only test issue for Symphony dry-run planning.\n\n## Approved write set\n- docs/runbooks/symphony.md\n\n## Acceptance criteria\n- Dry-run plans this issue without requiring GitHub auth.\n- No production app files are touched.",
     "labels": [
       { "name": "symphony:ready" }
     ]
@@ -12,7 +12,7 @@
     "number": 202,
     "title": "Blocked issue",
     "state": "open",
-    "body": "This issue should not be planned because it is blocked.",
+    "body": "This issue should not be planned because it is blocked.\n\n## Approved write set\n- docs/runbooks/symphony.md\n\n## Acceptance criteria\n- Dry-run reports the blocked label as the skip reason.",
     "labels": [
       { "name": "symphony:ready" },
       { "name": "symphony:blocked" }

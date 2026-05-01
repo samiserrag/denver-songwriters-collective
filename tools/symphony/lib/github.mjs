@@ -163,4 +163,10 @@ export class GitHubClient {
       body: JSON.stringify({ body })
     });
   }
+
+  deleteComment(repo, commentId) {
+    return this.request(`/repos/${repo}/issues/comments/${commentId}`, {
+      method: "DELETE"
+    });
+  }
 }

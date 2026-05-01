@@ -21,6 +21,9 @@ const validConfig = `<!-- symphony-config
   "recovery": {
     "stale_running_minutes": 240
   },
+  "lock": {
+    "stale_minutes": 240
+  },
   "codex": {
     "adapter": "codex-exec"
   }
@@ -45,5 +48,12 @@ test("parseWorkflowMarkdown rejects unsafe stale recovery threshold", () => {
   assert.throws(
     () => parseWorkflowMarkdown(validConfig.replace('"stale_running_minutes": 240', '"stale_running_minutes": 0')),
     /stale_running_minutes/
+  );
+});
+
+test("parseWorkflowMarkdown rejects unsafe lock stale threshold", () => {
+  assert.throws(
+    () => parseWorkflowMarkdown(validConfig.replace('"stale_minutes": 240', '"stale_minutes": 0')),
+    /lock\.stale_minutes/
   );
 });

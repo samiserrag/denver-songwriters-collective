@@ -47,6 +47,12 @@ export function validateWorkflowConfig(config) {
   ) {
     throw new Error("recovery.stale_running_minutes must be a positive integer");
   }
+  if (
+    config.lock?.stale_minutes !== undefined &&
+    (!Number.isInteger(config.lock.stale_minutes) || config.lock.stale_minutes < 1)
+  ) {
+    throw new Error("lock.stale_minutes must be a positive integer");
+  }
   if (config.codex?.adapter !== "codex-exec") {
     throw new Error("Phase 1 supports only the codex-exec adapter");
   }

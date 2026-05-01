@@ -23,6 +23,9 @@ when an approved issue is executed.
   "recovery": {
     "stale_running_minutes": 240
   },
+  "lock": {
+    "stale_minutes": 240
+  },
   "codex": {
     "adapter": "codex-exec",
     "fallback": "codex exec --json"
@@ -47,8 +50,27 @@ conditions:
 - issue does not have `symphony:running`
 - issue does not have `symphony:blocked`
 - issue does not have `symphony:human-review`
+- issue includes an explicit approved write set
+- issue includes acceptance criteria or a clear done condition
+- issue does not request high-risk scope unless that scope is explicitly
+  approved in the issue body
 
 The runner must never infer work from unlabeled issues.
+
+## Phase 1.2 Pre-Activation Checklist
+
+Before Sami tries the first live supervised run:
+
+1. Use a clean control checkout on current `origin/main`.
+2. Run `npm run symphony:doctor` until every check passes.
+3. Create one deliberately small issue with `symphony:ready`.
+4. Include an `Approved write set` section and an `Acceptance criteria`
+   section in the issue body.
+5. Run `npm run symphony:dry-run` and confirm exactly one issue is
+   planned, skipped issues have deterministic reasons, and a local run
+   manifest is written.
+6. Do not run `once --execute` until Sami separately approves the exact
+   test issue and auth setup.
 
 ## Concurrency
 
@@ -91,6 +113,38 @@ as autonomous work.
 The stale threshold is configured as `stale_running_minutes`. Phase 1.1
 starts at 240 minutes to avoid recovering a genuinely active local run.
 
+## Run Manifests and Runner Lock
+
+Every `once` run and stale recovery dry-run writes a structured local run
+manifest under `.symphony/state/manifests`. Manifests include run id,
+command, mode, timestamps, repository slug, current HEAD, `origin/main`
+SHA when available, clean/dirty status, planned issues, skipped issues
+with reasons, label transitions, worktree paths, log paths, and final
+outcome. Manifests must never include secrets or full token values.
+
+The runner uses `.symphony/state/runner.lock` so two Symphony commands
+cannot operate at the same time. A stale lock is reported with its age and
+owner metadata, but execute paths must not auto-delete it. Remove a stale
+lock manually only after confirming no Symphony process is still running.
+
+## Issue Template Guidance
+
+Use this minimum shape for activation issues:
+
+```markdown
+## Approved write set
+- docs/runbooks/symphony.md
+
+## Acceptance criteria
+- The runbook includes the requested note.
+- `npm run symphony:test` passes.
+```
+
+For high-risk scopes such as `web/**`, Supabase migrations, production
+runtime behavior, telemetry, prompt contracts, or Track 1 claimed files,
+the issue body must explicitly approve that scope. Otherwise the runner
+must fail closed.
+
 ## Hard Safety Rules
 
 - no auto-merge
@@ -103,6 +157,8 @@ starts at 240 minutes to avoid recovering a genuinely active local run.
 - no edits outside the issue's approved write set
 - no pushes or PR creation unless GitHub auth is valid and the issue
   explicitly calls for a PR handoff
+- daemon remains disabled until 2-3 clean supervised `once --execute`
+  runs have completed without stale locks, bad bases, or scope drift
 
 ## Workpad Comment
 
@@ -114,9 +170,11 @@ That comment is the phone-friendly status surface for Sami. It should
 include:
 
 - current runner state
+- last updated timestamp
 - claimed labels
-- branch and worktree path when known
-- latest command/test evidence
+- branch, worktree, log, and run manifest paths when known
+- latest runner command and mode
+- next human action
 - blocked reason, if blocked
 - PR link when available
 

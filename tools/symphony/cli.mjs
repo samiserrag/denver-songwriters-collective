@@ -80,9 +80,15 @@ function printOnce(result, asJson) {
   if (result.runningCount > 0) {
     console.log(`Running issues: ${result.runningCount}`);
   }
+  if (result.manifestPath) {
+    console.log(`Run manifest: ${result.manifestPath}`);
+  }
+  if (result.lock) {
+    const stale = result.lock.stale ? " stale" : "";
+    console.log(`Runner lock:${stale} ${result.lock.path}`);
+  }
   if (result.plans.length === 0) {
     console.log("No eligible issues planned.");
-    return;
   }
 
   for (const plan of result.plans) {
@@ -91,6 +97,15 @@ function printOnce(result, asJson) {
     console.log(`  worktree: ${plan.worktreePath}`);
     console.log(`  labels add: ${plan.transition.add.join(", ") || "(none)"}`);
     console.log(`  labels remove: ${plan.transition.remove.join(", ") || "(none)"}`);
+  }
+  if (result.skipped?.length > 0) {
+    console.log("Skipped issues:");
+    for (const item of result.skipped) {
+      console.log(`#${item.issue.number} ${item.issue.title}`);
+      for (const reason of item.reasons) {
+        console.log(`  - ${reason}`);
+      }
+    }
   }
 }
 
@@ -103,6 +118,13 @@ function printRecovery(result, asJson) {
   console.log(`Symphony recover-stale: ${result.mode}`);
   if (result.reason) {
     console.log(result.reason);
+  }
+  if (result.manifestPath) {
+    console.log(`Run manifest: ${result.manifestPath}`);
+  }
+  if (result.lock) {
+    const stale = result.lock.stale ? " stale" : "";
+    console.log(`Runner lock:${stale} ${result.lock.path}`);
   }
   if (result.stale.length > 0) {
     console.log("Stale running issues:");

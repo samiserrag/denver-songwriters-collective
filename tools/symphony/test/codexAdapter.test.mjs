@@ -27,6 +27,8 @@ test("buildCodexPrompt includes issue comments", () => {
       number: 7,
       title: "Prompt context",
       body: "Main issue body.",
+      approvedWriteSet: ["tools/symphony/**"],
+      acceptanceCriteria: ["Tests pass"],
       comments: [
         {
           user: { login: "coordinator" },
@@ -38,5 +40,8 @@ test("buildCodexPrompt includes issue comments", () => {
   });
 
   assert.match(prompt, /GitHub issue comments:/);
+  assert.match(prompt, /Approved write set:\n- tools\/symphony\/\*\*/);
+  assert.match(prompt, /Acceptance criteria \/ done condition:\n- Tests pass/);
+  assert.match(prompt, /Stop immediately if the issue's approved write set is missing/);
   assert.match(prompt, /Approved write set is tools\/symphony\/\*\*\./);
 });
