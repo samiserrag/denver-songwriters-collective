@@ -22,6 +22,20 @@ Rules:
 
 ## Active claims
 
+### PR 11 — Track 1 UI polish
+
+- **Branch:** `claude/ui-polish-pr11`
+- **Owner:** Claude (web)
+- **Base SHA:** `482e7547b67f0500dd3ee22ffc18ed52bd537359`
+- **Status:** `in_progress`
+- **Files claimed:**
+  - `web/src/app/(protected)/dashboard/my-events/_components/ConversationalCreateUI.tsx` (§8.2 lock released for UI polish only)
+  - `web/src/app/(protected)/dashboard/my-events/_components/WhatChanged.tsx` (new)
+  - `web/src/__tests__/conversational-create-ui-pr11-polish.test.ts` (new)
+  - `web/src/__tests__/what-changed-component.test.ts` (new)
+  - `docs/investigation/track1-claims.md`
+- **Notes:** Final §6 Track 1 PR. Five sub-goals: distinct result vs follow-up visual treatment, "What changed" section consuming `computePatchDiff`, orange draft-preview CTA via canonical `btn-accent` token, calmer waiting state (drop amber ring + element-level animate-pulse), copy audit reflecting create + edit capabilities. No behavior changes — UI polish only. Existing tests (PR 3 follow-up + interpreter-lab-conversation-ux + interpreter-host-draft-sync + conversational-create-launch-surface) must remain green. Closes Track 1 §12 definition of done.
+
 ### Coordinator sync — track1-claims.md cleanup after PR #143, #148 merge
 
 - **Branch:** `claude/coordinator-sync-after-148`

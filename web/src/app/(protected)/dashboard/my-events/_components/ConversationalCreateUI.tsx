@@ -9,6 +9,7 @@ import {
   ClipboardCheck,
   ExternalLink,
   FileText,
+  HelpCircle,
   History,
   ImagePlus,
   Loader2,
@@ -40,6 +41,7 @@ import { applyVenueTypeTitleDefault } from "@/lib/events/interpreterPostprocess"
 import { humanizeRecurrence } from "@/lib/recurrenceHumanizer";
 import { CropModal } from "@/components/gallery/CropModal";
 import { broadcastEventDraftSync } from "@/lib/events/eventDraftSync";
+import { WhatChanged } from "./WhatChanged";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -59,12 +61,18 @@ interface ConversationEntry {
   content: string;
 }
 
+// PR 11: calmer waiting-state and just-arrived markers. The previous
+// implementation pulsed an amber ring on the entire bubble, which read as
+// alarm rather than activity. The new tokens use a subtle accent-tinted
+// ring and shadow without element-level animation, so the user sees a
+// steady "this is the freshest update" cue. The Sparkles icon inside the
+// waiting bubble keeps its gentle motion-safe pulse as the sole motion.
 const ASSISTANT_RESPONSE_ATTENTION_CLASS =
-  "ring-2 ring-amber-300/80 bg-amber-500/10 shadow-sm motion-safe:animate-pulse";
+  "ring-1 ring-[var(--color-accent-primary)]/30 shadow-sm";
 const ASSISTANT_STATUS_ATTENTION_CLASS =
-  "ring-2 ring-amber-300/80 bg-amber-500/10 shadow-sm motion-safe:animate-pulse";
+  "ring-1 ring-[var(--color-accent-primary)]/30 shadow-sm";
 const RESPONSE_PANEL_ATTENTION_CLASS =
-  "ring-2 ring-amber-300/70 bg-amber-500/10 shadow-md motion-safe:animate-pulse";
+  "ring-1 ring-[var(--color-accent-primary)]/30 shadow-md";
 
 interface QualityHint {
   field: string;
@@ -1317,7 +1325,7 @@ export function ConversationalCreateUI({
   const effectivePageDescription =
     pageDescription ??
     (isHostVariant
-      ? "Turn a flyer, link, or rough notes into a private event draft. You can keep chatting here until it is ready."
+      ? "Turn a flyer, link, or rough notes into a private event draft, or ask me to update an existing happening. I'll save safe edits, resolve venues to the directory when I can, switch covers from your uploaded images, and ask before changing publish-critical fields on a live event. You can keep chatting here until it is ready."
       : "Testing surface for /api/events/interpret. Replies appear below, and each follow-up should be entered in the same message box.");
   const effectiveBackHref = backHref ?? "/dashboard/my-events/new?classic=true";
   const effectiveBackLabel = backLabel ?? "Use classic form instead";
@@ -1442,6 +1450,11 @@ export function ConversationalCreateUI({
 
   // ---- Phase 4B: create/edit write state ----
   const [lastInterpretResponse, setLastInterpretResponse] = useState<LastInterpretResponse | null>(null);
+  // PR 11: prior-turn draft snapshot used by the "What changed" section.
+  // Set to the draft_payload from the previous successful interpret turn so
+  // the diff against the current draft_payload shows what the AI just moved
+  // in this turn. Null until the second edit turn (no baseline before then).
+  const [priorDraftPayload, setPriorDraftPayload] = useState<Record<string, unknown> | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [isApplyingSeriesPatch, setIsApplyingSeriesPatch] = useState(false);
   const [hasUnappliedSeriesPatch, setHasUnappliedSeriesPatch] = useState(false);
@@ -1673,6 +1686,7 @@ export function ConversationalCreateUI({
   // Clear create state when mode changes
   useEffect(() => {
     setLastInterpretResponse(null);
+    setPriorDraftPayload(null);
     setCreateMessage(null);
     setCreatedEventId(null);
     setCreatedSummary(null);
@@ -1687,6 +1701,7 @@ export function ConversationalCreateUI({
   useEffect(() => {
     if (mode === "create" && !createdEventId) {
       setLastInterpretResponse(null);
+      setPriorDraftPayload(null);
       setCreateMessage(null);
       setCreatedEventId(null);
       setCreatedSummary(null);
@@ -1885,6 +1900,11 @@ export function ConversationalCreateUI({
     setStatusCode(null);
     setResponseBody(null);
 
+    // PR 11: capture the previous turn's draft before clearing
+    // lastInterpretResponse so the "What changed" diff can compare prior
+    // and current proposals. Null on the first turn — no baseline yet.
+    const previousDraftSnapshot = lastInterpretResponse?.draft_payload ?? null;
+
     // Avoid stale write actions if the new interpret call fails.
     if (effectiveMode === "create" || effectiveMode === "edit_series") {
       setLastInterpretResponse(null);
@@ -2052,6 +2072,8 @@ export function ConversationalCreateUI({
             next_action: body.next_action as string,
             draft_payload: body.draft_payload as Record<string, unknown>,
           };
+          // PR 11: store prior turn's draft for the "What changed" diff.
+          setPriorDraftPayload(previousDraftSnapshot);
           setLastInterpretResponse(nextInterpretResponse);
           setPendingPublishedRiskConfirmation(false);
           setPendingPublishedRiskPatchFingerprint(null);
@@ -2661,6 +2683,7 @@ export function ConversationalCreateUI({
     setCoverCandidateId(null);
     setCoverMessage(null);
     setLastInterpretResponse(null);
+    setPriorDraftPayload(null);
     setCreateMessage(null);
     setCreatedEventId(null);
     setCreatedSummary(null);
@@ -2861,17 +2884,53 @@ export function ConversationalCreateUI({
           )}
 
           {isHostVariant && responseGuidance && (
+            // PR 11: distinct visual treatment for result vs follow-up question.
+            // Results stay on a calm blue surface and are labeled "Draft result"
+            // with a check icon. Follow-up turns flip to an amber surface with
+            // a HelpCircle icon and "Needs your input" label so the user can
+            // tell at a glance whether the AI is answering or asking back.
             <div
-              className={`rounded-lg border border-blue-500/20 bg-blue-500/5 p-4 transition-colors duration-300 ${
-                isResponsePanelHighlighted ? RESPONSE_PANEL_ATTENTION_CLASS : ""
-              }`}
-              role={isResponsePanelHighlighted ? "status" : undefined}
+              data-testid={
+                responseGuidance.next_action === "ask_clarification"
+                  ? "host-followup-panel"
+                  : "host-result-panel"
+              }
+              role={
+                responseGuidance.next_action === "ask_clarification"
+                  ? "region"
+                  : isResponsePanelHighlighted
+                    ? "status"
+                    : undefined
+              }
+              aria-label={
+                responseGuidance.next_action === "ask_clarification"
+                  ? "Follow-up question — needs your input"
+                  : "Draft result"
+              }
               aria-live={isResponsePanelHighlighted ? "polite" : undefined}
+              className={`rounded-lg border p-4 transition-colors duration-300 ${
+                responseGuidance.next_action === "ask_clarification"
+                  ? "border-amber-500/30 bg-amber-500/5"
+                  : "border-blue-500/20 bg-blue-500/5"
+              } ${isResponsePanelHighlighted ? RESPONSE_PANEL_ATTENTION_CLASS : ""}`}
             >
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0 flex-1 space-y-3">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-600">
-                    Draft result
+                  <p
+                    className={`flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide ${
+                      responseGuidance.next_action === "ask_clarification"
+                        ? "text-amber-600"
+                        : "text-blue-600"
+                    }`}
+                  >
+                    {responseGuidance.next_action === "ask_clarification" ? (
+                      <HelpCircle className="h-3.5 w-3.5" aria-hidden="true" />
+                    ) : (
+                      <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
+                    )}
+                    {responseGuidance.next_action === "ask_clarification"
+                      ? "Needs your input"
+                      : "Draft result"}
                   </p>
                   {responseGuidance.human_summary && (
                     <p className="text-sm text-[var(--color-text-primary)]">
@@ -2898,6 +2957,19 @@ export function ConversationalCreateUI({
                       </p>
                     </div>
                   )}
+                  {/* PR 11: "What changed" — turn-level field-list diff from
+                      the previous interpret response to the current one.
+                      Only renders in edit modes and only when there's a
+                      meaningful prior draft to compare against. */}
+                  {(effectiveMode === "edit_series" || effectiveMode === "edit_occurrence") &&
+                    responseGuidance.next_action !== "ask_clarification" &&
+                    responseGuidance.draft_payload && (
+                      <WhatChanged
+                        mode={effectiveMode}
+                        before={priorDraftPayload}
+                        after={responseGuidance.draft_payload}
+                      />
+                    )}
                   {createdSummary && !createdSummary.isPublished && (
                     <p className="text-xs font-medium text-[var(--color-text-secondary)]">
                       Please check the draft detail page linked below and if it all looks good, hit save and publish to make it live on the site.
