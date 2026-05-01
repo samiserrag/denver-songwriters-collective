@@ -1368,6 +1368,31 @@ export function ConversationalCreateUI({
     [traceId, isHostVariant]
   );
 
+  // PR 3 follow-up: fire-and-forget POST for definitive accept/reject
+  // outcomes correlated by editTurnId. Reads the freshly observed turnId
+  // (passed in by the success-path call site) so we don't race async
+  // state updates. Clears `latestEditTurnId` after initiating the post
+  // — never blocks the UI; never surfaces errors.
+  const postEditTurnOutcome = useCallback(
+    (turnId: string | null, userOutcome: "accepted" | "rejected") => {
+      if (!turnId) return;
+      try {
+        fetch("/api/events/telemetry/edit-turn", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ turnId, userOutcome }),
+        }).catch(() => {
+          // Fire-and-forget — telemetry failures must not affect UX.
+        });
+      } catch {
+        // Synchronous fetch failures (rare) must also stay invisible.
+      }
+      setLatestEditTurnId(null);
+    },
+    []
+  );
+
   useEffect(() => {
     if (!impressionSent.current) {
       impressionSent.current = true;
@@ -1422,6 +1447,11 @@ export function ConversationalCreateUI({
   const [hasUnappliedSeriesPatch, setHasUnappliedSeriesPatch] = useState(false);
   const [pendingPublishedRiskConfirmation, setPendingPublishedRiskConfirmation] = useState(false);
   const [pendingPublishedRiskPatchFingerprint, setPendingPublishedRiskPatchFingerprint] = useState<string | null>(null);
+  // PR 3 follow-up: latest server-issued editTurnId observed in either an
+  // interpret response or a my-events PATCH response. Used by the
+  // fire-and-forget accept/reject hook to correlate user outcome with the
+  // initial edit-turn telemetry event in Axiom.
+  const [latestEditTurnId, setLatestEditTurnId] = useState<string | null>(null);
   const [createdEventId, setCreatedEventId] = useState<string | null>(null);
   const [createdSummary, setCreatedSummary] = useState<CreatedEventSummary | null>(null);
   const [createMessage, setCreateMessage] = useState<{
@@ -1948,6 +1978,14 @@ export function ConversationalCreateUI({
       setStatusCode(res.status);
       setResponseBody(body);
 
+      // PR 3 follow-up: capture editTurnId from a successful interpret
+      // response so a later accept/reject post can correlate by turnId.
+      // Only present on success per the route contract; defensive check
+      // against malformed responses.
+      if (res.ok && body && typeof body === "object" && typeof (body as { editTurnId?: unknown }).editTurnId === "string") {
+        setLatestEditTurnId((body as { editTurnId: string }).editTurnId);
+      }
+
       // Append to conversation history for multi-turn
       if (!res.ok) {
         const errorText =
@@ -2202,6 +2240,14 @@ export function ConversationalCreateUI({
       } else {
         setOccurrenceMessage({ type: "success", text: `Occurrence override applied for ${mapResult.body.date_key}.` });
       }
+      // PR 3 follow-up: the occurrence override apply succeeded. The
+      // overrides endpoint does not yet emit editTurnId (out of scope
+      // for this PR's wiring), so the most recent latestEditTurnId
+      // observed from a prior interpret turn is the correlation source.
+      // Fires only if there was a recent interpret-issued turnId in state.
+      if (latestEditTurnId) {
+        postEditTurnOutcome(latestEditTurnId, "accepted");
+      }
     } catch (err) {
       setOccurrenceMessage({
         type: "error",
@@ -2255,6 +2301,16 @@ export function ConversationalCreateUI({
       });
 
       const result = await res.json().catch(() => ({ error: "Non-JSON response" }));
+      // PR 3 follow-up: capture editTurnId from AI-origin success
+      // response. Only present when isAiAutoApply was true server-side
+      // and the write succeeded; defensive check against malformed bodies.
+      const seriesPatchEditTurnId =
+        res.ok && result && typeof result === "object" && typeof (result as { editTurnId?: unknown }).editTurnId === "string"
+          ? (result as { editTurnId: string }).editTurnId
+          : null;
+      if (seriesPatchEditTurnId) {
+        setLatestEditTurnId(seriesPatchEditTurnId);
+      }
       if (!res.ok) {
         if (res.status === 409 && result.requires_confirmation === true) {
           const blockedFields = Array.isArray(result.blocked_fields) ? result.blocked_fields.join(", ") : "high-risk fields";
@@ -2304,6 +2360,12 @@ export function ConversationalCreateUI({
       setPendingPublishedRiskConfirmation(false);
       setPendingPublishedRiskPatchFingerprint(null);
       broadcastEventDraftSync(createdEventId, "updated");
+      // PR 3 follow-up: the AI-origin patch landed successfully — the
+      // user's typed intent committed to the event. Fire-and-forget the
+      // 'accepted' outcome so analysts can join with the initial telemetry
+      // event by turnId. Uses the freshly observed turnId (not state) to
+      // avoid races with the just-completed setLatestEditTurnId above.
+      postEditTurnOutcome(seriesPatchEditTurnId, "accepted");
     } catch (error) {
       setPendingPublishedRiskConfirmation(false);
       setPendingPublishedRiskPatchFingerprint(null);
@@ -2441,6 +2503,17 @@ export function ConversationalCreateUI({
           text: `Create failed (${res.status}): ${result.error || JSON.stringify(result)}`,
         });
         return;
+      }
+
+      // PR 3 follow-up: the create POST succeeded — the user's typed
+      // intent committed to the database as a new event row. POST
+      // /api/my-events does not currently emit editTurnId (out of scope
+      // for this PR's wiring), so we correlate via the most recent
+      // editTurnId observed from the prior interpret turn. Cover-step
+      // follow-ups below may swap the message to `warning` but the
+      // event-create itself is already confirmed at this point.
+      if (latestEditTurnId) {
+        postEditTurnOutcome(latestEditTurnId, "accepted");
       }
 
       const newEventId = result.id as string;
