@@ -179,7 +179,7 @@ describe("Phase 9B — event-type reliability", () => {
   it("system prompt and route provide current-date guidance for flyer edge cases", () => {
     expect(interpretRouteSource).toContain("current_date");
     expect(interpretRouteSource).toContain("America/Denver");
-    expect(interpretRouteSource).toContain("Never draft a past date for a new create-mode event");
+    expect(interpretRouteSource).toContain("Never draft a date strictly before current_date for a new create-mode event");
     expect(interpretRouteSource).toContain("Flyer dates often omit a year");
     expect(interpretRouteSource).toContain("applyFutureDateGuard");
   });
