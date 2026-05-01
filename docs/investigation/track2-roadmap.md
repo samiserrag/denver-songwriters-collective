@@ -250,6 +250,68 @@ Track 2 is bigger, slower, and pays back the moat. Don't rush it.
 
 **Estimate:** 4–5 PRs. Ships 2E.4 AI awareness as user-visible milestone.
 
+### 2F — AI Host Assistant: free-text cross-event find-and-edit
+
+**Why this is now the first sub-track to ship:** elevated above all others based on **2026-05-01 live user testing evidence**. A host typed an update-shaped natural-language message ("The Recovery Cafe' open mic is now 4 to 7, still the first Friday each month.") into the create flow at `/dashboard/my-events/new/conversational`. The AI correctly drafted a new event from the input — but the host's intent was clearly to **update an existing Recovery Cafe Longmont Open Mic event**. The system has no path today for "I want to update an event but I'm not sitting on its detail page."
+
+The AI edit routes (`/dashboard/my-events/[id]/ai`) and entry points (event detail "Edit with AI" button) are live and shipped via Track 1 PR 6/7. They work end-to-end. **The gap is the discovery surface:** to use them, the host must already be on the right event's detail page. For a host with many events, they need to know which event to navigate to before the AI can help. That's backwards.
+
+This sub-track flips the surface: the host types a free-text update from anywhere (create flow, dashboard quick-add, future surfaces), and the AI finds the right existing event and proposes the patch — falling back to create only when no plausible match exists.
+
+**Why this is also the killer Track 2 feature:** it's the operator ergonomics that make AI maintenance economically viable. A schedule that drifts (and they all drift) requires constant low-effort updates. If the host has to navigate to each event's detail page to update it, drift wins. If they can type "the Tuesday open mic moved to 8 PM" from any chat surface and have the system find it, drift loses.
+
+**Today:**
+
+- Per-event AI edit: ✅ shipped (PR 6/7/8/9 + telemetry stack)
+- Cross-event search from free text: ❌ not built
+- Mode-switch UX (create flow → "I think you mean to update X" → edit mode for X): ❌ not built
+- Disambiguation when multiple events could match: ❌ not built
+- Confidence-based fallback to create when no match: ❌ not built
+
+**Goal:** type an update from anywhere, AI finds the right existing event with high enough confidence, asks one clarification at most, then patches it. Otherwise falls back to create with a hint.
+
+**Sub-PRs (proposed):**
+
+1. **2F.1 — Investigation / ADR.** Investigation-only doc. Decisions covered:
+   - Search strategy: deterministic key match (normalized venue + event_type + recurrence + day_of_week + start_time) vs. LLM-assisted entity match vs. hybrid (deterministic first, LLM fallback)
+   - Confidence threshold: when does the AI auto-propose vs. fall back to create?
+   - Multi-match disambiguation: ask one question vs. show a list?
+   - User scope: only "my events" (events the host hosts) vs. "events I have permission to edit"
+   - Update-shape detection signals: which lexical/semantic markers indicate update intent vs. create intent?
+   - Stop-gate before any code.
+
+2. **2F.2 — Search backend.** New library function `findUserEventCandidates(freeText, userId, opts)` returning ranked event candidates with confidence scores. Pure backend, no UI yet. Tests cover known matches, intentional non-matches, and adversarial inputs.
+
+3. **2F.3 — CRUI scan-first step in create mode.** Before submitting an interpret request, optionally run a candidate search. If high-confidence match exists, the assistant asks: "I think you might mean to update [event title] — should I update that instead?" Buttons: "Update [event]" / "Create new". On "Update" click, switch CRUI into edit mode for that event with chat history preserved.
+
+4. **2F.4 — Disambiguation UX.** When multiple plausible matches exist (e.g., 3 open mic events on Tuesdays at the user's venues), show a small picker with confidence scores: "Did you mean: [event A] / [event B] / [create new]?". One click resolves.
+
+5. **2F.5 — Mode-switch flow with state preservation.** When the user accepts a match, the chat doesn't reset — the existing message becomes the first turn of an edit-mode conversation against the matched event. Telemetry captures the mode-switch as a discrete event.
+
+6. **2F.6 — Entry points everywhere.** Add the same scan-first capability to other free-text surfaces:
+   - `/dashboard` quick-add chat (if/when added)
+   - The "Add a Happening" button from the dashboard for logged-in hosts
+   - Possibly the homepage AI chat (gated to logged-in users only)
+
+7. **2F.7 — Telemetry.** Build on PR 3 stack: add `mode_switch` event type capturing the search → match → user accept/reject → mode-switch chain. Helps analyze how often the cross-event find succeeds and where it fails.
+
+8. **2F.8 — Eval harness for cross-event matching.** Extend PR 4's eval harness with fixtures for cross-event match cases. Adversarial inputs:
+   - Update message with no plausible match → must fall back to create
+   - Update message with multiple plausible matches → must disambiguate
+   - Update message that mentions a venue but no event title → must use other signals (recurrence, time)
+   - Create-shaped message that incidentally references an existing event name → must NOT hijack into edit mode
+
+**Risks (significant — this is the highest-stakes Track 2 sub-track for false-positive blast):**
+
+- **False-positive matches.** Worst-case: AI confidently matches user's "the open mic moved to 8" to the wrong event, user clicks accept, wrong event gets edited. Mitigation: high confidence threshold + show event title prominently in the disambiguation step + telemetry on user accept/reject ratio + rollback affordance.
+- **Search backend complexity.** Free-text → ranked event candidates is a real search problem. Deterministic key match is the baseline; LLM-assisted may be needed for edge cases. Risk of over-engineering. Mitigation: deterministic-first, LLM-fallback only when proven needed by 2F.1 ADR.
+- **UX cliff.** If the scan-first feature is too eager (asks "did you mean X?" on every create-shaped input), it harms the existing create flow. Mitigation: only trigger when the input has update-shaped signals (e.g., "is now", "moved to", "changed to", definite-article references like "the" + existing-venue mention).
+- **Coupling to 2E series matching.** A Tuesday open mic series and a single Tuesday open mic event need different match treatment. 2E series identity work makes 2F's matching cleaner. Could overlap in delivery.
+- **Coupling to 2A categories.** When categories ship (format + discipline), the matching keys gain richer signals. 2F's deterministic match should be designed to absorb richer categories without rework.
+- **Confirmation friction.** Hosts who want to create a new event from a long natural-language description shouldn't have to dismiss a "did you mean to update X?" prompt every time. Mitigation: aggressive update-shape detection — only ask when signal is high.
+
+**Estimate:** 8–10 PRs. 2F.1 ADR is investigation-only stop-gate. After that, some sub-PRs can ship in parallel. Ships 2F.3 as the first user-visible milestone.
+
 ---
 
 ## 4. Cross-cutting and beyond-§7 work
@@ -335,16 +397,21 @@ If ordered for highest leverage:
 | Phase | Why | Estimated PRs |
 |---|---|---|
 | 5.0 — Documentation + telemetry consumption + test guardrail loosening | Get existing PR 3 stack producing visible signal; reduce coordinator overhead before adding more code | 2–3 small |
+| **2F — AI Host Assistant: free-text cross-event find-and-edit** | **Killer operator-ergonomics unlock; live user testing on 2026-05-01 surfaced the gap directly; makes drift-maintenance economically viable** | **8–10** |
+| 2E — Recurring series matching | Data hygiene; series identity makes 2F's matching cleaner | 4–5 |
 | 2A — Categories | Live user pain; foundational; un-blocks non-music event hosts | 6–8 |
 | 2B — Festivals | Small, valuable, well-bounded; validates entity-relationship model | 4–5 |
 | 2D.0 — Import foundations (schema, robots.txt, sanitization) | Required before any URL import code; deterministic pieces only | 3 |
 | 2D.1 — JSON-LD-only import path | Highest-asked value, lowest LLM-pollution risk; deterministic baseline | 4 |
-| 2E — Recurring series matching | Data hygiene; prep for Track 2.D dedup quality | 4–5 |
 | 2D.2 — LLM fallback + 2D.3 re-imports + 2D.4 merge UI | After dedup foundation exists | 8–10 |
 | 2C — Performers | Bigger scope; defer until festivals validates the entity-relationship pattern | 9–11 |
 | 4.1 — Operational habits ritualization | Spread throughout; not blocking | 4–6 |
 
-**Why categories before festivals/imports:** the live feedback explicitly named this. Shipping it first un-blocks non-music event hosts and broadens the user base, making subsequent work more visible.
+**Why 2F first:** elevated to top sequencing position based on 2026-05-01 live user testing evidence. A real host typed an update-shaped natural-language message into the create flow and the AI created a new event instead of finding+updating the existing one. The capability of cross-event find-and-edit is the operator-ergonomics unlock that makes ongoing drift maintenance economically viable. Without it, hosts must navigate to specific event detail pages before AI editing helps them, which is backwards.
+
+**Why 2E before 2A:** series identity work directly improves 2F's match quality. Sharing a clean series identity hash across recurring events lets 2F's matching deterministically find "the Tuesday open mic at Lost Lake" rather than disambiguating between many occurrence rows.
+
+**Why categories before festivals/imports:** the §4 live feedback explicitly named this. Shipping it after 2F+2E un-blocks non-music event hosts and broadens the user base, making subsequent work more visible.
 
 **Why JSON-LD import before LLM extraction:** the §7.3 invariant "deterministic JSON-LD extraction before LLM extraction" should be the first import code that ships. Establishes deterministic baseline; LLM extraction layers on top with measurable quality comparison.
 
@@ -476,7 +543,7 @@ When blocked on a judgment call, open the PR as a draft with the question clearl
 
 > After PR 11 merges, the recommended first Track 2 action is **Phase 5.0** in §5: documentation + telemetry consumption + test guardrail loosening. Three small PRs that close out Track 1 housekeeping and prep Track 2 for clean coordination.
 >
-> After 5.0 lands, the first substantive Track 2 PR is **2A.1 — categories schema research and ADR** (investigation-only, no code). Stop-gate.
+> After 5.0 lands, the first substantive Track 2 PR is **2F.1 — AI Host Assistant ADR** (investigation-only, no code). Stop-gate before any cross-event find-and-edit code is written. This sub-track is now top priority in Track 2 sequencing per the 2026-05-01 live user testing evidence in §3 sub-track 2F.
 
 ---
 
