@@ -117,6 +117,13 @@ migrations, telemetry, prompt contracts, production runtime behavior, or
 Track 1 files, the issue must explicitly approve that scope. Otherwise
 execute preflight fails closed.
 
+Issues whose Approved write set includes `tools/symphony/**` (Symphony's
+own code) are also high-risk and require an explicit high-risk-approval
+sentence in the body, for example: `Explicitly approved high-risk scope:
+tools/symphony self-edit.` This closes the self-modification primitive:
+Symphony cannot rewrite its own safety rails without conscious human
+approval beyond the `symphony:ready` label.
+
 ## Adapter Boundary
 
 The code keeps Codex execution behind `tools/symphony/lib/codexAdapter.mjs`.

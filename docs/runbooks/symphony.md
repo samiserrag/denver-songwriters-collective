@@ -108,6 +108,10 @@ Before the first live supervised run:
 Do not launch autonomous code-writing until Sami separately approves the
 test issue and auth setup.
 
+Approved write sets that include `tools/symphony/**` require explicit
+high-risk approval naming the Symphony self-edit scope; see
+`tools/symphony/README.md` for the exact phrasing.
+
 When approved:
 
 ```bash

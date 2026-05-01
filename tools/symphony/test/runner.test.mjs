@@ -53,7 +53,15 @@ function cleanGitSnapshot() {
   };
 }
 
-function makeExecuteClient({ issueBody = approvedBody("tools/symphony/**"), comments = [], calls = [] } = {}) {
+function makeExecuteClient({
+  issueBody = [
+    approvedBody("tools/symphony/**"),
+    "",
+    "Explicitly approved high-risk scope: tools/symphony self-edit. Required to test lock-release path."
+  ].join("\n"),
+  comments = [],
+  calls = []
+} = {}) {
   const issue = {
     number: 41,
     title: "Ready execute",
