@@ -22,35 +22,17 @@ Rules:
 
 ## Active claims
 
-### PR 3 follow-up — Client userOutcome capture with turnId correlation
+### Coordinator sync — track1-claims.md cleanup after PR #143, #148 merge
 
-- **Branch:** `codex/telemetry-user-outcome-pr3uo`
-- **Owner:** Codex
-- **Base SHA:** `f8e2c06f068d1fc2425e052880cf5c5d426f2eb6`
-- **Status:** `in_progress`
-- **Files claimed:**
-  - `web/src/lib/events/editTurnTelemetry.ts` (§8.2 lock released for schema evolution)
-  - `web/src/app/api/events/interpret/route.ts` (§8.2 lock released for turnId wiring)
-  - `web/src/app/api/my-events/[id]/route.ts` (PR 9 gate file lock released for turnId wiring + comment refinement)
-  - `web/src/app/(protected)/dashboard/my-events/_components/ConversationalCreateUI.tsx` (§8.2 lock released for client-side userOutcome hook)
-  - `web/src/app/api/events/telemetry/edit-turn/route.ts` (new)
-  - `web/src/__tests__/edit-turn-telemetry.test.ts` (extend)
-  - `web/src/__tests__/edit-turn-telemetry-wiring.test.ts` (extend)
-  - `web/src/__tests__/edit-turn-telemetry-followup.test.ts` (new)
-  - `docs/investigation/track1-claims.md`
-- **Notes:** Plan A end-to-end. Adds turnId correlation + new outcome event type + fire-and-forget client hook + thin POST endpoint. Refines my-events blockedFields comment. No DB writes from new endpoint. console.info sinks unchanged.
-
-### Coordinator sync — track1-claims.md cleanup after PR #142, #145, #146, #147 merge wave
-
-- **Branch:** `claude/review-agents-coordinator-ONuKT`
+- **Branch:** `claude/coordinator-sync-after-148`
 - **Owner:** Coordinator
-- **Base SHA:** `fb8621eaa4e743bdf636861262ef0918db683547`
+- **Base SHA:** `30dd7e2` (post-#148 main)
 - **Status:** `in_progress`
 - **Files claimed:**
   - `docs/investigation/track1-claims.md`
-- **Notes:** Coordinator-only docs maintenance PR (#143). Moves four merged Track 1 entries (PR 3-wiring via #146, PR 3 module via #142, Interpreter today-date via #140, PR 9 via #139) plus the long-merged PR 8 (#135) from Active to Closed. Also self-claims `docs/investigation/track1-claims.md` so the Track 1 guardrail in `web/src/__tests__/event-detail-type-badges.test.ts` is satisfied. This PR's own Coordinator-sync entry will be moved to Closed by the next coordinator sync after #143 merges. Symphony PRs (#145 smoke, #147 self-edit guard) are out of scope for this doc — Track 1 only.
+- **Notes:** Coordinator-only docs maintenance. Moves the prior Coordinator-sync entry (merged via #143) and the PR 3 follow-up entry (merged via #148) from Active to Closed. Self-claims `docs/investigation/track1-claims.md` so the Track 1 guardrail in `web/src/__tests__/event-detail-type-badges.test.ts` is satisfied. This PR's own Coordinator-sync entry will be moved to Closed by the next coordinator sync after this PR merges. Track 1 PR 3 stack is now fully shipped end-to-end (module #142 → server wiring #146 → client hook + endpoint + comment refinement #148).
 
-Next planned Track 1 order: B1 (turnId correlation, Codex, in flight on `codex/telemetry-user-outcome-pr3uo`) → B2 (endpoint + client + comment refinement, Codex) → PR 11 (UI polish, Codex). All require §13.2 explicit Sami approval before any code is written.
+Next planned Track 1 order: PR 11 (UI polish, Codex) — only remaining §6 PR. §13.2 explicit Sami approval required before any code is written.
 
 PR 8 venue requirement clarification from Sami:
 
@@ -64,6 +46,22 @@ PR 8 venue requirement clarification from Sami:
 ---
 
 ## Closed claims
+
+### PR 3 follow-up — Client userOutcome capture with turnId correlation
+
+- **Branch:** `codex/telemetry-user-outcome-pr3uo`
+- **Owner:** Codex
+- **End SHA:** merged via PR #148 → `30dd7e2`
+- **Status:** `merged`
+- **Notes:** Plan A end-to-end. Added UUIDv4 `turnId` to `EditTurnTelemetryEvent`, new minimal `EditTurnOutcomeEvent` type with `[edit-turn-outcome]` log prefix, thin authenticated `POST /api/events/telemetry/edit-turn` endpoint (no DB I/O), and client-side fire-and-forget hook in `ConversationalCreateUI.tsx` that captures editTurnId from interpret + my-events PATCH responses and posts on user-confirmed accept. Refined the my-events `blockedFields` comment to clarify success-path semantics. Reject UX intentionally not wired — helper supports both outcomes; no current UI gesture fires `rejected`. Track 1 PR 3 stack now fully shipped end-to-end (module #142 → server wiring #146 → this PR #148).
+
+### Coordinator sync — track1-claims.md cleanup after PR #142, #145, #146, #147 merge wave
+
+- **Branch:** `claude/review-agents-coordinator-ONuKT`
+- **Owner:** Coordinator
+- **End SHA:** merged via PR #143 → `e84fb44b`
+- **Status:** `merged`
+- **Notes:** Coordinator-only docs maintenance. Moved four stale Active entries (PR 3-wiring via #146, PR 3 module via #142, Interpreter today-date via #140, PR 9 via #139) plus the long-merged PR 8 (#135) from Active to Closed. Self-claimed track1-claims.md so the Track 1 guardrail test passed. Established the recursive coordinator-sync pattern: each coordinator PR self-claims the file in Active, the next coordinator PR moves that entry to Closed.
 
 ### PR 3-wiring — Server-side telemetry emission at edit-turn call sites
 
