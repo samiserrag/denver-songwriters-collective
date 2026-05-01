@@ -298,6 +298,8 @@ function installFetchMock(): ReturnType<typeof vi.spyOn> {
 // POST /api/events/interpret
 // ---------------------------------------------------------------------------
 
+const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 describe("POST /api/events/interpret — edit-turn telemetry wiring", () => {
   it("emits exactly one telemetry event for a successful create-mode interpretation", async () => {
     installFetchMock();
@@ -327,6 +329,30 @@ describe("POST /api/events/interpret — edit-turn telemetry wiring", () => {
     expect(typeof event.modelId).toBe("string");
     expect(event.latencyMs).toBeGreaterThanOrEqual(0);
     expect(event.userOutcome).toBe("unknown");
+    // PR 3 follow-up: turnId is generated server-side per request and
+    // shaped as UUIDv4. Same id is echoed in the response body below.
+    expect(event.turnId).toMatch(UUID_V4_RE);
+    const body = await response.json();
+    expect(body.editTurnId).toBe(event.turnId);
+  });
+
+  it("interpret error responses do NOT include editTurnId", async () => {
+    installFetchMock();
+
+    const request = new Request("http://localhost/api/events/interpret", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        mode: "not_a_real_mode",
+        message: "anything",
+      }),
+    });
+
+    const response = await interpretPOST(request);
+    const body = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(body).not.toHaveProperty("editTurnId");
   });
 
   it("emits with currentEventId, priorStateHash, and scopeDecision for an edit_series interpretation", async () => {
@@ -483,6 +509,29 @@ describe("PATCH /api/my-events/[id] — edit-turn telemetry wiring", () => {
     expect(event.modelId).toBeNull();
     expect(event.userOutcome).toBe("unknown");
     expect(event.latencyMs).toBeGreaterThanOrEqual(0);
+    // PR 3 follow-up: turnId is UUIDv4 and echoed in the response body
+    // for the AI-origin success path.
+    expect(event.turnId).toMatch(UUID_V4_RE);
+    const body = await response.json();
+    expect(body.editTurnId).toBe(event.turnId);
+  });
+
+  it("non-AI manual PATCH success response does NOT include editTurnId", async () => {
+    const request = new Request("http://localhost/api/my-events/event-99", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        description: "Manual host edit, no AI",
+      }),
+    });
+
+    const response = await myEventsPATCH(request, {
+      params: Promise.resolve({ id: "event-99" }),
+    });
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body).not.toHaveProperty("editTurnId");
   });
 
   it("populates blockedFields with high+enforced changes for an AI-origin PATCH that touches a high-risk field", async () => {
