@@ -2181,6 +2181,11 @@ async function verifyDraftWithCritic(input: {
 
 export async function POST(request: Request) {
   const requestStartedAt = Date.now();
+  // PR 3 follow-up: stable correlation id shared between the initial
+  // edit-turn telemetry emit (below) and any later EditTurnOutcomeEvent
+  // posted by the client after the user accepts or rejects this turn.
+  // Echoed in the success response as `editTurnId` (no echo on error).
+  const editTurnId = crypto.randomUUID();
 
   if (process.env.ENABLE_NL_EVENTS_INTERPRETER !== "true") {
     return NextResponse.json(
@@ -2897,6 +2902,15 @@ export async function POST(request: Request) {
     blocking_fields: resolvedBlockingFields,
     draft_payload: sanitizedDraft,
     quality_hints: qualityHints,
+    /**
+     * PR 3 follow-up: stable correlation id for this edit turn. Echoed
+     * to the client so it can post a matching EditTurnOutcomeEvent
+     * after the user accepts or rejects. Only present on the success
+     * path; error responses (4xx/502) MUST NOT include this field.
+     * Field name `editTurnId` (not `turnId`) avoids collisions with any
+     * future turn-related field.
+     */
+    editTurnId,
     ...(scopeDecision.forced
       ? {
           scope_decision: {
@@ -3024,6 +3038,7 @@ export async function POST(request: Request) {
   // this turn", but the blocker source differs by call site.
   emitEditTurnTelemetry(
     buildEditTurnTelemetryEvent({
+      turnId: editTurnId,
       mode,
       currentEventId: eventId ?? null,
       priorStateHash: hashPriorState(currentEvent),
