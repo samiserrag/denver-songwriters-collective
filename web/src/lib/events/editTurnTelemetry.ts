@@ -32,7 +32,7 @@
  * here.
  */
 
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 
 import type { EnforcementMode, RiskTier } from "@/lib/events/patchFieldRegistry";
 
@@ -40,7 +40,24 @@ export type EditTurnMode = "create" | "edit_series" | "edit_occurrence";
 export type EditTurnScopeDecision = "series" | "occurrence" | "ambiguous";
 export type EditTurnUserOutcome = "accepted" | "rejected" | "unknown";
 
+/**
+ * Definitive user outcome for an edit turn, captured client-side after
+ * the user explicitly commits or discards the proposed change. Outcome
+ * events are correlation-only pings — they share `turnId` with the
+ * initial `EditTurnTelemetryEvent` but carry no other context. Analysts
+ * join initial + outcome events by `turnId` in Axiom.
+ */
+export type EditTurnDefinitiveOutcome = Exclude<EditTurnUserOutcome, "unknown">;
+
 export interface EditTurnTelemetryEvent {
+  /**
+   * Stable correlation id (UUIDv4) shared by an initial event and any
+   * later `EditTurnOutcomeEvent` for the same turn. Defaults to a fresh
+   * UUIDv4 when omitted at build time. Server-side initial emits always
+   * omit (server-side default is the norm); the same id is then echoed
+   * in the success response so the client can post a matching outcome.
+   */
+  turnId: string;
   mode: EditTurnMode;
   currentEventId: string | null;
   priorStateHash: string | null;
@@ -58,6 +75,8 @@ export interface EditTurnTelemetryEvent {
 
 export interface BuildEditTurnTelemetryInput {
   mode: EditTurnMode;
+  /** UUIDv4 correlation id; defaults to `randomUUID()` when omitted. */
+  turnId?: string;
   currentEventId?: string | null;
   priorStateHash?: string | null;
   scopeDecision?: EditTurnScopeDecision | null;
@@ -73,7 +92,28 @@ export interface BuildEditTurnTelemetryInput {
   occurredAt?: string;
 }
 
+/**
+ * Minimal correlation ping emitted when the user reaches a definitive
+ * accept/reject moment for a prior edit turn. Carries only the shared
+ * `turnId`, the definitive outcome, and the server-set `occurredAt`.
+ * All rich context (mode, fields, riskTier, etc.) lives on the initial
+ * `EditTurnTelemetryEvent`; consumers join by `turnId`.
+ */
+export interface EditTurnOutcomeEvent {
+  turnId: string;
+  userOutcome: EditTurnDefinitiveOutcome;
+  occurredAt: string;
+}
+
+export interface BuildEditTurnOutcomeInput {
+  turnId: string;
+  userOutcome: EditTurnDefinitiveOutcome;
+  /** ISO timestamp; defaults to `new Date().toISOString()` when omitted. */
+  occurredAt?: string;
+}
+
 export const EDIT_TURN_TELEMETRY_LOG_PREFIX = "[edit-turn-telemetry]";
+export const EDIT_TURN_OUTCOME_LOG_PREFIX = "[edit-turn-outcome]";
 
 const VALID_MODES: ReadonlySet<EditTurnMode> = new Set([
   "create",
@@ -95,8 +135,15 @@ const VALID_USER_OUTCOMES: ReadonlySet<EditTurnUserOutcome> = new Set([
   "rejected",
   "unknown",
 ]);
+const VALID_DEFINITIVE_OUTCOMES: ReadonlySet<EditTurnDefinitiveOutcome> = new Set([
+  "accepted",
+  "rejected",
+]);
 
 const ISO_TIMESTAMP_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})$/;
+// RFC 4122 v4 (variant 10xx in the second byte of clock_seq_hi_and_reserved).
+// Matches both lowercase and uppercase hex; `randomUUID()` returns lowercase.
+const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function assertStringArray(value: unknown, field: string): asserts value is string[] {
   if (!Array.isArray(value) || value.some((v) => typeof v !== "string")) {
@@ -105,6 +152,9 @@ function assertStringArray(value: unknown, field: string): asserts value is stri
 }
 
 function validateEditTurnTelemetryEvent(event: EditTurnTelemetryEvent): void {
+  if (typeof event.turnId !== "string" || !UUID_V4_RE.test(event.turnId)) {
+    throw new Error("EditTurnTelemetryEvent: turnId must be a UUIDv4 string");
+  }
   if (!VALID_MODES.has(event.mode)) {
     throw new Error(
       `EditTurnTelemetryEvent: invalid mode "${String(event.mode)}"; expected one of create | edit_series | edit_occurrence`,
@@ -154,6 +204,7 @@ export function buildEditTurnTelemetryEvent(
   input: BuildEditTurnTelemetryInput,
 ): EditTurnTelemetryEvent {
   const event: EditTurnTelemetryEvent = {
+    turnId: input.turnId ?? randomUUID(),
     mode: input.mode,
     currentEventId: input.currentEventId ?? null,
     priorStateHash: input.priorStateHash ?? null,
@@ -170,6 +221,40 @@ export function buildEditTurnTelemetryEvent(
   };
   validateEditTurnTelemetryEvent(event);
   return event;
+}
+
+function validateEditTurnOutcomeEvent(event: EditTurnOutcomeEvent): void {
+  if (typeof event.turnId !== "string" || !UUID_V4_RE.test(event.turnId)) {
+    throw new Error("EditTurnOutcomeEvent: turnId must be a UUIDv4 string");
+  }
+  if (!VALID_DEFINITIVE_OUTCOMES.has(event.userOutcome)) {
+    throw new Error(
+      `EditTurnOutcomeEvent: invalid userOutcome "${String(event.userOutcome)}"; expected accepted | rejected`,
+    );
+  }
+  if (typeof event.occurredAt !== "string" || !ISO_TIMESTAMP_RE.test(event.occurredAt)) {
+    throw new Error("EditTurnOutcomeEvent: occurredAt must be an ISO 8601 timestamp string");
+  }
+}
+
+export function buildEditTurnOutcomeEvent(
+  input: BuildEditTurnOutcomeInput,
+): EditTurnOutcomeEvent {
+  const event: EditTurnOutcomeEvent = {
+    turnId: input.turnId,
+    userOutcome: input.userOutcome,
+    occurredAt: input.occurredAt ?? new Date().toISOString(),
+  };
+  validateEditTurnOutcomeEvent(event);
+  return event;
+}
+
+export function emitEditTurnOutcome(event: EditTurnOutcomeEvent): void {
+  validateEditTurnOutcomeEvent(event);
+  // Same temporary sink as `emitEditTurnTelemetry`: one structured
+  // console.info line, no env gating, no DB writes. Production sink
+  // swap is shared with the initial event pipeline.
+  console.info(`${EDIT_TURN_OUTCOME_LOG_PREFIX} ${JSON.stringify(event)}`);
 }
 
 export function emitEditTurnTelemetry(event: EditTurnTelemetryEvent): void {

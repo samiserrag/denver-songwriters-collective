@@ -22,6 +22,24 @@ Rules:
 
 ## Active claims
 
+### PR 3 follow-up — Client userOutcome capture with turnId correlation
+
+- **Branch:** `codex/telemetry-user-outcome-pr3uo`
+- **Owner:** Codex
+- **Base SHA:** `f8e2c06f068d1fc2425e052880cf5c5d426f2eb6`
+- **Status:** `in_progress`
+- **Files claimed:**
+  - `web/src/lib/events/editTurnTelemetry.ts` (§8.2 lock released for schema evolution)
+  - `web/src/app/api/events/interpret/route.ts` (§8.2 lock released for turnId wiring)
+  - `web/src/app/api/my-events/[id]/route.ts` (PR 9 gate file lock released for turnId wiring + comment refinement)
+  - `web/src/app/(protected)/dashboard/my-events/_components/ConversationalCreateUI.tsx` (§8.2 lock released for client-side userOutcome hook)
+  - `web/src/app/api/events/telemetry/edit-turn/route.ts` (new)
+  - `web/src/__tests__/edit-turn-telemetry.test.ts` (extend)
+  - `web/src/__tests__/edit-turn-telemetry-wiring.test.ts` (extend)
+  - `web/src/__tests__/edit-turn-telemetry-followup.test.ts` (new)
+  - `docs/investigation/track1-claims.md`
+- **Notes:** Plan A end-to-end. Adds turnId correlation + new outcome event type + fire-and-forget client hook + thin POST endpoint. Refines my-events blockedFields comment. No DB writes from new endpoint. console.info sinks unchanged.
+
 ### Coordinator sync — track1-claims.md cleanup after PR #142, #145, #146, #147 merge wave
 
 - **Branch:** `claude/review-agents-coordinator-ONuKT`

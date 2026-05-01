@@ -1,11 +1,16 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  EDIT_TURN_OUTCOME_LOG_PREFIX,
   EDIT_TURN_TELEMETRY_LOG_PREFIX,
+  buildEditTurnOutcomeEvent,
   buildEditTurnTelemetryEvent,
+  emitEditTurnOutcome,
   emitEditTurnTelemetry,
   hashPriorState,
+  type BuildEditTurnOutcomeInput,
   type BuildEditTurnTelemetryInput,
+  type EditTurnOutcomeEvent,
   type EditTurnTelemetryEvent,
 } from "@/lib/events/editTurnTelemetry";
 import type {
@@ -14,6 +19,8 @@ import type {
 } from "@/lib/events/patchFieldRegistry";
 
 const FIXED_OCCURRED_AT = "2026-04-30T12:34:56.000Z";
+const FIXED_TURN_ID = "11111111-2222-4333-8444-555555555555";
+const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function minimalInput(
   overrides: Partial<BuildEditTurnTelemetryInput> = {},
@@ -24,6 +31,18 @@ function minimalInput(
     enforcementMode: "enforced",
     latencyMs: 250,
     occurredAt: FIXED_OCCURRED_AT,
+    turnId: FIXED_TURN_ID,
+    ...overrides,
+  };
+}
+
+function minimalOutcomeInput(
+  overrides: Partial<BuildEditTurnOutcomeInput> = {},
+): BuildEditTurnOutcomeInput {
+  return {
+    turnId: FIXED_TURN_ID,
+    userOutcome: "accepted",
+    occurredAt: FIXED_OCCURRED_AT,
     ...overrides,
   };
 }
@@ -33,6 +52,7 @@ describe("buildEditTurnTelemetryEvent", () => {
     const event = buildEditTurnTelemetryEvent(minimalInput());
 
     expect(event).toEqual<EditTurnTelemetryEvent>({
+      turnId: FIXED_TURN_ID,
       mode: "edit_series",
       currentEventId: null,
       priorStateHash: null,
@@ -47,6 +67,38 @@ describe("buildEditTurnTelemetryEvent", () => {
       latencyMs: 250,
       occurredAt: FIXED_OCCURRED_AT,
     });
+  });
+
+  it("defaults turnId to a fresh UUIDv4 when omitted", () => {
+    const event = buildEditTurnTelemetryEvent({
+      mode: "edit_series",
+      riskTier: "high",
+      enforcementMode: "enforced",
+      latencyMs: 100,
+      occurredAt: FIXED_OCCURRED_AT,
+    });
+    expect(event.turnId).toMatch(UUID_V4_RE);
+  });
+
+  it("preserves an explicitly-provided turnId", () => {
+    const explicit = "abcdef01-2345-4678-9abc-def012345678";
+    const event = buildEditTurnTelemetryEvent(minimalInput({ turnId: explicit }));
+    expect(event.turnId).toBe(explicit);
+  });
+
+  it("rejects events with a malformed turnId", () => {
+    expect(() =>
+      buildEditTurnTelemetryEvent(minimalInput({ turnId: "not-a-uuid" })),
+    ).toThrow(/turnId/);
+    expect(() =>
+      buildEditTurnTelemetryEvent(minimalInput({ turnId: "" })),
+    ).toThrow(/turnId/);
+    // v3-shaped UUID (third group starts with 3, not 4) — rejected
+    expect(() =>
+      buildEditTurnTelemetryEvent(
+        minimalInput({ turnId: "11111111-2222-3333-8444-555555555555" }),
+      ),
+    ).toThrow(/turnId/);
   });
 
   it("coerces userOutcome default to 'unknown' when omitted", () => {
@@ -205,6 +257,7 @@ describe("emitEditTurnTelemetry", () => {
   it("throws on a malformed event without writing to console.info", () => {
     const spy = vi.spyOn(console, "info").mockImplementation(() => {});
     const malformed = {
+      turnId: FIXED_TURN_ID,
       mode: "edit_series",
       currentEventId: null,
       priorStateHash: null,
@@ -244,6 +297,7 @@ describe("emitEditTurnTelemetry", () => {
     emitEditTurnTelemetry(buildEditTurnTelemetryEvent(input));
 
     const expected = {
+      turnId: FIXED_TURN_ID,
       mode: "edit_occurrence",
       currentEventId: "evt-rt-1",
       priorStateHash: "abcdef0123456789",
@@ -262,6 +316,119 @@ describe("emitEditTurnTelemetry", () => {
     expect(spy).toHaveBeenCalledTimes(1);
     expect(spy.mock.calls[0]?.[0]).toBe(
       `${EDIT_TURN_TELEMETRY_LOG_PREFIX} ${JSON.stringify(expected)}`,
+    );
+  });
+});
+
+describe("buildEditTurnOutcomeEvent", () => {
+  it("produces a correctly-shaped event from a minimal input set", () => {
+    const event = buildEditTurnOutcomeEvent(minimalOutcomeInput());
+
+    expect(event).toEqual<EditTurnOutcomeEvent>({
+      turnId: FIXED_TURN_ID,
+      userOutcome: "accepted",
+      occurredAt: FIXED_OCCURRED_AT,
+    });
+  });
+
+  it("preserves an explicitly-provided rejected outcome", () => {
+    const event = buildEditTurnOutcomeEvent(minimalOutcomeInput({ userOutcome: "rejected" }));
+    expect(event.userOutcome).toBe("rejected");
+  });
+
+  it("defaults occurredAt to a fresh ISO timestamp when omitted", () => {
+    const event = buildEditTurnOutcomeEvent({
+      turnId: FIXED_TURN_ID,
+      userOutcome: "accepted",
+    });
+    expect(event.occurredAt).toMatch(
+      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})$/,
+    );
+  });
+
+  it("rejects events with a malformed turnId", () => {
+    expect(() =>
+      buildEditTurnOutcomeEvent(minimalOutcomeInput({ turnId: "not-a-uuid" })),
+    ).toThrow(/turnId/);
+    expect(() =>
+      buildEditTurnOutcomeEvent(minimalOutcomeInput({ turnId: "" })),
+    ).toThrow(/turnId/);
+  });
+
+  it("rejects userOutcome === 'unknown' (outcome events must be definitive)", () => {
+    expect(() =>
+      buildEditTurnOutcomeEvent(
+        minimalOutcomeInput({
+          userOutcome: "unknown" as unknown as BuildEditTurnOutcomeInput["userOutcome"],
+        }),
+      ),
+    ).toThrow(/userOutcome/);
+  });
+
+  it("rejects userOutcome enum violations", () => {
+    expect(() =>
+      buildEditTurnOutcomeEvent(
+        minimalOutcomeInput({
+          userOutcome: "maybe" as unknown as BuildEditTurnOutcomeInput["userOutcome"],
+        }),
+      ),
+    ).toThrow(/userOutcome/);
+  });
+
+  it("rejects malformed occurredAt", () => {
+    expect(() =>
+      buildEditTurnOutcomeEvent(
+        minimalOutcomeInput({ occurredAt: "not-an-iso-timestamp" }),
+      ),
+    ).toThrow(/occurredAt/);
+  });
+});
+
+describe("emitEditTurnOutcome", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("writes one structured line to console.info with the [edit-turn-outcome] prefix", () => {
+    const spy = vi.spyOn(console, "info").mockImplementation(() => {});
+    const event = buildEditTurnOutcomeEvent(minimalOutcomeInput());
+
+    emitEditTurnOutcome(event);
+
+    expect(spy).toHaveBeenCalledTimes(1);
+    const [line] = spy.mock.calls[0] as [string];
+    expect(line.startsWith(`${EDIT_TURN_OUTCOME_LOG_PREFIX} `)).toBe(true);
+    const payload = JSON.parse(line.slice(EDIT_TURN_OUTCOME_LOG_PREFIX.length + 1));
+    expect(payload).toEqual(event);
+  });
+
+  it("throws on a malformed event without writing to console.info", () => {
+    const spy = vi.spyOn(console, "info").mockImplementation(() => {});
+    const malformed = {
+      turnId: "not-a-uuid",
+      userOutcome: "accepted",
+      occurredAt: FIXED_OCCURRED_AT,
+    } as unknown as EditTurnOutcomeEvent;
+
+    expect(() => emitEditTurnOutcome(malformed)).toThrow(/turnId/);
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it("round-trips: emit(build(input)) produces the expected serialized line", () => {
+    const spy = vi.spyOn(console, "info").mockImplementation(() => {});
+    emitEditTurnOutcome(
+      buildEditTurnOutcomeEvent(minimalOutcomeInput({ userOutcome: "rejected" })),
+    );
+
+    const expected = {
+      turnId: FIXED_TURN_ID,
+      userOutcome: "rejected",
+      occurredAt: FIXED_OCCURRED_AT,
+    } satisfies EditTurnOutcomeEvent;
+
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect(spy.mock.calls[0]?.[0]).toBe(
+      `${EDIT_TURN_OUTCOME_LOG_PREFIX} ${JSON.stringify(expected)}`,
     );
   });
 });

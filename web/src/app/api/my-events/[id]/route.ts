@@ -385,6 +385,11 @@ export async function PATCH(
 ) {
   // PR 3-wiring: capture handler start for telemetry latency.
   const patchStartedAt = Date.now();
+  // PR 3 follow-up: stable correlation id shared between the initial
+  // edit-turn telemetry emit (below) and any later EditTurnOutcomeEvent
+  // posted by the client. Generated unconditionally for shape stability;
+  // only echoed on AI-origin success below (matches the gating on emit).
+  const editTurnId = crypto.randomUUID();
   const { id: eventId } = await params;
   const supabase = await createSupabaseServerClient();
   const { data: { user: sessionUser }, error: sessionUserError } = await supabase.auth.getUser();
@@ -1070,12 +1075,18 @@ export async function PATCH(
           change.risk_tier === "high" && change.enforcement_mode === "enforced",
       )
       .map((change) => change.field);
-    // blockedFields here = server-side published-event-gate blocks (per
-    // canSendExplicitConfirmation), requires explicit confirmation retry.
-    // Distinct from the interpret route's blockedFields (= LLM-side
-    // resolvedBlockingFields). Same schema field, different blocker source.
+    // blockedFields here = fields in this turn's PATCH that are high+enforced
+    // per the registry (would trigger the published-event gate). On the success
+    // path emitted here, the gate did NOT block — these fields were either
+    // outside the gate's scope (event unpublished) or accepted via
+    // ai_confirm_published_high_risk. Disambiguate from a real gate block by
+    // joining with response status code (200 = accepted, 409 = blocked) in
+    // the consumer. Distinct from the interpret route's blockedFields
+    // (= LLM-side resolvedBlockingFields). Same schema field, different
+    // sources by call site.
     emitEditTurnTelemetry(
       buildEditTurnTelemetryEvent({
+        turnId: editTurnId,
         mode: "edit_series",
         currentEventId: eventId,
         priorStateHash: hashPriorState(prevEvent),
@@ -1090,6 +1101,11 @@ export async function PATCH(
         userOutcome: "unknown",
       }),
     );
+    // PR 3 follow-up: echo editTurnId only on AI-origin success so the
+    // client can post a matching outcome event. Gated by isAiAutoApply
+    // to match the emit gating — non-AI manual PATCHes return their
+    // event row unchanged.
+    return NextResponse.json({ ...event, editTurnId });
   }
 
   return NextResponse.json(event);
