@@ -124,6 +124,8 @@ tools/symphony self-edit.` This closes the self-modification primitive:
 Symphony cannot rewrite its own safety rails without conscious human
 approval beyond the `symphony:ready` label.
 
+Note: `tools/symphony/**` requires explicit high-risk approval, for example `Explicitly approved high-risk scope: tools/symphony self-edit.`
+
 ## Adapter Boundary
 
 The code keeps Codex execution behind `tools/symphony/lib/codexAdapter.mjs`.
