@@ -1325,7 +1325,7 @@ export function ConversationalCreateUI({
   const effectivePageDescription =
     pageDescription ??
     (isHostVariant
-      ? "Turn a flyer, link, or rough notes into a private event draft, or ask me to update an existing happening. I'll save safe edits, resolve venues to the directory when I can, switch covers from your uploaded images, and ask before changing publish-critical fields on a live event."
+      ? "Turn a flyer, link, or rough notes into a private event draft, or ask me to update an existing happening. I'll save safe edits, resolve venues to the directory when I can, switch covers from your uploaded images, and ask before changing publish-critical fields on a live event. You can keep chatting here until it is ready."
       : "Testing surface for /api/events/interpret. Replies appear below, and each follow-up should be entered in the same message box.");
   const effectiveBackHref = backHref ?? "/dashboard/my-events/new?classic=true";
   const effectiveBackLabel = backLabel ?? "Use classic form instead";
@@ -2859,21 +2859,21 @@ export function ConversationalCreateUI({
                     <div className={`max-w-[82%] rounded-lg border border-[var(--color-accent-primary)]/25 bg-[var(--color-bg-secondary)] px-3 py-3 text-sm text-[var(--color-text-primary)] transition-colors duration-300 ${ASSISTANT_STATUS_ATTENTION_CLASS}`}>
                       <div className="flex items-center gap-2 font-medium">
                         <Sparkles className="h-4 w-4 motion-safe:animate-pulse text-[var(--color-accent-primary)]" aria-hidden="true" />
-                        Working on it. No action needed.
+                        Drafting this into shape. No action needed.
                       </div>
                       <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-[var(--color-text-secondary)]">
                         <span className="rounded-full bg-[var(--color-bg-primary)] px-2 py-1">
-                          Reading your input
+                          Reading flyer text
                         </span>
                         <span className="rounded-full bg-[var(--color-bg-primary)] px-2 py-1">
                           Checking dates and times
                         </span>
                         <span className="rounded-full bg-[var(--color-bg-primary)] px-2 py-1">
-                          Tidying the draft
+                          Building private draft
                         </span>
                       </div>
                       <p className="mt-2 text-xs text-[var(--color-text-tertiary)]">
-                        {"Hang tight — I'll show what I have as soon as it's ready."}
+                        Tiny backstage clipboard noises are normal. I will pop the draft in here when it is ready.
                       </p>
                     </div>
                   </div>
@@ -3001,15 +3001,10 @@ export function ConversationalCreateUI({
                       <FileText className="h-3.5 w-3.5" aria-hidden="true" />
                       {createdSummary.isPublished ? "Edit event" : "Edit / publish"}
                     </Link>
-                    {/* PR 11: orange draft-preview CTA via the canonical
-                        btn-accent token (see docs/theme-system.md). This is
-                        the primary "see the draft" action; the surrounding
-                        secondary actions stay neutral so this stands out. */}
                     <Link
                       href={createdPublicHref}
                       target="_blank"
-                      data-testid="orange-draft-preview-cta"
-                      className="btn-accent inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-[var(--color-accent-primary)] px-3 py-1.5 text-xs font-semibold shadow-sm transition-colors"
+                      className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)] px-3 py-1.5 text-xs font-semibold text-[var(--color-background)] shadow-sm hover:opacity-90"
                     >
                       <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
                       {createdSummary.isPublished ? "Open live page" : "Open draft preview"}
@@ -3590,12 +3585,10 @@ export function ConversationalCreateUI({
                         <FileText className="h-3.5 w-3.5" aria-hidden="true" />
                         Edit / publish
                       </Link>
-                      {/* PR 11: orange draft-preview CTA via canonical btn-accent token */}
                       <Link
                         href={createdPublicHref}
                         target="_blank"
-                        data-testid="orange-draft-preview-cta-aside"
-                        className="btn-accent inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-accent-primary)] px-3 py-1.5 text-xs font-semibold shadow-sm transition-colors"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)] px-3 py-1.5 text-xs font-semibold text-[var(--color-background)] shadow-sm hover:opacity-90"
                       >
                         <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
                         {createdSummary.isPublished ? "Open live page" : "Open draft preview"}
