@@ -219,14 +219,12 @@ describe("PR 11 — calmer waiting state", () => {
 // Sub-goal 5: copy that accurately describes available capabilities.
 // ---------------------------------------------------------------------------
 describe("PR 11 — copy reflects current capabilities", () => {
-  it("default host page title mentions both create and update", () => {
-    // The host title is overridden by ai/page.tsx ("Edit Happening With AI")
-    // and conversational/page.tsx omits it (uses the default). The default
-    // must communicate both capabilities.
-    expect(cruiSource).toContain("Create Happening with AI or update an existing one");
-  });
-
   it("default host page description names create + edit + venue + cover + publish-gate behaviors", () => {
+    // The host title is per-route ("Create Happening with AI" via the
+    // default, "Edit Happening With AI" via ai/page.tsx). Capability copy
+    // belongs in the description, which is mode-agnostic and renders for
+    // both flows. It must communicate that the assistant can update
+    // existing happenings, not just create new ones.
     expect(cruiSource).toContain("update an existing happening");
     expect(cruiSource).toContain("save safe edits");
     expect(cruiSource).toContain("resolve venues");

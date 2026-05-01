@@ -1321,7 +1321,7 @@ export function ConversationalCreateUI({
   const isHostVariant = variant === "host";
   const writesEnabled = isHostVariant || LAB_WRITES_ENABLED;
   const effectivePageTitle =
-    pageTitle ?? (isHostVariant ? "Create Happening with AI or update an existing one" : "Conversational Event Creator (Lab)");
+    pageTitle ?? (isHostVariant ? "Create Happening with AI" : "Conversational Event Creator (Lab)");
   const effectivePageDescription =
     pageDescription ??
     (isHostVariant
