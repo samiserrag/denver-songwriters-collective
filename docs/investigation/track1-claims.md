@@ -1,7 +1,7 @@
 # Track 1 Claims Doc
 
 **Status:** Living
-**Last updated:** 2026-04-30
+**Last updated:** 2026-05-01
 
 This file is the lightweight coordination ledger for Track 1 (AI edit and update existing events). Every active PR in Track 1 must list its branch, owner, scope, files claimed, base SHA, and status here so other agents know what is safe to touch.
 
@@ -22,60 +22,17 @@ Rules:
 
 ## Active claims
 
-### PR 3-wiring — Server-side telemetry emission at edit-turn call sites
+### Coordinator sync — track1-claims.md cleanup after PR #142, #145, #146, #147 merge wave
 
-- **Branch:** `codex/telemetry-edit-turns-wiring-pr3w`
-- **Owner:** Codex
-- **Base SHA:** `8b346d6f0f77d1f9cdfe19b1045c398289aabc48`
+- **Branch:** `claude/review-agents-coordinator-ONuKT`
+- **Owner:** Coordinator
+- **Base SHA:** `fb8621eaa4e743bdf636861262ef0918db683547`
 - **Status:** `in_progress`
 - **Files claimed:**
-  - `web/src/app/api/events/interpret/route.ts` (§8.2 lock released for emit-only insertion)
-  - `web/src/app/api/my-events/[id]/route.ts` (PR 9 gate file lock released for emit-only insertion)
-  - `web/src/__tests__/edit-turn-telemetry-wiring.test.ts` (new)
   - `docs/investigation/track1-claims.md`
-- **Notes:** Wires PR 3 module into two server call sites. `console.info` sink already routes to Axiom via Vercel drain. No UI edits, no new DB reads, no behavior changes. ConversationalCreateUI.tsx + publishedRiskConfirmation.ts NOT touched (deferred to follow-up PR for client-side userOutcome).
+- **Notes:** Coordinator-only docs maintenance PR (#143). Moves four merged Track 1 entries (PR 3-wiring via #146, PR 3 module via #142, Interpreter today-date via #140, PR 9 via #139) plus the long-merged PR 8 (#135) from Active to Closed. Also self-claims `docs/investigation/track1-claims.md` so the Track 1 guardrail in `web/src/__tests__/event-detail-type-badges.test.ts` is satisfied. This PR's own Coordinator-sync entry will be moved to Closed by the next coordinator sync after #143 merges. Symphony PRs (#145 smoke, #147 self-edit guard) are out of scope for this doc — Track 1 only.
 
-### PR 3 — Edit-turn telemetry schema + emitter module (no wiring)
-
-- **Branch:** `codex/telemetry-edit-turns-pr3`
-- **Owner:** Codex
-- **Base SHA:** `737225876d258271d51ef372f30af57b9d8b9d73`
-- **Status:** `in_progress`
-- **Files claimed:**
-  - `web/src/lib/events/editTurnTelemetry.ts` (new)
-  - `web/src/__tests__/edit-turn-telemetry.test.ts` (new)
-  - `docs/investigation/track1-claims.md`
-- **Notes:** Module-only PR per coordinator scope cut. No call-site wiring; that follows in a separate PR after explicit §8.2 lock release. Sink is `console.info` for this PR; production sink is wiring-PR scope.
-
-### Interpreter today-date rollover fix (P1)
-
-- **Branch:** `codex/interpreter-today-date-fix`
-- **Owner:** Codex
-- **Base SHA:** `248be7dc86bc017d1c525246ba0c4fe38299ae8f`
-- **Status:** `awaiting_review`
-- **Files claimed:**
-  - `web/src/lib/events/interpreterPostprocess.ts`
-  - `web/src/app/api/events/interpret/route.ts`
-  - `web/src/__tests__/interpreter-postprocess-future-date.test.ts` (new)
-  - `web/src/__tests__/interpret-prompt-date-rules.test.ts` (new)
-  - `docs/investigation/track1-claims.md`
-- **Notes:** One-line off-by-one fix in `nextFutureMonthDayDate` to treat today's date as a valid future occurrence. No prompt or interpreter route changes. Extended scope (2026-04-30): also tightens interpret prompt date rules and adds postprocessor pull-back guard for LLM over-eager future-year picks. Acquires temporary single-writer claim on `route.ts` for prompt-string edits only — no behavioral changes to interpret route logic.
-
-### PR 9 — Published-event gate for AI edits
-
-- **Branch:** `codex/implement-published-event-gate-for-ai-edits`
-- **Owner:** Codex
-- **Base SHA:** `6a957f0724e52c8fb471748db6b66881661c1e48`
-- **Status:** `awaiting_review`
-- **Files claimed:**
-  - `web/src/app/api/my-events/[id]/route.ts`
-  - `web/src/app/(protected)/dashboard/my-events/_components/ConversationalCreateUI.tsx`
-  - `web/src/__tests__/track1-pr9-published-event-gate.test.ts`
-  - `docs/investigation/track1-claims.md`
-- **Notes:** Server-side gate for published high-risk AI auto-apply writes with explicit confirmation retry path; preserve PR 6/7 routes and PR 8 venue/image behavior.
-
-
-Next planned Track 1 order: PR 8 (venue/image edit wiring) → PR 9 (published-event gate).
+Next planned Track 1 order: B1 (turnId correlation, Codex, in flight on `codex/telemetry-user-outcome-pr3uo`) → B2 (endpoint + client + comment refinement, Codex) → PR 11 (UI polish, Codex). All require §13.2 explicit Sami approval before any code is written.
 
 PR 8 venue requirement clarification from Sami:
 
@@ -89,6 +46,46 @@ PR 8 venue requirement clarification from Sami:
 ---
 
 ## Closed claims
+
+### PR 3-wiring — Server-side telemetry emission at edit-turn call sites
+
+- **Branch:** `codex/telemetry-edit-turns-wiring-pr3w`
+- **Owner:** Codex
+- **End SHA:** merged via PR #146 → `f8e2c06f`
+- **Status:** `merged`
+- **Notes:** Wired PR 3 telemetry module into two server call sites (`interpret/route.ts`, `my-events/[id]/route.ts`). console.info sink already routes to Axiom via Vercel drain. No UI edits, no behavior changes. blockedFields semantic-divergence comments added at each emit site. ConversationalCreateUI.tsx + publishedRiskConfirmation.ts deferred to follow-up PRs (B1 turnId in flight; B2 client + endpoint planned).
+
+### PR 3 — Edit-turn telemetry schema + emitter module (no wiring)
+
+- **Branch:** `codex/telemetry-edit-turns-pr3`
+- **Owner:** Codex
+- **End SHA:** merged via PR #142 → `8b346d6f`
+- **Status:** `merged`
+- **Notes:** Schema, builder, emitter, and `hashPriorState` helper. Type-only imports of `RiskTier` / `EnforcementMode` from `patchFieldRegistry` keep the registry as single source of truth. console.info sink with `[edit-turn-telemetry]` prefix; production sink + call-site wiring landed via PR 3-wiring (#146). 21 unit tests in `edit-turn-telemetry.test.ts`. PR 1 + PR 9 suites green at merge — zero coupling.
+
+### Interpreter today-date rollover fix (P1)
+
+- **Branch:** `codex/interpreter-today-date-fix`
+- **Owner:** Codex
+- **End SHA:** merged via PR #140 → `910f6007`
+- **Status:** `merged`
+- **Notes:** Fixes off-by-one in `nextFutureMonthDayDate` so today's date is a valid future occurrence; tightens interpret prompt date rules and adds `applyOverEagerFutureYearPullback` postprocessor guard for LLM over-eager future-year picks. Follow-up PR #141 updated a phase9-reliability test assertion to match the reworded prompt string.
+
+### PR 9 — Published-event gate for AI edits
+
+- **Branch:** `codex/implement-published-event-gate-for-ai-edits`
+- **Owner:** Codex
+- **End SHA:** merged via PR #139 → `248be7dc`
+- **Status:** `merged`
+- **Notes:** Server-side gate on `/api/my-events/[id]` PATCH path for published high-risk AI auto-apply writes with explicit confirmation retry; extracted `parseAiWriteMetadata` and `canSendExplicitConfirmation` helpers with behavior-level test coverage. Preserves PR 8 venue/image behavior and `allowExistingEventWrites={false}` semantics.
+
+### PR 8 — Venue resolution and image reference contract
+
+- **Branch:** `codex/venue-image-pr8`
+- **Owner:** Codex
+- **End SHA:** merged via PR #135 → `518b36bb`
+- **Status:** `merged`
+- **Notes:** Wires existing venue resolver into edit-mode AI writes; passes ordered image references each turn so cover switching resolves deterministically; persists canonical venue + custom-location fields when confidently discoverable.
 
 ### PR 7 — AI edit entry points and copy
 
