@@ -22,6 +22,18 @@ Rules:
 
 ## Active claims
 
+### PR 3 — Edit-turn telemetry schema + emitter module (no wiring)
+
+- **Branch:** `codex/telemetry-edit-turns-pr3`
+- **Owner:** Codex
+- **Base SHA:** `737225876d258271d51ef372f30af57b9d8b9d73`
+- **Status:** `in_progress`
+- **Files claimed:**
+  - `web/src/lib/events/editTurnTelemetry.ts` (new)
+  - `web/src/__tests__/edit-turn-telemetry.test.ts` (new)
+  - `docs/investigation/track1-claims.md`
+- **Notes:** Module-only PR per coordinator scope cut. No call-site wiring; that follows in a separate PR after explicit §8.2 lock release. Sink is `console.info` for this PR; production sink is wiring-PR scope.
+
 ### Interpreter today-date rollover fix (P1)
 
 - **Branch:** `codex/interpreter-today-date-fix`
