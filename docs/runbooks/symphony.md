@@ -126,6 +126,10 @@ SYMPHONY_ENABLE_DAEMON=1 SYMPHONY_EXECUTION_APPROVED=1 node tools/symphony/cli.m
 Keep daemon disabled until 2-3 clean supervised `once --execute` runs have
 completed without stale locks, bad bases, or scope drift.
 
+### Supervised activation log
+
+- 2026-05-01 — first supervised `once --execute` smoke run on commit 8b346d6; manifest path: .symphony/state/manifests/20260501t022714439z-42645-once-tudz96.json.
+
 ## Local State
 
 Symphony writes local state under:
