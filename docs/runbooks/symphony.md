@@ -130,6 +130,25 @@ SYMPHONY_ENABLE_DAEMON=1 SYMPHONY_EXECUTION_APPROVED=1 node tools/symphony/cli.m
 Keep daemon disabled until 2-3 clean supervised `once --execute` runs have
 completed without stale locks, bad bases, or scope drift.
 
+## Daemon Controls
+
+Daemon remains disabled by default. Start it only for a live supervised
+trial with exactly one `symphony:ready` issue and watch the terminal:
+
+```bash
+SYMPHONY_ENABLE_DAEMON=1 SYMPHONY_EXECUTION_APPROVED=1 node tools/symphony/cli.mjs daemon --execute
+```
+
+Stop daemon cleanly with `Ctrl-C` in the terminal running the process.
+For emergency disable, stop that terminal process and unset
+`SYMPHONY_ENABLE_DAEMON` before launching another Symphony command; env
+changes do not stop an already-running process.
+
+After any stop, verify `.symphony/state/runner.lock` is absent. If the
+lock remains, confirm no Symphony process is running before manually
+removing it. Live `recover-stale --execute` remains untested and requires
+separate explicit approval before use.
+
 ### Supervised activation log
 
 - 2026-05-01 — first supervised `once --execute` smoke run on commit 8b346d6; manifest path: .symphony/state/manifests/20260501t022714439z-42645-once-tudz96.json.
