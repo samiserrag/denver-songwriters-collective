@@ -3017,6 +3017,11 @@ export async function POST(request: Request) {
   )
     ? "enforced"
     : "shadow";
+  // blockedFields here = resolvedBlockingFields from the LLM (fields the model
+  // declined to propose this turn). Distinct from the my-events PATCH gate's
+  // blockedFields (= server-side gate-blocked, requires explicit confirmation).
+  // Both fit the unified schema meaning "fields prevented from auto-application
+  // this turn", but the blocker source differs by call site.
   emitEditTurnTelemetry(
     buildEditTurnTelemetryEvent({
       mode,

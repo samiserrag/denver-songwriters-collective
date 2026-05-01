@@ -1070,6 +1070,10 @@ export async function PATCH(
           change.risk_tier === "high" && change.enforcement_mode === "enforced",
       )
       .map((change) => change.field);
+    // blockedFields here = server-side published-event-gate blocks (per
+    // canSendExplicitConfirmation), requires explicit confirmation retry.
+    // Distinct from the interpret route's blockedFields (= LLM-side
+    // resolvedBlockingFields). Same schema field, different blocker source.
     emitEditTurnTelemetry(
       buildEditTurnTelemetryEvent({
         mode: "edit_series",
