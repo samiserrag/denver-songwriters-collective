@@ -16,6 +16,15 @@ import { warmEventSharePreview } from "@/lib/events/sharePreview";
 import { normalizeDraftRecurrenceFields } from "@/lib/events/recurrenceDraftTools";
 import { resolveVenue, type VenueCatalogEntry } from "@/lib/events/venueResolver";
 import { computePatchDiff } from "@/lib/events/computePatchDiff";
+// PR 3-wiring: edit-turn telemetry (collab plan §6 PR 3). Emit-only on
+// AI-origin PATCHes after a successful write. console.info sink drains
+// to Axiom via Vercel.
+import {
+  buildEditTurnTelemetryEvent,
+  emitEditTurnTelemetry,
+  hashPriorState,
+} from "@/lib/events/editTurnTelemetry";
+import type { EnforcementMode, RiskTier } from "@/lib/events/patchFieldRegistry";
 
 const LEGACY_VERIFICATION_STATUSES = new Set(["needs_verification", "unverified"]);
 type SupabaseServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>;
@@ -374,6 +383,8 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // PR 3-wiring: capture handler start for telemetry latency.
+  const patchStartedAt = Date.now();
   const { id: eventId } = await params;
   const supabase = await createSupabaseServerClient();
   const { data: { user: sessionUser }, error: sessionUserError } = await supabase.auth.getUser();
@@ -1034,6 +1045,52 @@ export async function PATCH(
   }).catch((error) => {
     console.error(`[PATCH /api/my-events/${eventId}] Share preview warm-up failed:`, error);
   });
+
+  // PR 3-wiring: edit-turn telemetry (collab plan §6 PR 3). AI-origin
+  // PATCHes only; gate already decided and write resolved. Reuses the
+  // already-fetched prevEvent — no new DB read.
+  if (isAiAutoApply) {
+    const writeDiff = computePatchDiff(prevEvent ?? {}, updates, { target: "series" });
+    const telemetryProposedFields = writeDiff.changedFields.map((change) => change.field);
+    const aiTelemetryRiskTier: RiskTier = writeDiff.changedFields.some(
+      (change) => change.risk_tier === "high",
+    )
+      ? "high"
+      : writeDiff.changedFields.some((change) => change.risk_tier === "medium")
+        ? "medium"
+        : "low";
+    const aiTelemetryEnforcementMode: EnforcementMode = writeDiff.changedFields.some(
+      (change) => change.enforcement_mode === "enforced",
+    )
+      ? "enforced"
+      : "shadow";
+    const aiTelemetryBlockedFields = writeDiff.changedFields
+      .filter(
+        (change) =>
+          change.risk_tier === "high" && change.enforcement_mode === "enforced",
+      )
+      .map((change) => change.field);
+    // blockedFields here = server-side published-event-gate blocks (per
+    // canSendExplicitConfirmation), requires explicit confirmation retry.
+    // Distinct from the interpret route's blockedFields (= LLM-side
+    // resolvedBlockingFields). Same schema field, different blocker source.
+    emitEditTurnTelemetry(
+      buildEditTurnTelemetryEvent({
+        mode: "edit_series",
+        currentEventId: eventId,
+        priorStateHash: hashPriorState(prevEvent),
+        scopeDecision: "series",
+        proposedChangedFields: telemetryProposedFields,
+        verifierAutoPatchedFields: [],
+        riskTier: aiTelemetryRiskTier,
+        enforcementMode: aiTelemetryEnforcementMode,
+        blockedFields: aiTelemetryBlockedFields,
+        modelId: null,
+        latencyMs: Date.now() - patchStartedAt,
+        userOutcome: "unknown",
+      }),
+    );
+  }
 
   return NextResponse.json(event);
 }

@@ -35,6 +35,19 @@ import {
 } from "@/lib/events/venueResolver";
 import { normalizeSignupMode } from "@/lib/events/signupModeContract";
 import { VALID_EVENT_TYPES, type ValidEventType } from "@/lib/events/eventTypeContract";
+// PR 3-wiring: edit-turn telemetry (collab plan §6 PR 3). Emit-only;
+// no behavior change. console.info sink drains to Axiom via Vercel.
+import {
+  buildEditTurnTelemetryEvent,
+  emitEditTurnTelemetry,
+  hashPriorState,
+} from "@/lib/events/editTurnTelemetry";
+import {
+  getPatchFieldClassification,
+  type EnforcementMode,
+  type EventsColumn,
+  type RiskTier,
+} from "@/lib/events/patchFieldRegistry";
 import {
   detectsRecurrenceIntent,
   applyRecurrenceHintFromExtractedText,
@@ -2979,6 +2992,52 @@ export async function POST(request: Request) {
         }
       : {}),
   });
+
+  // PR 3-wiring: edit-turn telemetry (collab plan §6 PR 3). One emit per
+  // successful response. Risk tier and enforcement mode are derived from
+  // the patch-field registry over the proposed draft keys; unknown
+  // fields default to high+enforced per registry contract (§5.1).
+  const telemetryProposedFields = Object.keys(sanitizedDraft);
+  const telemetryClassifications = telemetryProposedFields.map(
+    (field) =>
+      getPatchFieldClassification(field as EventsColumn) ?? {
+        risk_tier: "high" as const,
+        enforcement_mode: "enforced" as const,
+      },
+  );
+  const telemetryRiskTier: RiskTier = telemetryClassifications.some(
+    (c) => c.risk_tier === "high",
+  )
+    ? "high"
+    : telemetryClassifications.some((c) => c.risk_tier === "medium")
+      ? "medium"
+      : "low";
+  const telemetryEnforcementMode: EnforcementMode = telemetryClassifications.some(
+    (c) => c.enforcement_mode === "enforced",
+  )
+    ? "enforced"
+    : "shadow";
+  // blockedFields here = resolvedBlockingFields from the LLM (fields the model
+  // declined to propose this turn). Distinct from the my-events PATCH gate's
+  // blockedFields (= server-side gate-blocked, requires explicit confirmation).
+  // Both fit the unified schema meaning "fields prevented from auto-application
+  // this turn", but the blocker source differs by call site.
+  emitEditTurnTelemetry(
+    buildEditTurnTelemetryEvent({
+      mode,
+      currentEventId: eventId ?? null,
+      priorStateHash: hashPriorState(currentEvent),
+      scopeDecision: modelScope,
+      proposedChangedFields: telemetryProposedFields,
+      verifierAutoPatchedFields: appliedVerifierPatches.map((patch) => patch.field),
+      riskTier: telemetryRiskTier,
+      enforcementMode: telemetryEnforcementMode,
+      blockedFields: resolvedBlockingFields,
+      modelId: model,
+      latencyMs: Date.now() - requestStartedAt,
+      userOutcome: "unknown",
+    }),
+  );
 
   return NextResponse.json(response);
 }

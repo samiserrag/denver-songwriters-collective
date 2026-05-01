@@ -22,6 +22,19 @@ Rules:
 
 ## Active claims
 
+### PR 3-wiring — Server-side telemetry emission at edit-turn call sites
+
+- **Branch:** `codex/telemetry-edit-turns-wiring-pr3w`
+- **Owner:** Codex
+- **Base SHA:** `8b346d6f0f77d1f9cdfe19b1045c398289aabc48`
+- **Status:** `in_progress`
+- **Files claimed:**
+  - `web/src/app/api/events/interpret/route.ts` (§8.2 lock released for emit-only insertion)
+  - `web/src/app/api/my-events/[id]/route.ts` (PR 9 gate file lock released for emit-only insertion)
+  - `web/src/__tests__/edit-turn-telemetry-wiring.test.ts` (new)
+  - `docs/investigation/track1-claims.md`
+- **Notes:** Wires PR 3 module into two server call sites. `console.info` sink already routes to Axiom via Vercel drain. No UI edits, no new DB reads, no behavior changes. ConversationalCreateUI.tsx + publishedRiskConfirmation.ts NOT touched (deferred to follow-up PR for client-side userOutcome).
+
 ### PR 3 — Edit-turn telemetry schema + emitter module (no wiring)
 
 - **Branch:** `codex/telemetry-edit-turns-pr3`
