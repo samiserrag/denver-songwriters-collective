@@ -246,6 +246,7 @@ export async function runCodexAppServerAdapter({
   spawnFn = spawn,
   setTimeoutFn = setTimeout,
   clearTimeoutFn = clearTimeout,
+  onEvent = null,
   nowFn = () => new Date()
 }) {
   if (!worktreePath) {
@@ -278,6 +279,11 @@ export async function runCodexAppServerAdapter({
   let resolveResult = null;
   let rejectResult = null;
   const protocolEvents = [];
+  const adapterEvents = [];
+
+  function sessionId() {
+    return threadId && turnId ? `${threadId}-${turnId}` : null;
+  }
 
   function clearTimer(timer) {
     if (timer) {
@@ -311,13 +317,14 @@ export async function runCodexAppServerAdapter({
       stderr,
       thread_id: threadId,
       turn_id: turnId,
-      session_id: threadId && turnId ? `${threadId}-${turnId}` : null,
+      session_id: sessionId(),
       turn_count: turnCount,
       last_protocol_event: lastEventName,
       last_protocol_event_at: lastEventAt,
       token_usage: tokenUsage,
       rate_limits: rateLimits,
-      protocol_events: protocolEvents
+      protocol_events: protocolEvents,
+      adapter_events: adapterEvents
     };
     try {
       await writeFile(logPath, appendAdapterLog({
@@ -339,6 +346,36 @@ export async function runCodexAppServerAdapter({
       reason,
       ...detail
     });
+  }
+
+  function emitAdapterEvent(event) {
+    const entry = {
+      timestamp: isoTimestamp(nowFn),
+      codex_app_server_pid: child.pid ?? null,
+      thread_id: threadId,
+      turn_id: turnId,
+      session_id: sessionId(),
+      turn_count: turnCount,
+      last_protocol_event: lastEventName,
+      last_protocol_event_at: lastEventAt,
+      token_usage: tokenUsage,
+      rate_limits: rateLimits,
+      ...event
+    };
+    adapterEvents.push(entry);
+    if (typeof onEvent !== "function") {
+      return true;
+    }
+    try {
+      onEvent(entry);
+      return true;
+    } catch (error) {
+      fail("event_callback_error", {
+        error: error instanceof Error ? error.message : String(error),
+        event: entry.event
+      });
+      return false;
+    }
   }
 
   function startReadTimeout(phase) {
@@ -391,10 +428,23 @@ export async function runCodexAppServerAdapter({
       at: isoTimestamp(nowFn),
       ...summarizeMessage(message)
     });
+    const eventThreadId = threadId || extractThreadId(message);
+    const eventTurnId = turnId || extractTurnId(message);
+    return emitAdapterEvent({
+      event: "protocol_message",
+      protocol_event: name || null,
+      protocol_message_id: message?.id ?? null,
+      protocol_message: summarizeMessage(message),
+      thread_id: eventThreadId,
+      turn_id: eventTurnId,
+      session_id: eventThreadId && eventTurnId ? `${eventThreadId}-${eventTurnId}` : null
+    });
   }
 
   function handleMessage(message) {
-    recordProtocolEvent(message);
+    if (!recordProtocolEvent(message)) {
+      return;
+    }
     const name = messageName(message);
     const error = jsonRpcError(message);
     if (error && [1, 2, 3].includes(message?.id)) {
@@ -542,6 +592,14 @@ export async function runCodexAppServerAdapter({
     });
 
     writeMessage(buildInitializeRequest({ id: 1 }));
+    if (!emitAdapterEvent({
+      event: "adapter_started",
+      command: launch.command,
+      args: launch.args,
+      cwd: worktreePath
+    })) {
+      return;
+    }
     startReadTimeout("initialize");
   });
 }

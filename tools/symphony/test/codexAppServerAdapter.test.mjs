@@ -12,6 +12,7 @@ import {
 class FakeChild extends EventEmitter {
   constructor() {
     super();
+    this.pid = 12345;
     this.stdout = new EventEmitter();
     this.stderr = new EventEmitter();
     this.stdin = {
@@ -164,6 +165,89 @@ test("runCodexAppServerAdapter completes a single app-server turn and preserves 
   assert.match(log, /symphony_app_server_adapter_result/);
   assert.match(log, /thread-1-turn-1/);
   assert.match(result.stderr, /turn\/completed/);
+});
+
+test("runCodexAppServerAdapter emits normalized adapter events for future orchestrator state", async () => {
+  const observedEvents = [];
+  const { child, resultPromise } = await startAdapter({
+    onEvent: (event) => {
+      observedEvents.push(event);
+    }
+  });
+
+  child.stdout.emit("data", protocolLine({ id: 1, result: { capabilities: {} } }));
+  child.stdout.emit("data", protocolLine({ id: 2, result: { thread: { id: "thread-events" } } }));
+  child.stdout.emit("data", protocolLine({ id: 3, result: { turn: { id: "turn-events" } } }));
+  child.stdout.emit("data", protocolLine({
+    method: "thread/tokenUsage/updated",
+    params: {
+      total_token_usage: {
+        input_tokens: 20,
+        output_tokens: 7,
+        total_tokens: 27
+      },
+      rate_limits: {
+        primary: {
+          remaining: 88
+        }
+      }
+    }
+  }));
+  child.stdout.emit("data", protocolLine({ method: "turn/completed" }));
+
+  const result = await resultPromise;
+  assert.equal(result.ok, true);
+  assert.equal(result.adapter_events.length, observedEvents.length);
+  assert.deepEqual(result.adapter_events, observedEvents);
+  assert.deepEqual(observedEvents.map((event) => event.event), [
+    "adapter_started",
+    "protocol_message",
+    "protocol_message",
+    "protocol_message",
+    "protocol_message",
+    "protocol_message"
+  ]);
+  assert.equal(observedEvents[0].codex_app_server_pid, 12345);
+  assert.equal(observedEvents[0].thread_id, null);
+  assert.equal(observedEvents[1].protocol_message_id, 1);
+  assert.equal(observedEvents[2].thread_id, "thread-events");
+  assert.equal(observedEvents[3].turn_id, "turn-events");
+  assert.equal(observedEvents[3].session_id, "thread-events-turn-events");
+  assert.equal(observedEvents[3].turn_count, 1);
+  assert.deepEqual(observedEvents[4].token_usage, {
+    input_tokens: 20,
+    output_tokens: 7,
+    total_tokens: 27
+  });
+  assert.deepEqual(observedEvents[4].rate_limits, {
+    primary: {
+      remaining: 88
+    }
+  });
+  assert.equal(observedEvents.at(-1).last_protocol_event, "turn/completed");
+  assert.equal(observedEvents.at(-1).session_id, "thread-events-turn-events");
+});
+
+test("runCodexAppServerAdapter fails closed when the adapter event sink throws", async () => {
+  const { child, resultPromise, timerHarness } = await startAdapter({
+    onEvent: (event) => {
+      if (event.event === "protocol_message") {
+        throw new Error("event sink failed");
+      }
+    }
+  });
+
+  child.stdout.emit("data", protocolLine({ id: 1, result: {} }));
+
+  const result = await resultPromise;
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, "event_callback_error");
+  assert.equal(result.error, "event sink failed");
+  assert.equal(result.event, "protocol_message");
+  assert.deepEqual(child.killSignals, ["SIGTERM"]);
+  assertNoActiveTimers(timerHarness);
+  assert.equal(result.adapter_events[0].event, "adapter_started");
+  assert.equal(result.adapter_events[1].event, "protocol_message");
 });
 
 test("runCodexAppServerAdapter buffers partial stdout lines before parsing", async () => {
