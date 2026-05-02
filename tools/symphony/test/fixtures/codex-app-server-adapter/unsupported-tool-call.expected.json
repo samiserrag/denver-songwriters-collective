@@ -1,0 +1,16 @@
+{
+  "name": "unsupported-tool-call.jsonl",
+  "ok": false,
+  "reason": "unsupported_tool_call",
+  "terminal_status": "failure",
+  "terminal_reason": "turn_failed",
+  "thread_id": "fixture-thread-tool",
+  "turn_id": "fixture-turn-tool",
+  "session_id": "fixture-thread-tool-fixture-turn-tool",
+  "turn_count": 1,
+  "last_protocol_event": "item/tool/call",
+  "token_usage": null,
+  "rate_limits": null,
+  "protocol_events_count": 4,
+  "adapter_events_count": 5
+}
