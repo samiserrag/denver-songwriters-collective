@@ -1,0 +1,142 @@
+# Track 2 2L.2 BOLA Route/Resource Matrix
+
+Status: Scaffold/gate
+Runtime behavior changed: No
+Base: `f7c9b2665baa1ae1bc3cf9d8f94c7597342050a9`
+Companion audit: `docs/investigation/track2-2l1-bola-rls-service-role-audit-report.md`
+
+This is the maintained Track 2 BOLA matrix required by the 2L.1 audit. It is
+not a remediation PR. It defines the route/resource rows that future Track 2
+implementation and remediation PRs must keep current.
+
+The companion source-check scaffold is
+`web/src/__tests__/track2-bola-matrix-scaffold.test.ts`. It intentionally scans
+only explicit Track 2 route roots and planned Track 2 route sentinels. It does
+not try to classify every API route in the repository.
+
+## Maintenance Rules
+
+When a Track 2 PR adds or changes an ID-bearing route, worker, helper, server
+action, or public serializer, update this matrix in the same PR before merge.
+
+For each row, keep these fields current:
+
+- route or worker key
+- IDs accepted from path, query, body, queue payload, derived LLM/tool output,
+  slug lookup, cookie, or headers
+- resource family
+- public/private boundary
+- allowed actors
+- denied actors
+- object authorization helper or planned helper
+- Supabase client mode: user scoped, anon/public, service-role/admin, direct SQL,
+  or mixed
+- negative tests present and missing
+- status: current-covered, current-gap, planned-gated, or follow-up
+
+Do not treat RLS as the primary authorization boundary for routes that use a
+service-role or admin client. Service-role usage must have server-side
+authorization before sensitive reads or writes.
+
+## Harness Scope
+
+The current scaffold guards explicit route roots named by the 2L.1 audit:
+
+- `web/src/app/api/my-events/[id]`
+- `web/src/app/api/events/[id]`
+- `web/src/app/api/events/agent`
+- `web/src/app/api/my-organizations/[id]`
+- `web/src/app/api/my-venues/[id]`
+- `web/src/app/api/venues/[id]`
+- `web/src/app/api/organizations/[id]`
+- `web/src/app/api/admin/ops/events`
+- `web/src/app/api/admin/ops/overrides`
+- `web/src/app/api/admin/ops/venues`
+- `web/src/app/api/admin/venues/[id]`
+- `web/src/app/api/admin/organizations/[id]`
+- selected public event read surfaces:
+  `web/src/app/events/[id]/page.tsx`,
+  `web/src/app/embed/events/[id]/route.ts`, and
+  `web/src/app/og/event/[id]/route.tsx`
+
+The scaffold also requires planned route-family sentinels for 2F, 2I, 2J, 2D,
+2K, 2B, 2C, and 2E. If a future Track 2 implementation chooses a different
+route path, update this matrix and the sentinel list in the same PR.
+
+## Current Route Matrix
+
+| Matrix ID | Route/worker keys | IDs accepted | Resource family | Boundary | Allowed actors | Denied actors | Auth/object check | Client mode | Required negative tests |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| T2-BOLA-EVENT-INTERPRET | `web/src/app/api/events/interpret/route.ts` | body `eventId`, body `dateKey`, mode | Event AI interpret | Authenticated private context; no write today | Event host, accepted cohost, site admin | Anonymous, unrelated auth user, stale host/cohost | `canManageEvent()` before current event context load | User-scoped Supabase client | Cross-event interpret denial; dateKey/eventId mismatch denial for occurrence mode; no-write invariant |
+| T2-BOLA-MY-EVENTS-SERIES | `web/src/app/api/my-events/[id]/route.ts` | path `id`, AI metadata keys, body update fields | Event series read/update/delete | Private event management | Primary host, accepted cohost for manage operations, site admin; visibility narrower via primary host/admin rules | Anonymous, unrelated auth user, stale/pending cohost | `canManageEvent()`, `canEditEventVisibility()`, published AI safety gate | Mostly user-scoped Supabase client | Cross-user read/update/delete denial; visibility permission denial; published high-risk confirmation denial |
+| T2-BOLA-MY-EVENTS-OVERRIDES | `web/src/app/api/my-events/[id]/overrides/route.ts` | path `id`, body `date_key`, override patch fields | Event occurrence override | Private event management | Primary host, accepted cohost, site admin | Anonymous, unrelated auth user, stale/pending cohost | `checkOverrideAuth()` | User-scoped Supabase client | Cross-event occurrence denial; invalid dateKey denial; eventId/dateKey mismatch coverage |
+| T2-BOLA-MY-EVENTS-CLAIMS | `web/src/app/api/my-events/[id]/claims/route.ts` | path `id`, claim IDs | Event claims management | Private host/admin review | Event manager or site admin | Anonymous, unrelated auth user | Event management check in route must stay documented | User-scoped or mixed route behavior, confirm per 2L.4 | Cross-event claim list/delete denial |
+| T2-BOLA-MY-EVENTS-COHOSTS | `web/src/app/api/my-events/[id]/cohosts/route.ts` | path `id`, target user/profile IDs, event_host row IDs | Event host/cohost relationships | Private event management | Primary host, accepted cohost for invite, site admin; remove-others narrower to primary host/admin | Anonymous, unrelated auth user, pending/rejected cohost, cohost removing another cohost when not allowed | Route-local host/cohost/admin checks before service-role writes | Service-role after auth | Event A actor cannot mutate Event B cohosts; stale/pending cohost denial; self-removal vs remove-other denial |
+| T2-BOLA-MY-EVENTS-INVITES | `web/src/app/api/my-events/[id]/invite/route.ts`, `web/src/app/api/my-events/[id]/invite/[inviteId]/route.ts` | path `id`, path `inviteId`, body invite fields | Host invitations | Private event management | Event manager roles documented by route; site admin | Anonymous, unrelated auth user, mismatched invite/event | `checkInviteAuthorization()` style route-local check | Mixed; confirm service-role usage during 2L.4 | Cross-event invite create/list/delete denial; path event ID and invite ID mismatch denial |
+| T2-BOLA-MY-EVENTS-ATTENDEE-INVITES | `web/src/app/api/my-events/[id]/attendee-invites/route.ts` | path `id`, body `invite_id`, invitee IDs/emails | Event attendee invites | Private invite management | Site admin, primary host only | Anonymous, unrelated auth user, accepted cohost for management UI | `checkAttendeeInviteAuth()` and event-scoped invite lookup | Service-role after auth | Cohost denial; event A host cannot revoke Event B invite; invite_id/event_id mismatch denial |
+| T2-BOLA-MY-EVENTS-RSVPS | `web/src/app/api/my-events/[id]/rsvps/route.ts` | path `id`, RSVP/user IDs | Host RSVP management | Private event dashboard | Event manager, site admin | Anonymous, unrelated auth user | Event management check must stay route-local | User-scoped or mixed route behavior, confirm per 2L.4 | Cross-event attendee list/delete denial |
+| T2-BOLA-PUBLIC-EVENT-CLAIM | `web/src/app/api/events/[id]/claim/route.ts` | path `id` | Event claim request | Authenticated claim submission | Authenticated non-host requester when event is visible and claimable | Anonymous, existing host, duplicate claimant, unauthorized private event reader | User-scoped event fetch; duplicate claim check | User-scoped; service-role only for admin email fanout | Private event claim denial; duplicate claim denial; service-role fanout after insert only |
+| T2-BOLA-PUBLIC-EVENT-RSVP | `web/src/app/api/events/[id]/rsvp/route.ts` | path `id`, body `date_key`, RSVP fields | Event RSVP | Public event plus invite-only access gate | Authenticated event reader, accepted invitee where invite-only | Anonymous writes, unrelated auth user for private event, invalid dateKey | User-scoped fetch first; invite-only service-role fallback plus `checkInviteeAccess()` | Mixed | Private event RSVP denial; event/dateKey mismatch denial; invite revoked denial |
+| T2-BOLA-PUBLIC-EVENT-COMMENTS | `web/src/app/api/events/[id]/comments/route.ts` | path `id`, parent comment IDs | Event comments | Public event plus invite-only access gate | Event reader, accepted invitee where invite-only | Anonymous write unless guest path, unrelated auth user for private event | `checkEventAccess()` and invitee access fallback | Mixed | Private event comment denial; parent comment must belong to event; guest route parity |
+| T2-BOLA-PUBLIC-EVENT-WATCH | `web/src/app/api/events/[id]/watch/route.ts` | path `id` | Event watch/follow | Authenticated user action | Authenticated event reader | Anonymous, unauthorized private event reader | Event visibility/access check must stay route-local | User-scoped or mixed route behavior, confirm per 2L.4 | Private event watch denial; cross-event unwatch denial |
+| T2-BOLA-PUBLIC-EVENT-READ | `web/src/app/events/[id]/page.tsx`, `web/src/app/embed/events/[id]/route.ts`, `web/src/app/og/event/[id]/route.tsx` | path `id` or slug-derived ID | Public event representation | Public-safe serializer/read view | Anonymous for published public events; host/cohost/admin/invitee for private detail where explicitly gated | Anonymous draft/private/invite-only access where not invited | Visibility checks, invitee access gate, slug redirect refetch via user-scoped client | Anon/user client; narrow service-role redirect lookup | Draft/private/invite-only absence; JSON-LD/OG/embed public-safe field allowlist |
+| T2-BOLA-VENUE-PUBLIC-EDIT | `web/src/app/api/venues/[id]/route.ts` | path `id`, venue patch fields | Venue public profile and manager edit | Public-safe read; private write | Anonymous public read; site admin, active venue manager, event host/cohost at venue for write | Unrelated auth user, revoked manager, event host at different venue | `canEditVenue()` plus admin check | Public/user read, service-role for write after auth | Event host at venue A cannot edit venue B; revoked manager denial; public response allowlist |
+| T2-BOLA-VENUE-CLAIMS | `web/src/app/api/venues/[id]/claim/route.ts` | path `id`, claim IDs | Venue claim request | Authenticated claim submission | Authenticated requester under route rules; site admin for review elsewhere | Anonymous, duplicate claimant, unrelated private manager path | Route-local claim checks | User-scoped or mixed route behavior, confirm per 2L.4 | Duplicate claim denial; private manager/invite data not exposed |
+| T2-BOLA-MY-VENUES | `web/src/app/api/my-venues/[id]/route.ts` | path `id` | Venue manager grant | Private manager self-service | Active venue manager, site admin where route allows | Anonymous, unrelated auth user, revoked manager, sole owner removal when disallowed | Active grant lookup and sole-owner protection | User-scoped or mixed route behavior, confirm per 2L.4 | Cross-venue grant denial; sole-owner denial |
+| T2-BOLA-MY-ORGANIZATIONS | `web/src/app/api/my-organizations/[id]/route.ts`, `web/src/app/api/my-organizations/[id]/invite/route.ts`, `web/src/app/api/my-organizations/[id]/invite/[inviteId]/route.ts` | path `id`, path `inviteId`, member tag IDs, content IDs | Organization management | Private manager/admin management | Active organization manager, site admin where route allows | Anonymous, unrelated auth user, manager from another org, stale/revoked manager | Active organization manager grant or admin check | Service-role after auth for relation sync/fetches | Cross-org read/write denial; content link ownership denial; invite/org mismatch denial |
+| T2-BOLA-ORGANIZATION-CLAIMS | `web/src/app/api/organizations/[id]/claim/route.ts` | path `id`, claim IDs | Organization claim request | Authenticated claim submission | Authenticated requester under route rules; site admin review elsewhere | Anonymous, duplicate claimant, unrelated manager path | Route-local claim checks | User-scoped or mixed route behavior, confirm per 2L.4 | Duplicate claim denial; private org data not exposed |
+| T2-BOLA-ADMIN-OPS-EVENTS | `web/src/app/api/admin/ops/events/preview/route.ts`, `web/src/app/api/admin/ops/events/apply/route.ts`, `web/src/app/api/admin/ops/events/import-preview/route.ts`, `web/src/app/api/admin/ops/events/import-apply/route.ts`, `web/src/app/api/admin/ops/events/bulk-verify/route.ts`, `web/src/app/api/admin/ops/events/export/route.ts` | body event IDs, venue IDs, import candidate IDs, batch IDs | Admin event import/apply/export | Admin-only privileged operation | Site admin | Anonymous, non-admin auth user | `checkAdminRole()` before service-role access | Service-role after admin | Non-admin denial; malformed/cross-resource batch denial; audit evidence for writes |
+| T2-BOLA-ADMIN-OPS-OVERRIDES | `web/src/app/api/admin/ops/overrides/preview/route.ts`, `web/src/app/api/admin/ops/overrides/apply/route.ts`, `web/src/app/api/admin/ops/overrides/export/route.ts` | event IDs, occurrence/date keys, override IDs, batch IDs | Admin override import/apply/export | Admin-only privileged operation | Site admin | Anonymous, non-admin auth user | `checkAdminRole()` before service-role access | Service-role after admin | Non-admin denial; event/dateKey mismatch denial; audit evidence for writes |
+| T2-BOLA-ADMIN-OPS-VENUES | `web/src/app/api/admin/ops/venues/preview/route.ts`, `web/src/app/api/admin/ops/venues/apply/route.ts`, `web/src/app/api/admin/ops/venues/export/route.ts` | venue IDs, batch IDs | Admin venue import/apply/export | Admin-only privileged operation | Site admin | Anonymous, non-admin auth user | `checkAdminRole()` before service-role access | Service-role after admin | Non-admin denial; cross-venue batch validation; audit evidence for writes |
+| T2-BOLA-ADMIN-VENUES | `web/src/app/api/admin/venues/[id]/route.ts`, `web/src/app/api/admin/venues/[id]/invite/route.ts`, `web/src/app/api/admin/venues/[id]/invite/[inviteId]/route.ts`, `web/src/app/api/admin/venues/[id]/managers/[managerId]/route.ts`, `web/src/app/api/admin/venues/[id]/revert/route.ts` | path `id`, path `inviteId`, path `managerId` | Admin venue management | Admin-only privileged operation | Site admin | Anonymous, non-admin auth user | Admin check before service-role access | Service-role after admin | Non-admin denial; invite/manager venue mismatch denial |
+| T2-BOLA-ADMIN-ORGANIZATIONS | `web/src/app/api/admin/organizations/[id]/route.ts` | path `id`, member/content IDs | Admin organization management | Admin-only privileged operation | Site admin | Anonymous, non-admin auth user | Admin check before service-role access | Service-role after admin | Non-admin denial; content link existence and scope checks |
+| T2-BOLA-TELEMETRY | `web/src/app/api/events/telemetry/edit-turn/route.ts`, `web/src/app/api/events/telemetry/route.ts` | body turn IDs, optional event context, mode | Event/agent telemetry | Authenticated telemetry only today | Authenticated user | Anonymous, malformed payload | Supabase user session plus event registry validation | No durable DB write today | Anonymous denial; free-form/raw PII payload rejection when 2K extends |
+| T2-BOLA-PRIVILEGED-HELPERS | `web/src/lib/events/eventManageAuth.ts`, `web/src/lib/venue/managerAuth.ts`, `web/src/lib/attendee-session/checkInviteeAccess.ts`, `web/src/lib/eventUpdateSuggestions/server.ts`, `web/src/lib/email/adminEventAlerts.ts`, `web/src/lib/audit/opsAudit.ts`, `web/src/lib/audit/venueAudit.ts` | event IDs, venue IDs, user IDs, invite IDs | Shared auth/service-role helpers | Caller-dependent | Caller must establish actor before helper use | Any caller without actor/object authorization | Helper contract plus caller-side route tests | Mixed, often service-role | 2L.3 service-role manifest; helper caller matrix |
+
+## Planned Track 2 Route-Family Matrix
+
+These rows are placeholders for planned route families. They are intentionally
+present before implementation so future route PRs must refine the matrix instead
+of inventing permissions ad hoc.
+
+| Matrix ID | Planned route/worker keys | IDs accepted | Resource family | Required boundary before implementation | Required negative tests before merge |
+| --- | --- | --- | --- | --- | --- |
+| T2-BOLA-AGENT-FIND-CANDIDATES | `web/src/app/api/events/agent/find-candidates/route.ts` | body free text, derived candidate event IDs | 2F cross-event search | Search must return only events the actor can manage or view under the approved 2F ADR; LLM/derived IDs are untrusted | Host A cannot receive Host B candidates; stale cohost denied; admin behavior explicit |
+| T2-BOLA-AGENT-CANCEL | `web/src/app/api/my-events/[id]/cancel/route.ts` | path `id`, body dateKey/scope/confirmation token | 2F event/occurrence cancel | Exact event/occurrence context first; two-stage confirmation; no delete; audit and rollback affordance | No confirmation no-op; wrong host denied; dateKey mismatch denied; RSVP notification choice tested |
+| T2-BOLA-AGENT-URL-EXTRACT | `web/src/app/api/events/agent/url-extract/route.ts` | body URL, derived source IDs, derived candidate event IDs | 2J/2D URL extraction | All URL fetching through `safeFetch()`; extracted text tagged untrusted; review required before write | URL owner scope denial; SSRF/safeFetch tests; candidate event cross-user denial |
+| T2-BOLA-AGENT-ANSWER | `web/src/app/api/events/agent/answer/route.ts` | body question, derived event IDs | 2F event Q&A | Read-only answers scoped to actor-visible/manageable events; no raw private rows | Host A cannot ask about Host B private events; invite-only/draft field leak denial |
+| T2-BOLA-PUBLIC-EVENTS-JSON | `web/src/app/events.json/route.ts`, `web/src/app/api/events.json/route.ts` | query pagination/cursor/filter IDs | 2I public events API | Schema-driven public serializer, no auth, rate limit, cache policy, crawler policy | Draft/invite-only/private notes/emails/internal IDs absent; cancelled semantics tested |
+| T2-BOLA-PUBLIC-AI-SHAPED | `web/src/app/api/events/tonight/route.ts`, `web/src/app/api/events/this-weekend/route.ts`, `web/src/app/api/events/upcoming/route.ts` | query filters, stable public IDs | 2I AI-shaped public reads | Same public serializer as `/events.json`; bounded query set; crawler/rate policy | Public-only rows; no private fields; pagination/cache/citation stability |
+| T2-BOLA-SAFE-FETCH | `web/src/lib/safeFetch.ts`, `web/src/lib/url/safeFetch.ts` | URL, redirect targets, host/IP/DNS observations | 2J safe URL boundary | SSRF defense, private IP blocking, DNS rebinding protection, redirect policy, size/time caps | Private/reserved IP blocked; redirect-to-private blocked; no credentials forwarded |
+| T2-BOLA-REVERIFY-WORKER | `web/src/app/api/cron/reverify-sources/route.ts`, `web/src/lib/reverification/worker.ts` | event IDs, venue IDs, sourceRecord IDs | 2J known-source reverification | Service worker identity, safeFetch only, known sources only, review queue for content deltas | Source for Event A cannot mutate Event B; non-JSON-LD queued; low-risk auto-update only |
+| T2-BOLA-IMPORT-RUNS | `web/src/app/api/import-runs/[id]/route.ts`, `web/src/app/api/import-runs/route.ts` | importRunId, sourceId, owner/org/venue IDs | 2D import runs | Owner/admin/service-worker scoping; service-role manifest; review before writes | Host A cannot read/write Host B import run; org scope denial; status transition tests |
+| T2-BOLA-IMPORT-CANDIDATES | `web/src/app/api/import-runs/[id]/candidates/[candidateId]/route.ts` | importRunId, candidateId, matched event IDs | 2D import candidates | Candidate belongs to run; run belongs to actor scope; writes route through approved event gates | Candidate/run mismatch denial; matched event cross-owner denial; rejected candidate private data not public |
+| T2-BOLA-SOURCE-RECORDS | `web/src/app/api/source-records/[id]/route.ts` | sourceRecordId, event/venue/org IDs | 2J/2D source records | Source records scoped to owning resource and actor; public citation output allowlisted | Source for private event not public; unrelated user denied; service worker audit |
+| T2-BOLA-ANALYTICS-EVENTS | `web/src/app/api/analytics/events/route.ts` | analytics event IDs, event IDs, session/visitor IDs | 2K raw analytics | Event registry, write-time redaction, GPC opt-out, no raw IP, no free-form payloads | PII/token redaction; GPC no-op; invalid event/property rejected |
+| T2-BOLA-ANALYTICS-DASHBOARD | `web/src/app/api/analytics/dashboard/route.ts` | event IDs, org IDs, venue IDs, filters | 2K aggregate analytics | Admin/authorized dashboard only; aggregate output; small-count suppression n >= 10 | Host/org cross-scope denial; raw/user-level data absent; small-count suppression |
+| T2-BOLA-FESTIVALS | `web/src/app/api/festivals/[id]/route.ts`, `web/src/app/api/admin/festivals/[id]/route.ts` | festivalId, parent org ID, event IDs | 2B festivals | Public-safe festival reads; admin/owner writes per approved schema ADR | Draft/private linked events absent; org ownership checks; non-admin write denial |
+| T2-BOLA-PERFORMERS | `web/src/app/api/performers/[id]/route.ts`, `web/src/app/api/admin/performers/[id]/route.ts` | performerId, event IDs, profile IDs | 2C performers | Public-safe performer reads; admin/owner writes if self-service exists | Private profile fields absent; non-admin write denial; relationship mismatch denial |
+| T2-BOLA-SERIES | `web/src/app/api/series/[id]/route.ts`, `web/src/app/api/event-series/[id]/route.ts` | seriesId, event IDs, occurrence dateKeys | 2E recurring series | Series identity scoped to owned/manageable events for private operations; public serializer for public pages | Host A cannot mutate Host B series; occurrence mismatch denial; private linked events absent |
+| T2-BOLA-CATEGORIES | `web/src/app/api/categories/[id]/route.ts`, `web/src/app/api/admin/categories/[id]/route.ts` | categoryId, disciplineId, formatId | 2A categories | Public read/admin write unless future owner model says otherwise | Non-admin write denial; public response contains only approved taxonomy fields |
+
+## Gap Register
+
+| Gap | Blocks | Remediation owner | Required proof |
+| --- | --- | --- | --- |
+| Service-role/admin-client manifest not yet maintained | 2D, 2F, 2J, 2K service-role expansion | 2L.3 | Manifest plus tests proving auth before privileged access |
+| Current route-level negative tests incomplete for event/venue/org/admin ops | Unlocking new Track 2 ID-bearing write routes | 2L.4 | Cross-user, cross-resource, stale-role, and mismatch tests |
+| Live RLS policy state not confirmed | RLS remediation, public API expansion | 2L.5 | `pg_policies` inventory plus anon/authenticated smoke queries |
+| Public serializer schema not yet centralized | 2I public APIs and AI-shaped endpoints | 2I implementation with 2L checks | Serializer tests proving private field absence |
+
+## Definition Of Done For Future Matrix Updates
+
+A future Track 2 PR that adds an ID-bearing route or worker is complete only
+when:
+
+1. This matrix has a row for the route/worker.
+2. The companion source-check either already covers the route root or is updated
+   with a deliberate sentinel.
+3. The row identifies all path/body/query/derived IDs.
+4. The row states whether service-role/admin clients are used.
+5. The row names the negative tests that prove cross-user and cross-resource
+   denial, or marks them as a blocking follow-up before runtime enablement.
