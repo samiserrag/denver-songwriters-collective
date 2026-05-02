@@ -1171,6 +1171,37 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
 
   return (
     <form onSubmit={handleSubmit} noValidate className="space-y-5">
+      {/* Prominent Edit-with-AI entry. Shown only in edit mode (aiEditPath
+          is null in create mode) so the header banner does not duplicate
+          the create-flow's own conversational entry. Sits above the form
+          header card so it is the first action a host sees on the edit
+          form. */}
+      {aiEditPath && (
+        <div
+          data-testid="event-form-edit-with-ai-callout"
+          className="flex flex-col gap-3 rounded-xl border border-[var(--color-accent-primary)]/30 bg-[var(--color-accent-primary)]/10 p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div className="min-w-0">
+            <p className="flex items-center gap-2 text-sm font-semibold text-[var(--color-text-primary)]">
+              <Sparkles className="h-4 w-4 text-[var(--color-accent-primary)]" aria-hidden="true" />
+              Edit with AI
+            </p>
+            <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+              {occurrenceMode
+                ? "Describe the change in plain English and I'll draft an override for this occurrence."
+                : "Describe the change in plain English and I'll draft updates to this happening — cover swaps apply right away, other field changes still require your confirmation."}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => router.push(aiEditPath)}
+            className="inline-flex min-h-11 w-fit items-center justify-center gap-2 self-start rounded-lg bg-[var(--color-accent-primary)] px-4 py-2.5 text-sm font-semibold text-[var(--color-text-on-accent)] shadow-sm transition-colors hover:bg-[var(--color-accent-hover)] sm:self-auto"
+          >
+            <Wand2 className="h-4 w-4" aria-hidden="true" />
+            {aiEditActionLabel}
+          </button>
+        </div>
+      )}
       <div className="rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-primary)] p-4 shadow-sm">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">

@@ -5,7 +5,7 @@ import { HeroSection } from "@/components/layout";
 import { EventGrid } from "@/components/events";
 import { MemberCard } from "@/components/members/MemberCard";
 import { OpenMicGrid, type SpotlightOpenMic } from "@/components/open-mics";
-import { HappeningsCard } from "@/components/happenings";
+import { HappeningsCard, HappeningActionsRow } from "@/components/happenings";
 // Button removed - not currently used on homepage
 import { LazyIframe, CLSLogger } from "@/components/home";
 import { NewsletterSection } from "@/components/navigation/NewsletterSection";
@@ -460,6 +460,17 @@ export default async function HomePage() {
   return (
     <>
       <CLSLogger />
+      {/* Top-of-page action strip: stays visible regardless of hero/filter
+          state so hosts can always reach create + edit entry points
+          without scrolling. Sits between the global header and the hero. */}
+      <section
+        aria-label="Happening actions"
+        className="border-b border-[var(--color-border-subtle)] bg-[var(--color-bg-secondary)]/60 px-4 py-3 sm:px-6"
+      >
+        <div className="mx-auto max-w-screen-2xl">
+          <HappeningActionsRow tone="page" align="center" />
+        </div>
+      </section>
       {/* Hero with background image and main headline */}
       <HeroSection minHeight="lg" showVignette showBottomFade backgroundImage={siteSettings.heroImageUrl}>
         <div className="text-center px-6 py-8">

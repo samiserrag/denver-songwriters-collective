@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { HappeningsCard, DateSection, StickyControls, BackToTop } from "@/components/happenings";
+import { HappeningsCard, DateSection, StickyControls, BackToTop, HappeningActionsRow } from "@/components/happenings";
 import { SeriesView, type SeriesEvent } from "@/components/happenings/SeriesView";
 import { type HappeningsViewMode } from "@/components/happenings/StickyControls";
 import { PageContainer } from "@/components/layout/page-container";
@@ -825,6 +825,17 @@ export default async function HappeningsPage({
 
   return (
     <>
+      {/* Top-of-page action strip: stays visible regardless of hero/filter
+          state so hosts can always reach create + edit entry points
+          without scrolling. Sits between the global header and the hero. */}
+      <section
+        aria-label="Happening actions"
+        className="border-b border-[var(--color-border-subtle)] bg-[var(--color-bg-secondary)]/60 px-4 py-3 sm:px-6"
+      >
+        <div className="mx-auto max-w-screen-2xl">
+          <HappeningActionsRow tone="page" align="center" />
+        </div>
+      </section>
       {showHero && (
         <HeroSection minHeight="xs" showVignette showBottomFade>
           <div className="text-center px-4 py-6">
@@ -834,31 +845,30 @@ export default async function HappeningsPage({
             <p className="text-lg text-white/80 mt-2 drop-shadow">
               Open mics, workshops, showcases, jams, and community shows around Denver
             </p>
-            <div className="mt-5 flex justify-center">
-              <Link
-                href="/dashboard/my-events/new"
-                className="inline-flex min-h-10 items-center justify-center rounded-full bg-[var(--color-accent-primary)] px-5 py-2.5 text-sm font-semibold text-[var(--color-text-on-accent)] shadow-lg transition-colors hover:bg-[var(--color-accent-hover)]"
-              >
-                + Add Happening
-              </Link>
-            </div>
+            <HappeningActionsRow tone="hero" align="center" className="mt-5" />
           </div>
         </HeroSection>
       )}
 
       <PageContainer className={showHero ? "" : "pt-8"}>
-        {/* Page header with title */}
-        {!showHero && pageTitle && (
-          <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <h1 className="text-2xl md:text-3xl font-[var(--font-family-display)] font-bold text-[var(--color-text-primary)]">
-              {pageTitle}
-            </h1>
-            <Link
-              href="/dashboard/my-events/new"
-              className="inline-flex min-h-10 w-fit items-center justify-center rounded-full bg-[var(--color-accent-primary)] px-5 py-2.5 text-sm font-semibold text-[var(--color-text-on-accent)] transition-colors hover:bg-[var(--color-accent-hover)]"
-            >
-              + Add Happening
-            </Link>
+        {/*
+          Always-visible action row. Replaces two prior conditional
+          renderings of "+ Add Happening" that disappeared when saved
+          filters auto-applied on mount AND no recognized typeFilter
+          mapped to a `pageTitle`. Keeping this unconditional ensures the
+          add / edit entry points stay reachable as soon as the page
+          paints.
+        */}
+        {!showHero && (
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            {pageTitle ? (
+              <h1 className="text-2xl md:text-3xl font-[var(--font-family-display)] font-bold text-[var(--color-text-primary)]">
+                {pageTitle}
+              </h1>
+            ) : (
+              <span className="sr-only">Happenings</span>
+            )}
+            <HappeningActionsRow tone="page" align="start" />
           </div>
         )}
 
