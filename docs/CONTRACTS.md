@@ -1569,3 +1569,111 @@ The content bar uses the **Tri-Column Balanced Alignment** pattern (see PRODUCT_
 |------|----------------|
 | `app/layout.tsx` | Global analytics + Google tag injection |
 | `package.json` | `@vercel/analytics` dependency |
+
+---
+
+## Contract: Source Observation Verification (SOURCE-OBS-01) — Draft / Not Active
+
+> **Status:** Draft / Proposed / Not Active
+> **Owner:** Lane 6 strategy
+> **This section does not change current confirmation behavior.** `last_verified_at` remains the active source of truth until a future migration explicitly supersedes this contract.
+
+This section documents the **forward-looking** verification model for events that may be ingested from external sources. It is the next documented step in the migration plan in [docs/strategy/SOURCE_REGISTRY.md](./strategy/SOURCE_REGISTRY.md) §9. It does not authorize any implementation.
+
+### Scope
+
+**In scope (proposed, future):**
+
+- Event source observations (per-source, per-fetch records).
+- Source registry inputs (source IDs, types, risk tiers).
+- Event change-log evidence (per-field deltas across observations).
+- Claim context (venue, artist, organization claim status).
+- Derived verification display (badges, labels, attribution).
+
+**Not authorized by this section:**
+
+- Any crawler, ingestion pipeline, extractor, verifier, deduper, or conflict resolver.
+- Any database migration. No `event_source_observations`, `event_change_log`, or first-class claim tables are added by this PR.
+- Any verification badge derivation, label-text change, or DB-truth-source change.
+- Any new write API, MCP surface, or public agent-readable endpoint.
+- Any operational change to current confirmation behavior.
+
+### Proposed Data Inputs
+
+When implemented, the verification display will be derived from:
+
+- **Event source observations** — per-source, per-fetch records carrying `source_id`, `source_type`, `risk_tier`, `observed_at`, `source_url`, `content_hash`, observed event fields, and `observation_status`.
+- **Event change-log entries** — per-field delta records with `change_severity` (`minor` / `material` / `cancellation_risk`).
+- **Claim context** — venue, artist, and organization claim status keyed to the event.
+- **Source registry metadata** — risk tier, robots/terms summary, default cadence, last-fetch outcome.
+
+Field-level shape and proposed table definitions are detailed in [docs/strategy/SOURCE_REGISTRY.md](./strategy/SOURCE_REGISTRY.md) §4. They remain proposed until a separate stop-gate-approved migration phase ships.
+
+### Proposed Derivation Invariant
+
+When implemented, the derived verification display function must be:
+
+- **Deterministic** — the same evidence in produces the same label out.
+- **Explainable** — every label is accompanied by an `explanation` string naming the evidence used.
+- **Reproducible** — the label and explanation are recomputable from stored evidence at any time.
+
+Two further invariants apply to any future activation:
+
+- **Warning states outrank confidence states.** If both a warning state (e.g. `possible_cancellation`, `needs_confirmation`) and a confidence state (e.g. `source_verified`, `multi_source_confirmed`) apply, the warning state is the primary display.
+- **Public verification labels must not depend on payment tier.** Verification badges, source attribution, last-checked timestamps, correction flow, and opt-out path are public-good surfaces and may not be gated, degraded, deprioritized, or differentiated by paid tier. See [.claude/rules/00-governance-and-safety.md](../.claude/rules/00-governance-and-safety.md) §Trust Layer Invariant for the canonical statement.
+
+### Proposed Primary States and Secondary Modifiers
+
+The display model uses two independent layers. Detail in [docs/strategy/SOURCE_REGISTRY.md](./strategy/SOURCE_REGISTRY.md) §6; concise summary here:
+
+**Primary verification state** (one of):
+
+- `unconfirmed` — default, no qualifying observation.
+- `found` — observed, not yet verified.
+- `source_verified` — verified against an allowed source.
+- `multi_source_confirmed` — corroborated by more than one allowed source.
+- `claimed_verified` — verified through an active claim (venue / artist / organization).
+- `needs_confirmation` — recent change or stale evidence requires review.
+- `possible_cancellation` — source no longer lists the event or signals cancellation.
+
+**Secondary modifier badges** (zero or more):
+
+- `details_changed_recently`
+- `last_checked_recently`
+- `ticket_link_active`
+- `source_conflict`
+- `claimed_by_venue`
+- `claimed_by_artist`
+
+The primary state asserts the **level** of confidence. Claim modifiers identify **who** claimed.
+
+### Backward Compatibility
+
+- Existing event verification behavior across this document remains active and unchanged.
+- `last_verified_at` continues to drive the current "Confirmed" / "Unconfirmed" badge.
+- Existing rules that reference `last_verified_at` (including the DSC TEST Suppression Rule, the Persisted-State Confirmation Rule, and any other surface) remain in force exactly as written.
+
+Future activation of SOURCE-OBS-01 requires, at minimum:
+
+- A schema migration adding `event_source_observations`, `event_change_log`, and first-class claim tables.
+- A typed, tested derivation function with full coverage across primary states, secondary modifiers, and the precedence rule.
+- A feature flag default-off in production.
+- A separate contract activation PR that explicitly retires the binary `last_verified_at` invariant.
+
+### Stop-Gates
+
+- Any implementation work that would activate SOURCE-OBS-01 in whole or in part requires its own stop-gate per [docs/GOVERNANCE.md](./GOVERNANCE.md).
+- No badge text, label, or DB truth source for verification may change without that stop-gate.
+- The Trust Layer Invariant in [.claude/rules/00-governance-and-safety.md](../.claude/rules/00-governance-and-safety.md) is non-negotiable: trust is never pay-to-play.
+- Operational PR-level enforcement of these stop-gates lives in [.claude/rules/05-ingestion-and-agent-readability.md](../.claude/rules/05-ingestion-and-agent-readability.md).
+
+### Non-Goals (Explicit)
+
+This contract section does **not**:
+
+- Add or modify any database schema.
+- Authorize a crawler, extractor, or ingestion pipeline.
+- Modify any UI component, badge, label, or display path.
+- Add an MCP server, OpenAPI endpoint, RSS/iCal feed, or write API.
+- Begin operational ingestion of any external source.
+- Change the meaning, derivation, or display of the current "Confirmed" / "Unconfirmed" badge.
