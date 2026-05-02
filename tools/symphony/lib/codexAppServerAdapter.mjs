@@ -218,6 +218,33 @@ function responseErrorReason(id) {
   return "response_error";
 }
 
+const TERMINAL_REASON_BY_RESULT_REASON = Object.freeze({
+  event_callback_error: "event_callback_error",
+  initialize_error: "json_rpc_error",
+  malformed_protocol_message: "protocol_parse_error",
+  missing_thread_id: "protocol_parse_error",
+  missing_turn_id: "protocol_parse_error",
+  process_exit_before_completion: "process_exit_before_completion",
+  response_error: "json_rpc_error",
+  response_timeout: "read_timeout",
+  thread_start_error: "json_rpc_error",
+  turn_cancelled: "turn_cancelled",
+  turn_completed: "turn_completed",
+  turn_failed: "turn_failed",
+  turn_input_required: "turn_failed",
+  turn_start_error: "json_rpc_error",
+  turn_timeout: "read_timeout",
+  unsupported_tool_call: "turn_failed"
+});
+
+function terminalTaxonomy(result) {
+  const terminalStatus = result.ok ? "success" : "failure";
+  return {
+    terminal_status: terminalStatus,
+    terminal_reason: TERMINAL_REASON_BY_RESULT_REASON[result.reason] || result.reason || terminalStatus
+  };
+}
+
 function appendAdapterLog({ stdout, stderr, protocolEvents, result }) {
   return `${JSON.stringify({
     event: "symphony_app_server_adapter_result",
@@ -249,6 +276,7 @@ export async function runCodexAppServerAdapter({
   spawnFn = spawn,
   setTimeoutFn = setTimeout,
   clearTimeoutFn = clearTimeout,
+  writeFileFn = writeFile,
   onEvent = null,
   nowFn = () => new Date()
 }) {
@@ -301,8 +329,8 @@ export async function runCodexAppServerAdapter({
       rate_limits: rateLimits,
       adapter_events_count: adapterEvents.length,
       protocol_events_count: protocolEvents.length,
-      terminal_status: result.ok ? "completed" : "failed",
-      terminal_reason: result.reason ?? null,
+      terminal_status: result.terminal_status,
+      terminal_reason: result.terminal_reason,
       ok: result.ok
     };
   }
@@ -332,9 +360,14 @@ export async function runCodexAppServerAdapter({
     }
     settled = true;
     clearAllTimers();
-    const adapterStateSnapshot = buildStateSnapshot(result);
-    const finalResult = {
+    const terminal = terminalTaxonomy(result);
+    const resultWithTerminal = {
       ...result,
+      ...terminal
+    };
+    const adapterStateSnapshot = buildStateSnapshot(resultWithTerminal);
+    const finalResult = {
+      ...resultWithTerminal,
       logPath,
       stdout,
       stderr,
@@ -351,7 +384,7 @@ export async function runCodexAppServerAdapter({
       adapter_state_snapshot: adapterStateSnapshot
     };
     try {
-      await writeFile(logPath, appendAdapterLog({
+      await writeFileFn(logPath, appendAdapterLog({
         stdout,
         stderr,
         protocolEvents,
@@ -359,7 +392,18 @@ export async function runCodexAppServerAdapter({
       }), "utf8");
       resolveResult?.(finalResult);
     } catch (error) {
-      rejectResult?.(error);
+      const logWriteResult = {
+        ...finalResult,
+        ok: false,
+        reason: "log_write_error",
+        terminal_status: "failure",
+        terminal_reason: "log_write_error",
+        log_write_error: error instanceof Error ? error.message : String(error)
+      };
+      logWriteResult.adapter_state_snapshot = buildStateSnapshot(logWriteResult);
+      const logWriteError = error instanceof Error ? error : new Error(String(error));
+      Object.assign(logWriteError, logWriteResult);
+      rejectResult?.(logWriteError);
     }
   }
 

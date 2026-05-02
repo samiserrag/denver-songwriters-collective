@@ -93,6 +93,13 @@ function assertNoActiveTimers(timerHarness) {
   assert.deepEqual(timerHarness.timers.filter((timer) => !timer.cleared), []);
 }
 
+function assertTerminal(result, terminalStatus, terminalReason) {
+  assert.equal(result.terminal_status, terminalStatus);
+  assert.equal(result.terminal_reason, terminalReason);
+  assert.equal(result.adapter_state_snapshot.terminal_status, terminalStatus);
+  assert.equal(result.adapter_state_snapshot.terminal_reason, terminalReason);
+}
+
 test("buildCodexAppServerLaunch uses a shell command for the app-server process", () => {
   assert.deepEqual(buildCodexAppServerLaunch({ command: "codex app-server" }), {
     command: "bash",
@@ -174,10 +181,11 @@ test("runCodexAppServerAdapter completes a single app-server turn and preserves 
     rate_limits: { requests_remaining: 99 },
     adapter_events_count: 6,
     protocol_events_count: 5,
-    terminal_status: "completed",
+    terminal_status: "success",
     terminal_reason: "turn_completed",
     ok: true
   });
+  assertTerminal(result, "success", "turn_completed");
   assert.deepEqual(child.killSignals, ["SIGTERM"]);
   assertNoActiveTimers(timerHarness);
 
@@ -249,6 +257,32 @@ test("runCodexAppServerAdapter emits normalized adapter events for future orches
   assert.equal(observedEvents.at(-1).session_id, "thread-events-turn-events");
 });
 
+test("runCodexAppServerAdapter reports log write errors with terminal taxonomy", async () => {
+  const { child, resultPromise, timerHarness } = await startAdapter({
+    writeFileFn: async () => {
+      throw new Error("disk full");
+    }
+  });
+
+  child.stdout.emit("data", protocolLine({ id: 1, result: {} }));
+  child.stdout.emit("data", protocolLine({ id: 2, result: { thread: { id: "thread-log" } } }));
+  child.stdout.emit("data", protocolLine({ id: 3, result: { turn: { id: "turn-log" } } }));
+  child.stdout.emit("data", protocolLine({ method: "turn/completed" }));
+
+  await assert.rejects(resultPromise, (error) => {
+    assert.equal(error.message, "disk full");
+    assert.equal(error.ok, false);
+    assert.equal(error.reason, "log_write_error");
+    assert.equal(error.log_write_error, "disk full");
+    assert.equal(error.thread_id, "thread-log");
+    assert.equal(error.turn_id, "turn-log");
+    assertTerminal(error, "failure", "log_write_error");
+    return true;
+  });
+  assert.deepEqual(child.killSignals, ["SIGTERM"]);
+  assertNoActiveTimers(timerHarness);
+});
+
 test("runCodexAppServerAdapter fails closed when the adapter event sink throws", async () => {
   const { child, resultPromise, timerHarness } = await startAdapter({
     onEvent: (event) => {
@@ -265,6 +299,7 @@ test("runCodexAppServerAdapter fails closed when the adapter event sink throws",
   assert.equal(result.reason, "event_callback_error");
   assert.equal(result.error, "event sink failed");
   assert.equal(result.event, "protocol_message");
+  assertTerminal(result, "failure", "event_callback_error");
   assert.deepEqual(child.killSignals, ["SIGTERM"]);
   assertNoActiveTimers(timerHarness);
   assert.equal(result.adapter_events[0].event, "adapter_started");
@@ -312,6 +347,7 @@ test("runCodexAppServerAdapter fails closed on an invalid final stdout buffer", 
   assert.equal(result.ok, false);
   assert.equal(result.reason, "malformed_protocol_message");
   assert.equal(result.unterminated, true);
+  assertTerminal(result, "failure", "protocol_parse_error");
   assert.deepEqual(child.killSignals, ["SIGTERM"]);
   assertNoActiveTimers(timerHarness);
 });
@@ -324,6 +360,7 @@ test("runCodexAppServerAdapter fails closed on malformed JSON protocol lines", a
   const result = await resultPromise;
   assert.equal(result.ok, false);
   assert.equal(result.reason, "malformed_protocol_message");
+  assertTerminal(result, "failure", "protocol_parse_error");
   assert.deepEqual(child.killSignals, ["SIGTERM"]);
   assertNoActiveTimers(timerHarness);
 });
@@ -339,6 +376,7 @@ test("runCodexAppServerAdapter fails closed on initialize JSON-RPC errors", asyn
   const result = await resultPromise;
   assert.equal(result.ok, false);
   assert.equal(result.reason, "initialize_error");
+  assertTerminal(result, "failure", "json_rpc_error");
   assert.deepEqual(result.responseError, { code: -32603, message: "initialize failed" });
   assert.deepEqual(child.killSignals, ["SIGTERM"]);
   assertNoActiveTimers(timerHarness);
@@ -356,6 +394,7 @@ test("runCodexAppServerAdapter fails closed on thread/start JSON-RPC errors", as
   const result = await resultPromise;
   assert.equal(result.ok, false);
   assert.equal(result.reason, "thread_start_error");
+  assertTerminal(result, "failure", "json_rpc_error");
   assert.deepEqual(result.responseError, { code: -32000, message: "thread start failed" });
   assert.deepEqual(child.killSignals, ["SIGTERM"]);
   assertNoActiveTimers(timerHarness);
@@ -374,6 +413,7 @@ test("runCodexAppServerAdapter fails closed on turn/start JSON-RPC errors", asyn
   const result = await resultPromise;
   assert.equal(result.ok, false);
   assert.equal(result.reason, "turn_start_error");
+  assertTerminal(result, "failure", "json_rpc_error");
   assert.equal(result.thread_id, "thread-error");
   assert.deepEqual(result.responseError, { code: -32000, message: "turn start failed" });
   assert.deepEqual(child.killSignals, ["SIGTERM"]);
@@ -389,6 +429,7 @@ test("runCodexAppServerAdapter fails closed when thread/start omits thread id", 
   const result = await resultPromise;
   assert.equal(result.ok, false);
   assert.equal(result.reason, "missing_thread_id");
+  assertTerminal(result, "failure", "protocol_parse_error");
   assert.equal(result.thread_id, null);
   assert.deepEqual(child.killSignals, ["SIGTERM"]);
   assertNoActiveTimers(timerHarness);
@@ -404,6 +445,7 @@ test("runCodexAppServerAdapter fails closed when turn/start omits turn id", asyn
   const result = await resultPromise;
   assert.equal(result.ok, false);
   assert.equal(result.reason, "missing_turn_id");
+  assertTerminal(result, "failure", "protocol_parse_error");
   assert.equal(result.thread_id, "thread-no-turn");
   assert.equal(result.turn_id, null);
   assert.deepEqual(child.killSignals, ["SIGTERM"]);
@@ -421,6 +463,7 @@ test("runCodexAppServerAdapter maps turn/failed to a failed result", async () =>
   const result = await resultPromise;
   assert.equal(result.ok, false);
   assert.equal(result.reason, "turn_failed");
+  assertTerminal(result, "failure", "turn_failed");
   assert.equal(result.session_id, "thread-fail-turn-fail");
   assert.deepEqual(child.killSignals, ["SIGTERM"]);
 });
@@ -436,6 +479,7 @@ test("runCodexAppServerAdapter maps turn/cancelled to a failed result", async ()
   const result = await resultPromise;
   assert.equal(result.ok, false);
   assert.equal(result.reason, "turn_cancelled");
+  assertTerminal(result, "failure", "turn_cancelled");
   assert.equal(result.session_id, "thread-cancel-turn-cancel");
   assert.deepEqual(child.killSignals, ["SIGTERM"]);
   assertNoActiveTimers(timerHarness);
@@ -452,6 +496,7 @@ test("runCodexAppServerAdapter fails closed when app-server requests user input"
   const result = await resultPromise;
   assert.equal(result.ok, false);
   assert.equal(result.reason, "turn_input_required");
+  assertTerminal(result, "failure", "turn_failed");
   assert.deepEqual(child.killSignals, ["SIGTERM"]);
 });
 
@@ -466,6 +511,7 @@ test("runCodexAppServerAdapter treats dynamic tool calls as unsupported in the s
   const result = await resultPromise;
   assert.equal(result.ok, false);
   assert.equal(result.reason, "unsupported_tool_call");
+  assertTerminal(result, "failure", "turn_failed");
   assert.deepEqual(child.killSignals, ["SIGTERM"]);
 });
 
@@ -481,6 +527,7 @@ test("runCodexAppServerAdapter treats stderr as diagnostics only", async () => {
   const result = await resultPromise;
   assert.equal(result.ok, false);
   assert.equal(result.reason, "process_exit_before_completion");
+  assertTerminal(result, "failure", "process_exit_before_completion");
   assert.equal(result.session_id, "thread-stderr-turn-stderr");
   assert.match(result.stderr, /turn\/completed/);
   assertNoActiveTimers(timerHarness);
@@ -508,10 +555,11 @@ test("runCodexAppServerAdapter fails when the process exits before completion", 
     rate_limits: null,
     adapter_events_count: 2,
     protocol_events_count: 1,
-    terminal_status: "failed",
+    terminal_status: "failure",
     terminal_reason: "process_exit_before_completion",
     ok: false
   });
+  assertTerminal(result, "failure", "process_exit_before_completion");
   assertNoActiveTimers(timerHarness);
 });
 
@@ -525,6 +573,7 @@ test("runCodexAppServerAdapter enforces startup response timeout with fake timer
   const result = await resultPromise;
   assert.equal(result.ok, false);
   assert.equal(result.reason, "response_timeout");
+  assertTerminal(result, "failure", "read_timeout");
   assert.equal(result.timeout.phase, "initialize");
   assert.deepEqual(child.killSignals, ["SIGTERM"]);
   assertNoActiveTimers(timerHarness);
@@ -543,6 +592,7 @@ test("runCodexAppServerAdapter enforces turn timeout with fake timers", async ()
   const result = await resultPromise;
   assert.equal(result.ok, false);
   assert.equal(result.reason, "turn_timeout");
+  assertTerminal(result, "failure", "read_timeout");
   assert.equal(result.timeout.phase, "turn");
   assert.equal(result.session_id, "thread-timeout-turn-timeout");
   assert.deepEqual(child.killSignals, ["SIGTERM"]);
