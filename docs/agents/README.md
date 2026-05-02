@@ -1,59 +1,77 @@
-# Track 1 Agent Briefs
+# Agent Briefs
 
-Standing briefs for the multi-agent workflow building out the AI event ops portal.
+Standing briefs and bootstrap prompts for the current multi-lane workflow.
 
-## When to use these
+## Current Lane Map
 
-Open a fresh browser tab for one of three roles. Paste a one-line bootstrap into the new thread; the agent reads its brief here and self-configures.
+| Lane | Name | Default role |
+|---|---|---|
+| Lane 1 | Coordinator | Routing, audits, prompts, claims/docs sync. No code/runtime work. |
+| Lane 2 | Track 2 | Track 2 security, BOLA/RLS/service-role, concierge infrastructure, and approved Track 2 implementation. |
+| Lane 3 | Symphony | Symphony prototype/spec-completion implementation, tests, and docs. |
+| Lane 4 | Symphony helper | Read-only Symphony critique, audits, and decision memos unless explicitly assigned implementation. |
+| Lane 5 | Event audit/admin alerts/growth | Event audit, admin alerting, and growth-surface planning. Defaults to docs-only investigation until stop-gates are approved. |
 
-## Three roles
+## Brief Files
 
-| Role | File | Where it runs | What it does |
-|---|---|---|---|
-| Coordinator | `docs/agents/coordinator.md` | Claude Code on web | Audits state, recommends next work, generates builder prompts. Read-only on code. |
-| Claude builder | `docs/agents/claude-builder.md` | Claude Code on web | Implements assigned PRs in the Claude lane. |
-| Codex builder | `docs/agents/codex-builder.md` | Codex Cloud (with repo selected at task creation) | Implements assigned PRs in the Codex lane. |
+| Brief | Use |
+|---|---|
+| `docs/agents/coordinator.md` | Lane 1 standing brief for current multi-lane coordination. |
+| `docs/agents/claude-builder.md` | Legacy Track 1 Claude builder defaults. Use only as a protocol reference when a coordinator prompt assigns Claude work. |
+| `docs/agents/codex-builder.md` | Legacy Track 1 Codex builder defaults and Codex Cloud caveats. Use only as a protocol reference when a coordinator prompt assigns Codex work. |
 
-## Bootstrap prompts (paste into a fresh thread)
+The coordinator prompt is authoritative for current lane assignment. If a builder brief says "Track 1" but the coordinator prompt assigns Lane 2, Lane 3, Lane 4, or Lane 5, follow the coordinator prompt for scope and files.
+
+## Bootstrap Prompts
 
 **Fresh coordinator thread:**
 
-```
+```text
 Read docs/agents/coordinator.md and adopt it as your standing brief. Then run your first standing-task report against current main.
 ```
 
-**Fresh Claude builder thread:**
+**Fresh Track 2 builder thread:**
 
-```
-Read docs/agents/claude-builder.md and adopt it as your standing brief. Then await task assignment.
-```
-
-**Fresh Codex builder thread:**
-
-```
-Read docs/agents/codex-builder.md and adopt it as your standing brief. Then verify your GitHub setup (git remote -v, gh auth status) and report results before any task work.
+```text
+Read AGENTS.md and docs/GOVERNANCE.md. Then read the Lane 2 prompt from the coordinator and do not start outside that scope.
 ```
 
-## How the loop works
+**Fresh Symphony builder thread:**
 
-1. Sami pings the coordinator: "status?"
-2. Coordinator reports + outputs paste-ready builder prompts.
-3. Sami pastes the relevant builder prompt into the corresponding builder thread.
-4. Builder opens a PR, posts a status comment.
-5. Sami pings the coordinator: "verify <PR#>".
-6. Coordinator audits the PR against governance rules.
-7. Sami merges via GitHub mobile.
-8. Loop.
+```text
+Read AGENTS.md, docs/GOVERNANCE.md, docs/investigation/symphony-service-spec-v1-dsc.md, docs/runbooks/symphony.md, tools/symphony/README.md, and the Lane 3 prompt from the coordinator. Treat Symphony as prototype-only; do not run live execute or daemon commands.
+```
 
-## Authority boundaries
+**Fresh Symphony helper thread:**
 
-The coordinator decides autonomously within pre-approved (§13.1) scope and recommends-with-reasoning for approval-required (§13.2) decisions. Sami approves §13.2 work and merges all PRs.
+```text
+Read AGENTS.md, docs/GOVERNANCE.md, docs/investigation/symphony-service-spec-v1-dsc.md, and the Lane 4 prompt from the coordinator. Stay read-only unless explicitly assigned implementation.
+```
 
-See `docs/investigation/ai-event-ops-collaboration-plan.md` §13 for the full pre-approved vs approval-required split.
+**Fresh Lane 5 builder thread:**
 
-## Related canonical docs
+```text
+Read AGENTS.md and docs/GOVERNANCE.md. Then read the Lane 5 prompt from the coordinator. Start with docs-only event audit/admin alerts/growth investigation unless Sami has explicitly approved runtime work.
+```
 
-- `AGENTS.md` — repo-wide agent rules
-- `docs/GOVERNANCE.md` — stop-gate protocol
-- `docs/investigation/ai-event-ops-collaboration-plan.md` — Track 1/2 strategy
-- `docs/investigation/track1-claims.md` — current ground-truth on active work
+## How The Loop Works
+
+1. Sami pings Lane 1: "status?" or asks for next prompts.
+2. Coordinator reports lane state and outputs paste-ready prompts.
+3. Sami pastes each prompt into the appropriate lane thread.
+4. Builder opens a PR or returns a read-only memo.
+5. Coordinator audits the PR/memo against governance and lane boundaries.
+6. Sami merges or asks for patches.
+7. Loop.
+
+## Authority Boundaries
+
+Sami is final approver. The coordinator routes and audits. Builders implement only the assigned prompt. Symphony cannot be used for operational repo work until the full DSC spec gate is explicitly closed.
+
+## Related Canonical Docs
+
+- `AGENTS.md` - repo-wide agent rules
+- `docs/GOVERNANCE.md` - stop-gate protocol
+- `docs/investigation/track2-roadmap.md` - Track 2 strategy
+- `docs/investigation/symphony-service-spec-v1-dsc.md` - Symphony operational gate
+- `docs/investigation/track1-claims.md` - legacy AI-edit claims and coordination ledger

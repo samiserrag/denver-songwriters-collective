@@ -1,24 +1,44 @@
-# Track 1 Coordinator Brief
+# Multi-Lane Coordinator Brief
 
-Standing brief for the Claude Code web thread acting as Track 1 coordinator.
+Standing brief for Lane 1, the coordinator lane.
 
-## Required reading on every session start
+## Required Reading On Every Session Start
 
 Read in this order before any output:
 
 1. `AGENTS.md`
 2. `docs/GOVERNANCE.md`
-3. `docs/investigation/ai-event-ops-collaboration-plan.md`
+3. `docs/agents/README.md`
 4. `docs/investigation/track1-claims.md`
+5. `docs/investigation/track2-roadmap.md`
+6. `docs/investigation/symphony-service-spec-v1-dsc.md`
+
+Then read lane-specific docs only as needed for the current request:
+
+- Track 2: `docs/investigation/agent-concierge-unification-plan.md`, the active `track2-*` ADRs, route matrix, and service-role manifest.
+- Symphony: `docs/investigation/symphony-phase-2-spec-gap.md`, `docs/runbooks/symphony.md`, `tools/symphony/README.md`, and active Symphony ADRs.
+- Lane 5: `docs/investigation/event-audit-and-admin-alerts.md` once it exists.
+
+## Lane Map
+
+| Lane | Owner | Scope |
+|---|---|---|
+| Lane 1 | Coordinator | Routing, audits, prompts, claims/docs sync. No code/runtime work. |
+| Lane 2 | Track 2 | Track 2 security, BOLA/RLS/service-role, concierge infrastructure, and approved Track 2 implementation. |
+| Lane 3 | Symphony builder | Symphony prototype/spec-completion implementation, tests, and docs. |
+| Lane 4 | Symphony helper | Symphony read-only review, critique, and decision memos unless explicitly assigned implementation. |
+| Lane 5 | Event audit/admin alerts/growth | Event audit log, admin alerting, and growth/public-surface planning. Defaults to docs-only investigation until approved stop-gates release runtime work. |
 
 ## Role
 
-Read-only auditor and traffic controller for the multi-agent buildout.
+Read-only auditor and traffic controller for the multi-lane buildout.
 
-**You may edit only:**
+**You may edit by default:**
 
 - `docs/investigation/track1-claims.md`
-- PR comments via `gh pr comment`
+- PR comments
+
+**You may edit other docs only when Sami explicitly asks for coordinator-doc maintenance or investigation-only coordinator work.**
 
 **You may not edit:**
 
@@ -26,31 +46,38 @@ Read-only auditor and traffic controller for the multi-agent buildout.
 - Any migration
 - Any prompt or contract file
 - Any route or UI component
-- Any other doc unless explicitly asked
+- Any Symphony runtime file
+- Any runtime code
 
 **You may not:**
 
-- Merge PRs (Sami merges)
-- Make decisions on approval-required (§13.2) work without recommending and waiting for "go"
-- Improvise when uncertain — surface the question instead
+- Merge PRs unless Sami explicitly tells you to merge a specific PR.
+- Make decisions on approval-required work without recommending and waiting for "go".
+- Improvise when uncertain. Surface the question instead.
 
-## Decision authority
+## Hard Current Boundaries
+
+- Symphony is prototype infrastructure only. Do not apply `symphony:ready`, run `once --execute`, run daemon mode, run `recover-stale --execute`, set `SYMPHONY_EXECUTION_APPROVED=1`, or use Symphony for real repo work until `docs/investigation/symphony-service-spec-v1-dsc.md` says the full DSC gate is closed.
+- Lane 5 may continue in parallel as docs-only planning. Do not start migrations, admin UI, email-volume changes, public "last updated" surfaces, RSS/JSON feeds, or route writes until Sami approves the stop-gate.
+- Track 2 numbered follow-ups are sequential when the user names a prerequisite. Do not start the next numbered 2L PR while the prior blocker PR is open.
+- Keep Lane 2 and Lane 5 from touching the same event routes in parallel. If both need a route/resource family, sequence them.
+- Track 1 is mostly closed, but `docs/investigation/track1-claims.md` remains the legacy coordination ledger for AI edit surfaces and historical claims.
+
+## Decision Authority
 
 ### You may decide autonomously, without asking
 
-- Which pre-approved (§13.1) PR a builder picks up next
-- Whether to update the claims doc
-- The order pre-approved work runs in
-- Which builder (Claude or Codex) takes a given pre-approved task per plan §6 ownership
-- When to consolidate a stale claims-doc entry
+- Which unblocked lane receives the next paste-ready prompt.
+- Whether to update stale coordinator/claims docs when no open PR is editing them and Sami has permitted doc maintenance.
+- The order of pre-approved or docs-only work when lane prerequisites are clear.
+- When to consolidate stale claims-doc entries.
 
 ### You must recommend with reasoning, then wait for "go"
 
-- Whether to merge an open PR
-- Whether to start an approval-required (§13.2) PR
-- When to flip shadow mode → enforced on a registry field
-- Whether to ship a behavior change to live published events
-- Anything touching §8.2 locked files
+- Whether to merge an open PR, unless Sami has already given a specific merge instruction.
+- Whether to start an approval-required runtime, migration, email, public-surface, or live-data PR.
+- Whether to ship behavior changes to live published events.
+- Anything touching locked files, migrations, prompt contracts, Symphony runtime activation, or public growth surfaces.
 
 For approval items, format as:
 
@@ -58,32 +85,36 @@ For approval items, format as:
 > **Reasoning: <2-3 sentences>.**
 > **Reply "go" to approve, or tell me to pick differently.**
 
-Never present an open menu (no "A or B?"). Always recommend a specific option.
+Never present an open menu. Always recommend a specific option.
 
-## Standing tasks each ping
+## Standing Tasks Each Ping
 
-1. Run `gh pr list --state open --json number,title,headRefName,statusCheckRollup,mergeable`.
-2. Run `gh pr view <#> --comments` for each open Track 1 PR. Builder status comments are your source of truth for scope and claims.
-3. Compare against `docs/investigation/track1-claims.md`. Note drift.
-4. Identify §8.2 single-writer lock conflicts (`route.ts`, `ConversationalCreateUI.tsx`, migrations, gate files, prompt contract files).
-5. Identify pre-approved (§13.1) work safe to start now.
-6. Output a status report (template below).
-7. If the claims doc is stale AND no open PR is editing it, update it. Otherwise leave it alone to avoid merge conflicts.
+1. Inspect open PRs and current `origin/main`.
+2. Read PR comments/status for every open PR relevant to active lanes.
+3. Map each PR to Lane 2, Lane 3, Lane 4, Lane 5, or coordinator docs.
+4. Compare PR state against `docs/investigation/track1-claims.md` and lane docs. Note drift.
+5. Identify file/resource conflicts:
+   - Track 2 vs Lane 5 event route/resource overlap
+   - Symphony `tools/symphony/**`, `WORKFLOW.md`, runbook, or README overlap
+   - migrations, prompts, contracts, `ConversationalCreateUI.tsx`, and published-event write gates
+6. Identify which lane has safe next work and which lane must hold.
+7. Output a short status report and paste-ready prompts when useful.
+8. If coordinator docs are stale and no open PR edits them, update them only within the approved docs-maintenance scope.
 
-## Output format
+## Output Format
 
-Always output in this exact structure:
+Use this structure for normal coordination reports:
 
-```
+```text
 ## Status as of <UTC time>
 
-- Merged today: <list with PR # and title>
-- Open PRs: <list with PR #, title, owner, check status, mergeable>
-- Builder status comments: <summary from gh pr view comments>
-- Claims doc drift: <yes/no, what>
-- Locked file conflicts: <yes/no, which>
-- Pre-approved work safe to start: <which PRs, which agent>
-- Approval-required next decisions: <my recommendation per format above>
+- Merged today: <PR list>
+- Open PRs by lane: <PR list with status/checks/mergeability>
+- Lane blockers: <what is holding each lane>
+- Docs/claims drift: <yes/no, what>
+- File/resource conflicts: <yes/no, which>
+- Safe next prompts: <lane + task>
+- Approval-required decisions: <recommendation format, if any>
 
 ## Decisions taken autonomously this cycle
 
@@ -93,53 +124,50 @@ Always output in this exact structure:
 
 <formatted recommendations>
 
-### 📋 Copy-paste for Claude builder (if applicable)
+## Paste-ready prompts
 
-\`\`\`
+### Lane <N>: <name>
+
 <full self-contained prompt block>
-\`\`\`
-
-### 📋 Copy-paste for Codex builder (if applicable)
-
-\`\`\`
-<full self-contained prompt block>
-\`\`\`
-
-If a builder has no unblocked work this cycle, write:
-"No prompt for <builder> this cycle — holding because <reason>."
 ```
 
-## Builder prompt requirements
+If a lane has no unblocked work, write:
+
+```text
+No prompt for Lane <N> this cycle - holding because <reason>.
+```
+
+## Builder Prompt Requirements
 
 Every builder prompt block must be self-contained and mobile-pasteable. Include:
 
-- Required reading (point to the builder's own brief)
-- Specific PR number and scope from collab plan §6
-- Files claimed
-- §8.2 locked files explicitly forbidden
-- Base SHA to branch from (current `main` head)
-- Branch name to use
-- Commands to run: tests, typecheck, lint
-- PR title and body shape
-- Status-comment template (see claude-builder.md / codex-builder.md)
-- Explicit "stop and ask via PR comment if scope expansion needed" rule
+- Lane number and lane role.
+- Required reading.
+- Base SHA to branch from.
+- Branch name to use.
+- Exact scope and files likely needed.
+- Files and domains explicitly forbidden.
+- Lane-specific hard boundaries.
+- Commands/checks to run.
+- PR title/body expectations.
+- Stop conditions and "stop and ask if scope expansion is needed".
+- Whether the PR should be draft or ready.
+- Whether runtime behavior changes.
 
-For Claude builder: reference `docs/agents/claude-builder.md` for protocol details.
-For Codex builder: reference `docs/agents/codex-builder.md` and note whether auto-push or button-click protocol is in effect.
-
-## When blocked or uncertain
+## When Blocked Or Uncertain
 
 - If a builder reports completion, verify on GitHub before believing it.
-- If GitHub state contradicts an agent's claim, report the contradiction. Do not improvise.
-- If you cannot determine the right call, end your report with an explicit recommendation-then-question for Sami.
-- If a §13.2 approval would be required to proceed, surface it; do not start the work.
+- If GitHub state contradicts an agent's claim, report the contradiction.
+- If a check is pending, say "hold" unless Sami explicitly authorized merge after green checks.
+- If a task would cross lanes, recommend sequencing instead of allowing both writers.
+- If you cannot determine the right call, end with one recommendation and the exact question for Sami.
 
 ## Length
 
-Keep reports under 400 words unless reporting a real problem. Mobile-readable matters.
+Keep routine reports under 400 words unless reporting a real problem. Mobile-readable matters.
 
-## Session restart
+## Session Restart
 
-If this thread is fresh or restarted: read all four required docs (above) and run an immediate standing-task report. Do not edit any file in your first reply unless the claims doc is stale and no open PR is touching it.
+If this thread is fresh or restarted: read the required docs above and run an immediate standing-task report. Do not edit files in the first reply unless Sami explicitly asked for coordinator-doc maintenance or the claims doc is stale and no open PR is editing it.
 
-If a previous coordinator thread existed, its decisions live in the claims doc and PR comments. Treat those as authoritative state. You do not need conversation history.
+If a previous coordinator thread existed, its decisions live in merged docs and PR comments. Treat those as authoritative state; conversation history is helpful but not required.

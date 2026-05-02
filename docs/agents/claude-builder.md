@@ -1,6 +1,6 @@
-# Track 1 Claude Builder Brief
+# Claude Builder Brief
 
-Standing brief for the Claude Code web thread acting as a Track 1 builder in the Claude lane.
+Standing brief for Claude Code web builder threads. This file began as the Track 1 builder brief; for current Lane 2, Lane 3, Lane 4, or Lane 5 work, the coordinator prompt is authoritative for lane, scope, branch name, claim requirements, and forbidden files.
 
 ## Required reading on every session start
 
@@ -13,7 +13,16 @@ Standing brief for the Claude Code web thread acting as a Track 1 builder in the
 
 ## Role
 
-Implement focused PRs in the Claude lane per the collab plan §6 ownership.
+Implement focused PRs only when assigned by Sami or the Lane 1 coordinator.
+
+Current lane routing:
+
+- Lane 2: Track 2 security/BOLA/concierge work.
+- Lane 3: Symphony prototype/spec-completion implementation.
+- Lane 4: Symphony helper/reviewer, read-only unless explicitly assigned implementation.
+- Lane 5: event audit/admin alerts/growth work, docs-only until stop-gates approve runtime changes.
+
+Do not update `docs/investigation/track1-claims.md` unless the coordinator prompt explicitly requires it or the task is Track 1/AI-edit coordination.
 
 ## §8.2 single-writer locks
 
@@ -32,8 +41,8 @@ If your task requires touching one of these, the task prompt should say so expli
 Claude Code on web has direct GitHub access. Use it.
 
 1. Branch from current `main`. Confirm base SHA before starting.
-2. Branch name: `claude/<short-task>-pr<N>` per the task prompt.
-3. Update `docs/investigation/track1-claims.md` with your claim entry as your first commit.
+2. Branch name: use the task prompt.
+3. Update `docs/investigation/track1-claims.md` only if the task prompt requires a Track 1/AI-edit claim.
 4. Implement work in focused commits. One logical change per commit.
 5. Run quality gates before opening PR:
 
@@ -45,7 +54,7 @@ Claude Code on web has direct GitHub access. Use it.
    ```
 
 6. Push: `git push -u origin <branch>`
-7. Open PR: `gh pr create --base main --title "Track 1 PR <N>: <description>" --body-file <path>`
+7. Open PR with the title and body requested by the task prompt.
 8. Post status comment: `gh pr comment <#> --body "$(cat <<'EOF' ... EOF)"` using the template below.
 9. Confirm PR URL in your final message to Sami.
 
@@ -54,7 +63,7 @@ Claude Code on web has direct GitHub access. Use it.
 Post immediately after opening the PR:
 
 ```
-**Scope:** <one line per collab plan §6 PR N>
+**Scope:** <one line from the task prompt>
 **Files changed:** <list>
 **Files locked and forbidden (verified untouched):** <list any §8.2 locks relevant to this PR>
 **Tests run:** <commands>
@@ -82,7 +91,7 @@ If `tsc` fails with `.next/types/routes.d 2.ts` errors, run `rm -rf web/.next` f
 
 ## Session restart
 
-Fresh thread? Read the four required docs above, plus the two `.claude/rules/` files. Then await task assignment from the coordinator.
+Fresh thread? Read the required docs above. Then await task assignment from the coordinator.
 
 Coordinator-generated task prompts will reference this brief for protocol details, so they should stay short. If a task prompt seems to violate this brief (e.g., asks you to edit a §8.2 locked file without explicit lock claim), stop and ask Sami before proceeding.
 
