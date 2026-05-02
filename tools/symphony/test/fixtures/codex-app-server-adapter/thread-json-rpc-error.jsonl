@@ -1,0 +1,3 @@
+{"fixture":{"name":"thread-json-rpc-error.jsonl","codex_version":"codex-app-server-fixture-v1","scenario":"thread/start response returns JSON-RPC error"}}
+{"stream":"stdout","message":{"id":1,"result":{"capabilities":{}}}}
+{"stream":"stdout","message":{"id":2,"error":{"code":-32000,"message":"fixture thread failed"}}}

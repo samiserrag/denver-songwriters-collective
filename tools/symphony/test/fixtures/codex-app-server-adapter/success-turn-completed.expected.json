@@ -1,0 +1,22 @@
+{
+  "name": "success-turn-completed.jsonl",
+  "ok": true,
+  "reason": "turn_completed",
+  "terminal_status": "success",
+  "terminal_reason": "turn_completed",
+  "thread_id": "fixture-thread-success",
+  "turn_id": "fixture-turn-success",
+  "session_id": "fixture-thread-success-fixture-turn-success",
+  "turn_count": 1,
+  "last_protocol_event": "turn/completed",
+  "token_usage": {
+    "input_tokens": 21,
+    "output_tokens": 8,
+    "total_tokens": 29
+  },
+  "rate_limits": {
+    "requests_remaining": 77
+  },
+  "protocol_events_count": 5,
+  "adapter_events_count": 6
+}

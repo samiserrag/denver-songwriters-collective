@@ -1,0 +1,2 @@
+{"fixture":{"name":"malformed-protocol-message.jsonl","codex_version":"codex-app-server-fixture-v1","scenario":"stdout contains malformed protocol JSON"}}
+{"stream":"stdout","chunk":"{not json}\n"}

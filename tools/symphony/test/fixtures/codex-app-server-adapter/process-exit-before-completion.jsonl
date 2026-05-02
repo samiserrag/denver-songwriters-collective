@@ -1,0 +1,5 @@
+{"fixture":{"name":"process-exit-before-completion.jsonl","codex_version":"codex-app-server-fixture-v1","scenario":"process exits after turn/start response but before terminal turn message"}}
+{"stream":"stdout","message":{"id":1,"result":{"capabilities":{}}}}
+{"stream":"stdout","message":{"id":2,"result":{"thread":{"id":"fixture-thread-exit"}}}}
+{"stream":"stdout","message":{"id":3,"result":{"turn":{"id":"fixture-turn-exit"}}}}
+{"action":"close","code":1,"signal":null}

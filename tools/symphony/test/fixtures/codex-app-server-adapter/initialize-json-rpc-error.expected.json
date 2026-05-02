@@ -1,0 +1,17 @@
+{
+  "name": "initialize-json-rpc-error.jsonl",
+  "ok": false,
+  "reason": "initialize_error",
+  "terminal_status": "failure",
+  "terminal_reason": "json_rpc_error",
+  "thread_id": null,
+  "turn_id": null,
+  "session_id": null,
+  "turn_count": 0,
+  "last_protocol_event": null,
+  "token_usage": null,
+  "rate_limits": null,
+  "protocol_events_count": 1,
+  "adapter_events_count": 2,
+  "response_error_message": "fixture initialize failed"
+}

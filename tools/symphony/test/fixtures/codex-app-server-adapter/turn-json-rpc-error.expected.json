@@ -1,0 +1,17 @@
+{
+  "name": "turn-json-rpc-error.jsonl",
+  "ok": false,
+  "reason": "turn_start_error",
+  "terminal_status": "failure",
+  "terminal_reason": "json_rpc_error",
+  "thread_id": "fixture-thread-turn-error",
+  "turn_id": null,
+  "session_id": null,
+  "turn_count": 1,
+  "last_protocol_event": null,
+  "token_usage": null,
+  "rate_limits": null,
+  "protocol_events_count": 3,
+  "adapter_events_count": 4,
+  "response_error_message": "fixture turn failed"
+}

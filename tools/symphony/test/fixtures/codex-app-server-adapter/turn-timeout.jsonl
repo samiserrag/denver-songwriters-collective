@@ -1,0 +1,5 @@
+{"fixture":{"name":"turn-timeout.jsonl","codex_version":"codex-app-server-fixture-v1","scenario":"turn stream stalls until turn timeout"}}
+{"stream":"stdout","message":{"id":1,"result":{"capabilities":{}}}}
+{"stream":"stdout","message":{"id":2,"result":{"thread":{"id":"fixture-thread-timeout"}}}}
+{"stream":"stdout","message":{"id":3,"result":{"turn":{"id":"fixture-turn-timeout"}}}}
+{"action":"fireTimer","milliseconds":60000}
