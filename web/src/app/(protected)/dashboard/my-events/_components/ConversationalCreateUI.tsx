@@ -132,6 +132,21 @@ interface CreatedEventSummary {
   reusedExisting: boolean;
 }
 
+/**
+ * Snapshot of an existing event passed by edit-route wrappers so the
+ * conversational UI can render the live cover, title, and public-page
+ * link before any AI turn lands. Server-fetched once per page load —
+ * the broadcast/reload path keeps it fresh after writes.
+ */
+export interface ExistingEventSnapshot {
+  eventId: string;
+  slug: string | null;
+  title: string | null;
+  eventType: string[];
+  coverImageUrl: string | null;
+  isPublished: boolean;
+}
+
 interface LastInterpretResponse {
   mode: InterpretMode;
   next_action: string;
@@ -153,6 +168,24 @@ function normalizeDraftEventTypes(value: unknown): string[] {
   return single ? [single] : ["open_mic"];
 }
 
+/**
+ * Returns true only when the draft payload explicitly supplies a
+ * non-empty `event_type`. Critical for the existing-event path: a turn
+ * that patches description / cost / cover but leaves `event_type` out of
+ * the draft must NOT cause the preview or public link to drift to
+ * `["open_mic"]` (the `normalizeDraftEventTypes` default for missing
+ * input). When this returns false, callers should fall back to the
+ * existing snapshot's `eventType` instead.
+ */
+function hasExplicitEventType(draft: Record<string, unknown> | null | undefined): boolean {
+  if (!draft) return false;
+  const value = draft.event_type;
+  if (Array.isArray(value)) {
+    return value.some((entry) => typeof entry === "string" && entry.trim().length > 0);
+  }
+  return typeof value === "string" && value.trim().length > 0;
+}
+
 function buildPublicEventHref(
   summary: CreatedEventSummary,
   draft: Record<string, unknown> | null
@@ -162,18 +195,50 @@ function buildPublicEventHref(
   return eventTypes.includes("open_mic") ? `/open-mics/${identifier}` : `/events/${identifier}`;
 }
 
+function buildExistingEventPublicHref(
+  snapshot: ExistingEventSnapshot,
+  draft: Record<string, unknown> | null
+): string {
+  const identifier = snapshot.slug || snapshot.eventId;
+  // Only honor the draft's event_type when it is explicitly supplied; an
+  // absent / empty `event_type` field on a partial patch must keep the
+  // snapshot's classification so the link does not drift to
+  // `/open-mics/<slug>` for non-open-mic events.
+  const eventTypes = hasExplicitEventType(draft)
+    ? normalizeDraftEventTypes(draft!.event_type)
+    : snapshot.eventType;
+  return eventTypes.includes("open_mic") ? `/open-mics/${identifier}` : `/events/${identifier}`;
+}
+
 function buildDraftPreviewEvent(input: {
   draft: Record<string, unknown> | null;
   selectedCoverImage: StagedImage | null;
   createdSummary: CreatedEventSummary | null;
+  existingEventSnapshot: ExistingEventSnapshot | null;
+  appliedExistingCoverUrl: string | null;
 }): HappeningEvent | null {
   const draft = input.draft;
-  const title = coerceString(draft?.title) ?? input.createdSummary?.title ?? "Draft happening";
-  const eventTypes = draft
-    ? normalizeDraftEventTypes(draft.event_type)
-    : input.createdSummary?.eventType
-      ? [input.createdSummary.eventType.replace(/\s+/g, "_")]
-      : ["open_mic"];
+  const title =
+    coerceString(draft?.title) ??
+    input.createdSummary?.title ??
+    input.existingEventSnapshot?.title ??
+    "Draft happening";
+  const snapshotEventTypeFallback =
+    input.existingEventSnapshot && input.existingEventSnapshot.eventType.length > 0
+      ? input.existingEventSnapshot.eventType
+      : null;
+  // Same fallback rule as `buildExistingEventPublicHref`: a partial
+  // edit-mode draft that omits `event_type` must not silently flip the
+  // preview card to "open_mic" via `normalizeDraftEventTypes`'s default.
+  // Prefer the existing snapshot's classification when the draft is
+  // implicit, then the created-summary type, then the
+  // ["open_mic"] fallback used by create mode.
+  const eventTypes = hasExplicitEventType(draft)
+    ? normalizeDraftEventTypes(draft!.event_type)
+    : snapshotEventTypeFallback
+      ?? (input.createdSummary?.eventType
+        ? [input.createdSummary.eventType.replace(/\s+/g, "_")]
+        : ["open_mic"]);
   const normalizedTitle =
     normalizeTitleWithVenuePrefix({
       title,
@@ -190,15 +255,26 @@ function buildDraftPreviewEvent(input: {
     input.createdSummary?.startDate ??
     null;
 
-  if (!draft && !input.createdSummary) return null;
+  if (!draft && !input.createdSummary && !input.existingEventSnapshot) return null;
 
-  const coverPreviewUrl = input.selectedCoverImage
+  const stagedCoverDataUrl = input.selectedCoverImage
     ? `data:${input.selectedCoverImage.mime_type};base64,${input.selectedCoverImage.base64}`
     : null;
+  // Existing-event sessions: surface the live cover when no staged image is
+  // selected, and prefer the most recently applied cover URL once the user
+  // swaps it through the AI editor (kept in component state so the preview
+  // updates without a full page reload).
+  const existingCoverUrl =
+    input.appliedExistingCoverUrl ?? input.existingEventSnapshot?.coverImageUrl ?? null;
+  const coverPreviewUrl = stagedCoverDataUrl ?? existingCoverUrl;
 
   return {
-    id: input.createdSummary?.eventId ?? "draft-preview",
-    slug: input.createdSummary?.slug ?? null,
+    id:
+      input.createdSummary?.eventId ??
+      input.existingEventSnapshot?.eventId ??
+      "draft-preview",
+    slug:
+      input.createdSummary?.slug ?? input.existingEventSnapshot?.slug ?? null,
     title: normalizedTitle,
     description: coerceString(draft?.description),
     event_type: eventTypes,
@@ -226,7 +302,7 @@ function buildDraftPreviewEvent(input: {
     signup_url: coerceString(draft?.signup_url),
     cover_image_url: coverPreviewUrl,
     imageUrl: coverPreviewUrl,
-    status: "draft",
+    status: input.existingEventSnapshot?.isPublished ? "active" : "draft",
     categories: Array.isArray(draft?.categories)
       ? draft?.categories.filter((entry): entry is string => typeof entry === "string")
       : null,
@@ -1302,6 +1378,8 @@ export function ConversationalCreateUI({
   initialEventId = "",
   initialDateKey = "",
   allowExistingEventWrites = true,
+  allowExistingEventCoverUpload = false,
+  existingEventSnapshot = null,
   pageTitle,
   pageDescription,
   backHref,
@@ -1312,6 +1390,17 @@ export function ConversationalCreateUI({
   initialEventId?: string;
   initialDateKey?: string;
   allowExistingEventWrites?: boolean;
+  /**
+   * Narrow opt-in for cover-image swaps on an existing event without flipping
+   * `allowExistingEventWrites`. Persistence routes through `/api/my-events/[id]`
+   * so the published-event safety gate runs before any high-risk mutation.
+   */
+  allowExistingEventCoverUpload?: boolean;
+  /**
+   * Server-fetched snapshot of the existing event so the preview card can
+   * render its cover and so edit/public links can render before any AI turn.
+   */
+  existingEventSnapshot?: ExistingEventSnapshot | null;
   pageTitle?: string;
   pageDescription?: string;
   backHref?: string;
@@ -1460,6 +1549,12 @@ export function ConversationalCreateUI({
   const [hasUnappliedSeriesPatch, setHasUnappliedSeriesPatch] = useState(false);
   const [pendingPublishedRiskConfirmation, setPendingPublishedRiskConfirmation] = useState(false);
   const [pendingPublishedRiskPatchFingerprint, setPendingPublishedRiskPatchFingerprint] = useState<string | null>(null);
+  // Cover-only published-risk handshake (separate from the series patch
+  // handshake): the gate fires on cover_image_url for published events, so a
+  // staged candidate must wait for a second user gesture before retrying with
+  // ai_confirm_published_high_risk: true.
+  const [pendingCoverConfirmationCandidateId, setPendingCoverConfirmationCandidateId] =
+    useState<string | null>(null);
   // PR 3 follow-up: latest server-issued editTurnId observed in either an
   // interpret response or a my-events PATCH response. Used by the
   // fire-and-forget accept/reject hook to correlate user outcome with the
@@ -1542,20 +1637,47 @@ export function ConversationalCreateUI({
   const selectedCoverImage =
     coverCandidateId ? stagedImages.find((img) => img.id === coverCandidateId) ?? null : null;
   const isResponsePanelHighlighted = highlightedAssistantMessageIndex !== null;
+  // Existing-event sessions: track the most recently applied cover URL in
+  // state so the preview reflects the swap immediately without waiting for
+  // the EventDraftSyncReloader on the same tab to round-trip.
+  const [appliedExistingCoverUrl, setAppliedExistingCoverUrl] = useState<string | null>(
+    existingEventSnapshot?.coverImageUrl ?? null
+  );
+  useEffect(() => {
+    setAppliedExistingCoverUrl(existingEventSnapshot?.coverImageUrl ?? null);
+  }, [existingEventSnapshot?.coverImageUrl]);
   const draftPreviewEvent = useMemo(
     () =>
       buildDraftPreviewEvent({
         draft: responseGuidance?.draft_payload ?? lastInterpretResponse?.draft_payload ?? null,
         selectedCoverImage,
         createdSummary,
+        existingEventSnapshot,
+        appliedExistingCoverUrl,
       }),
-    [responseGuidance?.draft_payload, lastInterpretResponse?.draft_payload, selectedCoverImage, createdSummary]
+    [
+      responseGuidance?.draft_payload,
+      lastInterpretResponse?.draft_payload,
+      selectedCoverImage,
+      createdSummary,
+      existingEventSnapshot,
+      appliedExistingCoverUrl,
+    ]
   );
   const createdPublicHref = createdSummary
     ? buildPublicEventHref(
         createdSummary,
         responseGuidance?.draft_payload ?? lastInterpretResponse?.draft_payload ?? null
       )
+    : null;
+  const existingPublicHref = existingEventSnapshot
+    ? buildExistingEventPublicHref(
+        existingEventSnapshot,
+        responseGuidance?.draft_payload ?? lastInterpretResponse?.draft_payload ?? null
+      )
+    : null;
+  const existingEditHref = existingEventSnapshot
+    ? `/dashboard/my-events/${existingEventSnapshot.eventId}`
     : null;
 
   // Phase 8E: host variant starts in create mode, then stays in edit mode for the created draft.
@@ -1567,6 +1689,13 @@ export function ConversationalCreateUI({
   const isExistingEventEditSession = isEditMode && !hasCreatedDraft && eventId.trim().length > 0;
   const canWriteExistingEvent = allowExistingEventWrites || !isExistingEventEditSession;
 
+  // Cover-only narrow opt-in for existing-event sessions: routes persistence
+  // through PATCH /api/my-events/[id] so the published-event safety gate runs.
+  // Distinct from `allowExistingEventWrites` so other auto-apply writes stay
+  // disabled.
+  const canApplyCoverViaEditEndpoint =
+    allowExistingEventCoverUpload && isExistingEventEditSession;
+
   // Can show cover controls (click-to-select thumbnails):
   // Edit mode: flag + edit mode + valid eventId + images
   // Create mode: flag + create mode + images (no eventId needed until create time)
@@ -1575,7 +1704,8 @@ export function ConversationalCreateUI({
     stagedImages.length > 0 &&
     (
       (isEditMode && hasValidEventId && canWriteExistingEvent) ||
-      effectiveMode === "create"
+      effectiveMode === "create" ||
+      (isEditMode && hasValidEventId && canApplyCoverViaEditEndpoint)
     );
 
   // Phase 4B: Can show create action in create mode
@@ -1596,7 +1726,9 @@ export function ConversationalCreateUI({
 
   const selectedCoverAlreadyAttached =
     isEditMode &&
-    Boolean(createdSummary?.hasCover) &&
+    (Boolean(createdSummary?.hasCover) ||
+      Boolean(existingEventSnapshot?.coverImageUrl) ||
+      Boolean(appliedExistingCoverUrl)) &&
     coverCandidateId !== null &&
     appliedCoverCandidateId === coverCandidateId;
 
@@ -1855,7 +1987,10 @@ export function ConversationalCreateUI({
     if (appliedCoverCandidateId === id) {
       setAppliedCoverCandidateId(null);
     }
-  }, [appliedCoverCandidateId]);
+    if (pendingCoverConfirmationCandidateId === id) {
+      setPendingCoverConfirmationCandidateId(null);
+    }
+  }, [appliedCoverCandidateId, pendingCoverConfirmationCandidateId]);
 
   // ---- clipboard paste handler ----
 
@@ -1963,7 +2098,10 @@ export function ConversationalCreateUI({
         );
       }
 
-      if (isEditMode && targetEventId && canWriteExistingEvent && stagedImages.length > 0) {
+      const coverIntentEditAllowed =
+        (isEditMode && targetEventId && canWriteExistingEvent) ||
+        (isEditMode && targetEventId && canApplyCoverViaEditEndpoint);
+      if (coverIntentEditAllowed && stagedImages.length > 0) {
         const coverIntentText = userTranscriptContent.toLowerCase();
         const requestedCoverCandidateId =
           findRequestedCoverCandidateId({
@@ -2168,18 +2306,89 @@ export function ConversationalCreateUI({
         userId: session.user.id,
       });
 
-      // 5. Update events.cover_image_url
-      const { error: updateError } = await supabase
-        .from("events")
-        .update({ cover_image_url: uploadedUrl })
-        .eq("id", targetEventId);
+      // 5. Persist cover_image_url. For existing-event AI sessions route through
+      // PATCH /api/my-events/[id] so the published-event safety gate runs;
+      // direct Supabase updates would bypass `evaluatePublishedAiSafetyGate`
+      // for published events, which is forbidden.
+      const persistViaEditEndpoint =
+        canApplyCoverViaEditEndpoint && !createdEventId;
 
-      if (updateError) {
-        setCoverMessage({
-          type: "error",
-          text: `Upload succeeded but cover update failed: ${updateError.message}`,
+      if (persistViaEditEndpoint) {
+        const sendExplicitConfirmation =
+          pendingCoverConfirmationCandidateId === candidateId;
+        const patchBody: Record<string, unknown> = {
+          cover_image_url: uploadedUrl,
+          ai_write_source: "conversational_create_ui_auto_apply",
+        };
+        if (sendExplicitConfirmation) {
+          patchBody.ai_confirm_published_high_risk = true;
+        }
+
+        const res = await fetch(`/api/my-events/${targetEventId}`, {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(patchBody),
         });
-        return;
+
+        const result = await res
+          .json()
+          .catch(() => ({ error: "Non-JSON response" }));
+
+        if (!res.ok) {
+          if (res.status === 409 && result?.requires_confirmation === true) {
+            // Storage upload already succeeded but the row update was blocked
+            // pending confirmation. Mark this candidate so the next click on
+            // the same image retries with ai_confirm_published_high_risk.
+            setPendingCoverConfirmationCandidateId(candidateId);
+            setCoverMessage({
+              type: "error",
+              text: "This is a published event — click the same image again to confirm and replace the live cover.",
+            });
+            // Drop the orphaned event_images row from this attempt; the next
+            // attempt will re-upload because compensating cleanup is cheap and
+            // keeps the storage path free of stale uploads.
+            await softDeleteCoverImageRow(supabase, targetEventId, uploadedUrl).catch(
+              () => {
+                // Best-effort cleanup; the gate UI is the source of truth.
+              }
+            );
+            return;
+          }
+
+          await softDeleteCoverImageRow(supabase, targetEventId, uploadedUrl).catch(
+            () => {
+              // Best-effort cleanup for partial failure path.
+            }
+          );
+          setCoverMessage({
+            type: "error",
+            text: `Upload succeeded but cover update failed (${res.status}): ${
+              result?.error || "Unknown error"
+            }`,
+          });
+          return;
+        }
+
+        setPendingCoverConfirmationCandidateId(null);
+      } else {
+        // Legacy direct-Supabase path used by lab-mode writes and by drafts
+        // freshly created in the AI session (createdEventId set). The
+        // published-event gate is not relevant here because the row is either
+        // a brand-new draft or the lab variant explicitly opts in via
+        // allowExistingEventWrites=true.
+        const { error: updateError } = await supabase
+          .from("events")
+          .update({ cover_image_url: uploadedUrl })
+          .eq("id", targetEventId);
+
+        if (updateError) {
+          setCoverMessage({
+            type: "error",
+            text: `Upload succeeded but cover update failed: ${updateError.message}`,
+          });
+          return;
+        }
       }
 
       // 6. Soft-delete previous cover row if it existed and differs
@@ -2188,12 +2397,15 @@ export function ConversationalCreateUI({
       }
 
       setAppliedCoverCandidateId(candidateId);
+      setAppliedExistingCoverUrl(uploadedUrl);
       setCreatedSummary((prev) =>
         prev ? { ...prev, hasCover: true, coverNote: null } : prev
       );
       setCoverMessage({
         type: "success",
-        text: "Cover updated. Open tabs for this draft will refresh.",
+        text: persistViaEditEndpoint
+          ? "Cover updated. Open tabs for this event will refresh."
+          : "Cover updated. Open tabs for this draft will refresh.",
       });
       broadcastEventDraftSync(targetEventId, "cover_updated");
     } catch (error) {
@@ -2208,15 +2420,36 @@ export function ConversationalCreateUI({
   }
 
   async function applyCover() {
-    if (!coverCandidateId || !isEditMode || !hasValidEventId || !canWriteExistingEvent) return;
+    if (!coverCandidateId || !isEditMode || !hasValidEventId || !canWriteExistingEvent) {
+      // Cover-only narrow path bypasses the !canWriteExistingEvent guard via
+      // the PATCH endpoint, which still enforces the published-event safety
+      // gate. Other guards above must still pass.
+      if (!coverCandidateId || !isEditMode || !hasValidEventId || !canApplyCoverViaEditEndpoint) {
+        return;
+      }
+    }
     await applyCoverCandidate(coverCandidateId, activeEventId);
   }
 
   async function handleCoverCandidateSelect(candidateId: string) {
+    // Reset cover-confirmation handshake when the user picks a different
+    // candidate so a stale "click again to confirm" prompt doesn't leak across
+    // selections.
+    if (pendingCoverConfirmationCandidateId !== candidateId) {
+      setPendingCoverConfirmationCandidateId(null);
+    }
     setCoverCandidateId(candidateId);
     setCoverMessage(null);
-    if (!isEditMode || !hasValidEventId || !canWriteExistingEvent) return;
-    if (appliedCoverCandidateId === candidateId && createdSummary?.hasCover) return;
+    if (!isEditMode || !hasValidEventId || !canWriteExistingEvent) {
+      // Cover-only narrow path: persist via PATCH, never via direct Supabase.
+      if (!canApplyCoverViaEditEndpoint) return;
+    }
+    if (
+      appliedCoverCandidateId === candidateId &&
+      (createdSummary?.hasCover || appliedExistingCoverUrl)
+    ) {
+      return;
+    }
     await applyCoverCandidate(candidateId, activeEventId);
   }
 
@@ -2687,6 +2920,7 @@ export function ConversationalCreateUI({
     setCreateMessage(null);
     setCreatedEventId(null);
     setCreatedSummary(null);
+    setPendingCoverConfirmationCandidateId(null);
   }
 
   return (
@@ -2725,10 +2959,37 @@ export function ConversationalCreateUI({
                   </p>
                 </div>
                 <span className="shrink-0 rounded-full border border-current/20 px-2.5 py-1 text-[11px] font-semibold">
-                  Private until published
+                  {existingEventSnapshot?.isPublished
+                    ? "Live event — changes apply right away"
+                    : "Private until published"}
                 </span>
               </div>
             </div>
+            {existingEventSnapshot && existingEditHref && existingPublicHref && (
+              <div
+                className="mt-3 flex flex-wrap gap-2"
+                data-testid="host-existing-event-links"
+              >
+                <Link
+                  href={existingEditHref}
+                  target="_blank"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"
+                >
+                  <FileText className="h-3.5 w-3.5" aria-hidden="true" />
+                  Open edit page
+                </Link>
+                <Link
+                  href={existingPublicHref}
+                  target="_blank"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)] px-3 py-1.5 text-xs font-semibold text-[var(--color-background)] shadow-sm hover:opacity-90"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                  {existingEventSnapshot.isPublished
+                    ? "Open live page"
+                    : "Open profile preview"}
+                </Link>
+              </div>
+            )}
             <Link
               href={effectiveBackHref}
               className="mt-2 inline-flex items-center gap-1.5 text-sm text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors"
@@ -3154,18 +3415,22 @@ export function ConversationalCreateUI({
                   const isSelected = coverCandidateId === img.id;
                   const isApplied =
                     isEditMode &&
-                    Boolean(createdSummary?.hasCover) &&
+                    (Boolean(createdSummary?.hasCover) || Boolean(appliedExistingCoverUrl)) &&
                     appliedCoverCandidateId === img.id;
+                  const needsConfirmation =
+                    pendingCoverConfirmationCandidateId === img.id;
                   const isApplyingThis = applyingCoverCandidateId === img.id;
                   const coverActionLabel = isApplyingThis
                     ? "Applying..."
                     : isApplied
                       ? "Live cover"
-                      : isSelected
-                        ? effectiveMode === "create"
-                          ? "Cover selected"
-                          : "Use as cover"
-                        : "Use as cover";
+                      : needsConfirmation
+                        ? "Click again to confirm"
+                        : isSelected
+                          ? effectiveMode === "create"
+                            ? "Cover selected"
+                            : "Use as cover"
+                          : "Use as cover";
                   return (
                     <div
                       key={img.id}
@@ -3575,7 +3840,7 @@ export function ConversationalCreateUI({
                   <p className="mt-1 text-xs text-[var(--color-text-tertiary)]">
                     Check the card, cover, and key fields. After saving, edits here patch the same draft.
                   </p>
-                  {createdSummary && createdPublicHref && (
+                  {createdSummary && createdPublicHref ? (
                     <div className="mt-3 flex flex-wrap gap-2">
                       <Link
                         href={`/dashboard/my-events/${createdSummary.eventId}`}
@@ -3594,7 +3859,28 @@ export function ConversationalCreateUI({
                         {createdSummary.isPublished ? "Open live page" : "Open draft preview"}
                       </Link>
                     </div>
-                  )}
+                  ) : existingEventSnapshot && existingEditHref && existingPublicHref ? (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Link
+                        href={existingEditHref}
+                        target="_blank"
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"
+                      >
+                        <FileText className="h-3.5 w-3.5" aria-hidden="true" />
+                        Open edit page
+                      </Link>
+                      <Link
+                        href={existingPublicHref}
+                        target="_blank"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)] px-3 py-1.5 text-xs font-semibold text-[var(--color-background)] shadow-sm hover:opacity-90"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                        {existingEventSnapshot.isPublished
+                          ? "Open live page"
+                          : "Open profile preview"}
+                      </Link>
+                    </div>
+                  ) : null}
                 </div>
 
                 <div className="space-y-4 p-4">

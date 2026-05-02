@@ -22,7 +22,25 @@ Rules:
 
 ## Active claims
 
-No active claims at this sync.
+### Track 1 follow-up — AI existing-event editor parity + uploaded cover support
+
+- **Branch:** `codex/ai-existing-event-editor-parity-cover`
+- **Owner:** Claude (web)
+- **Base SHA:** `68ac89ba064e3b0bcb8677fdd414d731121a6a30`
+- **Status:** `awaiting_review`
+- **Files claimed:**
+  - `web/src/app/(protected)/dashboard/my-events/_components/ConversationalCreateUI.tsx`
+  - `web/src/app/(protected)/dashboard/my-events/[id]/ai/page.tsx`
+  - `web/src/app/(protected)/dashboard/my-events/[id]/overrides/[dateKey]/ai/page.tsx`
+  - `web/src/__tests__/ai-edit-existing-event-parity.test.ts`
+  - `docs/investigation/track1-claims.md`
+- **Notes:** Closes the four user-visible gaps in the existing-event AI editor without flipping `allowExistingEventWrites` broadly:
+  1. Preview card now renders the live `cover_image_url` until a staged image is selected (via new `existingEventSnapshot` prop fetched server-side in the AI edit route wrappers).
+  2. Edit page + public/profile links surface immediately for existing-event sessions (host header + sticky review aside) instead of waiting for an AI write to complete.
+  3. The existing `broadcastEventDraftSync(targetEventId, "cover_updated")` call now reaches the existing-event cover-apply path, so `EventDraftSyncReloader` refreshes open edit/profile tabs after each applied turn.
+  4. Adds a narrow `allowExistingEventCoverUpload` opt-in (default false) used only by the two AI edit page wrappers. With the opt-in set, `applyCoverCandidate` routes existing-event cover persistence through PATCH `/api/my-events/[id]` with `ai_write_source: "conversational_create_ui_auto_apply"` so `evaluatePublishedAiSafetyGate` runs server-side and high-risk published-event swaps require the existing `ai_confirm_published_high_risk` handshake. Direct Supabase `events.cover_image_url` updates remain only for the lab variant and for drafts the AI just created in the same session.
+
+---
 
 Strategic-doc PR state as of this sync:
 

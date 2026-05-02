@@ -30,7 +30,7 @@ export default async function AIOccurrenceEditPage({ params }: PageProps) {
 
   const { data: event, error } = await supabase
     .from("events")
-    .select("id")
+    .select("id, slug, title, event_type, cover_image_url, is_published")
     .eq("id", eventId)
     .maybeSingle();
 
@@ -39,6 +39,12 @@ export default async function AIOccurrenceEditPage({ params }: PageProps) {
   const canManage = await canManageEvent(supabase, sessionUser.id, eventId);
   if (!canManage) redirect("/dashboard");
 
+  const eventTypes = Array.isArray(event.event_type)
+    ? event.event_type.filter((entry: unknown): entry is string => typeof entry === "string")
+    : typeof event.event_type === "string"
+      ? [event.event_type]
+      : [];
+
   return (
     <ConversationalCreateUI
       variant="host"
@@ -46,8 +52,18 @@ export default async function AIOccurrenceEditPage({ params }: PageProps) {
       initialEventId={eventId}
       initialDateKey={dateKey}
       allowExistingEventWrites={false}
+      allowExistingEventCoverUpload
+      existingEventSnapshot={{
+        eventId: event.id as string,
+        slug: typeof event.slug === "string" ? event.slug : null,
+        title: typeof event.title === "string" ? event.title : null,
+        eventType: eventTypes,
+        coverImageUrl:
+          typeof event.cover_image_url === "string" ? event.cover_image_url : null,
+        isPublished: event.is_published === true,
+      }}
       pageTitle="Edit Occurrence With AI"
-      pageDescription="Ask AI to draft updates for this occurrence. Changes are not saved automatically yet."
+      pageDescription="Ask AI to draft updates for this occurrence. Cover swaps from your uploaded images apply to the parent series immediately; other field changes still require manual confirmation."
       backHref={`/dashboard/my-events/${eventId}/overrides/${dateKey}`}
       backLabel="Back to occurrence"
     />
