@@ -57,3 +57,20 @@ test("parseWorkflowMarkdown rejects unsafe lock stale threshold", () => {
     /lock\.stale_minutes/
   );
 });
+
+test("parseWorkflowMarkdown rejects unsafe Codex execution timeout config", () => {
+  assert.throws(
+    () => parseWorkflowMarkdown(validConfig.replace(
+      '"adapter": "codex-exec"',
+      '"adapter": "codex-exec", "execution_timeout_minutes": 0'
+    )),
+    /codex\.execution_timeout_minutes/
+  );
+  assert.throws(
+    () => parseWorkflowMarkdown(validConfig.replace(
+      '"adapter": "codex-exec"',
+      '"adapter": "codex-exec", "execution_timeout_kill_grace_seconds": -1'
+    )),
+    /codex\.execution_timeout_kill_grace_seconds/
+  );
+});

@@ -2,6 +2,16 @@ import { readFile } from "node:fs/promises";
 
 const CONFIG_PATTERN = /<!--\s*symphony-config\s*([\s\S]*?)-->/m;
 
+function assertPositiveNumber(value, name) {
+  if (value === undefined) {
+    return;
+  }
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue) || numericValue <= 0) {
+    throw new Error(`${name} must be a positive number`);
+  }
+}
+
 export function parseWorkflowMarkdown(markdown) {
   const match = markdown.match(CONFIG_PATTERN);
   if (!match) {
@@ -56,4 +66,9 @@ export function validateWorkflowConfig(config) {
   if (config.codex?.adapter !== "codex-exec") {
     throw new Error("Phase 1 supports only the codex-exec adapter");
   }
+  assertPositiveNumber(config.codex?.execution_timeout_minutes, "codex.execution_timeout_minutes");
+  assertPositiveNumber(
+    config.codex?.execution_timeout_kill_grace_seconds,
+    "codex.execution_timeout_kill_grace_seconds"
+  );
 }

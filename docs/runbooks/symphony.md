@@ -121,6 +121,23 @@ SYMPHONY_EXECUTION_APPROVED=1 node tools/symphony/cli.mjs once --execute
 `once` defaults to dry-run. Real execution requires both `--execute` and
 `SYMPHONY_EXECUTION_APPROVED=1`.
 
+Real Codex execution is bounded by Symphony's outer timeout. Defaults are
+30 minutes for the Codex child and 15 seconds of termination grace. Override
+only for a supervised run:
+
+```bash
+SYMPHONY_CODEX_EXECUTION_TIMEOUT_MINUTES=45 \
+SYMPHONY_CODEX_EXECUTION_TIMEOUT_KILL_GRACE_SECONDS=20 \
+SYMPHONY_EXECUTION_APPROVED=1 node tools/symphony/cli.mjs once --execute
+```
+
+Invalid timeout or grace values fail closed before GitHub mutation. If the
+timeout fires, Symphony blocks the issue, removes `symphony:running`,
+updates the workpad with an outer-timeout reason, writes manifest
+`outcome.reason: "outer_timeout"`, and releases `runner.lock`. This phase
+terminates the direct Codex child only; descendant process cleanup remains
+a residual manual-audit risk.
+
 Daemon mode has an additional guard:
 
 ```bash
@@ -190,6 +207,8 @@ If a run fails:
 1. Stop the runner.
 2. Read the issue workpad comment, run manifest, and
    `.symphony/logs/issue-<n>.jsonl`.
+   If the manifest has `outcome.reason: "outer_timeout"`, inspect the
+   timeout metadata and confirm no descendant process remains before retry.
 3. Dry-run stale running recovery:
 
    ```bash

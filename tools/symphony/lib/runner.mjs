@@ -224,6 +224,76 @@ async function writeManifestSafely({ writeManifest, context, updates, now }) {
   }
 }
 
+function formatDuration(milliseconds) {
+  if (!Number.isFinite(milliseconds) || milliseconds <= 0) {
+    return "the configured timeout";
+  }
+  if (milliseconds % 60000 === 0) {
+    const minutes = milliseconds / 60000;
+    return `${minutes} minute${minutes === 1 ? "" : "s"}`;
+  }
+  if (milliseconds % 1000 === 0) {
+    const seconds = milliseconds / 1000;
+    return `${seconds} second${seconds === 1 ? "" : "s"}`;
+  }
+  return `${milliseconds} ms`;
+}
+
+function isOuterTimeout(codexResult) {
+  return codexResult?.reason === "outer_timeout" || codexResult?.timedOut === true;
+}
+
+function codexBlockedReason(codexResult) {
+  if (isOuterTimeout(codexResult)) {
+    return `outer Codex execution timeout after ${formatDuration(codexResult.timeout?.timeoutMs)}`;
+  }
+  if (codexResult?.error) {
+    return codexResult.error;
+  }
+  if (codexResult?.signal && codexResult.code === null) {
+    return `Codex failed with signal ${codexResult.signal}`;
+  }
+  return `Codex failed with exit ${codexResult?.code}`;
+}
+
+function codexResultDetail(codexResult) {
+  if (isOuterTimeout(codexResult)) {
+    const timeoutDuration = formatDuration(codexResult.timeout?.timeoutMs);
+    const graceDuration = formatDuration(codexResult.timeout?.graceMs);
+    const termination = codexResult.timeout?.forcedKill
+      ? `sent SIGTERM, then SIGKILL after ${graceDuration}`
+      : `sent SIGTERM and exited before the ${graceDuration} grace period elapsed`;
+    return `Codex exceeded Symphony outer execution timeout after ${timeoutDuration}; ${termination}. Local log: ${codexResult.logPath}`;
+  }
+  return `${codexBlockedReason(codexResult)}. Local log: ${codexResult?.logPath}`;
+}
+
+function codexNextAction(codexResult) {
+  if (isOuterTimeout(codexResult)) {
+    return "Review the timeout log and worktree, then decide whether to retry with a narrower issue or a longer approved timeout.";
+  }
+  return "Read the local log and decide whether to retry, recover, or edit the issue.";
+}
+
+function executionOutcomeReason({ plannedReason, results }) {
+  if (results.some((result) => isOuterTimeout(result.codexResult))) {
+    return "outer_timeout";
+  }
+  return plannedReason || "execute completed";
+}
+
+function executionOutcomeTimeout(results) {
+  const timedOut = results.find((result) => isOuterTimeout(result.codexResult));
+  if (!timedOut) {
+    return undefined;
+  }
+  return {
+    issueNumber: timedOut.issue.number,
+    title: timedOut.issue.title,
+    ...timedOut.codexResult.timeout
+  };
+}
+
 function recoveryDetail(assessment, staleRunningMinutes) {
   const ageMinutes = assessment.ageMs === null ? "unknown" : Math.floor(assessment.ageMs / 60000);
   return `stale running recovery after ${ageMinutes} minutes; threshold is ${staleRunningMinutes} minutes`;
@@ -672,10 +742,12 @@ export async function runOnce({
         const codexResult = await runCodexAdapter({
           worktreePath: plan.worktreePath,
           prompt,
-          logPath: plan.logPath
+          logPath: plan.logPath,
+          executionTimeoutMs: config.codexExecutionTimeoutMs,
+          executionTimeoutKillGraceMs: config.codexExecutionTimeoutKillGraceMs
         });
         const finalState = codexResult.ok ? "human-review" : "blocked";
-        const blockedReason = codexResult.ok ? "" : `Codex failed with exit ${codexResult.code}`;
+        const blockedReason = codexResult.ok ? "" : codexBlockedReason(codexResult);
         await applyLabelTransition({
           client,
           repo,
@@ -698,10 +770,10 @@ export async function runOnce({
             blockedReason,
             nextAction: codexResult.ok
               ? "Review the local branch/worktree and open a PR only after normal quality gates pass."
-              : "Read the local log and decide whether to retry, recover, or edit the issue.",
+              : codexNextAction(codexResult),
             detail: codexResult.ok
               ? `Codex finished. Local log: ${codexResult.logPath}`
-              : `Codex failed with exit ${codexResult.code}. Local log: ${codexResult.logPath}`
+              : codexResultDetail(codexResult)
           })
         });
         results.push({ ...plan, finalState, codexResult });
@@ -762,7 +834,8 @@ export async function runOnce({
         ...plannedManifestData({ ...planned, plans: results }),
         outcome: {
           ok: result.ok,
-          reason: result.reason || "execute completed"
+          reason: executionOutcomeReason({ plannedReason: result.reason, results }),
+          timeout: executionOutcomeTimeout(results)
         }
       }
     });

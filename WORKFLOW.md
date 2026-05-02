@@ -28,7 +28,9 @@ when an approved issue is executed.
   },
   "codex": {
     "adapter": "codex-exec",
-    "fallback": "codex exec --json"
+    "fallback": "codex exec --json",
+    "execution_timeout_minutes": 30,
+    "execution_timeout_kill_grace_seconds": 15
   }
 }
 -->
