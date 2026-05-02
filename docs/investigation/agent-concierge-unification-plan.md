@@ -575,7 +575,8 @@ Per `docs/investigation/track2-roadmap.md` §10:
 
 - Investigation documents (this file, ADRs in §5.1)
 - Eval harness extensions (no runtime behavior change)
-- Component extractions with zero behavior change (PRs G.4, G.5, G.6)
+
+CRUI component extractions (PRs G.4, G.5, G.6) are **NOT** pre-approved. They require completion of the §5.0 CRUI landmine audit AND explicit §8.2 lock release on `ConversationalCreateUI.tsx` per §9.2 below. See §5.0 and §7.3 for the canonical sequencing.
 
 ### 9.2 Requires explicit Sami approval
 
