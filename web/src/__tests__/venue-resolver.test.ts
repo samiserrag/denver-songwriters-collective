@@ -8,6 +8,7 @@ import {
   resolveVenue,
   shouldResolveVenue,
   hasVenueSignalsInDraft,
+  buildVenueSearchCandidates,
   buildVenueAliasIndex,
   normalizeAlias,
   generateAcronymAlias,
@@ -229,6 +230,29 @@ describe("buildVenueAliasIndex / extractVenueAliasFromMessage", () => {
     const index = buildVenueAliasIndex(collisionCatalog);
     expect(index.has("at")).toBe(true);
     expect(extractVenueAliasFromMessage("Open mic at 7pm", index)).toBeNull();
+  });
+});
+
+describe("buildVenueSearchCandidates", () => {
+  it("expands RMU Breck aliases from OCR, handle, and user search text", () => {
+    const candidates = buildVenueSearchCandidates({
+      sources: [
+        "OPEN MIC NIGHT\nEvery Wednesday 7-9pm\nRMU Breck\n@rmubreck\nBreckenridge, Summit County",
+        "Search for RMU Breckenridge.",
+      ],
+    });
+
+    expect(candidates).toEqual(expect.arrayContaining(["RMU Breck", "RMU Breckenridge", "@rmubreck"]));
+    expect(candidates.indexOf("RMU Breck")).toBeLessThan(candidates.indexOf("RMU Breckenridge"));
+    expect(candidates.indexOf("RMU Breckenridge")).toBeLessThan(candidates.indexOf("@rmubreck"));
+  });
+
+  it("keeps custom-location fallback possible when no venue identity source exists", () => {
+    expect(
+      buildVenueSearchCandidates({
+        sources: ["Open mic every Wednesday 7-9pm. I do not know the venue yet."],
+      })
+    ).toEqual([]);
   });
 });
 

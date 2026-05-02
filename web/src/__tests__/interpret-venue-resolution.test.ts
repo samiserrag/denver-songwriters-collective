@@ -98,6 +98,34 @@ describe("Phase 5 — system prompt venue_name instruction", () => {
   });
 });
 
+describe("Lane 9 — concierge search/enrichment contract", () => {
+  it("builds separate venue and exact-event search query categories", () => {
+    expect(routeSource).toContain("buildWebSearchQueryPlan");
+    expect(routeSource).toContain("venueQueries");
+    expect(routeSource).toContain("eventQueries");
+    expect(routeSource).toContain("search_query_plan");
+  });
+
+  it("treats official venue facts as useful even when exact event search misses", () => {
+    expect(routeSource).toContain("Separate venue enrichment from exact-event verification");
+    expect(routeSource).toContain("venue_search.status to verified");
+    expect(routeSource).toContain("event_search.status to verified");
+    expect(routeSource).toContain("hasUsefulVenueSearch(result)");
+  });
+
+  it("reports timeout attempts separately for venue and event searches", () => {
+    expect(routeSource).toContain("venue_search: emptySearchCategory");
+    expect(routeSource).toContain("event_search: emptySearchCategory");
+    expect(routeSource).toContain("formatAttemptedQueries");
+  });
+
+  it("keeps Google Maps URLs as location hints instead of event external_url", () => {
+    expect(routeSource).toContain("Do not store or recommend a Google Maps URL as the event external_url");
+    expect(routeSource).toContain("if (isGoogleMapsUrl(draft.external_url))");
+    expect(routeSource).toContain("draft.external_url = null");
+  });
+});
+
 // ---------------------------------------------------------------------------
 // D) Resolution outcome handling
 // ---------------------------------------------------------------------------

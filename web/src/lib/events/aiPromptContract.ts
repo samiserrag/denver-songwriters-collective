@@ -224,6 +224,9 @@ const SCOPE_AND_PATCH_RULES: readonly string[] = [
   "- 'Other image' is deterministic only when exactly one image_references entry is marked isCurrentCover and exactly one other entry exists. If there are multiple other candidates or no current cover marker, set scope='ambiguous'.",
   // Venue enrichment (PR 8)
   "Venue enrichment: when web_search_verification or google_maps_hint supplies public venue facts, populate the writable venue fields instead of merely echoing the user's text.",
+  "- Treat venue enrichment and exact-event verification as separate outcomes. A verified official venue page is enough to populate reusable venue/custom-location fields even when no public listing for the exact event was found.",
+  "- Use web_search_verification fact buckets before asking: user_provided, extracted, inferred, searched_verified, conflicts, and true_unknowns. Ask confirmation for inferred or medium-confidence facts; ask direct questions for true unknowns; do not ask for high-confidence searched facts.",
+  "- If venue_search.status is verified and event_search.status is not_found, explain partial success briefly: use the venue facts, keep event details limited to the flyer/post, and leave cost/signup/source link unknown unless stated.",
   "- Canonical venue fields you may emit when supported by public verification or source text: venue_name, address, city, state, zip, phone, website_url, google_maps_url, map_link, latitude, longitude. For custom-location fallback, use custom_location_name, custom_address, custom_city, custom_state, custom_zip, custom_latitude, custom_longitude, and location_notes.",
   "- Prefer Google Maps hints for google_maps_url and coordinates. Prefer official venue/organizer sources for phone and website_url.",
   "- Do not say ZIP, phone, website, Google Maps URL, or coordinates were applied unless those exact values are present in draft_payload on this turn.",
@@ -336,7 +339,7 @@ export function buildAiPromptUserEnvelope(input: BuildUserPromptInput): string {
   if (input.webSearchVerification) {
     envelope.web_search_verification = input.webSearchVerification;
     envelope.web_search_note =
-      "Online search was performed by a separate verifier. Use sourced facts to reduce unnecessary questions. If status is no_reliable_sources, treat it as an attempted search with no exact public source found.";
+      "Online search was performed by a separate verifier. Use sourced facts and confidence buckets to reduce unnecessary questions. Venue enrichment and exact-event verification are separate: a verified venue_search can populate venue/location fields even when event_search did not find the exact event.";
   }
 
   if (editContract) {

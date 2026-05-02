@@ -88,11 +88,36 @@ export interface WebSearchVerificationSource {
   domain: string | null;
 }
 
+export type WebSearchConfidence = "high" | "medium" | "low" | "unknown";
+export type WebSearchCategoryStatus = "verified" | "not_found" | "timeout" | "not_applicable";
+
+export interface WebSearchCategoryResult {
+  status: WebSearchCategoryStatus;
+  summary: string;
+  confidence: WebSearchConfidence;
+  attempted_queries: string[];
+  facts: string[];
+  sources: WebSearchVerificationSource[];
+}
+
+export interface WebSearchFactBuckets {
+  user_provided: string[];
+  extracted: string[];
+  inferred: string[];
+  searched_verified: string[];
+  conflicts: string[];
+  true_unknowns: string[];
+}
+
 export interface WebSearchVerificationResult {
   status: "searched" | "no_reliable_sources";
   summary: string;
   facts: string[];
   sources: WebSearchVerificationSource[];
+  venue_search?: WebSearchCategoryResult;
+  event_search?: WebSearchCategoryResult;
+  fact_buckets?: WebSearchFactBuckets;
+  suggested_questions?: string[];
 }
 
 export interface InterpretEventDraftResponse {
