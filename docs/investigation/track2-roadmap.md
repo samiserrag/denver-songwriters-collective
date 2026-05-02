@@ -29,7 +29,7 @@ If reality and this plan disagree, verify reality and update this document or th
 
 After the Track 1 §6 PRs (#124, #125, #126, #127, #128, #129, #131, #135, #139, #142, #146, #148, and PR 11 in flight at time of writing):
 
-- Hosts can create new events from messy input, edit existing events with AI, choose between series/occurrence scope, edit venue/cover/copy with safety gates.
+- Hosts can create new events from messy input. They can preview and propose AI edits to existing events with structured scope (series/occurrence) and venue/cover/copy reasoning — but **existing-event AI edit *apply* is currently interpret/preview-locked** (`allowExistingEventWrites={false}` on the AI edit pages and `canWriteExistingEvent` blocks writes in `ConversationalCreateUI.tsx`). Lifting that lock is a deliberate sub-PR within 2F (concierge), gated by 2F.0 write-gate hardening ADR.
 - Published-event high-risk changes require explicit confirmation (PR 9 gate).
 - Telemetry captures every edit turn, with `turnId` correlation between server-side initial events and client-side accept/reject outcomes (PR 3 stack).
 - Patch field registry classifies every editable field by risk tier and enforcement mode (PR 1).
@@ -103,7 +103,7 @@ Track 2 is bigger, slower, and pays back the moat. Don't rush it.
 
 ### 2A — Categories: format and discipline model
 
-**Why this comes first:** §4 user feedback said "manual event creation felt too focused on existing CSC/open mic categories." Categories drift kills feature adoption for non-music communities.
+**Why this matters:** §4 user feedback said "manual event creation felt too focused on existing CSC/open mic categories." Categories drift kills feature adoption for non-music communities. In the updated §5 sequencing, 2A runs after the security-ADR phase, 2F concierge, 2E series matching, and 2I AI source optimization — but it remains foundational for the broader cultural-event graph and is still a Track 2 priority before festivals/imports.
 
 **Today:** `events.event_type text[]` validated against `eventTypeContract.ts` (closed set, music-focused). Format and discipline are conflated.
 
@@ -356,7 +356,7 @@ This sub-track flips the surface: the host types a free-text update from anywher
 2. **2I.1 — JSON-LD audit + completion**. What we have today, what's missing per Schema.org Event spec.
 3. **2I.2 — Schema.org Event JSON-LD complete on `/events/[id]`**. Includes Place sub-schema (address + geo), organizer, eventStatus, offers, dataModified, image, performer when applicable.
 4. **2I.3 — `/events.json` paginated public API**. Documented stable contract; bounded page size (e.g., 50/page max, 1000/index max); ETag + Last-Modified for change detection; no auth.
-5. **2I.4 — robots.txt audit + AI crawler allowlist**. Explicitly allow `GPTBot`, `ClaudeBot`, `PerplexityBot`, `Google-Extended`, etc. Verify nothing's accidentally blocked.
+5. **2I.4 — robots.txt + crawler policy audit**. Investigate today's robots.txt; decide per-bot policy (allow / rate-limit / deny) under 2I.0 ADR alongside rate-limiting + caching + partner/citation strategy. Pre-decided blanket "allow all AI crawlers" is NOT the default — the policy choice belongs to 2I.0 with deliberate inputs from rate-limit cost, content licensing, and partner alignment.
 6. **2I.5 — AI-shaped query endpoints**. `/events/tonight`, `/events/this-weekend`, `/events/upcoming?days=N&type=...` — natural-language queries AI agents pass through verbatim.
 7. **2I.6 — Cancelled-event semantics**. Cancelled events return 200 with `eventStatus: "EventCancelled"` per Schema.org — so AI agents propagate the cancellation rather than re-citing as live (matches CONTRACTS.md visibility behavior).
 8. **2I.7 — Citation-stability audit + slug-rename redirect map**. No URL changes that break inbound AI citations. Permalink IDs stable forever.
@@ -385,7 +385,7 @@ This sub-track flips the surface: the host types a free-text update from anywher
 1. **2J.0 — Safe URL Fetcher ADR** (security stop-gate). Threat model + acceptance tests. Required for BOTH 2J reverification AND 2F URL-paste input. Defines: SSRF defenses, DNS rebinding protection, redirect handling, timeouts, response caps, content-type allowlists, no credentials forwarded, no JS execution, central rate limits.
 2. **2J.1 — Safe URL Fetcher implementation**. Single in-process module (`safeFetch()`); all URL fetching in the codebase routes through this; designed for future extraction to a worker/service. Proves the threat model with the acceptance tests from 2J.0.
 3. **2J.2 — Reverification schema**. New table for known-source URLs per event/venue, last-checked timestamps, observed-vs-stored deltas.
-4. **2J.3 — Reverification worker (cron-style)**. Periodically refetches known-source URLs; uses `safeFetch` from 2J.1; runs deterministic parser (JSON-LD if available, else fall through to the LLM-fallback path from 2D.2.1 once that exists).
+4. **2J.3 — Reverification worker (cron-style)**. Periodically refetches known-source URLs; uses `safeFetch` from 2J.1; runs the deterministic JSON-LD parser. **For v1, sources without JSON-LD become a manual review/queued outcome — they are NOT auto-extracted by LLM in 2J v1.** LLM fallback for non-JSON-LD pages only becomes available after 2D.2.1 lands (per §5 sequencing 2J runs before 2D.2). The v1 explicit behavior on a non-JSON-LD source: log the observation, mark "extraction not supported in v1", surface to admin queue without auto-action.
 5. **2J.4 — Drift detection + evidence package**. Compare scraped reality against CSC row; produce evidence-backed delta (source URL, old value, new value, confidence, timestamp, raw observation hash).
 6. **2J.5 — Auto-update for low-risk metadata**. Limited fields: `last_verified_at`, `source_checked_at`, "no change found" idempotent updates. NEVER auto-mutate event content; that goes to review.
 7. **2J.6 — Admin/host review queue**. Surface drift alerts in dashboard; one-click approve/reject; on approve, applies the update through the same write paths the concierge uses.
@@ -412,7 +412,7 @@ This sub-track flips the surface: the host types a free-text update from anywher
 
 **Stewardship principle (binding):**
 
-> 2K analytics exists to help us understand the community we serve — not the individuals in it. Every measurement is the smallest aggregate that answers a concrete decision. We collect to serve hosts and audiences, not to extract value from them. The system is opt-out by default for non-essential analytics, honors GPC, and never makes individual user behavior visible to anyone but the user themselves and admins responding to specific user requests (e.g., a deletion). Data shared with partners/funders is aggregate metrics only — never user-level, never identifiable.
+> 2K analytics exists to help us understand the community we serve — not the individuals in it. Every measurement is the smallest aggregate that answers a concrete decision. We collect to serve hosts and audiences, not to extract value from them. The system honors GPC and never makes individual user behavior visible to anyone but the user themselves and admins responding to specific user requests (e.g., a deletion). Data shared with partners/funders is aggregate metrics only — never user-level, never identifiable. **Exact regional consent posture (opt-out vs opt-in defaults, cookie-banner triggers, GDPR/CCPA-specific behavior) is locked by the 2K.0 Analytics Security/Privacy ADR**, not pre-decided in this roadmap. The principle binds; the exact legal matrix follows.
 
 **Decisions this data must support:**
 
@@ -611,8 +611,6 @@ If ordered for highest leverage. **Each sub-track's `.0` security ADR is a hard 
 
 **Why performers last:** until festivals validates the entity-relationship model, performers risks duplicating effort.
 
-**Why performers last:** until festivals validates the entity-relationship model, performers risks duplicating effort.
-
 ---
 
 ## 6. Coordination rules
@@ -657,16 +655,22 @@ Track 1's §8.2 locks remain. Track 2 may add new locks for:
 
 ## 7. What's deferred or out-of-scope
 
-Per §9 (Track 1's "Do Not Build Yet" list) — these remain deferred unless explicitly lifted:
+Per §9 (Track 1's "Do Not Build Yet" list) — current dispositions:
 
-- Undo/redo for AI patches — possibly liftable now that PR 3 telemetry exists; defer until product need surfaces.
-- AI cancel/delete — possibly liftable now that PR 9 gate exists; defer pending product call.
-- Full conflict resolution for multiple hosts — not yet.
-- Pre-event durable image storage — not yet.
-- Full festival organizer lineup management — not yet (basic festival relationships in §2B; lineup is later).
-- Playwright-heavy lineup discovery — not yet.
-- Multi-org account redesign — not yet.
-- Bulk operations beyond import review — not yet.
+**Lifted into Track 2 scope:**
+
+- **AI cancel** — lifted into 2F (concierge) scope per the 2026-05-01 strategic conversation. Behavior follows `CONTRACTS.md`: cancelled events stay visible with the Cancelled badge; notification of RSVPs is mandatory; cancellation is reversible from the Cancelled tab. Implementation gated by 2F.0 write-gate hardening ADR. v1 supports cancel only on **exact event/occurrence context** (user is acting on a known specific event); cross-event find-and-cancel comes after 2F.3 scan-first lands.
+
+**Remain deferred:**
+
+- **AI delete** — explicitly NOT lifted. Destructive operations stay manual.
+- **Undo/redo for AI patches** — defer until clear product need surfaces. PR 3 telemetry + audit log + per-write rollback affordances (per 2F.0) cover most v1 needs.
+- **Full conflict resolution for multiple hosts** — not yet.
+- **Pre-event durable image storage** — not yet.
+- **Full festival organizer lineup management** — not yet (basic festival relationships in §2B; lineup is later).
+- **Playwright-heavy lineup discovery** — not yet (no JS execution / headless browser in 2J.1 v1 per Codex's safe-fetch rules).
+- **Multi-org account redesign** — not yet.
+- **Bulk operations beyond import review** — not yet.
 
 These can be re-evaluated per Sami's call as Track 2 progresses.
 
@@ -674,12 +678,17 @@ These can be re-evaluated per Sami's call as Track 2 progresses.
 
 ## 8. Open questions for Sami
 
-1. **§9 deferred items reconsidered.** Should AI cancel/delete and undo/redo be lifted now that PR 9 gate + PR 3 telemetry exist? My picks: yes for both, but defer until clear product need (avoid speculative work).
-2. **Phase ordering.** §5 above orders categories first. Alternative: festivals first (smaller, faster ship). Pro categories: addresses live user pain. Pro festivals: faster validation of entity-relationship model. Default to categories unless you prefer festivals.
-3. **Symphony Phase 2 work** lives here (§4.3). Should it move to a separate roadmap doc (`tools/symphony/docs/symphony-phase-2.md`) since Symphony is its own track? Recommended: keep here for cross-track visibility until Symphony is extracted to its own repo (if ever).
-4. **Operational habits cadence.** §4.1 specifies weekly transcript review. Realistic? Or monthly to start? Recommended: monthly initially, ratchet up to weekly once dashboards make it cheap.
-5. **Track 1 closure event.** After PR 11 merges, do we declare Track 1 "done" formally with a doc update (`ai-event-ops-collaboration-plan.md` gets a "Track 1 Complete" section), or roll directly into Track 2?
-6. **Builder lane assignment for Track 2.** Track 1 was Codex-heavy. Should Track 2 use the same split, or should certain sub-tracks (e.g., import pipeline) go to Claude? Recommended: same split unless throughput becomes a bottleneck.
+(Decisions resolved during the 2026-05-01 strategic conversation are now reflected in §3 sub-tracks, §5 sequencing, and §7 dispositions. The remaining open items below want explicit answers before the first implementation PR ships.)
+
+1. **Symphony Phase 2 work location** lives here (§4.3). Should it move to a separate roadmap doc (`tools/symphony/docs/symphony-phase-2.md`) since Symphony is its own track? Recommended: keep here for cross-track visibility until Symphony is extracted to its own repo (if ever).
+2. **Operational habits cadence.** §4.1 specifies weekly transcript review. Realistic? Or monthly to start? Recommended: monthly initially, ratchet up to weekly once dashboards (2K.6) make it cheap.
+3. **Track 1 closure event.** After PR 11 merges, do we declare Track 1 "done" formally with a doc update (`ai-event-ops-collaboration-plan.md` gets a "Track 1 Complete" section), or roll directly into Track 2?
+4. **Builder lane assignment for Track 2.** Track 1 was Codex-heavy. Should Track 2 use the same split, or should certain sub-tracks (e.g., import pipeline) go to Claude? Recommended: same split unless throughput becomes a bottleneck.
+
+(Resolved questions from earlier rounds, kept here for audit:)
+- ~~§9 deferred items: should cancel/delete/undo-redo be lifted?~~ Resolved: AI cancel lifted into 2F (gated by 2F.0); AI delete + undo/redo stay deferred. See §7.
+- ~~Phase ordering: categories first or festivals first?~~ Resolved: neither — security ADRs first, then 2F → 2E → 2I → 2A → 2B → 2J → 2D.0/2D.1 → 2K → 2D.2+ → 2C. See §5.
+- ~~Strategic frame: agent as product center of gravity?~~ Resolved: yes, with Codex's amendment — host-side maintenance + source-data relationship is the product, not the chat UI itself. The model layer is replaceable; the durable asset is verified event data plus host trust. See §2 north star.
 
 ---
 
