@@ -87,7 +87,7 @@ Trust model: human-in-the-loop at every transition; no auto-merge; supervised ex
 | Workflow policy in-repo (`WORKFLOW.md`) | ✅ done | `WORKFLOW.md` exists with YAML config front-matter |
 | Observability for multiple concurrent agent runs | 🟡 partial | Per-issue logs + manifests + workpad comments exist; "multiple concurrent" doesn't apply (max=1) |
 | Trust/safety posture documented explicitly | ✅ done | Phase 1.2 README + runbook + Phase 1.3 daemon controls section |
-| Symphony as scheduler/runner + tracker reader (NOT writer) | ✅ done | Ticket writes (label transitions, workpad comments) live in `tools/symphony/lib/issues.mjs` + the worker; orchestration core is read-only on tracker |
+| Symphony as scheduler/runner + tracker reader (NOT writer) | 🟡 partial — **deliberate divergence** | Codex review correction (2026-05-02): `runner.mjs` directly applies label transitions (symphony:running, symphony:human-review, symphony:blocked) AND upserts the workpad comment before/after Codex execution. The orchestrator core is NOT read-only on the tracker in current Phase 1. The worker also makes some tracker mutations during its session (PR opens, labels via `gh` from the worker). This is a trust-boundary divergence from the spec's "scheduler is reader; writes live in the worker tools" intent. Phase 2 candidate: clarify which mutations belong to the scheduler vs the worker; spec leans heavily worker-side. |
 
 **Disposition for §1: largely ✅ done with one Phase 1 specialization (single-agent concurrency).**
 
@@ -100,7 +100,7 @@ Trust model: human-in-the-loop at every transition; no auto-merge; supervised ex
 | Spec goal | Disposition | Notes |
 |---|---|---|
 | Poll tracker on fixed cadence with bounded concurrency | 🟡 partial | Daemon polls every `intervalSeconds` (default 120s); concurrency bounded at 1 |
-| Single authoritative orchestrator state | ✅ done | `runner.mjs` owns state; `runner.lock` enforces single-process |
+| Single authoritative orchestrator state | 🟡 partial | Codex review correction (2026-05-02): `runner.lock` provides process-level serialization (one Symphony process at a time), NOT the spec's runtime state model (in-memory `running`/`claimed`/`retry_attempts`/`completed`/`codex_totals`/`codex_rate_limits` map). See §3.5 — the orchestrator state machine is largely missing. Downgrading to partial to match the §7 disposition. |
 | Deterministic per-issue workspaces preserved across runs | ✅ done | `tools/symphony/lib/workspace.mjs` |
 | **Stop active runs when issue state changes make them ineligible** | ❌ missing | No mid-run reconciliation; if `symphony:ready` is removed mid-execute, current run continues |
 | **Recover from transient failures with exponential backoff** | ❌ missing | No retry queue; no backoff. Failure → halt; manual re-trigger required |
@@ -129,7 +129,7 @@ Trust model: human-in-the-loop at every transition; no auto-merge; supervised ex
 
 | Spec component | Phase 1 file | Disposition |
 |---|---|---|
-| 1. Workflow Loader | `tools/symphony/lib/workflow.mjs` | ✅ done (static, no dynamic reload — see §3.6) |
+| 1. Workflow Loader | `tools/symphony/lib/workflow.mjs` | 🟡 partial — **format divergence** | Codex review correction (2026-05-02): spec requires YAML front matter + Markdown prompt body returning `{config, prompt_template}`. Current implementation parses an HTML-comment-wrapped JSON config block (`<!-- symphony-config { ... } -->`) and returns `{markdown, config}` — different parser, different return shape, no separate `prompt_template`. Also no dynamic reload (see §3.6). Phase 2 candidates: (a) "spec-compatible workflow front matter / prompt body parsing" sub-track or (b) document this as a deliberate divergence with rationale. |
 | 2. Config Layer | `tools/symphony/lib/config.mjs` | ✅ done with simplifications (see §3.7) |
 | 3. Issue Tracker Client | `tools/symphony/lib/github.mjs` + `issues.mjs` | 🟡 partial — different tracker (GitHub vs Linear), normalized to similar issue model |
 | 4. Orchestrator | `tools/symphony/lib/runner.mjs` | 🟡 partial — single-cycle + daemon present; in-memory orchestrator state model is simpler than spec §4.1.8 |
@@ -153,7 +153,7 @@ Trust model: human-in-the-loop at every transition; no auto-merge; supervised ex
 
 | Spec dependency | Phase 1 |
 |---|---|
-| Issue tracker API | GitHub REST via `gh` CLI shell-out |
+| Issue tracker API | GitHub REST via `fetch` against `https://api.github.com` (codex review correction 2026-05-02; only token resolution shells out to `gh auth token`, the API calls themselves are direct fetch) |
 | Local filesystem | yes |
 | Workspace population (e.g., Git CLI) | yes — `git worktree` |
 | **Coding-agent executable supporting JSON-RPC app-server mode** | ❌ uses `codex exec --json` instead |
@@ -170,7 +170,7 @@ Trust model: human-in-the-loop at every transition; no auto-merge; supervised ex
 | Spec entity | Phase 1 representation | Disposition |
 |---|---|---|
 | 4.1.1 Issue | `tools/symphony/lib/issues.mjs` `normalizeIssue()` | 🟡 partial — has `id`, `identifier` (number), `title`, `description`, `state`, `labels`, `url`; missing `priority`, `branch_name`, `blocked_by`, `created_at`, `updated_at` in normalized form |
-| 4.1.2 Workflow Definition | `loadWorkflow()` returns `{config, prompt}` | ✅ done |
+| 4.1.2 Workflow Definition | `loadWorkflow()` returns `{markdown, config}` (NOT `{config, prompt_template}` per spec) | 🟡 partial — format divergence (see §3.3 row above) |
 | 4.1.3 Service Config (typed view) | `resolveConfig()` | ✅ done |
 | 4.1.4 Workspace | path + `created_now` | 🟡 partial — `created_now` not used to gate hooks (because no hooks) |
 | 4.1.5 Run Attempt | manifest fields | 🟡 partial — manifest captures shape; `attempt` integer for retries doesn't exist (no retry queue) |
@@ -381,7 +381,7 @@ Spec is Linear-specific (GraphQL endpoint, project slug, blocked_by relations).
 
 | Required operation | Phase 1 (GitHub) |
 |---|---|
-| `fetch_candidate_issues()` | ✅ done — `gh issue list --label symphony:ready` |
+| `fetch_candidate_issues()` | ✅ done — direct `fetch` to GitHub REST `/repos/{owner}/{repo}/issues?labels=symphony:ready` (NOT `gh issue list` shell-out per Codex review correction 2026-05-02) |
 | `fetch_issues_by_states(state_names)` for startup terminal cleanup | 🟡 partial — `recover-stale` covers stuck running; not full terminal-state list |
 | `fetch_issue_states_by_ids(issue_ids)` for reconciliation | ❌ missing — no per-tick reconciliation |
 | Pagination (default page size 50) | 🟡 partial — `gh issue list` paginates; we don't track cursor explicitly |
@@ -598,7 +598,9 @@ Grouping missing/partial items into coherent sub-tracks. Each is a Phase 2 candi
 
 ---
 
-## 6. Risks and open critique points (FOR CODEX REVIEW)
+## 6. Risks, open critique points, and Codex review responses
+
+(Codex completed substantive review 2026-05-02. Each subsection below includes the original question/risk plus Codex's response when given. P1/P1/P2/P3 disposition corrections from Codex's findings have been patched into §3 above.)
 
 ### 6.1 The dispositions may be wrong about current state
 
@@ -616,11 +618,20 @@ This doc is built from reading the spec, the current Symphony code (`tools/symph
 
 **Codex critique invited:** is parallel-adapter the right migration shape? Or big-bang switch behind a feature flag?
 
+**Codex response (locked 2026-05-02):** Parallel app-server adapter is the right migration shape. Do NOT big-bang replace `codex exec`. Keep `codex-exec` as the stable fallback until app-server has its own supervised activation evidence (analogous to the Phase 1.3 supervised execute gates).
+
 ### 6.3 Multi-turn unlocks risk profile change
 
 Today supervised execute is single-turn → halts at human-review. Multi-turn continuation (§7.1) means worker can run multiple Codex turns autonomously between human gates. That changes the safety surface meaningfully: longer running times, more chances for drift, more total cost per ready issue.
 
 **Codex critique invited:** should multi-turn be enabled per-issue (opt-in via issue body marker) or per-workflow (config field), and what additional safety controls (per-issue turn cap, per-issue cost cap) should ship alongside?
+
+**Codex response (locked 2026-05-02):** Multi-turn should be **disabled by default**. Require BOTH workflow config opt-in AND issue-level opt-in at first (belt-and-suspenders). Hard caps required alongside enablement:
+- Max turns (per-issue, per-workflow)
+- Wall-clock timeout (per-issue, total elapsed)
+- Token / cost budget (per-issue cap)
+- Per-turn preflight: re-read issue state before starting next turn
+- Stop-on-write-set drift: if the proposed write set drifts mid-run from the issue's approved write set, halt
 
 ### 6.4 Linear adapter is 🚫 deliberately out of scope — for now
 
@@ -629,6 +640,8 @@ We chose GitHub. But if Symphony ever runs against a non-DSC repo that uses Line
 ### 6.5 Spec §10.5 `linear_graphql` tool extension parity for GitHub
 
 Spec defines an optional client-side tool extension (`linear_graphql`) that the worker can call to query Linear directly. We have no GitHub equivalent — workers can use `gh` CLI via shell calls, but there's no first-class `github_graphql` or `github_rest` tool extension. **Codex critique invited:** is a `github_graphql` extension worth adding, or is shell-out via `gh` sufficient?
+
+**Codex response (locked 2026-05-02):** Skip `github_graphql` for now. `gh` plus the GitHub REST client is enough until app-server tool extensions are real (i.e., until Phase 2.A app-server migration ships and tool extension infrastructure exists). Revisit after 2.A.
 
 ### 6.6 Status snapshot with HTTP server — auth posture concern
 
@@ -642,6 +655,8 @@ Spec §13.5 acknowledges payload shape variance ("absolute thread totals" vs "de
 
 Spec §9.4 hooks run via shell (`sh -lc <script>` or `bash -lc`). Hook scripts are stored in `WORKFLOW.md` (repo-owned). If we ship Phase 2.C hooks, malicious or buggy `WORKFLOW.md` content can run arbitrary commands inside the workspace. We trust `WORKFLOW.md` because it's repo-versioned, but multi-repo Symphony could change that. **Codex critique invited:** does Phase 2.C need any sandboxing for hooks, or does "WORKFLOW.md is repo-controlled = trusted" hold?
 
+**Codex response (locked 2026-05-02):** Hooks need sandbox posture **decided before implementation**. "Repo-controlled `WORKFLOW.md` is trusted" is acceptable ONLY for this repo, NOT as a portable default. Phase 2.C ADR must explicitly decide the sandbox posture per intended deployment mode (this-repo-only vs portable-multi-repo) before any hook execution code lands.
+
 ### 6.9 Phase 2 ordering depends on which capability matters most
 
 I sequenced 2.A first because it's highest-leverage. But:
@@ -651,6 +666,8 @@ I sequenced 2.A first because it's highest-leverage. But:
 - 2.H (outer timeout) is small and addresses a known daemon-readiness item
 
 Maybe 2.D + 2.G + 2.H first ("operational hardening week") before 2.A's bigger refactor. **Codex critique invited:** what ordering makes most sense given current operational state?
+
+**Codex response (locked 2026-05-02):** Ops hardening first. **2.G live recover-stale test + 2.H outer timeout + workflow-format correction** (the §3.3 + §3.4 divergence Codex caught — either spec-compatible parsing OR explicit deliberate-divergence documentation). Dynamic reload (2.D) is useful but less urgent than preventing stuck/hung daemon behavior. 2.A app-server migration is the bigger architectural lift after ops hardening proves stable.
 
 ---
 
@@ -664,6 +681,8 @@ Beyond the critique points above:
 4. **What's the right MVP for Phase 2?** If we had to ship the smallest possible "we're closer to spec" version, which sub-PRs would compose it? My pick: 2.D (reload) + 2.G (recover-stale test) + 2.H (outer timeout). All three are operationally meaningful + small + independent.
 5. **Symphony as separate repo question** — the spec presumes Symphony is its own service. We currently embed in DSC. The PR #147 self-edit guard partially addresses safety, but **does the Phase 2 work make repo extraction more or less appealing?** I lean: do the Phase 2 work in-repo, then extract once architecture stabilizes.
 6. **Any dissent on the strategic frame?** This doc treats Phase 1 as a deliberate safety-first adaptation worth preserving while incrementally closing spec gaps. Alternative framing: rebuild from scratch toward the spec. I argue against that (loses Phase 1 safety + GitHub adapter + everything we proved). Curious if you'd dissent.
+
+   **Codex response (locked 2026-05-02):** No dissent. Do not recommend rebuild-from-scratch. Preserve Phase 1 and close gaps incrementally.
 
 ---
 
@@ -733,10 +752,10 @@ When blocked → draft PR with question. Don't improvise.
 
 ## 11. First concrete actions (after this doc lands)
 
-1. **Codex reviews this document.** Raises critique per §6 and §7. Dissent welcomed.
-2. **Sami responds to Codex's critique.** Locks dispositions or asks for revision.
-3. **MVP decision:** which sub-tracks ship in the first Phase 2 wave? My pick: 2.D + 2.G + 2.H ("operational hardening week"). Alternative: 2.A first (architectural).
-4. **First implementation PR is whichever ADR closes first** under the MVP set.
+1. ~~Codex reviews this document.~~ ✅ done — Codex review completed 2026-05-02; four disposition corrections (P1/P1/P2/P3) accepted and patched into this revision; six §6/§7 review responses locked in §6 alongside the original questions.
+2. **Sami responds to remaining open dispositions** if any after Codex's review patch.
+3. **MVP decision (Codex-recommended):** ops hardening first — **2.G** (live `recover-stale --execute` test) + **2.H** (outer Codex execution timeout) + **workflow-format correction** (resolve the `<!-- symphony-config -->` JSON vs spec YAML front matter divergence either as a Phase 2 sub-PR or as a deliberately-documented divergence). Codex's reasoning: dynamic reload (2.D) is useful but less urgent than preventing stuck/hung daemon behavior; 2.A app-server migration is the bigger architectural lift after ops hardening proves stable.
+4. **First implementation PR is whichever MVP ADR closes first.** All three MVP items are independent; can be parallelized.
 
 ---
 
