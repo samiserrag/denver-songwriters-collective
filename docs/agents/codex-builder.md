@@ -13,9 +13,9 @@ Standing brief for Codex builder threads. This file began as the Track 1 Codex C
 
 ## Platform Reality
 
-Codex environments differ. The coordinator prompt is authoritative for whether
-the task should use direct push, the GitHub plugin, or the button-click
-protocol.
+Codex environments differ. The GitHub plugin is the canonical GitHub control plane for Codex agents in this repo whenever it is available. Use the plugin first for PR state, diffs, review threads, comments, status checks, merges, branch/file updates when appropriate, issues, labels, and repository metadata.
+
+Do not use `gh`, raw GitHub REST, `curl https://api.github.com`, or ad hoc shell GitHub calls when the GitHub plugin can perform the operation. Shell GitHub access is only acceptable when the repo runtime itself must exercise GitHub from the shell, or when the coordinator prompt explicitly says the plugin cannot perform the needed operation.
 
 ### Codex Cloud constraints verified 2026-04-29
 
@@ -29,10 +29,7 @@ Codex Cloud sandboxes — even when started with the GitHub repo selected — ha
 - `gh` CLI **not installed** ❌
 - No `GITHUB_TOKEN` environment variable ❌
 
-If these constraints are present, you cannot push directly and the button-click
-protocol is the only path. If your current environment has working `git push`,
-`gh`, or GitHub plugin access, use the protocol in the task prompt and report
-what worked.
+If the GitHub plugin is available in the Codex environment, use it instead of shell GitHub commands. If the plugin is unavailable and the sandbox has the constraints above, the button-click protocol is the only path. Report which path worked in the PR body.
 
 ## Role
 
@@ -62,8 +59,9 @@ If your task requires touching one of these, stop and ask Sami before proceeding
 
 ## Git / PR Protocol
 
-If the task prompt selects the button-click protocol because direct push is
-blocked, use this protocol:
+Use the GitHub plugin for PR creation, PR metadata, comments, and status checks whenever it is available. Use shell `git` for local file work and commits as needed, but do not use shell GitHub network commands (`gh`, `git push`, `git fetch`, `curl api.github.com`) when the plugin or platform button-click protocol can cover the remote operation.
+
+If the task prompt selects the button-click protocol because direct push and plugin writes are unavailable, use this protocol:
 
 1. Verify remote at session start: `git remote -v`. If origin is not configured, stop and tell Sami.
    Do NOT run `git fetch origin` — it will 403. The sandbox is preloaded; HEAD already reflects the
@@ -84,8 +82,8 @@ blocked, use this protocol:
    ```
 
 7. Confirm `git status --short` is clean and `git log --oneline -5` shows your commits.
-8. **Do not run `git push`** — it will fail with CONNECT 403 in this sandbox.
-9. **Do not use `make_pr`** or any sandbox-internal staging that bypasses the button.
+8. **Do not run `git push`** in a constrained Codex Cloud sandbox — it will fail with CONNECT 403.
+9. **Do not use `make_pr`** or any sandbox-internal staging that bypasses the GitHub plugin or the explicit button-click protocol.
 10. Tell Sami: *"Ready. Branch `<name>`. Click Create PR with title: `<title from task prompt>` and the body below."* — and provide the PR body as a fenced block in your reply.
 11. Sami clicks Create PR in the Codex Cloud UI. The platform pushes the branch and opens the PR.
 12. The PR body **is** your status comment — see template below. Sami will not be able to easily post a comment from his phone, so the body must be self-contained.
@@ -141,18 +139,18 @@ yes (§13.2) / no (§13.1)
 
 ## Session restart
 
-Fresh Codex Cloud task? Two-step bootstrap:
+Fresh Codex task? Two-step bootstrap:
 
-1. **Verify GitHub setup.** Run `git remote -v`, `git ls-remote --heads origin 2>&1 | head -3`, `gh auth status 2>&1`. Report exact output.
+1. **Verify GitHub plugin availability first.** If the plugin is available, use it as the canonical GitHub path. If it is unavailable, run `git remote -v`, `git ls-remote --heads origin 2>&1 | head -3`, `gh auth status 2>&1`, and report exact output before choosing the button-click fallback.
 2. **Read all six required docs above.** Then await task assignment.
 
-Even though direct push is blocked, the remote should still be configured. If it's not, the task was created without the repo picker and Sami needs to start a new task.
+Even though direct push may be blocked, the remote should still be configured. If it's not, the task was created without the repo picker and Sami needs to start a new task.
 
 ## What You Do Not Do
 
-- Do not run `git push`, `git fetch origin`, or `gh` in a Codex Cloud sandbox that already showed CONNECT 403, no `gh`, or no token.
-- Do not use `make_pr` or sandbox-internal PR staging when the task prompt requires the button-click protocol.
-- Do not merge PRs.
+- Do not use `gh`, shell `git fetch`, shell `git push`, raw REST, or `curl api.github.com` for GitHub control-plane work when the GitHub plugin is available.
+- Do not use `make_pr` or sandbox-internal PR staging when the task prompt requires the plugin or button-click protocol.
+- Do not merge PRs unless Sami explicitly asks.
 - Do not run migrations.
 - Do not start work without an explicit task assignment.
 - Do not amend old commits — create new ones.
