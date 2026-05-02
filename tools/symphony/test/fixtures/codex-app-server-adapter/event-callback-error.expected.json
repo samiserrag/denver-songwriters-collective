@@ -1,0 +1,18 @@
+{
+  "name": "event-callback-error.jsonl",
+  "ok": false,
+  "reason": "event_callback_error",
+  "terminal_status": "failure",
+  "terminal_reason": "event_callback_error",
+  "thread_id": null,
+  "turn_id": null,
+  "session_id": null,
+  "turn_count": 0,
+  "last_protocol_event": null,
+  "token_usage": null,
+  "rate_limits": null,
+  "protocol_events_count": 1,
+  "adapter_events_count": 2,
+  "error": "event sink failed",
+  "event": "protocol_message"
+}

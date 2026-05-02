@@ -149,6 +149,15 @@ function assertExpectedResult(result, expected) {
   if (expected.response_error_message) {
     assert.equal(result.responseError.message, expected.response_error_message);
   }
+  if (expected.error) {
+    assert.equal(result.error, expected.error);
+  }
+  if (expected.event) {
+    assert.equal(result.event, expected.event);
+  }
+  if (expected.stderr_pattern) {
+    assert.match(result.stderr, new RegExp(expected.stderr_pattern));
+  }
   if (expected.timeout_phase) {
     assert.equal(result.timeout.phase, expected.timeout_phase);
   }
@@ -165,6 +174,40 @@ async function replayFixture(fixtureName, options = {}) {
     ...options
   });
 }
+
+function adapterOptionsForFixture(fixtureName) {
+  if (fixtureName !== "event-callback-error.jsonl") {
+    return undefined;
+  }
+  return {
+    onEvent: (event) => {
+      if (event.event === "protocol_message") {
+        throw new Error("event sink failed");
+      }
+    }
+  };
+}
+
+const REPLAY_FIXTURE_NAMES = Object.freeze([
+  "event-callback-error.jsonl",
+  "initialize-json-rpc-error.jsonl",
+  "malformed-protocol-message.jsonl",
+  "missing-thread-id.jsonl",
+  "missing-turn-id.jsonl",
+  "process-exit-before-completion.jsonl",
+  "read-timeout.jsonl",
+  "stderr-only-diagnostics.jsonl",
+  "success-turn-completed.jsonl",
+  "thread-json-rpc-error.jsonl",
+  "turn-cancelled.jsonl",
+  "turn-failed.jsonl",
+  "turn-input-required.jsonl",
+  "turn-json-rpc-error.jsonl",
+  "turn-timeout.jsonl",
+  "unsupported-tool-call.jsonl"
+]);
+
+const REPLAY_EMIT_MODES = Object.freeze(["line-by-line", "split-lines", "multi-line"]);
 
 test("buildCodexAppServerLaunch uses a shell command for the app-server process", () => {
   assert.deepEqual(buildCodexAppServerLaunch({ command: "codex app-server" }), {
@@ -230,45 +273,24 @@ test("replay helper validates metadata fields and replay steps", () => {
   );
 });
 
-for (const emitMode of ["line-by-line", "split-lines", "multi-line"]) {
-  test(`replay fixture: successful turn/completed preserves session, usage, and events (${emitMode})`, async () => {
-    const { child, expected, metadata, result, timerHarness } = await replayFixture(
-      "success-turn-completed.jsonl",
-      { emitMode }
-    );
+for (const fixture of REPLAY_FIXTURE_NAMES) {
+  for (const emitMode of REPLAY_EMIT_MODES) {
+    test(`replay fixture: ${fixture} matches fixture-side expectations (${emitMode})`, async () => {
+      const { child, expected, metadata, result, timerHarness } = await replayFixture(fixture, {
+        adapterOptions: adapterOptionsForFixture(fixture),
+        emitMode
+      });
 
-    assert.equal(metadata.codex_version, "codex-app-server-fixture-v1");
-    assertExpectedResult(result, expected);
-    assertAdapterEventsAreDeterministic(result);
-    assert.deepEqual(child.killSignals, ["SIGTERM"]);
-    assertNoActiveTimers(timerHarness);
-  });
-}
-
-for (const fixture of [
-  "initialize-json-rpc-error.jsonl",
-  "thread-json-rpc-error.jsonl",
-  "turn-json-rpc-error.jsonl",
-  "malformed-protocol-message.jsonl",
-  "turn-failed.jsonl",
-  "turn-cancelled.jsonl",
-  "turn-input-required.jsonl",
-  "process-exit-before-completion.jsonl",
-  "read-timeout.jsonl",
-  "turn-timeout.jsonl"
-]) {
-  test(`replay fixture: ${fixture} matches fixture-side expectations`, async () => {
-    const { child, expected, metadata, result, timerHarness } = await replayFixture(fixture);
-
-    assert.equal(metadata.name, fixture);
-    assert.equal(metadata.codex_version, "codex-app-server-fixture-v1");
-    assertExpectedResult(result, expected);
-    if (result.protocol_events.length > 0) {
-      assertAdapterEventsAreDeterministic(result);
-    }
-    assert.deepEqual(child.killSignals, expected.kill_signals ?? ["SIGTERM"]);
-    assertNoActiveTimers(timerHarness);
-  });
+      assert.equal(metadata.name, fixture);
+      assert.equal(metadata.codex_version, "codex-app-server-fixture-v1");
+      assertExpectedResult(result, expected);
+      if (result.protocol_events.length > 0) {
+        assertAdapterEventsAreDeterministic(result);
+      }
+      assert.deepEqual(child.killSignals, expected.kill_signals ?? ["SIGTERM"]);
+      assertNoActiveTimers(timerHarness);
+    });
+  }
 }
 
 test("runCodexAppServerAdapter completes a single app-server turn and preserves metadata", async () => {

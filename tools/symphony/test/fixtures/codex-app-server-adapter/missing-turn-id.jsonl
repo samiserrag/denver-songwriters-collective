@@ -1,0 +1,4 @@
+{"fixture":{"name":"missing-turn-id.jsonl","codex_version":"codex-app-server-fixture-v1","scenario":"turn/start response omits turn id and adapter fails closed"}}
+{"stream":"stdout","message":{"id":1,"result":{"capabilities":{}}}}
+{"stream":"stdout","message":{"id":2,"result":{"thread":{"id":"fixture-thread-no-turn"}}}}
+{"stream":"stdout","message":{"id":3,"result":{"turn":{}}}}

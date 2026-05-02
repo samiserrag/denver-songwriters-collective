@@ -1,0 +1,5 @@
+{"fixture":{"name":"unsupported-tool-call.jsonl","codex_version":"codex-app-server-fixture-v1","scenario":"dynamic tool call is unsupported by the scaffold and fails closed"}}
+{"stream":"stdout","message":{"id":1,"result":{"capabilities":{}}}}
+{"stream":"stdout","message":{"id":2,"result":{"thread":{"id":"fixture-thread-tool"}}}}
+{"stream":"stdout","message":{"id":3,"result":{"turn":{"id":"fixture-turn-tool"}}}}
+{"stream":"stdout","message":{"method":"item/tool/call","params":{"name":"linear_graphql"}}}

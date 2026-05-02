@@ -1,0 +1,2 @@
+{"fixture":{"name":"event-callback-error.jsonl","codex_version":"codex-app-server-fixture-v1","scenario":"adapter event sink throws while handling a protocol message"}}
+{"stream":"stdout","message":{"id":1,"result":{"capabilities":{}}}}
