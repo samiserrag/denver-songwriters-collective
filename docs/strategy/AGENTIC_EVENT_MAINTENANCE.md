@@ -1,7 +1,7 @@
 # Agentic Event Maintenance
 
 **Status:** ACTIVE for principles; PROPOSED for new surfaces (no new flows ship without stop-gate)
-**Version:** 1.0
+**Version:** 1.1
 **Last Updated:** 2026-05-02
 **Audience:** Repo agents, contributors, partners building venue/artist/org tooling
 
@@ -110,6 +110,70 @@ Operator actions are auditable and stop-gated when they touch the publish decisi
 * It does not authorize any new write API or surface to ship without stop-gate review.
 * It does not modify the active `EVENTS-NL-01` contract; it scopes future extensions of it.
 * It does not commit CSC to building all surfaces above in Phase 1. They are sequenced by [OPERATING_THESIS.md §9](OPERATING_THESIS.md) wedge expansion.
+
+## 10. Community Corrections and Claim-Aware Editing (COMMUNITY-CORRECTION-01)
+
+CSC welcomes corrections from hosts, venues, organizations, artists, and community members. The concierge must distinguish between direct write authority and proposed community help.
+
+Direct mutation is allowed only when the actor is authenticated, authorized, and scoped to the event or entity being changed. If the actor is not an approved host, venue manager, organization manager, or otherwise authorized party, the concierge must create a proposed change rather than changing the trusted event record.
+
+> **Ownership controls write authority. Evidence controls review confidence. Community help is accepted as proposed data, not direct mutation.**
+
+All proposed changes must include a field-level diff, submitter identity when available, source URLs or evidence, AI confidence notes, and a review status. Bulk edits from unclaimed or unrelated actors always require admin review.
+
+High-impact fields — including date, time, venue, cancellation status, ticket URL, and organizer identity — require stricter handling even for authorized actors.
+
+Future cross-references should cite the `COMMUNITY-CORRECTION-01` anchor rather than the section number, so the principle survives any future re-ordering of this document.
+
+### 10.1 Paths
+
+* **Approved host path** — Existing host or co-host of the event. Direct mutation allowed for in-scope fields. Cancellation, venue change, ticket-link replacement, and other high-impact fields still pass through §3 high-risk gating.
+* **Claim-first path** — Venue manager, organization manager, or artist with an approved claim covering the event. Direct mutation allowed within the scope of that claim. Same high-risk gating applies.
+* **Community correction path** — Any authenticated user without a relevant claim. The concierge does **not** mutate the trusted event record. It creates a proposed change with the evidence bundle below and routes to a review queue separate from `event_audit_log`.
+* **Bulk edit review path** — Multiple events touched by a single non-admin actor in a short window always route to admin review, regardless of claim status. The exact operational definition of "bulk" — event count, time window, and distinct-field thresholds — is **deferred to the implementation PR**. This section asserts the principle, not the threshold.
+
+### 10.2 Proposed Change Queue vs Applied Audit Log
+
+Three artifacts are deliberately distinct surfaces with different semantics:
+
+* **Applied audit log** — `event_audit_log` (Lane 5 PR A; landed via PR #193 + #203) records direct mutations to the trusted event record. It answers *"what was changed and by whom"*.
+* **Proposed community corrections** — A separate future queue/workflow with its own table or surface. It captures user-initiated change requests that have **not** been applied. It answers *"what does the community think should change"*. It is not written to `event_audit_log` until accepted and applied.
+* **Source observations** — Future `event_source_observations` per [SOURCE_REGISTRY.md §4](SOURCE_REGISTRY.md) (proposed; not active). They capture facts about external listings. They answer *"what do registered sources currently say"*.
+
+The separation keeps the audit trail truthful. Conflating them would make it impossible to distinguish what changed, what was proposed, and what an external source observed.
+
+### 10.3 Evidence Bundle
+
+Every proposed change must carry, at minimum:
+
+* A **field-level diff** (old value → proposed value).
+* **Submitter identity when available** (`auth.uid()` for authenticated submitters; guest token for unauthenticated submitters where supported; never plaintext IP).
+* **Source URLs or supporting evidence** the submitter cites.
+* **AI confidence notes** when the concierge interprets free-text into structured fields.
+* A **review status** describing where the proposal sits in the workflow. Examples include `pending`, `under_review`, `applied`, `rejected`, and `withdrawn`; the **exact enum is deferred to the implementation PR** and may evolve as workflow signals are added.
+
+A proposed change without an evidence bundle is treated as low-confidence and routes through admin review by default.
+
+### 10.4 Reputation, Privacy, Retention
+
+* **Internal contributor reputation** is a future, admin-only signal. It may inform review prioritization or auto-approval thresholds for trusted contributors. It is **never** publicized, displayed, or used to differentiate the public verification surface. **Paid status must not contribute to contributor reputation, directly or indirectly** — reputation is earned by accuracy and consistency of community contributions, not by payment tier or commercial relationship. The Trust Layer Invariant in [.claude/rules/00-governance-and-safety.md](../../.claude/rules/00-governance-and-safety.md) applies in full.
+* **Concierge transcripts** and **uploaded images** carried with proposed changes are sensitive and retention-bounded. They are stored only as long as needed to act on the proposed change and to maintain a minimal audit trail. Plaintext IPs are never stored; identity hashes follow the same daily-salt pattern used by `event_audit_log`. Deletion paths exist for the submitter on request.
+
+### 10.5 Subject Types and Forward Compatibility
+
+The "claim-first path" currently assumes the artist subject is a `profiles(id)` row, matching the active model and the Q1 outcome in [`source-observation-open-questions-decision-memo.md`](../investigation/source-observation-open-questions-decision-memo.md). If a future `artists` table or other artist-record entity is introduced, the principle here still holds — only the FK target evolves. The decision memo's `artist_subject_type` discriminator is the planned forward-compat path.
+
+### 10.6 What This Section Does Not Authorize
+
+This section is principle and policy. It authorizes:
+
+* **No** schema migration, table creation, RLS policy, or trigger.
+* **No** application code, API/MCP/crawler/RPC route, or UI surface.
+* **No** change to `event_audit_log` shape or semantics. Lane 5 PR A's contract holds. **Lane 5 PR B scope is not expanded by this principle** and remains gated on its own stop-gate; the soak window for PR A continues per its own plan.
+* **No** activation of SOURCE-OBS-01. The proposed-change queue is separate from `event_source_observations` and does not depend on the verification model migration.
+* **No** change to the active confirmation rule. `last_verified_at IS NOT NULL ⇒ Confirmed` remains the only active behavior.
+
+Each implementation step requires its own stop-gate per [GOVERNANCE.md](../GOVERNANCE.md) and the operational rules in [.claude/rules/05-ingestion-and-agent-readability.md](../../.claude/rules/05-ingestion-and-agent-readability.md).
 
 ---
 

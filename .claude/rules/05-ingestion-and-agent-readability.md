@@ -71,6 +71,20 @@ PRs that introduce any paid-tier differentiation in the trust layer are rejected
 
 Until the verification migration in `SOURCE_REGISTRY.md §9` ships under stop-gate review, `last_verified_at` remains the source of truth for the confirmation badge per `CONTRACTS.md §Confirmation Invariants`. PRs that change badge derivation, label text, or DB-truth source for verification without that migration are rejected.
 
+### 9. Community corrections create proposed changes, not direct mutation
+
+Authenticated users without an approved claim covering the target entity cannot directly mutate trusted event records via the concierge or any agent-write surface. PRs that introduce a write path bypassing this discipline are rejected.
+
+Per the `COMMUNITY-CORRECTION-01` section in `docs/strategy/AGENTIC_EVENT_MAINTENANCE.md` (referenced by stable anchor, not section number):
+
+- Approved hosts, venue managers, organization managers, and artists with active claims may direct-write within their claim scope. High-risk fields (date, time, venue, cancellation, ticket URL, organizer identity) remain gated by §6 above even for authorized actors.
+- Everyone else submits proposed changes that route to a review queue distinct from `event_audit_log`.
+- Proposed changes carry an evidence bundle: field-level diff, submitter identity when available, source URLs, AI confidence notes, and a review status. The exact enum of review statuses is deferred to the implementation PR.
+- Bulk edits from unclaimed or unrelated actors require admin review regardless of authentication. The exact operational definition of "bulk" is deferred to the implementation PR.
+- Paid status must not contribute to contributor reputation, directly or indirectly. Trust Layer Invariant from `00-governance-and-safety.md` applies in full.
+
+The proposed-change queue is a separate surface from `event_audit_log` (Lane 5) and from future `event_source_observations` (SOURCE-OBS-01). This rule does not authorize implementing any of those tables, queues, routes, or UIs; it enforces the separation when an implementation PR is later proposed. Lane 5 PR B scope is not expanded by this rule.
+
 ---
 
 ## PR Checklist Add-Ons
