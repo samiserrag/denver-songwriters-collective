@@ -84,7 +84,7 @@ Trust model: human-in-the-loop at every transition; no auto-merge; supervised ex
 | Long-running automation reads from issue tracker, creates per-issue workspace, runs coding agent | ✅ done | Phase 1 uses GitHub Issues; supervised daemon + `once --execute` cover the loop |
 | Repeatable daemon workflow, not manual scripts | 🟡 partial | Daemon exists post-#160; supervised use only; not yet "long-running" in the spec sense |
 | Per-issue workspace isolation | ✅ done | Git worktrees under `.symphony/worktrees/` |
-| Workflow policy in-repo (`WORKFLOW.md`) | ✅ done | `WORKFLOW.md` exists with YAML config front-matter |
+| Workflow policy in-repo (`WORKFLOW.md`) | 🟡 partial — **format divergence** | `WORKFLOW.md` is repo-owned and enforced, but Phase 1 uses `<!-- symphony-config -->` JSON rather than the spec's YAML front matter + prompt body format. Spec-compatible workflow parsing is tracked as a Phase 2 correction or explicit deliberate divergence. |
 | Observability for multiple concurrent agent runs | 🟡 partial | Per-issue logs + manifests + workpad comments exist; "multiple concurrent" doesn't apply (max=1) |
 | Trust/safety posture documented explicitly | ✅ done | Phase 1.2 README + runbook + Phase 1.3 daemon controls section |
 | Symphony as scheduler/runner + tracker reader (NOT writer) | 🟡 partial — **deliberate divergence** | Codex review correction (2026-05-02): `runner.mjs` directly applies label transitions (symphony:running, symphony:human-review, symphony:blocked) AND upserts the workpad comment before/after Codex execution. The orchestrator core is NOT read-only on the tracker in current Phase 1. The worker also makes some tracker mutations during its session (PR opens, labels via `gh` from the worker). This is a trust-boundary divergence from the spec's "scheduler is reader; writes live in the worker tools" intent. Phase 2 candidate: clarify which mutations belong to the scheduler vs the worker; spec leans heavily worker-side. |
@@ -393,7 +393,7 @@ Spec explicitly says Symphony does NOT require first-class tracker write APIs. T
 
 | Item | Phase 1 |
 |---|---|
-| Worker performs tracker writes (label transitions, workpad comments) | ✅ done — `runner.mjs` performs label transitions; worker's Codex session creates the workpad comment |
+| Tracker writes boundary | 🟡 partial — **deliberate divergence**. Phase 1 supports tracker writes, but they are scheduler-owned: `runner.mjs` applies label transitions and upserts workpad comments. This differs from the spec's preferred boundary where ticket mutations typically live in the worker/tooling layer. |
 
 **Disposition for §11: 🟡 partial. The Linear-specific surface area is 🚫 deliberately out of scope. The GitHub adapter covers the conceptually-equivalent operations except per-tick reconciliation (which depends on §3.5 orchestrator state machine).**
 
@@ -473,8 +473,8 @@ Spec requires strict template engine (Liquid-compatible), strict variable + filt
 
 | Disposition | Spec sections / requirements |
 |---|---|
-| ✅ done | §1 (mostly), §3.1 (most components), §3.2 (most layers), §6.3 startup validation (mostly), §9.1 workspace layout, §9.2 workspace creation, §9.5 safety invariants, §11.5 tracker writes boundary, §13.1 logging conventions (mostly) |
-| 🟡 partial | §1 daemon, §3.1 Issue Tracker / Orchestrator / Workspace Manager / Agent Runner, §4.1 Issue normalization, §6.3 per-tick re-validation, §11 tracker integration (GitHub-shaped), §12 prompt construction, §13 observability, §5.3.5 concurrency (hard-coded to 1) |
+| ✅ done | §1 (mostly), §3.1 (most components), §6.3 startup validation (mostly), §9.1 workspace layout, §9.2 workspace creation, §9.5 safety invariants, §13.1 logging conventions (mostly) |
+| 🟡 partial | §1 daemon, §3.1 Workflow Loader / Issue Tracker / Orchestrator / Workspace Manager / Agent Runner, §4.1 Issue normalization, §6.3 per-tick re-validation, §11 tracker integration (GitHub-shaped), §11.5 tracker writes boundary, §12 prompt construction, §13 observability, §5.3.5 concurrency (hard-coded to 1) |
 | ❌ missing | §2.1 stop-on-eligibility-change, §2.1 exponential backoff, §3.1 Status Surface, §4.1.6 Live Session metadata, §4.1.7 Retry Entry, §6.2 Dynamic Reload, §7 Orchestration State Machine (most), §7.1 multi-turn / claimed set, §8.4 retry queue, §8.5 reconciliation, §9.4 hooks, §10 app-server JSON-RPC protocol (entirely), §13.3 runtime snapshot, §13.5 token accounting, §5.3.5 max_turns / per-state caps, §12 strict templating |
 | 🚫 deliberately out of scope | §3.2 Linear adapter, §10.5 `linear_graphql` extension |
 
