@@ -97,6 +97,14 @@ describe("aiPromptContract — system prompt additions", () => {
     expect(additions.toLowerCase()).toContain("at most one");
   });
 
+  it("separates venue enrichment from exact-event verification with confidence buckets", () => {
+    const additions = buildAiPromptContractAdditions().join("\n");
+    expect(additions).toContain("venue_search.status is verified");
+    expect(additions).toContain("event_search.status is not_found");
+    expect(additions).toContain("user_provided, extracted, inferred, searched_verified, conflicts, and true_unknowns");
+    expect(additions).toContain("do not ask for high-confidence searched facts");
+  });
+
   it("appends additions onto an existing base prompt without dropping it", () => {
     const base = "You are an event interpretation service.\nRules:\n- existing rule.";
     const merged = appendAiPromptContractAdditions(base);
@@ -243,17 +251,45 @@ describe("aiPromptContract — user prompt envelope", () => {
       ...baseInput,
       lockedDraft: { title: "Locked title" },
       googleMapsHint: { source_url: "https://maps.example/abc" },
-      webSearchVerification: { status: "searched", summary: "ok", facts: [], sources: [] },
+      webSearchVerification: {
+        status: "searched",
+        summary: "ok",
+        facts: [],
+        sources: [],
+        venue_search: {
+          status: "verified",
+          summary: "Venue verified.",
+          confidence: "high",
+          attempted_queries: ["Lost Lake official"],
+          facts: ["Official venue page confirms Lost Lake."],
+          sources: [],
+        },
+        event_search: {
+          status: "not_found",
+          summary: "Exact event not found.",
+          confidence: "medium",
+          attempted_queries: ["Lost Lake open mic"],
+          facts: [],
+          sources: [],
+        },
+        fact_buckets: {
+          user_provided: ["change the whole series"],
+          extracted: [],
+          inferred: [],
+          searched_verified: ["Lost Lake venue"],
+          conflicts: [],
+          true_unknowns: ["cost"],
+        },
+        suggested_questions: ["Is it free?"],
+      },
     });
     const parsed = JSON.parse(json);
     expect(parsed.locked_draft).toEqual({ title: "Locked title" });
     expect(parsed.google_maps_hint).toEqual({ source_url: "https://maps.example/abc" });
-    expect(parsed.web_search_verification).toEqual({
-      status: "searched",
-      summary: "ok",
-      facts: [],
-      sources: [],
-    });
+    expect(parsed.web_search_verification.venue_search.status).toBe("verified");
+    expect(parsed.web_search_verification.event_search.status).toBe("not_found");
+    expect(parsed.web_search_verification.fact_buckets.true_unknowns).toEqual(["cost"]);
+    expect(parsed.web_search_note).toContain("Venue enrichment and exact-event verification are separate");
     expect(parsed.image_extraction_note).toBeUndefined();
   });
 });

@@ -217,7 +217,8 @@ describe("Phase 9B — event-type reliability", () => {
   it("does not treat similar-but-not-exact search results as verification", () => {
     expect(interpretRouteSource).toContain("isNonExactEventSearchResult");
     expect(interpretRouteSource).toContain("web search verification ignored non-exact event result");
-    expect(interpretRouteSource).toContain("Set status to searched only when at least one source appears to describe the exact same event");
+    expect(interpretRouteSource).toContain("Set event_search.status to verified only when at least one source appears to describe the exact same event");
+    expect(interpretRouteSource).toContain("Set venue_search.status to verified when an official venue/source reliably confirms");
     expect(interpretRouteSource).toContain("similar venue, similar jam, different city, different date, or unrelated event");
   });
 
@@ -240,9 +241,9 @@ describe("Phase 9B — event-type reliability", () => {
     // (buildAiPromptUserEnvelope). The verifier prompt literals remain in
     // the route since the verifier prompt is not part of the §13.2
     // prompt-contract surface.
-    expect(combinedInterpretSource).toContain("Use sourced facts to reduce unnecessary questions");
+    expect(combinedInterpretSource).toContain("Use sourced facts and confidence buckets to reduce unnecessary questions");
     expect(interpretRouteSource).toContain("Check the draft against source_message, extracted_image_text, web_search_verification");
-    expect(combinedInterpretSource).toContain("If status is no_reliable_sources, treat it as an attempted search");
+    expect(combinedInterpretSource).toContain("Venue enrichment and exact-event verification are separate");
   });
 
   it("passes attempted no-result searches through when the user explicitly asks", () => {
@@ -251,7 +252,7 @@ describe("Phase 9B — event-type reliability", () => {
     expect(interpretRouteSource).toContain("returnNoReliableResult");
     expect(interpretRouteSource).toContain("locked_draft: input.lockedDraft ?? null");
     expect(interpretRouteSource).toContain("current_event: input.currentEvent ?? null");
-    expect(interpretRouteSource).toContain("search was attempted but did not find a reliable exact source");
+    expect(interpretRouteSource).toContain("which venue/event searches were attempted");
   });
 
   it("does not silently drop explicit search requests when web search cannot produce sources", () => {
@@ -267,7 +268,7 @@ describe("Phase 9B — event-type reliability", () => {
     expect(interpretRouteSource).toContain("web-search service returned an upstream error");
     expect(interpretRouteSource).toContain("returned no usable verification text");
     expect(interpretRouteSource).toContain("did not return a readable exact-event source");
-    expect(interpretRouteSource).toContain("web-search step timed out");
+    expect(interpretRouteSource).toContain("I could not find a reliable venue/address source before timeout");
   });
 
   it("keeps optional follow-up copy separate from the result summary", () => {

@@ -41,6 +41,12 @@ export interface ShouldResolveVenueInput {
   draftPayload: Record<string, unknown>;
 }
 
+export interface VenueSearchCandidateInput {
+  sources: ReadonlyArray<string | null | undefined>;
+  explicitVenueNames?: ReadonlyArray<string | null | undefined>;
+  maxCandidates?: number;
+}
+
 export type VenueResolutionOutcome =
   | {
       status: "resolved";
@@ -93,8 +99,177 @@ const ACRONYM_STOPWORDS = new Set([
   "an",
 ]);
 
+const VENUE_CONTEXT_ONLY_TERMS = new Set([
+  "breckenridge",
+  "summit",
+  "summit county",
+  "colorado",
+  "denver",
+  "boulder",
+  "pueblo",
+  "aurora",
+  "co",
+  "flyer",
+  "flyer ocr",
+  "ocr",
+  "source",
+  "search",
+  "venue",
+  "location",
+  "unknown",
+  "yet",
+  "know",
+]);
+
+const EVENT_CANDIDATE_WORDS = new Set([
+  "open",
+  "mic",
+  "night",
+  "jam",
+  "session",
+  "showcase",
+  "workshop",
+  "concert",
+  "event",
+  "every",
+  "weekly",
+  "wednesday",
+  "wednesdays",
+  "thursday",
+  "thursdays",
+  "friday",
+  "fridays",
+  "tonight",
+  "tomorrow",
+]);
+
 function hasNonEmptyString(value: unknown): boolean {
   return typeof value === "string" && value.trim().length > 0;
+}
+
+function pushUnique(values: string[], value: string): void {
+  const normalized = normalizeForMatch(value);
+  const alias = normalizeAlias(value);
+  if (!normalized && !alias) return;
+  if (values.some((existing) => normalizeForMatch(existing) === normalized || normalizeAlias(existing) === alias)) {
+    return;
+  }
+  values.push(value);
+}
+
+function stripVenueCandidateTail(value: string): string {
+  return value
+    .replace(/\s+(?:open\s+mic|jam\s+session|mic\s+night|event|series|calendar|tonight|starting|every)\b.*$/i, "")
+    .replace(/\s+(?:please|thanks|thank\s+you)\b.*$/i, "")
+    .trim();
+}
+
+function cleanVenueSearchCandidate(raw: string): string | null {
+  const candidate = stripVenueCandidateTail(
+    raw
+      .replace(/^[@\s]*$/g, "")
+      .replace(/^[\s"'`({[]+|[\s"'`)}\]]+$/g, "")
+      .replace(/^(?:at|venue|location|search\s+for|look\s+up|find|google)\s+/i, "")
+      .replace(/\s+/g, " ")
+      .trim()
+  );
+
+  if (candidate.length < 2 || candidate.length > 80) return null;
+  if (!/[a-z0-9@]/i.test(candidate)) return null;
+
+  const normalized = normalizeForMatch(candidate);
+  if (!normalized && !candidate.startsWith("@")) return null;
+  if (VENUE_CONTEXT_ONLY_TERMS.has(normalized)) return null;
+
+  const tokens = [...tokenize(candidate)];
+  if (tokens.length > 0 && tokens.every((token) => EVENT_CANDIDATE_WORDS.has(token))) {
+    return null;
+  }
+
+  return candidate;
+}
+
+function addVenueCandidateWithExpansions(values: string[], raw: string, combinedContext: string): void {
+  if (/[\/|]/.test(raw)) {
+    for (const part of raw.split(/[\/|]+/)) {
+      addVenueCandidateWithExpansions(values, part, combinedContext);
+    }
+    return;
+  }
+
+  const candidate = cleanVenueSearchCandidate(raw);
+  if (!candidate) return;
+
+  const candidateAlias = normalizeAlias(candidate);
+  const normalized = normalizeForMatch(candidate);
+  const hasBreckenridgeContext = /\bbreck(?:enridge)?\b/i.test(combinedContext);
+
+  pushUnique(values, candidate);
+
+  if (/\bbreck\b/i.test(candidate) && !/\bbreckenridge\b/i.test(candidate)) {
+    pushUnique(values, candidate.replace(/\bbreck\b/gi, "Breckenridge"));
+  }
+
+  if (
+    hasBreckenridgeContext &&
+    !candidate.startsWith("@") &&
+    !/\bbreck(?:enridge)?\b/i.test(candidate) &&
+    tokenize(candidate).size <= 2
+  ) {
+    pushUnique(values, `${candidate} Breckenridge`);
+  }
+
+  if (candidateAlias === "rmubreck" || /\brmu\s+breck(?:enridge)?\b/i.test(normalized)) {
+    pushUnique(values, "RMU Breck");
+    pushUnique(values, "RMU Breckenridge");
+    pushUnique(values, "@rmubreck");
+  }
+}
+
+/**
+ * Build venue-name search candidates from user text, OCR text, handles, and
+ * known draft hints. This is intentionally broad enough for concierge search:
+ * it expands aliases before the assistant asks the host for searchable facts.
+ */
+export function buildVenueSearchCandidates(input: VenueSearchCandidateInput): string[] {
+  const maxCandidates = input.maxCandidates ?? 8;
+  const sources = input.sources.filter((source): source is string => typeof source === "string" && source.trim().length > 0);
+  const combined = sources.join("\n");
+  const values: string[] = [];
+
+  for (const explicit of input.explicitVenueNames ?? []) {
+    if (typeof explicit === "string") {
+      addVenueCandidateWithExpansions(values, explicit, combined);
+    }
+  }
+
+  for (const match of combined.matchAll(/@[a-z0-9_][a-z0-9_.-]{1,40}/gi)) {
+    addVenueCandidateWithExpansions(values, match[0].toLowerCase(), combined);
+  }
+
+  const cuePatterns = [
+    /\b(?:search\s+for|look\s+up|find|google|check)\s+([@a-z0-9][^,.;!?\n]{1,80})/gi,
+    /\b(?:venue|location)\s*(?:is|:)?\s+([@a-z0-9][^,.;!?\n]{1,80})/gi,
+    /\bat\s+([@a-z0-9][^,.;!?\n]{1,80})/gi,
+  ];
+  for (const pattern of cuePatterns) {
+    for (const match of combined.matchAll(pattern)) {
+      addVenueCandidateWithExpansions(values, match[1], combined);
+    }
+  }
+
+  for (const match of combined.matchAll(/\b(?:[A-Z]{2,}|[A-Z][a-z][A-Za-z0-9'.&-]*)(?:\s+(?:[A-Z]{2,}|[A-Z][a-z][A-Za-z0-9'.&-]*)){0,3}\b/g)) {
+    addVenueCandidateWithExpansions(values, match[0], combined);
+  }
+
+  const hasRmuBreck = values.some((value) => normalizeAlias(value) === "rmubreck" || /rmu\s+breck/i.test(value));
+  if (hasRmuBreck) {
+    const priority = ["RMU Breck", "RMU Breckenridge", "@rmubreck"];
+    const rest = values.filter((value) => !priority.some((candidate) => normalizeAlias(candidate) === normalizeAlias(value)));
+    return [...priority, ...rest].slice(0, maxCandidates);
+  }
+
+  return values.slice(0, maxCandidates);
 }
 
 /**

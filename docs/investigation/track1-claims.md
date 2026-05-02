@@ -22,6 +22,27 @@ Rules:
 
 ## Active claims
 
+### Lane 9 — Concierge search venue enrichment quality fix
+
+- **Branch:** `codex/track1-lane9-concierge-search`
+- **Owner:** Lane 9
+- **Base SHA:** `f817c72ddf6f` (current `origin/main` at claim time)
+- **Status:** `awaiting_review`
+- **Purpose:** Concierge search venue enrichment quality fix.
+- **Files claimed:**
+  - `docs/investigation/track1-claims.md`
+  - `web/src/app/api/events/interpret/route.ts`
+  - `web/src/lib/events/aiPromptContract.ts`
+  - `web/src/lib/events/interpretEventContract.ts`
+  - `web/src/lib/events/venueResolver.ts`
+  - `web/src/__tests__/aiPromptContract.test.ts`
+  - `web/src/__tests__/interpret-venue-resolution.test.ts`
+  - `web/src/__tests__/interpreter-concierge-search.test.ts`
+  - `web/src/__tests__/interpreter-phase9-reliability.test.ts`
+  - `web/src/__tests__/venue-resolver.test.ts`
+
+---
+
 ### Lane 5 PR A — Event audit log + log-on-write
 
 - **Branch:** `codex/event-audit-pr-a`

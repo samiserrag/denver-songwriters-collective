@@ -14,6 +14,9 @@ import {
   type ExtractionMetadata,
   type ImageInput,
   type InterpretEventRequestBody,
+  type WebSearchCategoryResult,
+  type WebSearchConfidence,
+  type WebSearchFactBuckets,
   type WebSearchVerificationResult,
   type WebSearchVerificationSource,
 } from "@/lib/events/interpretEventContract";
@@ -28,6 +31,7 @@ import {
   type OrderedImageReference,
 } from "@/lib/events/aiPromptContract";
 import {
+  buildVenueSearchCandidates,
   resolveVenue,
   shouldResolveVenue,
   type VenueCatalogEntry,
@@ -1111,12 +1115,149 @@ function explicitEventWebSearchRequestFromTurn(input: {
   );
 }
 
-function buildNoReliableWebSearchResult(summary: string): WebSearchVerificationResult {
+interface WebSearchQueryPlan {
+  venueQueries: string[];
+  eventQueries: string[];
+  locationContext: string[];
+}
+
+const DEFAULT_FACT_BUCKETS: WebSearchFactBuckets = {
+  user_provided: [],
+  extracted: [],
+  inferred: [],
+  searched_verified: [],
+  conflicts: [],
+  true_unknowns: [],
+};
+
+function uniqueStrings(values: string[], limit = values.length): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const value of values) {
+    const trimmed = value.trim();
+    if (!trimmed) continue;
+    const key = trimmed.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(trimmed.slice(0, 160));
+    if (result.length >= limit) break;
+  }
+  return result;
+}
+
+function extractLocationContextForSearch(...sources: string[]): string[] {
+  const combined = sources.join("\n");
+  const context: string[] = [];
+  if (/\bbreckenridge\b|\bbreck\b/i.test(combined)) context.push("Breckenridge");
+  if (/\bsummit(?:\s+county)?\b/i.test(combined)) context.push("Summit County");
+  if (/\bcolorado\b|\bCO\b/.test(combined)) context.push("Colorado");
+  return uniqueStrings(context, 4);
+}
+
+function detectEventSearchPhrase(...sources: string[]): string | null {
+  const combined = sources.join("\n");
+  if (/\bopen\s+mic\b/i.test(combined)) return "open mic";
+  if (/\bjam\s+session\b|\bjam\b/i.test(combined)) return "jam";
+  if (/\bshowcase\b/i.test(combined)) return "showcase";
+  if (/\bworkshop\b/i.test(combined)) return "workshop";
+  if (/\bconcert\b|\bgig\b|\blive\s+music\b/i.test(combined)) return "live music";
+  return null;
+}
+
+function buildWebSearchQueryPlan(input: {
+  message: string;
+  conversationHistory: Array<{ role: "user" | "assistant"; content: string }>;
+  extractedImageText?: string;
+  googleMapsHint: GoogleMapsHint | null;
+  lockedDraft?: Record<string, unknown> | null;
+  currentEvent?: Record<string, unknown> | null;
+}): WebSearchQueryPlan {
+  const sources = [
+    input.message,
+    ...input.conversationHistory.map((entry) => entry.content),
+    input.extractedImageText || "",
+  ];
+  const explicitVenueNames = [
+    typeof input.lockedDraft?.venue_name === "string" ? input.lockedDraft.venue_name : null,
+    typeof input.lockedDraft?.custom_location_name === "string" ? input.lockedDraft.custom_location_name : null,
+    typeof input.currentEvent?.venue_name === "string" ? input.currentEvent.venue_name : null,
+    input.googleMapsHint?.place_name ?? null,
+  ];
+  const venueCandidates = buildVenueSearchCandidates({
+    sources,
+    explicitVenueNames,
+    maxCandidates: 6,
+  });
+  const locationContext = extractLocationContextForSearch(...sources);
+  const eventPhrase = detectEventSearchPhrase(...sources) ?? "event";
+  const primaryVenue =
+    venueCandidates.find((candidate) => !candidate.startsWith("@") && /\bbreckenridge\b/i.test(candidate)) ??
+    venueCandidates.find((candidate) => !candidate.startsWith("@")) ??
+    venueCandidates[0] ??
+    null;
+
+  const venueQueries = uniqueStrings(venueCandidates, 6);
+  const eventQueries = primaryVenue ? uniqueStrings([`${primaryVenue} ${eventPhrase}`], 3) : [];
+
+  return { venueQueries, eventQueries, locationContext };
+}
+
+function emptySearchCategory(input: {
+  status: WebSearchCategoryResult["status"];
+  summary: string;
+  confidence?: WebSearchConfidence;
+  attemptedQueries?: string[];
+}): WebSearchCategoryResult {
   return {
-    status: "no_reliable_sources",
-    summary,
+    status: input.status,
+    summary: input.summary,
+    confidence: input.confidence ?? "unknown",
+    attempted_queries: input.attemptedQueries ?? [],
     facts: [],
     sources: [],
+  };
+}
+
+function formatAttemptedQueries(queryPlan?: WebSearchQueryPlan): string | null {
+  const attempted = uniqueStrings([...(queryPlan?.venueQueries ?? []), ...(queryPlan?.eventQueries ?? [])], 8);
+  if (attempted.length === 0) return null;
+  if (attempted.length === 1) return `\`${attempted[0]}\``;
+  const quoted = attempted.map((query) => `\`${query}\``);
+  return `${quoted.slice(0, -1).join(", ")}, and ${quoted[quoted.length - 1]}`;
+}
+
+function buildNoReliableWebSearchResult(summary: string, queryPlan?: WebSearchQueryPlan): WebSearchVerificationResult {
+  const attempted = formatAttemptedQueries(queryPlan);
+  const resolvedSummary =
+    attempted && /timed out|timeout|could not find|no reliable/i.test(summary)
+      ? `I tried ${attempted}. ${summary}`
+      : summary;
+  return {
+    status: "no_reliable_sources",
+    summary: resolvedSummary,
+    facts: [],
+    sources: [],
+    venue_search: emptySearchCategory({
+      status: /timed out|timeout/i.test(summary) ? "timeout" : "not_found",
+      summary:
+        "No reliable venue/address source was found for the venue candidates before this search ended.",
+      attemptedQueries: queryPlan?.venueQueries ?? [],
+    }),
+    event_search: emptySearchCategory({
+      status: /timed out|timeout/i.test(summary) ? "timeout" : "not_found",
+      summary: "No reliable public listing was found for this exact event or recurring series.",
+      attemptedQueries: queryPlan?.eventQueries ?? [],
+    }),
+    fact_buckets: {
+      ...DEFAULT_FACT_BUCKETS,
+      true_unknowns: [
+        "reliable venue/address source",
+        "exact public event listing",
+      ],
+    },
+    suggested_questions: [
+      "Retry search, provide an official page or Maps link, or save a custom location for now?",
+    ],
   };
 }
 
@@ -1160,6 +1301,7 @@ function buildWebSearchVerificationPrompt(input: {
   lockedDraft?: Record<string, unknown> | null;
   currentEvent?: Record<string, unknown> | null;
   currentDate: string;
+  queryPlan: WebSearchQueryPlan;
 }) {
   return JSON.stringify(
     {
@@ -1175,19 +1317,33 @@ function buildWebSearchVerificationPrompt(input: {
       google_maps_hint: input.googleMapsHint,
       locked_draft: input.lockedDraft ?? null,
       current_event: input.currentEvent ?? null,
+      search_query_plan: {
+        venue_queries: input.queryPlan.venueQueries,
+        event_queries: input.queryPlan.eventQueries,
+        location_context: input.queryPlan.locationContext,
+      },
       instructions: [
-        "Use web search to verify event facts for a public event listing before deciding there is no reliable public source.",
+        "Use web search as concierge research, not only binary event verification.",
+        "Separate venue enrichment from exact-event verification. Official venue facts can be useful even when the exact event listing is not found.",
         "If source_message is a short follow-up like 'can you search?', use locked_draft, current_event, recent_user_context, extracted_image_text, and google_maps_hint to build the search query.",
+        "Start from search_query_plan. Run venue_queries to verify identity/address/contact/website facts. Run event_queries to look for the exact event or recurring series.",
         "Run multiple targeted search angles when details are incomplete: event title + venue, venue + recurrence phrase, organizer/host + venue, and address + event type.",
         "Prioritize official venue, organizer, ticketing, social, and event-calendar sources. Use general search results only as pointers to those sources.",
         "When a flyer contains an address, search the address and venue name together before giving up.",
         "For venue enrichment, look specifically for venue name, street address, city, state, ZIP, phone, official website URL, Google Maps URL, and coordinates when public sources make those facts clear.",
         "When a flyer contains a recurring phrase, search both the literal phrase and a normalized version, for example 'first and third Thursday open mic Ethos Pueblo'.",
-        "Set status to searched only when at least one source appears to describe the exact same event or exact same recurring event series.",
-        "If search finds only a similar venue, similar jam, different city, different date, or unrelated event, set status to no_reliable_sources, use an empty sources array, and summarize that no exact public match was found.",
+        "Set event_search.status to verified only when at least one source appears to describe the exact same event or exact same recurring event series.",
+        "Set venue_search.status to verified when an official venue/source reliably confirms venue identity, address, city/state/ZIP, website, phone, or map facts.",
+        "Set top-level status to searched when either event_search.status or venue_search.status is verified. Set no_reliable_sources only when neither category has reliable sourced facts.",
+        "If venue_search is verified but event_search is not_found, summarize partial success: venue can be used, exact event remains unverified, and event details should stay limited to source_message/extracted_image_text.",
+        "If search finds only a similar venue, similar jam, different city, different date, or unrelated event, put it in conflicts or true_unknowns, not sourced facts.",
+        "Classify facts into buckets: user_provided, extracted, inferred, searched_verified, conflicts, and true_unknowns. Include confidence wording in summaries and suggested questions.",
+        "Questions should come from inferred medium-confidence facts or true_unknowns only. Do not ask for facts found with high confidence.",
         "Return only facts that are directly supported by sources or clearly present in the supplied source_message/extracted_image_text.",
+        "Use source_message/extracted_image_text for flyer/post event facts such as open mic night, recurrence, time, and venue aliases. Do not invent cost, signup link, or direct source link.",
         "Prefer exact event date, start/end time, venue name, address, cost, signup details, age policy, external event URL, and cancellation/status if present.",
         "If sources conflict with the supplied flyer/post, mention the conflict in summary instead of deciding silently.",
+        "Do not store or recommend a Google Maps URL as the event external_url. Maps links are location hints only.",
         "Do not create the final event draft. This is only supporting context for another model pass.",
       ],
       required_output_shape: {
@@ -1195,10 +1351,110 @@ function buildWebSearchVerificationPrompt(input: {
         summary: "string",
         facts: "string[]",
         sources: [{ url: "string", title: "string|null" }],
+        venue_search: {
+          status: "verified | not_found | timeout | not_applicable",
+          summary: "string",
+          confidence: "high | medium | low | unknown",
+          attempted_queries: "string[]",
+          facts: "string[]",
+          sources: [{ url: "string", title: "string|null" }],
+        },
+        event_search: {
+          status: "verified | not_found | timeout | not_applicable",
+          summary: "string",
+          confidence: "high | medium | low | unknown",
+          attempted_queries: "string[]",
+          facts: "string[]",
+          sources: [{ url: "string", title: "string|null" }],
+        },
+        fact_buckets: {
+          user_provided: "string[]",
+          extracted: "string[]",
+          inferred: "string[]",
+          searched_verified: "string[]",
+          conflicts: "string[]",
+          true_unknowns: "string[]",
+        },
+        suggested_questions: "string[]",
       },
     },
     null,
     2
+  );
+}
+
+function parseWebSearchSource(value: unknown): WebSearchVerificationSource | null {
+  const row = parseJsonObject(value);
+  if (!row || typeof row.url !== "string" || !/^https?:\/\//i.test(row.url)) return null;
+  return {
+    url: row.url,
+    title: typeof row.title === "string" && row.title.trim() ? row.title.trim().slice(0, 180) : null,
+    domain: extractHostname(row.url),
+  };
+}
+
+function parseStringList(value: unknown, maxItems: number, maxLength = 240): string[] {
+  return Array.isArray(value)
+    ? value
+        .filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+        .map((item) => item.trim().slice(0, maxLength))
+        .slice(0, maxItems)
+    : [];
+}
+
+function parseWebSearchCategory(value: unknown): WebSearchCategoryResult | null {
+  const obj = parseJsonObject(value);
+  if (!obj) return null;
+  if (
+    obj.status !== "verified" &&
+    obj.status !== "not_found" &&
+    obj.status !== "timeout" &&
+    obj.status !== "not_applicable"
+  ) {
+    return null;
+  }
+  if (typeof obj.summary !== "string") return null;
+  const confidence: WebSearchConfidence =
+    obj.confidence === "high" ||
+    obj.confidence === "medium" ||
+    obj.confidence === "low" ||
+    obj.confidence === "unknown"
+      ? obj.confidence
+      : "unknown";
+  const sources = Array.isArray(obj.sources)
+    ? obj.sources
+        .map(parseWebSearchSource)
+        .filter((source): source is WebSearchVerificationSource => source !== null)
+        .slice(0, 8)
+    : [];
+
+  return {
+    status: obj.status,
+    summary: obj.summary.trim().slice(0, 500),
+    confidence,
+    attempted_queries: parseStringList(obj.attempted_queries, 8, 120),
+    facts: parseStringList(obj.facts, 12),
+    sources,
+  };
+}
+
+function parseWebSearchFactBuckets(value: unknown): WebSearchFactBuckets | null {
+  const obj = parseJsonObject(value);
+  if (!obj) return null;
+  return {
+    user_provided: parseStringList(obj.user_provided, 12),
+    extracted: parseStringList(obj.extracted, 12),
+    inferred: parseStringList(obj.inferred, 12),
+    searched_verified: parseStringList(obj.searched_verified, 12),
+    conflicts: parseStringList(obj.conflicts, 8),
+    true_unknowns: parseStringList(obj.true_unknowns, 12),
+  };
+}
+
+function hasUsefulVenueSearch(result: WebSearchVerificationResult): boolean {
+  return (
+    result.venue_search?.status === "verified" &&
+    (result.venue_search.sources.length > 0 || result.venue_search.facts.length > 0)
   );
 }
 
@@ -1208,39 +1464,43 @@ function parseWebSearchVerification(value: unknown, fallbackSources: WebSearchVe
   if (obj.status !== "searched" && obj.status !== "no_reliable_sources") return null;
   if (typeof obj.summary !== "string") return null;
 
-  const facts = Array.isArray(obj.facts)
-    ? obj.facts
-        .filter((fact): fact is string => typeof fact === "string" && fact.trim().length > 0)
-        .map((fact) => fact.trim().slice(0, 240))
-        .slice(0, 12)
-    : [];
+  const facts = parseStringList(obj.facts, 12);
 
   const modelSources = Array.isArray(obj.sources)
     ? obj.sources
-        .map((source): WebSearchVerificationSource | null => {
-          const row = parseJsonObject(source);
-          if (!row || typeof row.url !== "string" || !/^https?:\/\//i.test(row.url)) return null;
-          return {
-            url: row.url,
-            title: typeof row.title === "string" && row.title.trim() ? row.title.trim().slice(0, 180) : null,
-            domain: extractHostname(row.url),
-          };
-        })
+        .map(parseWebSearchSource)
         .filter((source): source is WebSearchVerificationSource => source !== null)
     : [];
+  const venueSearch = parseWebSearchCategory(obj.venue_search);
+  const eventSearch = parseWebSearchCategory(obj.event_search);
+  const factBuckets = parseWebSearchFactBuckets(obj.fact_buckets);
+  const suggestedQuestions = parseStringList(obj.suggested_questions, 4, 180);
 
   const sourcesByUrl = new Map<string, WebSearchVerificationSource>();
-  for (const source of [...modelSources, ...fallbackSources]) {
+  for (const source of [
+    ...modelSources,
+    ...(venueSearch?.sources ?? []),
+    ...(eventSearch?.sources ?? []),
+    ...fallbackSources,
+  ]) {
     if (!sourcesByUrl.has(source.url)) sourcesByUrl.set(source.url, source);
   }
   const sources = [...sourcesByUrl.values()].slice(0, 8);
 
-  return {
+  const result: WebSearchVerificationResult = {
     status: obj.status,
     summary: obj.summary.trim().slice(0, 600),
     facts,
     sources,
   };
+  if (venueSearch) result.venue_search = venueSearch;
+  if (eventSearch) result.event_search = eventSearch;
+  if (factBuckets) result.fact_buckets = factBuckets;
+  if (suggestedQuestions.length > 0) result.suggested_questions = suggestedQuestions;
+  if (result.status === "no_reliable_sources" && hasUsefulVenueSearch(result)) {
+    result.status = "searched";
+  }
+  return result;
 }
 
 function isNonExactEventSearchResult(result: WebSearchVerificationResult): boolean {
@@ -1295,6 +1555,7 @@ async function verifyEventDetailsWithWebSearch(input: {
 }): Promise<WebSearchVerificationResult | null> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), WEB_SEARCH_TIMEOUT_MS);
+  const queryPlan = buildWebSearchQueryPlan(input);
 
   try {
     const searchResponse = await fetch(OPENAI_RESPONSES_URL, {
@@ -1311,7 +1572,7 @@ async function verifyEventDetailsWithWebSearch(input: {
         ...(supportsReasoningEffort(input.searchModel)
           ? { reasoning: { effort: getConfiguredReasoningEffort() } }
           : {}),
-        input: buildWebSearchVerificationPrompt(input),
+        input: buildWebSearchVerificationPrompt({ ...input, queryPlan }),
         tools: [
           {
             type: "web_search",
@@ -1335,7 +1596,16 @@ async function verifyEventDetailsWithWebSearch(input: {
             schema: {
               type: "object",
               additionalProperties: false,
-              required: ["status", "summary", "facts", "sources"],
+              required: [
+                "status",
+                "summary",
+                "facts",
+                "sources",
+                "venue_search",
+                "event_search",
+                "fact_buckets",
+                "suggested_questions",
+              ],
               properties: {
                 status: { type: "string", enum: ["searched", "no_reliable_sources"] },
                 summary: { type: "string" },
@@ -1357,6 +1627,97 @@ async function verifyEventDetailsWithWebSearch(input: {
                     },
                   },
                 },
+                venue_search: {
+                  type: "object",
+                  additionalProperties: false,
+                  required: ["status", "summary", "confidence", "attempted_queries", "facts", "sources"],
+                  properties: {
+                    status: { type: "string", enum: ["verified", "not_found", "timeout", "not_applicable"] },
+                    summary: { type: "string" },
+                    confidence: { type: "string", enum: ["high", "medium", "low", "unknown"] },
+                    attempted_queries: {
+                      type: "array",
+                      maxItems: 8,
+                      items: { type: "string" },
+                    },
+                    facts: {
+                      type: "array",
+                      maxItems: 12,
+                      items: { type: "string" },
+                    },
+                    sources: {
+                      type: "array",
+                      maxItems: 8,
+                      items: {
+                        type: "object",
+                        additionalProperties: false,
+                        required: ["url", "title"],
+                        properties: {
+                          url: { type: "string" },
+                          title: { type: ["string", "null"] },
+                        },
+                      },
+                    },
+                  },
+                },
+                event_search: {
+                  type: "object",
+                  additionalProperties: false,
+                  required: ["status", "summary", "confidence", "attempted_queries", "facts", "sources"],
+                  properties: {
+                    status: { type: "string", enum: ["verified", "not_found", "timeout", "not_applicable"] },
+                    summary: { type: "string" },
+                    confidence: { type: "string", enum: ["high", "medium", "low", "unknown"] },
+                    attempted_queries: {
+                      type: "array",
+                      maxItems: 8,
+                      items: { type: "string" },
+                    },
+                    facts: {
+                      type: "array",
+                      maxItems: 12,
+                      items: { type: "string" },
+                    },
+                    sources: {
+                      type: "array",
+                      maxItems: 8,
+                      items: {
+                        type: "object",
+                        additionalProperties: false,
+                        required: ["url", "title"],
+                        properties: {
+                          url: { type: "string" },
+                          title: { type: ["string", "null"] },
+                        },
+                      },
+                    },
+                  },
+                },
+                fact_buckets: {
+                  type: "object",
+                  additionalProperties: false,
+                  required: [
+                    "user_provided",
+                    "extracted",
+                    "inferred",
+                    "searched_verified",
+                    "conflicts",
+                    "true_unknowns",
+                  ],
+                  properties: {
+                    user_provided: { type: "array", maxItems: 12, items: { type: "string" } },
+                    extracted: { type: "array", maxItems: 12, items: { type: "string" } },
+                    inferred: { type: "array", maxItems: 12, items: { type: "string" } },
+                    searched_verified: { type: "array", maxItems: 12, items: { type: "string" } },
+                    conflicts: { type: "array", maxItems: 8, items: { type: "string" } },
+                    true_unknowns: { type: "array", maxItems: 12, items: { type: "string" } },
+                  },
+                },
+                suggested_questions: {
+                  type: "array",
+                  maxItems: 4,
+                  items: { type: "string" },
+                },
               },
             },
           },
@@ -1375,7 +1736,8 @@ async function verifyEventDetailsWithWebSearch(input: {
       });
       return input.returnNoReliableResult
         ? buildNoReliableWebSearchResult(
-            "Search was requested, but the web-search service returned an upstream error before it could verify this event."
+            "Search was requested, but the web-search service returned an upstream error before it could verify this event.",
+            queryPlan
           )
         : null;
     }
@@ -1385,7 +1747,8 @@ async function verifyEventDetailsWithWebSearch(input: {
     if (!outputText) {
       return input.returnNoReliableResult
         ? buildNoReliableWebSearchResult(
-            "Search was requested, but the web-search service returned no usable verification text."
+            "Search was requested, but the web-search service returned no usable verification text.",
+            queryPlan
           )
         : null;
     }
@@ -1398,7 +1761,8 @@ async function verifyEventDetailsWithWebSearch(input: {
       });
       return input.returnNoReliableResult
         ? buildNoReliableWebSearchResult(
-            "Search was requested, but it did not return a readable exact-event source. I used the flyer/post details instead."
+            "Search was requested, but it did not return a readable exact-event source. I used the flyer/post details instead.",
+            queryPlan
           )
         : null;
     }
@@ -1407,7 +1771,8 @@ async function verifyEventDetailsWithWebSearch(input: {
     if (!result) {
       return input.returnNoReliableResult
         ? buildNoReliableWebSearchResult(
-            "Search was requested, but the web-search verifier did not return valid verification details."
+            "Search was requested, but the web-search verifier did not return valid verification details.",
+            queryPlan
           )
         : null;
     }
@@ -1421,10 +1786,26 @@ async function verifyEventDetailsWithWebSearch(input: {
             summary: result.summary || "Search ran but did not find a reliable exact public source.",
             facts: [],
             sources: [],
+            venue_search:
+              result.venue_search ??
+              emptySearchCategory({
+                status: "not_found",
+                summary: "No reliable venue source was returned.",
+                attemptedQueries: queryPlan.venueQueries,
+              }),
+            event_search:
+              result.event_search ??
+              emptySearchCategory({
+                status: "not_found",
+                summary: "No reliable exact event source was returned.",
+                attemptedQueries: queryPlan.eventQueries,
+              }),
+            fact_buckets: result.fact_buckets ?? DEFAULT_FACT_BUCKETS,
+            suggested_questions: result.suggested_questions ?? [],
           }
         : null;
     }
-    if (isNonExactEventSearchResult(result)) {
+    if (isNonExactEventSearchResult(result) && !hasUsefulVenueSearch(result)) {
       console.info("[events/interpret] web search verification ignored non-exact event result", {
         traceId: input.traceId,
         sourceCount: result.sources.length,
@@ -1443,8 +1824,9 @@ async function verifyEventDetailsWithWebSearch(input: {
     return input.returnNoReliableResult
       ? buildNoReliableWebSearchResult(
           isTimeout
-            ? "Search was requested, but the web-search step timed out before it could verify this event."
-            : "Search was requested, but the web-search step failed before it could verify this event."
+            ? "I could not find a reliable venue/address source before timeout. I can retry search, or save a custom location for now; to create a reusable venue safely I need an official page, Maps link, or address."
+            : "Search was requested, but the web-search step failed before it could verify this event.",
+          queryPlan
         )
       : null;
   } finally {
@@ -1536,10 +1918,12 @@ function buildSystemPrompt() {
     "- If a detail is missing but optional (cost, source URL, end time, capacity, organizer note), leave it blank/null and say it was not stated instead of blocking the user.",
     "- If you need verification, ask one specific human question and explain what you already inferred.",
     "- Do not claim you searched the web or verified online unless an explicit tool result or source text is present in the prompt.",
-    "- When web_search_verification is present, use it as supporting evidence. You may say you verified online only when status is searched, sources are present, and those sources match the same event or recurring event series.",
-    "- If web_search_verification status is no_reliable_sources and the latest user asked you to search, say briefly that search was attempted but did not find a reliable exact source. Do not ask again for a source link or flyer if the user already said they do not know; ask only for the specific missing publish-critical fact.",
+    "- When web_search_verification is present, use it as supporting evidence by category. You may say the venue was verified online when venue_search.status is verified. You may say the exact event was verified online only when event_search.status is verified.",
+    "- If venue_search is verified but event_search is not_found, use the venue facts for the reusable venue record and keep event facts limited to the user's message, flyer/post text, or extracted_image_text. Say the exact public listing was not found.",
+    "- If web_search_verification status is no_reliable_sources and the latest user asked you to search, say briefly which venue/event searches were attempted. Do not ask again for a source link or flyer if the user already said they do not know; ask only for a genuinely missing fact.",
     "- If web_search_verification conflicts with the user's flyer/post, preserve the user's supplied details and ask one targeted question only if the conflict would make publishing risky.",
     "- If search did not find an exact same-event match, do not use similar events as facts.",
+    "- Separate known facts, extracted facts, inferred facts, searched facts, conflicts, and true unknowns before asking. Ask confirmation for inferred or medium-confidence facts; ask direct questions for true unknowns. Do not ask for facts search found with high confidence.",
     "- Do not append empty conversational tails. When the draft is usable, close with one useful optional-change invitation based on missing non-blocking details.",
     "- RSVP remains default platform behavior; do not disable it.",
     "- Timeslots are optional. Encourage for open_mic, jam_session, workshop when relevant.",
