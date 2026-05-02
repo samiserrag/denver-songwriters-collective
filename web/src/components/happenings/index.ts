@@ -8,3 +8,4 @@ export { StickyControls } from "./StickyControls";
 export { BetaBanner } from "./BetaBanner";
 export { CancelledDisclosureRow } from "./CancelledDisclosureRow";
 export { BackToTop } from "./BackToTop";
+export { HappeningActionsRow } from "./HappeningActionsRow";
