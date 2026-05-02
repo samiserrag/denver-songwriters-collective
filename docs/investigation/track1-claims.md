@@ -36,15 +36,18 @@ Strategic-doc PR state as of this sync:
 - PR #183 — DSC-adapted Symphony service spec merged; Symphony is prototype-only until its full-spec gate is explicitly closed.
 - PR #185 — Symphony agent transport adapter ADR merged.
 - PR #188 — Symphony app-server adapter scaffold merged; no runner wiring or live execution approval.
-- PR #189 — Track 2 2L.6 RSVP BOLA negative tests merged.
+- PR #193 — Event audit/admin alerts/growth investigation merged; implementation remains gated on Sami's blocking answers.
+- PR #197 — Symphony app-server adapter terminal taxonomy merged; no runner wiring or live execution approval.
+- PR #198 — Track 2 2L.9 public event comments BOLA negative tests merged.
 
 Next planned:
 
 - **Lane 1 (Coordinator):** route work, audit PRs, generate prompts, and keep coordinator/claims docs accurate. No code/runtime implementation.
-- **Lane 2 (Track 2):** continue Track 2 security/BOLA/concierge infrastructure. After 2L.6, the next expected BOLA cluster is 2L.7 public event claim negative coverage, unless a review/CI blocker changes ordering.
-- **Lane 3 (Symphony):** continue Symphony prototype/spec-completion implementation and tests only. Next expected follow-up after PR #188 is app-server adapter protocol hardening. Do not run live Symphony execute, daemon, or `recover-stale --execute`.
+- **Lane 2 (Track 2):** continue Track 2 security/BOLA/concierge infrastructure. After 2L.9, the next expected BOLA cluster is 2L.10 public event watch/follow or saved-event negative coverage, unless a review/CI blocker changes ordering.
+- **Lane 3 (Symphony):** continue Symphony prototype/spec-completion implementation and tests only. Next expected follow-up after PR #197 is the app-server adapter transcript fixture/replay harness. Do not run live Symphony execute, daemon, real app-server, or `recover-stale --execute`.
 - **Lane 4 (Symphony helper):** read-only Symphony review, critique, and decision memos unless explicitly assigned implementation.
-- **Lane 5 (Event audit/admin alerts/growth):** start with docs-only `docs/investigation/event-audit-and-admin-alerts.md` planning. No migration, email-volume, admin UI, public surface, RSS/JSON feed, or event-route implementation until Sami approves the stop-gate.
+- **Lane 5 (Event audit/admin alerts/growth):** event audit/admin alerts/growth investigation has landed. No migration, email-volume, admin UI, public surface, RSS/JSON feed, or event-route implementation until Sami answers the blocking questions and approves the stop-gate.
+- **Lane 6 (Strategy/public-good infrastructure policy):** maintain operating thesis, ingestion ethics, source registry/verification model, agentic maintenance policy, and trust-layer governance. Docs-only by default; no ingestion source, crawler, write API, MCP surface, verification migration, badge derivation, or trust-layer UI/content change until Sami approves the relevant stop-gate.
 - **Backlog:** PR 11.1 canonical `btn-accent` migration + waiting-copy refresh; test guardrail loosening for `event-detail-type-badges.test.ts` self-claim requirement.
 
 PR 8 venue requirement clarification from Sami:

@@ -1,6 +1,6 @@
 # Codex Builder Brief
 
-Standing brief for Codex builder threads. This file began as the Track 1 Codex Cloud brief; for current Lane 2, Lane 3, Lane 4, or Lane 5 work, the coordinator prompt is authoritative for lane, scope, branch name, claim requirements, and forbidden files.
+Standing brief for Codex builder threads. This file began as the Track 1 Codex Cloud brief; for current Lane 2, Lane 3, Lane 4, Lane 5, or Lane 6 work, the coordinator prompt is authoritative for lane, scope, branch name, claim requirements, and forbidden files.
 
 ## Required reading on every session start
 
@@ -44,6 +44,7 @@ Current lane routing:
 - Lane 3: Symphony prototype/spec-completion implementation.
 - Lane 4: Symphony helper/reviewer, read-only unless explicitly assigned implementation.
 - Lane 5: event audit/admin alerts/growth work, docs-only until stop-gates approve runtime changes.
+- Lane 6: strategy/public-good infrastructure policy, docs-only by default; ingestion, write APIs, MCP surfaces, verification migrations, and trust-layer UI/content changes require separate stop-gates.
 
 Do not update `docs/investigation/track1-claims.md` unless the coordinator prompt explicitly requires it or the task is Track 1/AI-edit coordination.
 

@@ -18,6 +18,7 @@ Then read lane-specific docs only as needed for the current request:
 - Track 2: `docs/investigation/agent-concierge-unification-plan.md`, the active `track2-*` ADRs, route matrix, and service-role manifest.
 - Symphony: `docs/investigation/symphony-phase-2-spec-gap.md`, `docs/runbooks/symphony.md`, `tools/symphony/README.md`, and active Symphony ADRs.
 - Lane 5: `docs/investigation/event-audit-and-admin-alerts.md` once it exists.
+- Lane 6: `docs/strategy/OPERATING_THESIS.md`, `docs/strategy/INGESTION_AND_FAIR_COMPETITION.md`, `docs/strategy/SOURCE_REGISTRY.md`, `docs/strategy/AGENTIC_EVENT_MAINTENANCE.md`, `.claude/rules/05-ingestion-and-agent-readability.md`, and the Trust Layer Invariant in `.claude/rules/00-governance-and-safety.md`.
 
 ## Lane Map
 
@@ -28,6 +29,7 @@ Then read lane-specific docs only as needed for the current request:
 | Lane 3 | Symphony builder | Symphony prototype/spec-completion implementation, tests, and docs. |
 | Lane 4 | Symphony helper | Symphony read-only review, critique, and decision memos unless explicitly assigned implementation. |
 | Lane 5 | Event audit/admin alerts/growth | Event audit log, admin alerting, and growth/public-surface planning. Defaults to docs-only investigation until approved stop-gates release runtime work. |
+| Lane 6 | Strategy/public-good infrastructure policy | Operating thesis, ingestion ethics, source registry, verification model, agentic maintenance policy, and trust-layer governance. Docs-only by default; implementation surfaces require separate stop-gates. |
 
 ## Role
 
@@ -59,8 +61,10 @@ Read-only auditor and traffic controller for the multi-lane buildout.
 
 - Symphony is prototype infrastructure only. Do not apply `symphony:ready`, run `once --execute`, run daemon mode, run `recover-stale --execute`, set `SYMPHONY_EXECUTION_APPROVED=1`, or use Symphony for real repo work until `docs/investigation/symphony-service-spec-v1-dsc.md` says the full DSC gate is closed.
 - Lane 5 may continue in parallel as docs-only planning. Do not start migrations, admin UI, email-volume changes, public "last updated" surfaces, RSS/JSON feeds, or route writes until Sami approves the stop-gate.
+- Lane 6 may continue in parallel as docs-only strategy and policy. Do not start ingestion sources, crawlers, write APIs, MCP surfaces, verification migrations, badge derivation changes, or trust-layer UI/content changes until Sami approves the relevant Lane 6 stop-gate.
 - Track 2 numbered follow-ups are sequential when the user names a prerequisite. Do not start the next numbered 2L PR while the prior blocker PR is open.
 - Keep Lane 2 and Lane 5 from touching the same event routes in parallel. If both need a route/resource family, sequence them.
+- Keep Lane 5 and Lane 6 aligned on public growth surfaces. Any RSS/JSON feed, schema.org/Event JSON-LD, `llms.txt`, `robots.txt`, MCP, public agent-readable endpoint, trust badge, source attribution, last-checked timestamp, correction flow, or opt-out work must cite Lane 6 strategy docs and obey the trust-never-pay-to-play boundary.
 - Track 1 is mostly closed, but `docs/investigation/track1-claims.md` remains the legacy coordination ledger for AI edit surfaces and historical claims.
 
 ## Decision Authority
@@ -91,10 +95,11 @@ Never present an open menu. Always recommend a specific option.
 
 1. Inspect open PRs and current `origin/main`.
 2. Read PR comments/status for every open PR relevant to active lanes.
-3. Map each PR to Lane 2, Lane 3, Lane 4, Lane 5, or coordinator docs.
+3. Map each PR to Lane 2, Lane 3, Lane 4, Lane 5, Lane 6, or coordinator docs.
 4. Compare PR state against `docs/investigation/track1-claims.md` and lane docs. Note drift.
 5. Identify file/resource conflicts:
    - Track 2 vs Lane 5 event route/resource overlap
+   - Lane 5 vs Lane 6 growth/public-surface, source-attribution, ingestion, or trust-layer overlap
    - Symphony `tools/symphony/**`, `WORKFLOW.md`, runbook, or README overlap
    - migrations, prompts, contracts, `ConversationalCreateUI.tsx`, and published-event write gates
 6. Identify which lane has safe next work and which lane must hold.
