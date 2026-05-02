@@ -81,6 +81,16 @@ PRs containing only documentation (e.g., `docs/investigation/*.md`) are allowed 
 
 Email systems in DSC prioritize community value over marketing optimization. The weekly digest is community infrastructure — it connects songwriters with stages, sessions, and each other. Dark patterns, forced retention, deceptive unsubscribe flows, or guilt-based copy are **not permitted**. See `docs/gtm/weekly-personalized-digest-north-star.md` §3.5 for the full email philosophy.
 
+### Trust Layer Invariant (Public-Good Infrastructure)
+
+CSC is lean public-good infrastructure (see [docs/strategy/OPERATING_THESIS.md](../../docs/strategy/OPERATING_THESIS.md)). The trust layer is not pay-to-play.
+
+> Verification badges, source attribution, last-checked timestamps, correction flow, and opt-out path are public-good surfaces. They must not be gated, degraded, deprioritized, or differentiated by payment tier.
+
+Paid tiers may add embeds, analytics, higher API rate limits, concierge support, and SLAs. Paid tiers may not add trust.
+
+Operational PR-level enforcement, source registration requirements, and ingestion stop-gates live in [05-ingestion-and-agent-readability.md](05-ingestion-and-agent-readability.md).
+
 ---
 
 
