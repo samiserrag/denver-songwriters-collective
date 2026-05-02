@@ -1,7 +1,7 @@
 # Track 1 Claims Doc
 
 **Status:** Living
-**Last updated:** 2026-05-01
+**Last updated:** 2026-05-02
 
 This file is the lightweight coordination ledger for Track 1 (AI edit and update existing events). Every active PR in Track 1 must list its branch, owner, scope, files claimed, base SHA, and status here so other agents know what is safe to touch.
 
@@ -22,27 +22,30 @@ Rules:
 
 ## Active claims
 
-### Coordinator sync — track1-claims.md cleanup after PR #156, transition to three-lane Track 2
+### Coordinator sync — track1-claims.md cleanup after PR #156, transition to three-lane operating model
 
 - **Branch:** `claude/coordinator-sync-after-track1-pr11`
 - **Owner:** Coordinator
-- **Base SHA:** `a9fd3fd8` (post-#162 main)
+- **Base SHA:** `5553d2b1` (post-#166 main)
 - **Status:** `in_progress`
 - **Files claimed:**
   - `docs/investigation/track1-claims.md`
-- **Notes:** Coordinator-only docs maintenance. Moves PR 11 (UI polish, merged via #156) and the prior Coordinator sync (merged via #150) from Active to Closed. Updates "Next planned" line to reflect the locked three-lane operating model: Lane 1 (Codex Cloud Track 2), Lane 2 (Claude Code Track 2), Lane 3 (Codex Symphony Phase 2). Track 1 §6 is fully shipped; future Track 1 follow-ups (PR 11.1 canonical btn-accent + waiting-copy refresh, test guardrail loosening) tracked as small backlog items, not as active Track 1 work. Self-claims `docs/investigation/track1-claims.md` so the Track 1 guardrail in `web/src/__tests__/event-detail-type-badges.test.ts` is satisfied. This PR's own Coordinator-sync entry will be moved to Closed by the next coordinator sync.
+- **Notes:** Coordinator-only docs maintenance. Moves PR 11 (UI polish, merged via #156) and the prior Coordinator sync (merged via #150) from Active to Closed. Updates "Next planned" line to reflect the locked three-lane operating model: Lane 1 is the coordinator lane, Lane 2 is Track 2, and Lane 3 is Symphony. Track 1 §6 is fully shipped; future Track 1 follow-ups (PR 11.1 canonical btn-accent + waiting-copy refresh, test guardrail loosening) are tracked as small backlog items, not as active Track 1 work. Self-claims `docs/investigation/track1-claims.md` so the Track 1 guardrail in `web/src/__tests__/event-detail-type-badges.test.ts` is satisfied. This PR's own Coordinator-sync entry will be moved to Closed by the next coordinator sync.
 
-Three open strategic-doc PRs are pending merge but do not appear here as Track 1 active claims (each is its own coordinator-authored investigation PR):
+Strategic-doc PR state as of this sync:
 
-- PR #157 — Track 2 roadmap (`claude/track2-roadmap-draft`)
-- PR #158 — Agent Concierge Unification Plan (`claude/agent-concierge-plan`)
-- PR #163 — Symphony Phase 2 Spec-Gap (`claude/symphony-phase2-spec-gap`)
+- PR #157 — Track 2 roadmap merged.
+- PR #163 — Symphony Phase 2 Spec-Gap merged.
+- PR #166 — Symphony Phase 2.G recover-stale ADR merged; it is the stop-gate doc only and does not approve the live `recover-stale --execute` test.
+- PR #158 — Agent Concierge Unification Plan remains open and needs its planned revision.
+- PR #165 — Track 2 telemetry consumption runbook remains draft/held because it also edits this claims ledger.
 
-Next planned (post-merge of #157, #158, #163):
+Next planned:
 
-- **Lane 1 + Lane 2 (parallel):** Track 2 Phase 5.0 housekeeping → security ADR phase (2F.0, 2I.0, 2J.0, 2K.0, 2L.0) → per-sub-track implementation per Track 2 roadmap §5 sequencing.
-- **Lane 3 (Codex Symphony):** Symphony Phase 2 MVP — 2.G live `recover-stale --execute` test + 2.H outer Codex execution timeout + workflow-format correction (per Codex's review of PR #163).
-- **Backlog (small, either lane):** PR 11.1 canonical `btn-accent` migration + waiting-copy refresh (carries the deferred sub-goals from PR #156); test guardrail loosening for `event-detail-type-badges.test.ts` self-claim requirement.
+- **Lane 1 (Coordinator):** keep the claims ledger accurate and route work; no code/runtime implementation.
+- **Lane 2 (Track 2):** revise PR #158 per Codex review, then continue Track 2 Phase 5.0 housekeeping and the security ADR phase (2F.0, 2I.0, 2J.0, 2K.0, 2L.0) per Track 2 roadmap §5 sequencing.
+- **Lane 3 (Symphony):** after separate explicit approval, run the 2.G live `recover-stale --execute` test from the merged ADR, then ship the follow-up docs-update PR; 2.H outer Codex execution timeout and workflow-format correction remain next Symphony items.
+- **Backlog (small, either Lane 1 or Lane 2 by coordinator assignment):** PR 11.1 canonical `btn-accent` migration + waiting-copy refresh (carries the deferred sub-goals from PR #156); test guardrail loosening for `event-detail-type-badges.test.ts` self-claim requirement.
 
 PR 8 venue requirement clarification from Sami:
 
