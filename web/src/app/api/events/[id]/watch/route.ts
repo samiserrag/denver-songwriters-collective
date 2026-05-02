@@ -20,6 +20,16 @@ export async function GET(
     return NextResponse.json({ watching: false });
   }
 
+  const { data: event } = await supabase
+    .from("events")
+    .select("id")
+    .eq("id", eventId)
+    .single();
+
+  if (!event) {
+    return NextResponse.json({ watching: false });
+  }
+
   const { data } = await supabase
     .from("event_watchers")
     .select("user_id")
@@ -100,6 +110,16 @@ export async function DELETE(
 
   if (sessionUserError || !sessionUser) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { data: event, error: eventError } = await supabase
+    .from("events")
+    .select("id")
+    .eq("id", eventId)
+    .single();
+
+  if (eventError || !event) {
+    return NextResponse.json({ error: "Event not found" }, { status: 404 });
   }
 
   await supabase
