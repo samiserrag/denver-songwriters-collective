@@ -31,6 +31,22 @@ npm run symphony:doctor
 npm run symphony:test
 ```
 
+Fresh worktrees must hydrate root dependencies before running the Symphony
+tests. `tools/symphony/lib/workflow.mjs` imports `yaml`, and the root
+`package.json` already declares the exact `yaml: 2.5.1` dependency. If a fresh
+checkout fails with `ERR_MODULE_NOT_FOUND: Cannot find package 'yaml'`, do not
+add another dependency or patch Symphony runtime code. Run a local root
+dependency install first, for example:
+
+```bash
+npm install --no-package-lock --ignore-scripts --no-audit --no-fund
+```
+
+In network-restricted Codex environments, report the setup blocker or use an
+already-cached local dependency only for ignored `node_modules` test hydration;
+do not commit generated dependency artifacts unless a separate dependency
+hygiene PR explicitly introduces a root lockfile.
+
 To run against a specific mock fixture without GitHub auth:
 
 ```bash
