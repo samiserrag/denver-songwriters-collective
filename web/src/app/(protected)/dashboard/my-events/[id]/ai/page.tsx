@@ -25,7 +25,7 @@ export default async function AIEditEventPage({ params }: PageProps) {
 
   const { data: event, error } = await supabase
     .from("events")
-    .select("id")
+    .select("id, slug, title, event_type, cover_image_url, is_published")
     .eq("id", eventId)
     .maybeSingle();
 
@@ -34,14 +34,30 @@ export default async function AIEditEventPage({ params }: PageProps) {
   const canManage = await canManageEvent(supabase, sessionUser.id, eventId);
   if (!canManage) redirect("/dashboard");
 
+  const eventTypes = Array.isArray(event.event_type)
+    ? event.event_type.filter((entry: unknown): entry is string => typeof entry === "string")
+    : typeof event.event_type === "string"
+      ? [event.event_type]
+      : [];
+
   return (
     <ConversationalCreateUI
       variant="host"
       initialMode="edit_series"
       initialEventId={eventId}
       allowExistingEventWrites={false}
+      allowExistingEventCoverUpload
+      existingEventSnapshot={{
+        eventId: event.id as string,
+        slug: typeof event.slug === "string" ? event.slug : null,
+        title: typeof event.title === "string" ? event.title : null,
+        eventType: eventTypes,
+        coverImageUrl:
+          typeof event.cover_image_url === "string" ? event.cover_image_url : null,
+        isPublished: event.is_published === true,
+      }}
       pageTitle="Edit Happening With AI"
-      pageDescription="Ask AI to draft updates for this happening. Changes are not saved automatically yet."
+      pageDescription="Ask AI to draft updates for this happening. Cover swaps from your uploaded images apply immediately; other field changes still require manual confirmation."
       backHref={`/dashboard/my-events/${eventId}`}
       backLabel="Back to happening"
     />
