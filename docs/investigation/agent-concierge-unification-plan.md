@@ -15,7 +15,7 @@ Sami articulated a strategic reframe today after live user testing of the AI edi
 
 > Lets focus on transforming our agent from creation only into a multipurpose agent that can handle editing and updating events as the main goal including edge cases and we need to give it its own page and also it should be able to cancel, but not delete events. It should confirm with a clear message. Also the UI needs to be updated around it to make it much better and clearer on what it can do, what the user should do, whats happening, and whats next, etc. It's the core product and the center of gravity of the entire website. It's essentially a hosts concierge to handle messy real world data input from a variety of sources including just a weblink and will know what to do with that info against the database with a human in the loop for final publish and available to answer questions on things the agent isn't certain on.
 
-Translating: the agent isn't a feature inside the product. **The agent IS the product.** The rest of the dashboard is the surface that supports it.
+Translating: the host-side relationship and verified event graph are the durable product. The chat surface is the current interaction layer, and the model behind it will change over time; the moat is that hosts trust CSC to maintain their live event data and the public graph stays clean enough for humans and AI systems to rely on it.
 
 ### 1.2 The triggering evidence
 
@@ -64,18 +64,19 @@ This document does NOT scope:
 The agent can:
 
 - **Create new events from messy input** at `/dashboard/my-events/new/conversational`. Source can be: free text, pasted flyer text, uploaded flyer image, structured field extraction, recurrence detection, venue resolution against the directory.
-- **Edit existing events series-wide** at `/dashboard/my-events/[id]/ai`. Patches apply to the entire recurring series. Includes venue resolution, image cover switching, and the published-event safety gate (PR 9).
-- **Edit specific occurrences** at `/dashboard/my-events/[id]/overrides/[dateKey]/ai`. Override patches apply only to the specified date.
+- **Preview proposed edits for existing event series** at `/dashboard/my-events/[id]/ai`. The route can interpret the requested series-wide change and show the proposed patch, including venue resolution and image cover switching, but existing-event AI writes are still locked.
+- **Preview proposed edits for specific occurrences** at `/dashboard/my-events/[id]/overrides/[dateKey]/ai`. The route can interpret occurrence-scoped patches, but existing-event AI writes are still locked.
 - **Ask one clarification question** when scope or content is ambiguous (PR 5 prompt rewrite).
 - **Show "What changed"** field-level diff (PR 11 just shipped).
 - **Distinguish result vs follow-up** visually (PR 11).
 - **Capture telemetry** for every edit turn with turnId correlation between server emit and client accept/reject (PR 3 stack).
-- **Verify ai_confirm_published_high_risk** before applying high-risk fields to a live event (PR 9 gate).
+- **Hold the server-side published-event safety gate** (`ai_confirm_published_high_risk`) for future approved existing-event AI writes (PR 9 gate). That gate exists, but the shipped AI edit entry points are still preview/interpret-only until 2F.0 approves the write/apply unlock.
 
 ### 2.2 What does NOT work today
 
 The agent CANNOT:
 
+- **Apply existing-event AI edits from the AI edit pages.** `allowExistingEventWrites={false}` on the shipped AI edit routes and `canWriteExistingEvent` in `ConversationalCreateUI.tsx` keep existing-event AI apply locked until 2F.0 Concierge Write Gate Hardening is approved and implemented.
 - **Find an existing event from free-text input.** No cross-event search; no entity matching; no "did you mean to update X?" disambiguation.
 - **Mode-switch mid-conversation.** Once the user lands on a URL, the mode is fixed. If you start in create and realize you meant to edit, you must navigate.
 - **Cancel an event.** Cancel exists in the manual EventForm flow, but the AI route does not call it. (Per Sami: lift, but explicitly NOT delete.)
@@ -134,7 +135,7 @@ The user is in the loop for final publish (already shipped via PR 9 gate + manua
 >
 > Buttons: [ Yes, save ] [ Adjust before saving ] [ Cancel ]
 >
-> Host clicks Yes, save. PR 9 gate fires (start_time + end_time are high-risk on a published event). Agent shows the published-risk confirmation panel. Host confirms. Patch applies. "What changed" diff shows the time change. Telemetry fires. Done.
+> Host clicks Yes, save. This path is not enabled today; it becomes valid only after 2F.0 hardens the write gate and explicitly unlocks existing-event AI apply. After that approval, PR 9 gate fires (start_time + end_time are high-risk on a published event), the agent shows the published-risk confirmation panel, the host confirms, the patch applies, "What changed" diff shows the time change, and telemetry fires.
 
 **Scenario B — URL input:**
 
@@ -259,8 +260,8 @@ The state machine runs client-side. The server remains stateless per-request; mo
 
 Existing:
 - `POST /api/events/interpret` — interpret request, returns draft / clarification (Track 1 PR 5)
-- `PATCH /api/my-events/[id]` — apply patch (Track 1 PR 6/9)
-- `POST /api/my-events/[id]/overrides/[date]` — apply occurrence override (Track 1 PR 6)
+- `PATCH /api/my-events/[id]` — manual/server patch path with PR 9 gate support. Existing-event AI apply remains disabled until 2F.0.
+- `POST /api/my-events/[id]/overrides/[date]` — manual/server occurrence override path. Existing-event AI apply remains disabled until 2F.0.
 - `POST /api/my-events` — create new event (existing)
 - `POST /api/events/telemetry/edit-turn` — outcome ping (Track 1 PR 3 follow-up)
 
@@ -311,6 +312,12 @@ This means the agent is the **first user-visible feature of the URL Schedule Imp
 ## 5. Sub-PR sequence
 
 Numbered as Track 2 §2F.* and §2G.* and §2H.* (per the roadmap framing). Investigation-only PRs first, then code.
+
+### 5.0 Mandatory prerequisites before unification work
+
+**2F.0 — Concierge Write Gate Hardening ADR.** This is the first 2F PR and a hard prerequisite before any existing-event AI write/apply unlock. It locks the server-side write boundary: LLM output is untrusted, the server decides what can be written, high-risk published changes still require explicit confirmation, every write path has audit/rollback affordances, and the kill switch (`ENABLE_AGENT_WRITE_APPLY` or the final approved name) defaults to off. Until 2F.0 is approved and implemented, the unified concierge may interpret and preview existing-event patches but must not apply them.
+
+**CRUI landmine audit.** Before extracting components from `ConversationalCreateUI.tsx`, ship or attach a focused investigation note that inventories the component's implicit state and side-effect boundaries: create vs edit mode defaults, `allowExistingEventWrites`, `canWriteExistingEvent`, draft save/publish paths, edit-turn telemetry capture, image-reference handling, published-risk confirmation, host/lab route differences, and source-text tests that are currently standing in for fuller RTL coverage. The output is a checklist for G.4/G.5/G.6 so "zero behavior change" is testable rather than assumed.
 
 ### 5.1 Investigation phase (stop-gates)
 
@@ -515,6 +522,18 @@ Stop-gate before search backend code.
 
 **Codex critique invited:** acceptable, or should we sample mode-switch events?
 
+### 6.10 Disintermediation risk
+
+> If consumer-side AI agents answer "what's happening tonight?" directly, CSC can lose destination traffic even if its event data is good. A chat UI alone does not defend against that shift; any model provider can copy the interaction pattern.
+
+**Mitigations proposed:**
+- Treat the durable asset as the host relationship plus verified event graph, not the current chat UI or model layer.
+- Sequence 2I public-source optimization after the security ADR phase so external AI systems cite CSC's clean structured data instead of bypassing or misquoting it.
+- Preserve stable public URLs and cancellation semantics so AI agents propagate current truth, including cancellations, rather than stale scraped copies.
+- Use the concierge to make host maintenance easier than competing platforms; fresher source data is the part consumer AI cannot synthesize on its own.
+
+**Codex critique invited:** does the concierge roadmap sufficiently feed 2I and 2J, or should 2I citation-stability work move earlier once 2I.0 lands?
+
 ---
 
 ## 7. Open questions for Codex
@@ -523,11 +542,11 @@ In addition to the critique points above, please respond on:
 
 1. **Does the architectural proposal in §4 hold up?** Specifically the state machine, the component extraction sequence, the server endpoint additions.
 2. **Are there sub-PRs missing from §5?** What did I overlook?
-3. **What's the right ordering of §F vs §G vs §H?** Today they interleave. Should we ship all of §G (extractions + new page) first, then §F (cross-event), then §H (cancel)? Or interleave per the §5.1–5.8 grouping?
+3. **Ordering is now constrained by the merged Track 2 roadmap.** Phase 5.0 housekeeping and the security ADR phase come first. For this concierge plan, 2F.0 Concierge Write Gate Hardening must precede any existing-event AI apply unlock; 2J.1 Safe URL Fetcher must precede URL-paste fetching; 2L.1 BOLA/RLS/service-role audit should run in parallel with endpoint work; then proceed through 2F ADRs and the CRUI landmine audit before G.4/G.5/G.6 component extraction. §G route/UI work can start only after the relevant ADRs release the locked surfaces; §H cancel work is exact-context first and write-gated by 2F.0.
 4. **What's a defensible MVP?** If we had to ship the smallest possible version of "the agent is the product center of gravity", which sub-PRs would compose it?
 5. **What existing code paths do I underestimate?** Lifting from `ConversationalCreateUI.tsx` is going to surface assumptions I haven't seen. Where are the landmines?
 6. **Eval harness scaling.** PR 4 eval harness covers create + edit cases. Adding cancel + URL + cross-event match + Q&A — is the harness shape right, or do we need a different evaluation framework for the unified concierge?
-7. **Any dissent on the strategic frame?** The "agent is the product" framing is meaningful. If you disagree, say so. Default agreement without evidence is a governance violation per the GOVERNANCE.md Subordinate Architect Review Mode rule.
+7. **Any dissent on the strategic frame?** The sharper frame is: the host relationship plus verified event graph are the durable product; the chat UI and model layer are replaceable interfaces over that asset. If you disagree, say so with evidence. Default agreement without evidence is a governance violation per the GOVERNANCE.md Subordinate Architect Review Mode rule.
 
 ---
 
@@ -538,6 +557,7 @@ The unified concierge is "broad live use" complete when:
 - `/dashboard/agent` is the documented top-level entry point.
 - Legacy URLs (`/dashboard/my-events/new/conversational`, `/dashboard/my-events/[id]/ai`, `/dashboard/my-events/[id]/overrides/[k]/ai`) redirect to `/dashboard/agent` with appropriate query params.
 - The agent handles all five modes from §3.2 scenarios: create, find-and-edit, URL input, cancel, Q&A.
+- Existing-event AI apply is unlocked only after 2F.0 write-gate hardening is approved and implemented; before that, existing-event AI paths remain interpret/preview-only.
 - Cancel flow has two-stage confirmation, never deletes, surfaces RSVP notification choice when applicable.
 - URL input handles JSON-LD-friendly URLs deterministically; LLM-fallback URLs go through review UI.
 - Cross-event match has telemetry; accept rate is monitored; threshold is tunable.
@@ -559,6 +579,7 @@ Per `docs/investigation/track2-roadmap.md` §10:
 
 ### 9.2 Requires explicit Sami approval
 
+- 2F.0 Concierge Write Gate Hardening ADR approval before any existing-event AI write/apply unlock.
 - All new endpoints (G.2, G.3, F.2 search backend, agent answer endpoint)
 - All new public routes (`/dashboard/agent`)
 - All UI changes touching ConversationalCreateUI.tsx (still §8.2 locked) — every component extraction needs lock release
@@ -582,9 +603,11 @@ In order:
 
 1. **Codex reviews this document.** Raises critique points per §6 and §7. Dissent welcomed.
 2. **Sami responds to Codex's critique.** Locks decisions or asks for revision.
-3. **G.1 — Agent Concierge architecture ADR.** Investigation-only PR. Locks the surface URL, component extraction strategy, permissions model, state machine details, telemetry schema additions, cancel UX, URL input UX.
-4. **F.1 — Cross-event search backend ADR.** Investigation-only PR (already scoped in roadmap). Stop-gate before search backend code.
-5. **First implementation PR is whichever ADR closes first.** Probably G.4 (extract `AgentChat`) since it has zero behavior change and unblocks everything else.
+3. **2F.0 — Concierge Write Gate Hardening ADR.** Investigation-only PR. Locks the write boundary and keeps existing-event AI apply disabled until approved follow-up implementation.
+4. **G.1 — Agent Concierge architecture ADR.** Investigation-only PR. Locks the surface URL, component extraction strategy, permissions model, state machine details, telemetry schema additions, cancel UX, URL input UX.
+5. **F.1 — Cross-event search backend ADR.** Investigation-only PR (already scoped in roadmap). Stop-gate before search backend code.
+6. **CRUI landmine audit.** Investigation-only or attached to G.1. Produces the checklist required before component extraction.
+7. **First implementation PR is whichever approved ADR releases a safe zero-behavior-change surface.** Probably G.4 (extract `AgentChat`) only after the landmine audit makes the no-regression checklist explicit.
 
 ---
 
