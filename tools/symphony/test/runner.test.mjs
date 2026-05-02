@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
-import { access, mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { EventEmitter } from "node:events";
+import { access, mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { resolveConfig } from "../lib/config.mjs";
-import { mergeIssuesByNumber, planIssues, recoverStaleRunningIssues, runOnce } from "../lib/runner.mjs";
+import { mergeIssuesByNumber, planIssues, recoverStaleRunningIssues, runDaemon, runOnce } from "../lib/runner.mjs";
 
 const config = resolveConfig("/repo", {
   version: 1,
@@ -346,6 +347,104 @@ test("runOnce releases runner lock when execution fails", async () => {
   assert.equal(result.ok, false);
   assert.match(JSON.stringify(result.plans), /worktree failed/);
   await assert.rejects(() => access(path.join(repoRoot, ".symphony/state/runner.lock")), /ENOENT/);
+});
+
+test("runDaemon handles SIGINT after active cycle and releases runner lock", async () => {
+  const repoRoot = await makeRepoRoot();
+  const processLike = new EventEmitter();
+  let cycleCount = 0;
+  const result = await runDaemon({
+    repoRoot,
+    dryRun: false,
+    intervalSeconds: 300,
+    env: {
+      SYMPHONY_ENABLE_DAEMON: "1",
+      SYMPHONY_EXECUTION_APPROVED: "1"
+    },
+    processLike,
+    runOnceFn: async () => {
+      cycleCount += 1;
+      processLike.emit("SIGINT");
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      return { ok: true };
+    },
+    sleepFn: async () => {
+      throw new Error("daemon should not sleep after SIGINT");
+    }
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.iterations, 1);
+  assert.equal(cycleCount, 1);
+  assert.equal(result.reason, "daemon stopped by SIGINT");
+  assert.equal(processLike.listenerCount("SIGINT"), 0);
+  assert.equal(processLike.listenerCount("SIGTERM"), 0);
+  await assert.rejects(() => access(path.join(repoRoot, ".symphony/state/runner.lock")), /ENOENT/);
+});
+
+test("runDaemon stops during interval sleep and releases runner lock", async () => {
+  const repoRoot = await makeRepoRoot();
+  const controller = new AbortController();
+  let cycleCount = 0;
+  const result = await runDaemon({
+    repoRoot,
+    dryRun: true,
+    intervalSeconds: 300,
+    env: {
+      SYMPHONY_ENABLE_DAEMON: "1"
+    },
+    signal: controller.signal,
+    runOnceFn: async () => {
+      cycleCount += 1;
+      return { ok: true };
+    },
+    sleepFn: async (_milliseconds, signal) => {
+      assert.equal(signal.aborted, false);
+      controller.abort("test stop");
+    }
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.iterations, 1);
+  assert.equal(cycleCount, 1);
+  assert.equal(result.reason, "daemon stopped by test stop");
+  await assert.rejects(() => access(path.join(repoRoot, ".symphony/state/runner.lock")), /ENOENT/);
+});
+
+test("runDaemon removes signal handlers when lock acquisition fails", async () => {
+  const repoRoot = await makeRepoRoot();
+  const processLike = new EventEmitter();
+  await mkdir(path.join(repoRoot, ".symphony/state"), { recursive: true });
+  await writeFile(
+    path.join(repoRoot, ".symphony/state/runner.lock"),
+    JSON.stringify({
+      runId: "existing",
+      command: "daemon",
+      mode: "execute",
+      pid: 12345,
+      createdAt: new Date().toISOString(),
+      path: path.join(repoRoot, ".symphony/state/runner.lock")
+    }),
+    "utf8"
+  );
+
+  const result = await runDaemon({
+    repoRoot,
+    dryRun: false,
+    env: {
+      SYMPHONY_ENABLE_DAEMON: "1",
+      SYMPHONY_EXECUTION_APPROVED: "1"
+    },
+    processLike,
+    runOnceFn: async () => {
+      throw new Error("runOnce should not start when daemon lock is held");
+    }
+  });
+
+  assert.equal(result.ok, false);
+  assert.match(result.reason, /lock is already held/);
+  assert.equal(processLike.listenerCount("SIGINT"), 0);
+  assert.equal(processLike.listenerCount("SIGTERM"), 0);
 });
 
 test("recoverStaleRunningIssues moves stale running issues to blocked when executed", async () => {
