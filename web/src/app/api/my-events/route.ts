@@ -15,6 +15,16 @@ import { warmEventSharePreview } from "@/lib/events/sharePreview";
 import { normalizeDraftRecurrenceFields } from "@/lib/events/recurrenceDraftTools";
 import { applyVenueTypeTitleDefault } from "@/lib/events/interpreterPostprocess";
 import { resolveVenue, type VenueCatalogEntry } from "@/lib/events/venueResolver";
+// Lane 5 PR A — fire-and-forget event audit logging. Helper short-circuits
+// when EVENT_AUDIT_LOG_ENABLED !== "true", so importing here is a no-op
+// in production until ops flips the flag.
+import {
+  logEventAudit,
+  resolveEventAuditSource,
+  resolveEventAuditActorRole,
+  readEventAuditRequestContext,
+  snapshotFromEventRow,
+} from "@/lib/audit/eventAudit";
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>;
 
@@ -1004,6 +1014,30 @@ export async function POST(request: Request) {
       event_date: event.event_date,
       slug: event.slug || null,
       updated_at: event.updated_at || null,
+    });
+
+    // Lane 5 PR A — fire-and-forget audit row for the create. The
+    // creator is always a host (added below), so actor_role is "host"
+    // unless they're an admin. Source comes from the request body or
+    // defaults to manual_form.
+    void logEventAudit({
+      eventId: event.id as string,
+      eventSnapshot: snapshotFromEventRow(event.id as string, event as Record<string, unknown>),
+      actorId: sessionUser.id,
+      actorRole: resolveEventAuditActorRole({
+        isAdmin,
+        isHost: true,
+        isCohost: false,
+      }),
+      action: "create",
+      source: resolveEventAuditSource({
+        aiWriteSource: typeof body.ai_write_source === "string" ? body.ai_write_source : null,
+        body: body as Record<string, unknown>,
+      }),
+      nextEvent: event as Record<string, unknown>,
+      request: readEventAuditRequestContext(request),
+    }).catch(() => {
+      // Helper already swallows internally; the .catch is defensive.
     });
 
     // Add creator as host

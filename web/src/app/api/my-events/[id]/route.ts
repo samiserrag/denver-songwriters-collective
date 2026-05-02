@@ -1,6 +1,6 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
-import { checkHostStatus } from "@/lib/auth/adminAuth";
+import { checkAdminRole, checkHostStatus } from "@/lib/auth/adminAuth";
 import { sendEventUpdatedNotifications } from "@/lib/notifications/eventUpdated";
 import { sendEventCancelledNotifications } from "@/lib/notifications/eventCancelled";
 import { canonicalizeDayOfWeek, isOrdinalMonthlyRule } from "@/lib/events/recurrenceCanonicalization";
@@ -25,6 +25,18 @@ import {
   hashPriorState,
 } from "@/lib/events/editTurnTelemetry";
 import type { EnforcementMode, RiskTier } from "@/lib/events/patchFieldRegistry";
+// Lane 5 PR A — fire-and-forget event audit logging. Default-off via
+// EVENT_AUDIT_LOG_ENABLED; importing here is a no-op until ops flips
+// the flag.
+import {
+  logEventAudit,
+  resolveEventAuditSource,
+  resolveEventAuditActorRole,
+  readEventAuditRequestContext,
+  snapshotFromEventRow,
+  type EventAuditAction,
+  type EventAuditActorRole,
+} from "@/lib/audit/eventAudit";
 
 const LEGACY_VERIFICATION_STATUSES = new Set(["needs_verification", "unverified"]);
 type SupabaseServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>;
@@ -414,7 +426,7 @@ export async function PATCH(
   const canCreateCSC = isApprovedHost || isAdmin;
 
   const requestBody = (await request.json()) as Record<string, unknown>;
-  const { aiConfirmation, isAiAutoApply, sanitizedBody } = parseAiWriteMetadata(requestBody);
+  const { aiConfirmation, isAiAutoApply, aiWriteSource, sanitizedBody } = parseAiWriteMetadata(requestBody);
   const body = sanitizedBody as Record<string, any>;
   if (body.location_mode !== undefined) {
     body.location_mode = normalizeLocationMode(body.location_mode);
@@ -852,6 +864,55 @@ export async function PATCH(
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  // Lane 5 PR A — fire-and-forget audit row for the update. Classify
+  // the action by intent: publish / unpublish / cancel / restore /
+  // cover_update / update. Source comes from ai_write_source (already
+  // parsed above) or defaults to manual_form.
+  const auditAction: EventAuditAction = (() => {
+    if (
+      body.is_published === true &&
+      (prevEvent as Record<string, unknown> | null)?.is_published === false
+    ) return "publish";
+    if (
+      body.is_published === false &&
+      (prevEvent as Record<string, unknown> | null)?.is_published === true
+    ) return "unpublish";
+    if (
+      body.status === "cancelled" &&
+      (prevEvent as Record<string, unknown> | null)?.status !== "cancelled"
+    ) return "cancel";
+    if (isRestoreAction) return "restore";
+    if (
+      typeof body.cover_image_url === "string" &&
+      Object.keys(updates).filter((k) => k !== "updated_at" && k !== "last_major_update_at").length === 1
+    ) return "cover_update";
+    return "update";
+  })();
+  void logEventAudit({
+    eventId,
+    eventSnapshot: snapshotFromEventRow(eventId, event as Record<string, unknown>),
+    actorId: sessionUser.id,
+    actorRole: resolveEventAuditActorRole({
+      isAdmin,
+      // canManageEvent already passed above; treat as host for audit
+      // purposes (cohost vs host distinction comes from event_hosts in
+      // PR C admin browser when needed).
+      isHost: !isAdmin,
+      isCohost: false,
+    }),
+    action: auditAction,
+    source: resolveEventAuditSource({
+      aiWriteSource: typeof aiWriteSource === "string" ? aiWriteSource : null,
+      body: requestBody as Record<string, unknown>,
+    }),
+    prevEvent: prevEvent as Record<string, unknown> | null,
+    nextEvent: event as Record<string, unknown>,
+    priorHash: hashPriorState(prevEvent),
+    request: readEventAuditRequestContext(request),
+  }).catch(() => {
+    // Helper already swallows internally; the .catch is defensive.
+  });
+
   // Upsert multi-embed media URLs (non-fatal on error)
   if (Array.isArray(body.media_embed_urls)) {
     try {
@@ -1134,6 +1195,18 @@ export async function DELETE(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  // Lane 5 PR A — minimal admin-vs-host classification for the audit
+  // row's actor_role. Cheap single query (mirrors checkOverrideAuth's
+  // own pattern). cohost-vs-host distinction is best-effort and not
+  // resolved here — admin-vs-host is the required minimum per
+  // coordinator patch instructions.
+  const isDeleteActorAdmin = await checkAdminRole(supabase, sessionUser.id);
+  const deleteAuditActorRole: EventAuditActorRole = resolveEventAuditActorRole({
+    isAdmin: isDeleteActorAdmin,
+    isHost: !isDeleteActorAdmin,
+    isCohost: false,
+  });
+
   // Check if hard delete requested via query param
   const url = new URL(request.url);
   const hardDelete = url.searchParams.get("hard") === "true";
@@ -1171,6 +1244,21 @@ export async function DELETE(
       return NextResponse.json({ error: deleteError.message }, { status: 500 });
     }
 
+    // Lane 5 PR A — fire-and-forget audit row for the hard delete.
+    // event_id will land as NULL via ON DELETE SET NULL on the FK; the
+    // denormalized snapshot fields preserve enough context to
+    // investigate post-deletion (decision memo §2.5).
+    void logEventAudit({
+      eventId: null,
+      eventSnapshot: snapshotFromEventRow(eventId, event as Record<string, unknown>),
+      actorId: sessionUser.id,
+      actorRole: deleteAuditActorRole,
+      action: "delete",
+      source: "manual_form",
+      prevEvent: event as Record<string, unknown>,
+      request: readEventAuditRequestContext(request),
+    }).catch(() => {});
+
     return NextResponse.json({ success: true, deleted: true });
   }
 
@@ -1199,6 +1287,24 @@ export async function DELETE(
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  // Lane 5 PR A — fire-and-forget audit row for the soft delete
+  // (cancellation). prevEvent here is the row fetched at the top of
+  // the handler. nextEvent is omitted so the diff helper short-
+  // circuits — the action ("cancel") carries the meaning.
+  void logEventAudit({
+    eventId,
+    eventSnapshot: snapshotFromEventRow(eventId, event as Record<string, unknown>),
+    actorId: sessionUser.id,
+    actorRole: deleteAuditActorRole,
+    action: "cancel",
+    source: "manual_form",
+    prevEvent: event as Record<string, unknown>,
+    summary: cancelReason
+      ? `Event cancelled: ${cancelReason.slice(0, 80)}`
+      : "Event cancelled",
+    request: readEventAuditRequestContext(request),
+  }).catch(() => {});
 
   if (event?.title) {
     const { data: actorProfile } = await supabase

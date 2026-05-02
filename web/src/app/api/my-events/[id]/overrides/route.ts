@@ -8,6 +8,15 @@ import { formatDateKeyForEmail } from "@/lib/events/dateKeyContract";
 import { sendEventUpdatedNotifications } from "@/lib/notifications/eventUpdated";
 import { sendOccurrenceCancelledNotifications } from "@/lib/notifications/occurrenceCancelled";
 import { sendAdminEventAlert } from "@/lib/email/adminEventAlerts";
+// Lane 5 PR A — fire-and-forget event audit logging. Default-off via
+// EVENT_AUDIT_LOG_ENABLED.
+import {
+  logEventAudit,
+  resolveEventAuditSource,
+  resolveEventAuditActorRole,
+  readEventAuditRequestContext,
+  snapshotFromEventRow,
+} from "@/lib/audit/eventAudit";
 
 /**
  * Occurrence Override API — Per-occurrence field overrides for recurring events.
@@ -522,6 +531,36 @@ export async function POST(
       console.error(`[Overrides POST] Failed to send non-admin occurrence edit admin email for ${date_key}:`, emailError);
     });
   }
+
+  // Lane 5 PR A — fire-and-forget audit row for the occurrence
+  // override. Action is "update" (overrides change event behavior at
+  // the occurrence layer); summary names the date_key + revert/upsert
+  // verb. Source defaults to manual_form unless the body declares an
+  // ai_write_source family.
+  void logEventAudit({
+    eventId,
+    eventSnapshot: snapshotFromEventRow(eventId, baseEvent as Record<string, unknown>),
+    actorId: sessionUser.id,
+    // checkOverrideAuth already returned isAdmin at line above; use it
+    // instead of hardcoding host so admin actions are attributed
+    // correctly. cohost-vs-host precision deferred (route does not
+    // surface that signal cheaply today).
+    actorRole: resolveEventAuditActorRole({
+      isAdmin,
+      isHost: !isAdmin,
+      isCohost: false,
+    }),
+    action: "update",
+    source: resolveEventAuditSource({
+      aiWriteSource: typeof body.ai_write_source === "string" ? body.ai_write_source : null,
+      body: body as Record<string, unknown>,
+    }),
+    summary:
+      action === "reverted"
+        ? `Occurrence override reverted for ${date_key}`
+        : `Occurrence override applied for ${date_key}`,
+    request: readEventAuditRequestContext(request),
+  }).catch(() => {});
 
   return NextResponse.json({ success: true, action });
 }
