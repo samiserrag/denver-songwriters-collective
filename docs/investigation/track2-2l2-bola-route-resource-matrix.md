@@ -4,6 +4,7 @@ Status: Scaffold/gate
 Runtime behavior changed: No
 Base: `f7c9b2665baa1ae1bc3cf9d8f94c7597342050a9`
 Companion audit: `docs/investigation/track2-2l1-bola-rls-service-role-audit-report.md`
+Companion service-role manifest: `docs/investigation/track2-2l3-service-role-admin-client-manifest.md`
 
 This is the maintained Track 2 BOLA matrix required by the 2L.1 audit. It is
 not a remediation PR. It defines the route/resource rows that future Track 2
@@ -123,7 +124,7 @@ of inventing permissions ad hoc.
 
 | Gap | Blocks | Remediation owner | Required proof |
 | --- | --- | --- | --- |
-| Service-role/admin-client manifest not yet maintained | 2D, 2F, 2J, 2K service-role expansion | 2L.3 | Manifest plus tests proving auth before privileged access |
+| Service-role/admin-client manifest is maintained as companion scaffold | 2D, 2F, 2J, 2K service-role expansion | 2L.3 | `docs/investigation/track2-2l3-service-role-admin-client-manifest.md` plus source-check coverage; route-level negative tests still land in later remediation PRs |
 | Current route-level negative tests incomplete for event/venue/org/admin ops | Unlocking new Track 2 ID-bearing write routes | 2L.4 | Cross-user, cross-resource, stale-role, and mismatch tests |
 | Live RLS policy state not confirmed | RLS remediation, public API expansion | 2L.5 | `pg_policies` inventory plus anon/authenticated smoke queries |
 | Public serializer schema not yet centralized | 2I public APIs and AI-shaped endpoints | 2I implementation with 2L checks | Serializer tests proving private field absence |
