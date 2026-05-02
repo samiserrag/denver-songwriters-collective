@@ -1,0 +1,5 @@
+{"fixture":{"name":"turn-failed.jsonl","codex_version":"codex-app-server-fixture-v1","scenario":"turn emits turn/failed terminal message"}}
+{"stream":"stdout","message":{"id":1,"result":{"capabilities":{}}}}
+{"stream":"stdout","message":{"id":2,"result":{"thread":{"id":"fixture-thread-failed"}}}}
+{"stream":"stdout","message":{"id":3,"result":{"turn":{"id":"fixture-turn-failed"}}}}
+{"stream":"stdout","message":{"method":"turn/failed","params":{"message":"fixture failure"}}}

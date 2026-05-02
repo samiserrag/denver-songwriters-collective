@@ -1,0 +1,4 @@
+{"fixture":{"name":"turn-json-rpc-error.jsonl","codex_version":"codex-app-server-fixture-v1","scenario":"turn/start response returns JSON-RPC error after thread start"}}
+{"stream":"stdout","message":{"id":1,"result":{"capabilities":{}}}}
+{"stream":"stdout","message":{"id":2,"result":{"thread":{"id":"fixture-thread-turn-error"}}}}
+{"stream":"stdout","message":{"id":3,"error":{"code":-32000,"message":"fixture turn failed"}}}

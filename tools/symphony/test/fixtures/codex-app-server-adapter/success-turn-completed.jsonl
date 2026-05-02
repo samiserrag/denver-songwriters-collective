@@ -1,0 +1,6 @@
+{"fixture":{"name":"success-turn-completed.jsonl","codex_version":"codex-app-server-fixture-v1","scenario":"successful turn/completed with token usage and rate limits"}}
+{"stream":"stdout","message":{"id":1,"result":{"capabilities":{}}}}
+{"stream":"stdout","message":{"id":2,"result":{"thread":{"id":"fixture-thread-success"}}}}
+{"stream":"stdout","message":{"id":3,"result":{"turn":{"id":"fixture-turn-success"}}}}
+{"stream":"stdout","message":{"method":"thread/tokenUsage/updated","params":{"total_token_usage":{"input_tokens":21,"output_tokens":8,"total_tokens":29},"rate_limits":{"requests_remaining":77}}}}
+{"stream":"stdout","message":{"method":"turn/completed"}}

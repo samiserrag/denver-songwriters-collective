@@ -1,0 +1,2 @@
+{"fixture":{"name":"read-timeout.jsonl","codex_version":"codex-app-server-fixture-v1","scenario":"initialize response stalls until read timeout"}}
+{"action":"fireTimer","milliseconds":5000}

@@ -1,0 +1,17 @@
+{
+  "name": "turn-timeout.jsonl",
+  "ok": false,
+  "reason": "turn_timeout",
+  "terminal_status": "failure",
+  "terminal_reason": "read_timeout",
+  "thread_id": "fixture-thread-timeout",
+  "turn_id": "fixture-turn-timeout",
+  "session_id": "fixture-thread-timeout-fixture-turn-timeout",
+  "turn_count": 1,
+  "last_protocol_event": null,
+  "token_usage": null,
+  "rate_limits": null,
+  "protocol_events_count": 3,
+  "adapter_events_count": 4,
+  "timeout_phase": "turn"
+}

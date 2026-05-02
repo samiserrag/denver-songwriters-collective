@@ -1,0 +1,16 @@
+{
+  "name": "turn-input-required.jsonl",
+  "ok": false,
+  "reason": "turn_input_required",
+  "terminal_status": "failure",
+  "terminal_reason": "turn_failed",
+  "thread_id": "fixture-thread-input",
+  "turn_id": "fixture-turn-input",
+  "session_id": "fixture-thread-input-fixture-turn-input",
+  "turn_count": 1,
+  "last_protocol_event": "item/tool/requestUserInput",
+  "token_usage": null,
+  "rate_limits": null,
+  "protocol_events_count": 4,
+  "adapter_events_count": 5
+}

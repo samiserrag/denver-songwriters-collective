@@ -1,0 +1,2 @@
+{"fixture":{"name":"initialize-json-rpc-error.jsonl","codex_version":"codex-app-server-fixture-v1","scenario":"initialize response returns JSON-RPC error"}}
+{"stream":"stdout","message":{"id":1,"error":{"code":-32603,"message":"fixture initialize failed"}}}

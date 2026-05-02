@@ -5,6 +5,11 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import {
+  parseTranscriptJsonl,
+  replayTranscriptFixture,
+  validateTranscriptRecords
+} from "./helpers/codexAppServerAdapterReplay.mjs";
+import {
   buildCodexAppServerLaunch,
   runCodexAppServerAdapter
 } from "../lib/codexAppServerAdapter.mjs";
@@ -100,12 +105,171 @@ function assertTerminal(result, terminalStatus, terminalReason) {
   assert.equal(result.adapter_state_snapshot.terminal_reason, terminalReason);
 }
 
+function assertSnapshotMatchesResult(result) {
+  assert.equal(result.adapter_state_snapshot.thread_id, result.thread_id);
+  assert.equal(result.adapter_state_snapshot.turn_id, result.turn_id);
+  assert.equal(result.adapter_state_snapshot.session_id, result.session_id);
+  assert.equal(result.adapter_state_snapshot.turn_count, result.turn_count);
+  assert.equal(result.adapter_state_snapshot.last_protocol_event, result.last_protocol_event);
+  assert.deepEqual(result.adapter_state_snapshot.token_usage, result.token_usage);
+  assert.deepEqual(result.adapter_state_snapshot.rate_limits, result.rate_limits);
+  assert.equal(result.adapter_state_snapshot.adapter_events_count, result.adapter_events.length);
+  assert.equal(result.adapter_state_snapshot.protocol_events_count, result.protocol_events.length);
+  assertTerminal(result, result.terminal_status, result.terminal_reason);
+}
+
+function assertAdapterEventsAreDeterministic(result) {
+  assert.equal(result.adapter_events[0].event, "adapter_started");
+  assert.equal(result.adapter_events[0].codex_app_server_pid, 12345);
+  assert.deepEqual(result.adapter_events.slice(1).map((event) => event.event), (
+    Array.from({ length: result.protocol_events.length }, () => "protocol_message")
+  ));
+  assert.equal(result.adapter_events.length, result.protocol_events.length + 1);
+}
+
+function assertExpectedResult(result, expected) {
+  assert.equal(result.ok, expected.ok);
+  assert.equal(result.reason, expected.reason);
+  assertTerminal(result, expected.terminal_status, expected.terminal_reason);
+  for (const field of [
+    "thread_id",
+    "turn_id",
+    "session_id",
+    "turn_count",
+    "last_protocol_event",
+    "token_usage",
+    "rate_limits"
+  ]) {
+    if (Object.prototype.hasOwnProperty.call(expected, field)) {
+      assert.deepEqual(result[field], expected[field], field);
+    }
+  }
+  assert.equal(result.protocol_events.length, expected.protocol_events_count);
+  assert.equal(result.adapter_events.length, expected.adapter_events_count);
+  if (expected.response_error_message) {
+    assert.equal(result.responseError.message, expected.response_error_message);
+  }
+  if (expected.timeout_phase) {
+    assert.equal(result.timeout.phase, expected.timeout_phase);
+  }
+  if (expected.process_exit_code !== undefined) {
+    assert.equal(result.code, expected.process_exit_code);
+  }
+  assertSnapshotMatchesResult(result);
+}
+
+async function replayFixture(fixtureName, options = {}) {
+  return replayTranscriptFixture({
+    fixtureName,
+    startAdapter,
+    ...options
+  });
+}
+
 test("buildCodexAppServerLaunch uses a shell command for the app-server process", () => {
   assert.deepEqual(buildCodexAppServerLaunch({ command: "codex app-server" }), {
     command: "bash",
     args: ["-lc", "codex app-server"]
   });
 });
+
+test("replay helper fails closed on malformed JSONL", () => {
+  assert.throws(
+    () => parseTranscriptJsonl("{not-json}\n", { fixtureName: "bad.jsonl" }),
+    /Invalid transcript fixture bad\.jsonl:1/
+  );
+});
+
+test("replay helper requires fixture metadata header", () => {
+  assert.throws(
+    () => validateTranscriptRecords([{ stream: "stdout", message: { id: 1, result: {} } }], {
+      fixtureName: "missing-header.jsonl"
+    }),
+    /must start with a fixture metadata header/
+  );
+});
+
+test("replay helper validates metadata fields and replay steps", () => {
+  assert.throws(
+    () => validateTranscriptRecords([
+      {
+        fixture: {
+          name: "bad-metadata.jsonl",
+          scenario: "missing codex version"
+        }
+      },
+      { stream: "stdout", message: { id: 1, result: {} } }
+    ], { fixtureName: "bad-metadata.jsonl" }),
+    /requires non-empty codex_version/
+  );
+  assert.throws(
+    () => validateTranscriptRecords([
+      {
+        fixture: {
+          name: "bad-step.jsonl",
+          codex_version: "fixture",
+          scenario: "bad step"
+        }
+      },
+      { stream: "stdout" }
+    ], { fixtureName: "bad-step.jsonl" }),
+    /requires exactly one of chunk or message/
+  );
+  assert.throws(
+    () => validateTranscriptRecords([
+      {
+        fixture: {
+          name: "bad-action.jsonl",
+          codex_version: "fixture",
+          scenario: "bad action"
+        }
+      },
+      { action: "unknown" }
+    ], { fixtureName: "bad-action.jsonl" }),
+    /action is unsupported/
+  );
+});
+
+for (const emitMode of ["line-by-line", "split-lines", "multi-line"]) {
+  test(`replay fixture: successful turn/completed preserves session, usage, and events (${emitMode})`, async () => {
+    const { child, expected, metadata, result, timerHarness } = await replayFixture(
+      "success-turn-completed.jsonl",
+      { emitMode }
+    );
+
+    assert.equal(metadata.codex_version, "codex-app-server-fixture-v1");
+    assertExpectedResult(result, expected);
+    assertAdapterEventsAreDeterministic(result);
+    assert.deepEqual(child.killSignals, ["SIGTERM"]);
+    assertNoActiveTimers(timerHarness);
+  });
+}
+
+for (const fixture of [
+  "initialize-json-rpc-error.jsonl",
+  "thread-json-rpc-error.jsonl",
+  "turn-json-rpc-error.jsonl",
+  "malformed-protocol-message.jsonl",
+  "turn-failed.jsonl",
+  "turn-cancelled.jsonl",
+  "turn-input-required.jsonl",
+  "process-exit-before-completion.jsonl",
+  "read-timeout.jsonl",
+  "turn-timeout.jsonl"
+]) {
+  test(`replay fixture: ${fixture} matches fixture-side expectations`, async () => {
+    const { child, expected, metadata, result, timerHarness } = await replayFixture(fixture);
+
+    assert.equal(metadata.name, fixture);
+    assert.equal(metadata.codex_version, "codex-app-server-fixture-v1");
+    assertExpectedResult(result, expected);
+    if (result.protocol_events.length > 0) {
+      assertAdapterEventsAreDeterministic(result);
+    }
+    assert.deepEqual(child.killSignals, expected.kill_signals ?? ["SIGTERM"]);
+    assertNoActiveTimers(timerHarness);
+  });
+}
 
 test("runCodexAppServerAdapter completes a single app-server turn and preserves metadata", async () => {
   const { child, logPath, resultPromise, spawnCall, tempRoot, timerHarness } = await startAdapter();

@@ -1,0 +1,16 @@
+{
+  "name": "turn-failed.jsonl",
+  "ok": false,
+  "reason": "turn_failed",
+  "terminal_status": "failure",
+  "terminal_reason": "turn_failed",
+  "thread_id": "fixture-thread-failed",
+  "turn_id": "fixture-turn-failed",
+  "session_id": "fixture-thread-failed-fixture-turn-failed",
+  "turn_count": 1,
+  "last_protocol_event": "turn/failed",
+  "token_usage": null,
+  "rate_limits": null,
+  "protocol_events_count": 4,
+  "adapter_events_count": 5
+}

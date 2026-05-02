@@ -1,0 +1,16 @@
+{
+  "name": "malformed-protocol-message.jsonl",
+  "ok": false,
+  "reason": "malformed_protocol_message",
+  "terminal_status": "failure",
+  "terminal_reason": "protocol_parse_error",
+  "thread_id": null,
+  "turn_id": null,
+  "session_id": null,
+  "turn_count": 0,
+  "last_protocol_event": null,
+  "token_usage": null,
+  "rate_limits": null,
+  "protocol_events_count": 0,
+  "adapter_events_count": 1
+}

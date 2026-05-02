@@ -1,0 +1,5 @@
+{"fixture":{"name":"turn-cancelled.jsonl","codex_version":"codex-app-server-fixture-v1","scenario":"turn emits turn/cancelled terminal message"}}
+{"stream":"stdout","message":{"id":1,"result":{"capabilities":{}}}}
+{"stream":"stdout","message":{"id":2,"result":{"thread":{"id":"fixture-thread-cancelled"}}}}
+{"stream":"stdout","message":{"id":3,"result":{"turn":{"id":"fixture-turn-cancelled"}}}}
+{"stream":"stdout","message":{"method":"turn/cancelled"}}

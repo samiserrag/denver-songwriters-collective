@@ -1,0 +1,18 @@
+{
+  "name": "process-exit-before-completion.jsonl",
+  "ok": false,
+  "reason": "process_exit_before_completion",
+  "terminal_status": "failure",
+  "terminal_reason": "process_exit_before_completion",
+  "thread_id": "fixture-thread-exit",
+  "turn_id": "fixture-turn-exit",
+  "session_id": "fixture-thread-exit-fixture-turn-exit",
+  "turn_count": 1,
+  "last_protocol_event": null,
+  "token_usage": null,
+  "rate_limits": null,
+  "protocol_events_count": 3,
+  "adapter_events_count": 4,
+  "process_exit_code": 1,
+  "kill_signals": []
+}
