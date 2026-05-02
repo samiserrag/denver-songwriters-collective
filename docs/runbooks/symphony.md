@@ -155,6 +155,7 @@ separate explicit approval before use.
 - 2026-05-01 — first supervised `once --execute` smoke run on commit 8b346d6; manifest path: .symphony/state/manifests/20260501t022714439z-42645-once-tudz96.json.
 - 2026-05-01 — PR #147 shipped the Symphony self-edit guard for explicit high-risk approval of `tools/symphony/**`.
 - 2026-05-01 — supervised execute #3 verified deterministic skip diagnostics for ineligible ready issue #152.
+- 2026-05-01 — watched daemon retry #2 completed after PR #160's daemon shutdown fix.
 
 ## Local State
 
