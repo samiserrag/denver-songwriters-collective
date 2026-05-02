@@ -7,6 +7,7 @@ This docs-local memory keeps deep reference material out of global context.
 - Completed implementation history: `/Users/samiserrag/Documents/GitHub/denver-songwriters-collective/docs/completed/CLAUDE.md`
 - Deferred backlog and future tracks: `/Users/samiserrag/Documents/GitHub/denver-songwriters-collective/docs/backlog/CLAUDE.md`
 - Operational reference tables and runbook memory: `/Users/samiserrag/Documents/GitHub/denver-songwriters-collective/docs/runbooks/CLAUDE.md`
+- Strategy and operating thesis: `/Users/samiserrag/Documents/GitHub/denver-songwriters-collective/docs/strategy/` (OPERATING_THESIS, INGESTION_AND_FAIR_COMPETITION, SOURCE_REGISTRY, AGENTIC_EVENT_MAINTENANCE)
 
 ## Related canonical docs
 

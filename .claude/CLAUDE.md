@@ -39,11 +39,19 @@ Stack: Next.js 16, React 19, TypeScript, Tailwind CSS v4, Supabase (PostgreSQL +
 ## Rules index
 
 - Global governance and safety: `/Users/samiserrag/Documents/GitHub/denver-songwriters-collective/.claude/rules/00-governance-and-safety.md`
+- Ingestion and agent-readability stop-gates: `/Users/samiserrag/Documents/GitHub/denver-songwriters-collective/.claude/rules/05-ingestion-and-agent-readability.md`
 - Web product invariants and locked UI behavior: `/Users/samiserrag/Documents/GitHub/denver-songwriters-collective/.claude/rules/10-web-product-invariants.md`
 - Web quality gates: `/Users/samiserrag/Documents/GitHub/denver-songwriters-collective/.claude/rules/20-web-quality-gates.md`
 - Supabase migrations and deploy rules: `/Users/samiserrag/Documents/GitHub/denver-songwriters-collective/.claude/rules/30-supabase-migrations-and-deploy.md`
 - Ops, observability, and debugging guidance: `/Users/samiserrag/Documents/GitHub/denver-songwriters-collective/.claude/rules/40-ops-observability-and-debug.md`
 - Docs workflow and authority: `/Users/samiserrag/Documents/GitHub/denver-songwriters-collective/.claude/rules/50-docs-workflow-and-authority.md`
+
+## Strategy and operating thesis
+
+- Operating thesis: `/Users/samiserrag/Documents/GitHub/denver-songwriters-collective/docs/strategy/OPERATING_THESIS.md`
+- Ingestion and fair-competition policy: `/Users/samiserrag/Documents/GitHub/denver-songwriters-collective/docs/strategy/INGESTION_AND_FAIR_COMPETITION.md`
+- Source registry and verification model (proposed, not active): `/Users/samiserrag/Documents/GitHub/denver-songwriters-collective/docs/strategy/SOURCE_REGISTRY.md`
+- Agentic event maintenance: `/Users/samiserrag/Documents/GitHub/denver-songwriters-collective/docs/strategy/AGENTIC_EVENT_MAINTENANCE.md`
 
 ## Deep reference memory
 
