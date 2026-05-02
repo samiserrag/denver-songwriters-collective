@@ -201,6 +201,13 @@ Trust model: human-in-the-loop at every transition; no auto-merge; supervised ex
 
 This is one of the largest gaps.
 
+Status note (2026-05-02): proposed ADR added in
+`docs/investigation/symphony-orchestrator-state-machine-adr.md`. The ADR
+defines the target state model, transition table, retry/backoff policy,
+reconciliation boundaries, stale recovery semantics, app-server ingestion
+boundary, and implementation slices. It is not active and does not authorize
+operational Symphony use.
+
 #### 7.1 Issue Orchestration States
 
 Spec uses internal `Unclaimed | Claimed | Running | RetryQueued | Released` states distinct from tracker states.
