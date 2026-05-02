@@ -93,18 +93,18 @@ export async function POST(
       );
     }
 
-    // Check for existing pending claim by this user.
+    // Check for existing active claim by this user.
     const { data: existingClaim } = await supabase
       .from("event_claims")
       .select("id")
       .eq("event_id", event.id)
       .eq("requester_id", sessionUser.id)
-      .eq("status", "pending")
+      .in("status", ["pending", "approved"])
       .maybeSingle();
 
     if (existingClaim) {
       return NextResponse.json(
-        { error: "You already have a pending claim for this happening." },
+        { error: "You already have a claim for this happening." },
         { status: 409 }
       );
     }
@@ -122,7 +122,7 @@ export async function POST(
     if (claimError || !claim) {
       if (claimError?.code === "23505") {
         return NextResponse.json(
-          { error: "You already have a pending claim for this happening." },
+          { error: "You already have a claim for this happening." },
           { status: 409 }
         );
       }
