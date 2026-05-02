@@ -22,7 +22,29 @@ Rules:
 
 ## Active claims
 
-No active Track 1 claims.
+### Lane 5 PR A — Event audit log + log-on-write
+
+- **Branch:** `codex/event-audit-pr-a`
+- **Owner:** Claude (Lane 5)
+- **Base SHA:** `a62af398` (current `origin/main` at branch time)
+- **Status:** `awaiting_review`
+- **Files claimed:**
+  - `supabase/migrations/20260502190000_create_event_audit_log.sql`
+  - `web/src/lib/audit/eventAudit.ts`
+  - `web/src/app/api/my-events/route.ts`
+  - `web/src/app/api/my-events/[id]/route.ts`
+  - `web/src/app/api/my-events/[id]/overrides/route.ts`
+  - `web/src/__tests__/event-audit-helper.test.ts`
+  - `web/src/__tests__/event-audit-route-hooks.test.ts`
+  - `docs/investigation/track1-claims.md`
+- **Notes:** Implements PR A from `docs/investigation/event-audit-and-admin-alerts.md` and the Sami-approved defaults from `docs/investigation/event-audit-and-admin-alerts-decision-memo.md` (PRs #193 + #203). Single-PR scope per Sami's §7 #1 answer:
+  - Migration adds `event_audit_log` with `ON DELETE SET NULL` on `event_id` (Sami §7 #6) plus denormalized snapshot columns (`event_id_at_observation`, `event_title_at_observation`, `event_slug_at_observation`, `event_start_date_at_observation`, `event_venue_name_at_observation`) so audit rows survive event deletion.
+  - RLS deny-by-default for `authenticated` + `anon` inserts (rejects forged audit rows); admin SELECT + host/cohost SELECT for events they manage; no UPDATE/DELETE policies (audit rows are immutable from the API). Distinct from the wide-open `app_logs` policy.
+  - Helper `web/src/lib/audit/eventAudit.ts` mirrors the `moderationAudit.ts` pattern: service-role insert, fire-and-forget on error, default-off behind `EVENT_AUDIT_LOG_ENABLED` env var (Sami §7 #9). Mirrors to Axiom via `console.info("[event-audit]", payload)`. Hashes IP with a daily salt — never stores plaintext.
+  - Hooks added to event POST + PATCH + DELETE (hard + soft) + occurrence overrides POST. Action classified by intent (`create`/`update`/`publish`/`unpublish`/`cancel`/`restore`/`cover_update`/`delete`). Source resolved from `ai_write_source` family or body-declared `audit_source` or fallback `manual_form`.
+  - Out of scope (PR B/C): suspicion scorer, admin email/digest, admin UI, public transparency line, RSS/JSON/MCP, retention cleanup function. Trust Layer Invariant respected — retention keys off `actor_role` only, never payment tier.
+
+---
 
 ---
 
