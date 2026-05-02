@@ -134,7 +134,8 @@ type SecondaryBadge =
   | "ticket_link_active"
   | "source_conflict"
   | "claimed_by_venue"
-  | "claimed_by_artist";
+  | "claimed_by_artist"
+  | "claimed_by_organization";
 ```
 
 ### 6.3 Precedence Rule

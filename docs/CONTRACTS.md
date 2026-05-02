@@ -1644,6 +1644,7 @@ The display model uses two independent layers. Detail in [docs/strategy/SOURCE_R
 - `source_conflict`
 - `claimed_by_venue`
 - `claimed_by_artist`
+- `claimed_by_organization`
 
 The primary state asserts the **level** of confidence. Claim modifiers identify **who** claimed.
 
