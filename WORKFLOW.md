@@ -1,39 +1,32 @@
+---
+version: 1
+max_concurrent_agents: 1
+labels:
+  ready: "symphony:ready"
+  running: "symphony:running"
+  humanReview: "symphony:human-review"
+  blocked: "symphony:blocked"
+  general: "symphony"
+workspace:
+  root: ".symphony/worktrees"
+  logs: ".symphony/logs"
+  state: ".symphony/state"
+recovery:
+  stale_running_minutes: 240
+lock:
+  stale_minutes: 240
+codex:
+  adapter: "codex-exec"
+  fallback: "codex exec --json"
+  execution_timeout_minutes: 30
+  execution_timeout_kill_grace_seconds: 15
+---
+
 # Symphony Workflow
 
 This file is the repository-owned policy for the local Symphony runner.
 The runner reads this file before planning work and passes it into Codex
 when an approved issue is executed.
-
-<!-- symphony-config
-{
-  "version": 1,
-  "max_concurrent_agents": 1,
-  "labels": {
-    "ready": "symphony:ready",
-    "running": "symphony:running",
-    "humanReview": "symphony:human-review",
-    "blocked": "symphony:blocked",
-    "general": "symphony"
-  },
-  "workspace": {
-    "root": ".symphony/worktrees",
-    "logs": ".symphony/logs",
-    "state": ".symphony/state"
-  },
-  "recovery": {
-    "stale_running_minutes": 240
-  },
-  "lock": {
-    "stale_minutes": 240
-  },
-  "codex": {
-    "adapter": "codex-exec",
-    "fallback": "codex exec --json",
-    "execution_timeout_minutes": 30,
-    "execution_timeout_kill_grace_seconds": 15
-  }
-}
--->
 
 ## Purpose
 

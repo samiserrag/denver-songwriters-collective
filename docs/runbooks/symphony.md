@@ -76,6 +76,18 @@ npm run symphony:doctor -- --create-labels
 checkout has local changes. Run Symphony from a clean control checkout so
 active Track 1 work cannot bleed into runner operations.
 
+## Workflow Format
+
+`WORKFLOW.md` should start with YAML front matter. The front matter is the
+runtime config; the Markdown body after the closing `---` is the prompt body
+passed to Codex.
+
+Legacy `<!-- symphony-config ... -->` JSON comment blocks still parse during
+the migration window. They are not the canonical format. `doctor` warns on
+legacy format without failing when the config is otherwise valid. In YAML mode,
+stale legacy config comment blocks are stripped from the prompt body so Codex
+does not see duplicate config.
+
 ## Phase 1.2 Pre-Activation Checklist
 
 Before the first live supervised run:

@@ -9,6 +9,10 @@ function check(status, name, detail = "") {
   return { status, name, detail };
 }
 
+export function doctorChecksOk(checks) {
+  return checks.every((item) => item.status !== "fail");
+}
+
 async function checkCommand(command, args) {
   const result = await runCommand(command, args);
   if (result.ok) {
@@ -91,6 +95,9 @@ export async function runDoctor({ repoRoot, createLabels = false, env = process.
     workflow = await loadWorkflow(path.join(repoRoot, "WORKFLOW.md"));
     config = resolveConfig(repoRoot, workflow.config, env);
     checks.push(check("pass", "WORKFLOW.md", `version ${workflow.config.version}`));
+    for (const warning of workflow.warnings || []) {
+      checks.push(check("warn", "WORKFLOW.md", warning));
+    }
   } catch (error) {
     checks.push(check("fail", "WORKFLOW.md", error.message));
   }
@@ -156,7 +163,7 @@ export async function runDoctor({ repoRoot, createLabels = false, env = process.
   }
 
   return {
-    ok: checks.every((item) => item.status === "pass"),
+    ok: doctorChecksOk(checks),
     checks
   };
 }

@@ -1,6 +1,6 @@
 # Symphony Workflow-Format Correction ADR
 
-Status: Proposed for coordinator review
+Status: Accepted and implemented
 Date: 2026-05-02
 Scope: Symphony Phase 2 workflow-format correction stop-gate
 
@@ -27,6 +27,11 @@ Recommended final state:
 
 This ADR is investigation-only. It does not edit runtime code, Symphony code,
 `WORKFLOW.md`, GitHub issues, or live Symphony state.
+
+Implementation note: the follow-up implementation PR made YAML front matter
+canonical, preserved legacy JSON-comment parsing as a warning-only migration
+fallback, and kept `workflow.markdown` as a compatibility alias for the
+resolved `prompt_template`.
 
 ## Context
 
