@@ -694,18 +694,64 @@ These can be re-evaluated per Sami's call as Track 2 progresses.
 
 ## 9. Definition of Done for Track 2
 
-Track 2 is "broad live use" complete when all of:
+Track 2 is "broad live use" complete when all of the following — across the three strategic legs, the supporting infrastructure, and the cross-cutting security/stewardship work:
 
-- Categories support format and discipline as separate dimensions; non-music communities have parity with music.
+**Strategic leg 1 — Host-side concierge (2F):**
+
+- The unified `/dashboard/agent` surface is the documented top-level entry point for hosts.
+- Multipurpose agent handles all Scenario A–E modes from PR #158: cross-event find-and-edit, URL input, AI cancel (per CONTRACTS.md visible-cancel + RSVP notification, exact-context first), Q&A, onboarding.
+- Existing-event AI edit *apply* is unlocked behind 2F.0 hardening (write gate, audit log, rollback affordance).
+- Cross-event match has telemetry, threshold tuning, and accept-rate monitoring.
+- Patch preview ("What changed", PR 11) and confirmation gates (PR 9) preserved across the unified surface.
+
+**Strategic leg 2 — AI agent source optimization (2I):**
+
+- Schema.org Event JSON-LD complete on every public event page (Place sub-schema, organizer, eventStatus, offers, dataModified).
+- Documented stable `/events.json` (or equivalent) public read API with bounded pagination, ETag, no auth.
+- AI-shaped query endpoints serve the natural-language queries AI agents pass through.
+- Cancelled events return 200 with `eventStatus: "EventCancelled"` (consumer-side AI propagates cancellation rather than re-citing as live).
+- Public field allowlists schema-driven; no draft / private / invite-only data leaks (verified by 2I.0 acceptance tests).
+- Per-bot crawler policy decided under 2I.0 ADR; rate limits + caching live.
+
+**Strategic leg 3 — Proactive reality sync (2J):**
+
+- Known-source reverification worker runs on schedule for events/venues with source URLs.
+- Drift detected with evidence-backed alerts (source URL, old, new, confidence, timestamp).
+- Admin/host review queue surfaces drift for human approval.
+- Auto-update limited to low-risk metadata (`last_verified_at`, `source_checked_at`, no-change idempotent updates).
+- Safe URL fetcher (2J.1) is the single in-process boundary; no ad-hoc `fetch(url)` anywhere.
+- LLM-fallback extraction available for non-JSON-LD sources after 2D.2 lands (until then, manual review queue).
+
+**Supporting graph (data foundations):**
+
+- Categories support format AND discipline as separate dimensions; non-music communities have parity with music.
 - Festivals are first-class entities with parent relationships and dedicated landing pages.
 - Performers are first-class entities with at least basic relationships and landing pages.
 - Recurring series have stable identity surviving renames and time changes.
 - URL schedule import works deterministically from JSON-LD with confident dedup; LLM fallback exists for non-structured sites with review UI.
 - Re-imports detect changes and update with appropriate confidence gating.
-- Telemetry covers the full graph + import surface.
-- Operational habits (weekly transcript review, model ID tracking, AI origin classification) are ritualized.
 
-Track 2 does **not** need to ship lineup management, multi-org account redesign, or undo/redo to be considered done.
+**Stewardship and observability (2K):**
+
+- First-party analytics live with the binding stewardship principle and negative contract (see §3 sub-track 2K).
+- Dashboard for partner/funder narrative shipped: monthly uniques, returning visitors, page views, top searches, top categories, RSVP/signup conversion, host signups, repeat hosts, source-verification rate.
+- Privacy policy reflects 2K's actual posture; cookie consent UI lives if non-essential persistent identifiers are introduced.
+- Retention cleanup job scheduled and tested; raw events expire at 90–180 days.
+- Bot/internal/AI-crawler filtering separated from human metrics.
+
+**Cross-cutting security (2L):**
+
+- BOLA + RLS + service-role audit complete with no unresolved gaps.
+- Every endpoint with an ID parameter has documented + tested object-level authorization.
+- Every Supabase `service-role` / admin-client usage documented with rationale.
+- All public RLS policies reviewed and tightened where needed.
+
+**Operational habits:**
+
+- Telemetry covers the full graph + import + agent surface (PR 3 stack extended for new modes).
+- Operational habits (transcript review cadence per §8 question 2, model ID tracking, AI origin classification) are ritualized.
+
+Track 2 does **not** need to ship lineup management, multi-org account redesign, undo/redo, AI delete, or Playwright-heavy lineup discovery to be considered done. See §7 for full deferred list.
 
 ---
 
