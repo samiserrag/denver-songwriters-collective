@@ -2,21 +2,33 @@
 
 ## Current Scope
 
-Symphony Phase 1 is a local runner that uses GitHub Issues as the control
-plane. It does not change the production app, Supabase, Vercel config, or
-public site behavior.
+Symphony is currently prototype infrastructure only. It is not approved for
+operational repo work until the DSC full-spec gate in
+`docs/investigation/symphony-service-spec-v1-dsc.md` is met.
 
-## Phone Workflow
+Do not apply `symphony:ready`, run `once --execute`, run daemon mode, run
+`recover-stale --execute`, set `SYMPHONY_EXECUTION_APPROVED=1`, or use
+Symphony for real coding tasks before that gate is complete.
 
-From GitHub Mobile:
+The existing runner does not change the production app, Supabase, Vercel
+config, or public site behavior by itself. That is not an authorization to use
+it operationally.
 
-1. Create a GitHub Issue in this repo.
-2. Include concrete acceptance criteria and any approved write set.
-3. Add the `symphony:ready` label.
-4. Watch the issue for the `## Codex Workpad` comment.
-5. Review the linked branch or PR when the runner moves the issue to
+## Phone Workflow (Disabled Until Full-Spec Gate)
+
+The GitHub Mobile workflow below is the target control-plane shape, not a
+currently approved operating procedure.
+
+After the DSC full-spec gate is met, a new operating procedure will be needed.
+The earlier target flow was:
+
+1. a GitHub Issue in this repo
+2. concrete acceptance criteria and an approved write set
+3. the prototype ready label present on the issue
+4. the `## Codex Workpad` comment as the phone-visible status surface
+5. linked branch or PR review when the runner moves the issue to
    `symphony:human-review`.
-6. Merge manually only after the usual review and quality gates.
+6. manual merge only after the usual review and quality gates
 
 The runner never auto-merges.
 
@@ -40,7 +52,7 @@ If GitHub auth is valid but labels are missing, create them deliberately:
 npm run symphony:doctor -- --create-labels
 ```
 
-## Local Setup
+## Local Setup (Development and Investigation Only)
 
 1. Repair GitHub auth or export a token:
 
@@ -60,21 +72,22 @@ npm run symphony:doctor -- --create-labels
    npm run symphony:doctor
    ```
 
-3. Run a safe fixture dry-run:
+3. Run a safe fixture dry-run when developing Symphony itself:
 
    ```bash
    node tools/symphony/cli.mjs once --dry-run --mock-issues tools/symphony/examples/issues.sample.json
    ```
 
-4. Run a real GitHub dry-run:
+4. Run a real GitHub dry-run only when Sami has approved the exact
+   investigation. A dry-run is still not authorization to execute work:
 
    ```bash
    npm run symphony:dry-run
    ```
 
-`doctor` fails if `origin/main` is not resolvable or the current
-checkout has local changes. Run Symphony from a clean control checkout so
-active Track 1 work cannot bleed into runner operations.
+`doctor` fails if `origin/main` is not resolvable or the current checkout has
+local changes. Run Symphony development checks from a clean control checkout so
+active Track 1 work cannot bleed into runner artifacts.
 
 ## Workflow Format
 
@@ -88,9 +101,13 @@ legacy format without failing when the config is otherwise valid. In YAML mode,
 stale legacy config comment blocks are stripped from the prompt body so Codex
 does not see duplicate config.
 
-## Phase 1.2 Pre-Activation Checklist
+## Historical Prototype Activation Checklist
 
-Before the first live supervised run:
+This checklist records how the earlier prototype trials were bounded. It is no
+longer an operating procedure for new repo work. Follow
+`docs/investigation/symphony-service-spec-v1-dsc.md` instead.
+
+Historical checklist:
 
 1. Work from a clean control checkout on current `origin/main`, not an
    active Track 1 worktree.
@@ -108,40 +125,33 @@ Before the first live supervised run:
    - `npm run symphony:test` passes.
    ```
 
-6. Add only the explicit `symphony:ready` label.
-7. Run `npm run symphony:dry-run`.
-8. Confirm the dry-run plans exactly one issue, lists skipped issues with
-   reasons, and writes a local run manifest.
-9. Stop. Do not run `once --execute` until Sami separately approves the
-   exact issue and auth setup.
+6. The issue carried only the prototype ready label.
+7. A dry-run was performed.
+8. The dry-run planned exactly one issue, listed skipped issues with
+   reasons, and wrote a local run manifest.
+9. Stop. Do not run `once --execute` unless the DSC full-spec gate is complete
+   and Sami separately approves the exact issue and auth setup.
 
-## Real Execution Gate
+## Live Execution Gate (Currently Closed)
 
-Do not launch autonomous code-writing until Sami separately approves the
-test issue and auth setup.
+Live Symphony execution is closed. The following commands and actions are
+forbidden until the DSC full-spec gate is met:
 
-Approved write sets that include `tools/symphony/**` require explicit
+- applying `symphony:ready`
+- `once --execute`
+- daemon mode
+- `recover-stale --execute`
+- setting `SYMPHONY_EXECUTION_APPROVED=1`
+- using Symphony for real coding tasks
+
+Approved write sets that include `tools/symphony/**` still require explicit
 high-risk approval naming the Symphony self-edit scope; see
-`tools/symphony/README.md` for the exact phrasing.
-
-When approved:
-
-```bash
-SYMPHONY_EXECUTION_APPROVED=1 node tools/symphony/cli.mjs once --execute
-```
-
-`once` defaults to dry-run. Real execution requires both `--execute` and
-`SYMPHONY_EXECUTION_APPROVED=1`.
+`tools/symphony/README.md` for the exact phrasing. That approval is necessary
+for implementation PRs, but it does not reopen live execution.
 
 Real Codex execution is bounded by Symphony's outer timeout. Defaults are
-30 minutes for the Codex child and 15 seconds of termination grace. Override
-only for a supervised run:
-
-```bash
-SYMPHONY_CODEX_EXECUTION_TIMEOUT_MINUTES=45 \
-SYMPHONY_CODEX_EXECUTION_TIMEOUT_KILL_GRACE_SECONDS=20 \
-SYMPHONY_EXECUTION_APPROVED=1 node tools/symphony/cli.mjs once --execute
-```
+30 minutes for the Codex child and 15 seconds of termination grace. This is a
+runtime safety feature in the prototype, not authorization to run it.
 
 Invalid timeout or grace values fail closed before GitHub mutation. If the
 timeout fires, Symphony blocks the issue, removes `symphony:running`,
@@ -150,34 +160,23 @@ updates the workpad with an outer-timeout reason, writes manifest
 terminates the direct Codex child only; descendant process cleanup remains
 a residual manual-audit risk.
 
-Daemon mode has an additional guard:
+## Daemon Controls (Disabled Until Full-Spec Gate)
 
-```bash
-SYMPHONY_ENABLE_DAEMON=1 SYMPHONY_EXECUTION_APPROVED=1 node tools/symphony/cli.mjs daemon --execute
-```
+Daemon mode must not be started until the DSC full-spec gate is met and Sami
+explicitly approves a watched end-to-end daemon trial. A future gate-closing
+trial is not general permission to use daemon mode for repo work.
 
-Keep daemon disabled until 2-3 clean supervised `once --execute` runs have
-completed without stale locks, bad bases, or scope drift.
+Historical daemon shutdown behavior: `Ctrl-C` asks the daemon to stop after any
+active cycle finishes and the local runner lock is released. For emergency
+disable, stop that terminal process and unset `SYMPHONY_ENABLE_DAEMON` before
+launching another Symphony command; env changes do not stop an already-running
+process.
 
-## Daemon Controls
-
-Daemon remains disabled by default. Start it only for a live supervised
-trial with exactly one `symphony:ready` issue and watch the terminal:
-
-```bash
-SYMPHONY_ENABLE_DAEMON=1 SYMPHONY_EXECUTION_APPROVED=1 node tools/symphony/cli.mjs daemon --execute
-```
-
-Stop daemon cleanly with `Ctrl-C` in the terminal running the process.
-The signal asks the daemon to stop after any active cycle finishes and the
-local runner lock is released. For emergency disable, stop that terminal
-process and unset `SYMPHONY_ENABLE_DAEMON` before launching another
-Symphony command; env changes do not stop an already-running process.
-
-After any stop, verify `.symphony/state/runner.lock` is absent. If the
-lock remains, confirm no Symphony process is running before manually
-removing it. Live `recover-stale --execute` remains untested and requires
-separate explicit approval before use.
+After any historical or future stopped trial, verify `.symphony/state/runner.lock`
+is absent. If the lock remains, confirm no Symphony process is running before
+manually removing it. Live `recover-stale --execute` remains unproven and must
+only run as a separately approved gate-closing test, not as an operational
+recovery path.
 
 ### Supervised activation log
 
@@ -214,28 +213,19 @@ removing it manually. Execute paths do not auto-delete stale locks.
 
 ## Recovery
 
-If a run fails:
+If a historical prototype run failed:
 
 1. Stop the runner.
 2. Read the issue workpad comment, run manifest, and
    `.symphony/logs/issue-<n>.jsonl`.
    If the manifest has `outcome.reason: "outer_timeout"`, inspect the
    timeout metadata and confirm no descendant process remains before retry.
-3. Dry-run stale running recovery:
+3. Dry-run stale running recovery only when Sami approves the exact
+   investigation.
 
-   ```bash
-   npm run symphony:recover-stale
-   ```
-
-4. If the dry-run identifies stale `symphony:running` issues and Sami has
-   approved recovery, move them to `symphony:blocked`:
-
-   ```bash
-   SYMPHONY_EXECUTION_APPROVED=1 node tools/symphony/cli.mjs recover-stale --execute
-   ```
-
-   Recovery only clears stale running locks by blocking the issue; it
-   does not launch replacement Codex work.
+4. Do not run `recover-stale --execute` unless Sami approves the exact
+   gate-closing test issue. Recovery only clears stale running locks by
+   blocking the issue; it does not launch replacement Codex work.
 
 5. Move the issue to `symphony:blocked` manually if the runner did not do
    so and recovery is not appropriate.

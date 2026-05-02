@@ -24,20 +24,29 @@ codex:
 
 # Symphony Workflow
 
-This file is the repository-owned policy for the local Symphony runner.
-The runner reads this file before planning work and passes it into Codex
-when an approved issue is executed.
+This file is the repository-owned policy target for the local Symphony runner.
+Current Symphony is prototype infrastructure only. It is not approved for
+operational repo work until the DSC full-spec gate in
+`docs/investigation/symphony-service-spec-v1-dsc.md` is met.
+
+Do not apply `symphony:ready`, run `once --execute`, run daemon mode, run
+`recover-stale --execute`, set `SYMPHONY_EXECUTION_APPROVED=1`, or use
+Symphony for real coding tasks before that gate is complete.
 
 ## Purpose
 
-Symphony lets Sami manage repo-agent work from GitHub Issues, including
-from GitHub Mobile. It is an orchestration layer, not a replacement for
-repo governance.
+The target DSC design lets Sami manage repo-agent work from GitHub Issues,
+including from GitHub Mobile. It is an orchestration layer, not a replacement
+for repo governance.
 
-## Pickup Rules
+## Target Pickup Rules
 
-The runner may only consider GitHub Issues that meet all of these
-conditions:
+The following rules describe the future eligibility contract. They are not
+authorization to stage or execute live Symphony work before the DSC full-spec
+gate is met.
+
+When operational use is later approved, the runner may only consider GitHub
+Issues that meet all of these conditions:
 
 - issue is open
 - issue is not a pull request
@@ -52,20 +61,24 @@ conditions:
 
 The runner must never infer work from unlabeled issues.
 
-## Phase 1.2 Pre-Activation Checklist
+## Historical Phase 1.2 Pre-Activation Checklist
 
-Before Sami tries the first live supervised run:
+This checklist records the earlier prototype activation pattern. It is no
+longer an operating procedure for new repo work.
 
-1. Use a clean control checkout on current `origin/main`.
-2. Run `npm run symphony:doctor` until every check passes.
-3. Create one deliberately small issue with `symphony:ready`.
-4. Include an `Approved write set` section and an `Acceptance criteria`
+Historical trials used:
+
+1. a clean control checkout on current `origin/main`
+2. `npm run symphony:doctor` passing
+3. one deliberately small issue carrying the prototype ready label
+4. an `Approved write set` section and an `Acceptance criteria`
    section in the issue body.
-5. Run `npm run symphony:dry-run` and confirm exactly one issue is
+5. a dry-run confirming exactly one issue was
    planned, skipped issues have deterministic reasons, and a local run
-   manifest is written.
-6. Do not run `once --execute` until Sami separately approves the exact
-   test issue and auth setup.
+   manifest was written
+
+Do not repeat the live portions of this checklist until the DSC full-spec gate
+is complete.
 
 ## Concurrency
 
@@ -101,9 +114,9 @@ scope updates, and phone-side clarifications are visible to the worker.
 
 `symphony:running` is treated as an active lock until it is explicitly
 cleared. A runner may only move stale running issues to
-`symphony:blocked` through the explicit stale recovery command. Recovery
-must be dry-run first and real recovery must use the same execution gate
-as autonomous work.
+`symphony:blocked` through the explicit stale recovery command after a
+separate gate-closing test approval. Recovery must be dry-run first, and live
+recovery is not an operational path until the DSC full-spec gate is met.
 
 The stale threshold is configured as `stale_running_minutes`. Phase 1.1
 starts at 240 minutes to avoid recovering a genuinely active local run.
@@ -124,7 +137,8 @@ lock manually only after confirming no Symphony process is still running.
 
 ## Issue Template Guidance
 
-Use this minimum shape for activation issues:
+Future operational activation issues must use an approved template. The
+historical minimum shape was:
 
 ```markdown
 ## Approved write set
@@ -152,8 +166,8 @@ must fail closed.
 - no edits outside the issue's approved write set
 - no pushes or PR creation unless GitHub auth is valid and the issue
   explicitly calls for a PR handoff
-- daemon remains disabled until 2-3 clean supervised `once --execute`
-  runs have completed without stale locks, bad bases, or scope drift
+- daemon remains disabled until the DSC full-spec gate is met and Sami
+  explicitly approves a watched gate-closing trial
 
 ## Workpad Comment
 
@@ -175,13 +189,10 @@ include:
 
 ## Codex Adapter
 
-Phase 1 uses a runner adapter boundary. The default adapter is
-`codex-exec`, which launches:
-
-```bash
-codex exec --json
-```
+Phase 1/2 uses a runner adapter boundary. The current `codex-exec` adapter is
+a temporary prototype adapter unless a future ADR explicitly approves it as the
+DSC full-spec replacement for the original app-server transport.
 
 Codex App Server is still checked by `symphony:doctor` because it is the
-long-term transport target, but Phase 1 does not expose it over the
+long-term transport target, but the prototype does not expose it over the
 network and does not depend on a public listener.
