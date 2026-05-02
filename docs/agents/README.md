@@ -11,6 +11,7 @@ Standing briefs and bootstrap prompts for the current multi-lane workflow.
 | Lane 3 | Symphony | Symphony prototype/spec-completion implementation, tests, and docs. |
 | Lane 4 | Symphony helper | Read-only Symphony critique, audits, and decision memos unless explicitly assigned implementation. |
 | Lane 5 | Event audit/admin alerts/growth | Event audit, admin alerting, and growth-surface planning. Defaults to docs-only investigation until stop-gates are approved. |
+| Lane 6 | Strategy/public-good infrastructure policy | Operating thesis, ingestion ethics, source registry, verification model, agentic maintenance policy, and trust-layer governance. Docs-only by default. |
 
 ## Brief Files
 
@@ -20,7 +21,7 @@ Standing briefs and bootstrap prompts for the current multi-lane workflow.
 | `docs/agents/claude-builder.md` | Legacy Track 1 Claude builder defaults. Use only as a protocol reference when a coordinator prompt assigns Claude work. |
 | `docs/agents/codex-builder.md` | Legacy Track 1 Codex builder defaults and Codex Cloud caveats. Use only as a protocol reference when a coordinator prompt assigns Codex work. |
 
-The coordinator prompt is authoritative for current lane assignment. If a builder brief says "Track 1" but the coordinator prompt assigns Lane 2, Lane 3, Lane 4, or Lane 5, follow the coordinator prompt for scope and files.
+The coordinator prompt is authoritative for current lane assignment. If a builder brief says "Track 1" but the coordinator prompt assigns Lane 2, Lane 3, Lane 4, Lane 5, or Lane 6, follow the coordinator prompt for scope and files.
 
 ## Bootstrap Prompts
 
@@ -52,6 +53,12 @@ Read AGENTS.md, docs/GOVERNANCE.md, docs/investigation/symphony-service-spec-v1-
 
 ```text
 Read AGENTS.md and docs/GOVERNANCE.md. Then read the Lane 5 prompt from the coordinator. Start with docs-only event audit/admin alerts/growth investigation unless Sami has explicitly approved runtime work.
+```
+
+**Fresh Lane 6 strategy thread:**
+
+```text
+Read AGENTS.md, docs/GOVERNANCE.md, docs/strategy/OPERATING_THESIS.md, docs/strategy/INGESTION_AND_FAIR_COMPETITION.md, docs/strategy/SOURCE_REGISTRY.md, docs/strategy/AGENTIC_EVENT_MAINTENANCE.md, .claude/rules/05-ingestion-and-agent-readability.md, and the Trust Layer Invariant in .claude/rules/00-governance-and-safety.md. Then read the Lane 6 prompt from the coordinator. Stay docs-only unless Sami explicitly approves a stop-gated implementation phase.
 ```
 
 ## How The Loop Works
