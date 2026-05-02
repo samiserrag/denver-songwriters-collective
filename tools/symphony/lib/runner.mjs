@@ -799,7 +799,59 @@ export async function runOnce({
   }
 }
 
-export async function runDaemon({ repoRoot, dryRun = true, intervalSeconds = 120, env = process.env }) {
+function installDaemonSignalHandlers({ controller, processLike = process }) {
+  if (!processLike || typeof processLike.once !== "function" || typeof processLike.off !== "function") {
+    return () => {};
+  }
+  const stopOnSignal = (signalName) => {
+    if (!controller.signal.aborted) {
+      controller.abort(signalName);
+    }
+  };
+  const onSigint = () => stopOnSignal("SIGINT");
+  const onSigterm = () => stopOnSignal("SIGTERM");
+  processLike.once("SIGINT", onSigint);
+  processLike.once("SIGTERM", onSigterm);
+  return () => {
+    processLike.off("SIGINT", onSigint);
+    processLike.off("SIGTERM", onSigterm);
+  };
+}
+
+function daemonStopReason(signal) {
+  const reason = signal?.reason;
+  return typeof reason === "string" ? `daemon stopped by ${reason}` : "daemon stopped";
+}
+
+async function waitForNextDaemonCycle(milliseconds, signal) {
+  if (signal?.aborted) {
+    return;
+  }
+  await new Promise((resolve) => {
+    let timeout;
+    const stop = () => {
+      clearTimeout(timeout);
+      signal?.removeEventListener("abort", stop);
+      resolve();
+    };
+    timeout = setTimeout(() => {
+      signal?.removeEventListener("abort", stop);
+      resolve();
+    }, milliseconds);
+    signal?.addEventListener("abort", stop, { once: true });
+  });
+}
+
+export async function runDaemon({
+  repoRoot,
+  dryRun = true,
+  intervalSeconds = 120,
+  env = process.env,
+  signal = null,
+  processLike = process,
+  runOnceFn = runOnce,
+  sleepFn = waitForNextDaemonCycle
+}) {
   if (env.SYMPHONY_ENABLE_DAEMON !== "1") {
     return {
       ok: false,
@@ -810,6 +862,11 @@ export async function runDaemon({ repoRoot, dryRun = true, intervalSeconds = 120
 
   const workflow = await loadWorkflow(path.join(repoRoot, "WORKFLOW.md"));
   const config = resolveConfig(repoRoot, workflow.config, env);
+  const controller = signal ? null : new AbortController();
+  const stopSignal = signal || controller.signal;
+  const removeSignalHandlers = controller
+    ? installDaemonSignalHandlers({ controller, processLike })
+    : () => {};
   let lock;
   try {
     lock = await acquireRunnerLock({
@@ -820,6 +877,7 @@ export async function runDaemon({ repoRoot, dryRun = true, intervalSeconds = 120
       staleMs: config.lockStaleMs
     });
   } catch (error) {
+    removeSignalHandlers();
     return {
       ok: false,
       mode: "daemon",
@@ -829,13 +887,23 @@ export async function runDaemon({ repoRoot, dryRun = true, intervalSeconds = 120
   }
 
   try {
-    while (true) {
-      await runOnce({ repoRoot, dryRun, execute: !dryRun, env, skipLock: true });
-      await new Promise((resolve) => {
-        setTimeout(resolve, intervalSeconds * 1000);
-      });
+    let iterations = 0;
+    while (!stopSignal.aborted) {
+      await runOnceFn({ repoRoot, dryRun, execute: !dryRun, env, skipLock: true });
+      iterations += 1;
+      if (stopSignal.aborted) {
+        break;
+      }
+      await sleepFn(intervalSeconds * 1000, stopSignal);
     }
+    return {
+      ok: true,
+      mode: "daemon",
+      iterations,
+      reason: daemonStopReason(stopSignal)
+    };
   } finally {
+    removeSignalHandlers();
     await lock.release();
   }
 }

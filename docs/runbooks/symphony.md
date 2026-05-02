@@ -140,9 +140,10 @@ SYMPHONY_ENABLE_DAEMON=1 SYMPHONY_EXECUTION_APPROVED=1 node tools/symphony/cli.m
 ```
 
 Stop daemon cleanly with `Ctrl-C` in the terminal running the process.
-For emergency disable, stop that terminal process and unset
-`SYMPHONY_ENABLE_DAEMON` before launching another Symphony command; env
-changes do not stop an already-running process.
+The signal asks the daemon to stop after any active cycle finishes and the
+local runner lock is released. For emergency disable, stop that terminal
+process and unset `SYMPHONY_ENABLE_DAEMON` before launching another
+Symphony command; env changes do not stop an already-running process.
 
 After any stop, verify `.symphony/state/runner.lock` is absent. If the
 lock remains, confirm no Symphony process is running before manually
