@@ -25,18 +25,20 @@ describe("Phase 1.41: Location Filter Visibility", () => {
     });
 
     it("Radius select exists with default options", () => {
-      // Contract: Radius options must include 5, 10, 25, 50 miles
+      // Contract: Radius options must include 5, 10, 15, 25, 50 miles
       const RADIUS_OPTIONS = [
         { value: "5", label: "5 miles" },
         { value: "10", label: "10 miles" },
+        { value: "15", label: "15 miles" },
         { value: "25", label: "25 miles" },
         { value: "50", label: "50 miles" },
       ];
-      expect(RADIUS_OPTIONS).toHaveLength(4);
+      expect(RADIUS_OPTIONS).toHaveLength(5);
       expect(RADIUS_OPTIONS[0].value).toBe("5");
       expect(RADIUS_OPTIONS[1].value).toBe("10");
-      expect(RADIUS_OPTIONS[2].value).toBe("25");
-      expect(RADIUS_OPTIONS[3].value).toBe("50");
+      expect(RADIUS_OPTIONS[2].value).toBe("15");
+      expect(RADIUS_OPTIONS[3].value).toBe("25");
+      expect(RADIUS_OPTIONS[4].value).toBe("50");
     });
   });
 

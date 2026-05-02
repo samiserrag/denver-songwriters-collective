@@ -80,12 +80,13 @@ describe("Phase 1.4: Location Filter", () => {
     it("accepts valid radius values", () => {
       expect(normalizeRadiusMiles("5")).toBe(5);
       expect(normalizeRadiusMiles("10")).toBe(10);
+      expect(normalizeRadiusMiles("15")).toBe(15);
       expect(normalizeRadiusMiles("25")).toBe(25);
       expect(normalizeRadiusMiles("50")).toBe(50);
     });
 
     it("VALID_RADII contains expected values", () => {
-      expect(VALID_RADII).toEqual([5, 10, 25, 50]);
+      expect(VALID_RADII).toEqual([5, 10, 15, 25, 50]);
     });
 
     it("DEFAULT_RADIUS is 10", () => {
@@ -277,10 +278,11 @@ describe("Phase 1.4: UI Integration Contracts", () => {
       expect(true).toBe(true);
     });
 
-    it("radius param accepts 5, 10, 25, 50", () => {
+    it("radius param accepts 5, 10, 15, 25, 50", () => {
       // /happenings?city=Denver&radius=25 → 25 mile radius
       expect(VALID_RADII).toContain(5);
       expect(VALID_RADII).toContain(10);
+      expect(VALID_RADII).toContain(15);
       expect(VALID_RADII).toContain(25);
       expect(VALID_RADII).toContain(50);
     });

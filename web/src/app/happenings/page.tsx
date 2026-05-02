@@ -48,7 +48,7 @@ export const dynamic = "force-dynamic";
  * - date: YYYY-MM-DD single-date filter (applies to timeline/series/map)
  * - city: city name for location filter (Phase 1.4)
  * - zip: ZIP code for location filter (Phase 1.4, wins over city if both present)
- * - radius: radius in miles for nearby venues (Phase 1.4, default: 10, valid: 5|10|25|50)
+ * - radius: radius in miles for nearby venues (Phase 1.4, default: 10, valid: 5|10|15|25|50)
  */
 interface HappeningsSearchParams {
   q?: string;

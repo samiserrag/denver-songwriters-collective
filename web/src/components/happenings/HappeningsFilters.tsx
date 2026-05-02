@@ -23,7 +23,7 @@
  * - days: comma-separated day abbreviations (mon,tue,wed,etc.) - Phase 4.8
  * - city: city name for nearby filter - Phase 1.4
  * - zip: ZIP code for nearby filter - Phase 1.4
- * - radius: radius in miles (5|10|25|50, default 10) - Phase 1.4
+ * - radius: radius in miles (5|10|15|25|50, default 10) - Phase 1.4
  */
 
 import * as React from "react";
@@ -117,6 +117,7 @@ const DAY_OPTIONS = [
 const RADIUS_OPTIONS = [
   { value: "5", label: "5 miles" },
   { value: "10", label: "10 miles" },
+  { value: "15", label: "15 miles" },
   { value: "25", label: "25 miles" },
   { value: "50", label: "50 miles" },
 ] as const;
