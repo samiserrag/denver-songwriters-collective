@@ -535,6 +535,57 @@ Grouping missing/partial items into coherent sub-tracks. Each is a Phase 2 candi
 
 **Estimate:** 6-9 PRs. Requires Phase 2.A to be useful (token totals, stall detection depend on app-server protocol).
 
+#### Phase 2.B closeout status (2026-05-02)
+
+Phase 2.B Slice A-E is complete as a **pure offline orchestration core**. This
+does not make Symphony operational, does not authorize runner/CLI wiring, and
+does not soften the DSC prototype-only gate.
+
+Shipped helper surface:
+
+- `tools/symphony/lib/orchestratorState.mjs` — state constants, reducer,
+  transition action/durable-write intents, retry classification, max-attempt
+  policy, and exponential backoff calculation.
+- `tools/symphony/lib/orchestratorStateManifest.mjs` — versioned local
+  orchestrator state snapshot schema, validation, and temp-file-friendly
+  read/write helpers.
+- `tools/symphony/lib/orchestratorReconcile.mjs` — pure dry-run reconciliation
+  decisions from fake/current issue, workflow, workspace, lock, and clock
+  evidence.
+- `tools/symphony/lib/orchestratorAdapterIngest.mjs` — pure app-server adapter
+  result/snapshot ingestion into reducer events and next-snapshot fields.
+- `tools/symphony/lib/orchestratorHarness.mjs` — fake end-to-end harness that
+  composes the Slice A-D helpers with temp manifests and synthetic observations.
+
+These files are intentionally unwired from `runner.mjs` and `cli.mjs`.
+Production behavior still uses the existing prototype path. No live Symphony,
+daemon, execute, app-server invocation, or GitHub issue mutation is authorized
+by this closeout.
+
+Remaining gates, in recommended order:
+
+1. Status snapshot schema / pure runtime status aggregator.
+2. Token, rate-limit, and session accounting aggregation.
+3. Dynamic `WORKFLOW.md` reload + policy drift ADR.
+4. Workspace hooks + sandbox posture ADR.
+5. App-server real-capture policy / adapter selection.
+6. Dry-run-only CLI/status path.
+7. Runner preflight snapshot writes.
+8. Dry-run reconciliation against non-mutating issue snapshots.
+9. App-server adapter integration behind a non-default test flag.
+10. Supervised disposable stale recovery proof.
+11. One-issue daemon trial.
+
+The next pure helper slice should promote the runtime status shape from
+`docs/investigation/symphony-orchestrator-state-machine-adr.md` §10 into a
+non-operational aggregator. That helper should read validated snapshots as plain
+input, derive operator-facing status, preserve terminal and adapter metadata
+without reinterpreting unknown payloads, and return data only.
+
+Separate repo-hygiene follow-up: fresh worktrees have recurring dependency
+friction around the exact `yaml@2.5.1` pin. Track that as dependency hygiene,
+not as part of the Phase 2.B closeout or status-aggregator slice.
+
 ### Phase 2.C — Workspace Hook Lifecycle
 
 **Why this matters:** lets `WORKFLOW.md` define workspace bootstrap (e.g., dependency install) and cleanup behaviors per repo without changing Symphony code.
