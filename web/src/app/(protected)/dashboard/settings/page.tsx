@@ -694,6 +694,7 @@ export default function SettingsPage() {
                     >
                       <option value="5">5 miles</option>
                       <option value="10">10 miles</option>
+                      <option value="15">15 miles</option>
                       <option value="25">25 miles</option>
                       <option value="50">50 miles</option>
                     </select>

@@ -13,7 +13,7 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 
 // Valid radius options in miles
-export const VALID_RADII = [5, 10, 25, 50] as const;
+export const VALID_RADII = [5, 10, 15, 25, 50] as const;
 export type ValidRadius = (typeof VALID_RADII)[number];
 export const DEFAULT_RADIUS: ValidRadius = 10;
 
