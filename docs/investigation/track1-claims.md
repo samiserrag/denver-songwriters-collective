@@ -46,6 +46,20 @@ Rules:
 
 ---
 
+### Lane 6 PR-226 — event_sources registry table (Step 3a, inert)
+
+- **Branch:** `codex/source-observation-step-3a-execute`
+- **Owner:** Claude (Lane 6)
+- **Base SHA:** `ec1504466cfc81b0d771cc43c41257323366aaf2` (PR #222 merge commit on `main`)
+- **Status:** `awaiting_review`
+- **Files claimed:**
+  - `supabase/migrations/20260503000000_event_sources_registry.sql`
+  - `web/src/__tests__/source-observation-step-3a-event-sources.test.ts`
+  - `docs/investigation/track1-claims.md`
+- **Notes:** Implements Step 3a of the SOURCE-OBS-01 data-model phase per `docs/investigation/source-observation-step-3a-migration-brief.md` (PR #222, merged). Creates `public.event_sources` as an inert registry backbone with admin-only RLS — no application reader or writer, no SECURITY INVOKER public view, no `claim_status` maintenance trigger (deferred to step 3e). Honors decision-memo Q2/Q4: no UNIQUE on `homepage_url`/`feed_url`; `claim_status` defaults to `'unclaimed'` and is inert. No production verification behavior changes — `last_verified_at IS NOT NULL ⇒ Confirmed` remains the only active rule per Phase 4.89 invariants in `.claude/rules/10-web-product-invariants.md`. `web/src/lib/events/verification.ts` is not modified. SOURCE-OBS-01 in `docs/CONTRACTS.md` remains Draft / Proposed / Not Active. Migration is not yet applied to any DB; the apply step is a separate stop-gate per `.claude/rules/30-supabase-migrations-and-deploy.md`.
+
+---
+
 ---
 
 Strategic-doc PR state as of this sync:
