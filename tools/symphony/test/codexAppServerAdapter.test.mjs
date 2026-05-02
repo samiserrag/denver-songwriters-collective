@@ -158,11 +158,32 @@ test("runCodexAppServerAdapter completes a single app-server turn and preserves 
     total_tokens: 14
   });
   assert.deepEqual(result.rate_limits, { requests_remaining: 99 });
+  assert.deepEqual(result.adapter_state_snapshot, {
+    pid: 12345,
+    thread_id: "thread-1",
+    turn_id: "turn-1",
+    session_id: "thread-1-turn-1",
+    turn_count: 1,
+    last_protocol_event: "turn/completed",
+    last_protocol_event_at: "2026-05-02T00:00:00.000Z",
+    token_usage: {
+      input_tokens: 10,
+      output_tokens: 4,
+      total_tokens: 14
+    },
+    rate_limits: { requests_remaining: 99 },
+    adapter_events_count: 6,
+    protocol_events_count: 5,
+    terminal_status: "completed",
+    terminal_reason: "turn_completed",
+    ok: true
+  });
   assert.deepEqual(child.killSignals, ["SIGTERM"]);
   assertNoActiveTimers(timerHarness);
 
   const log = await readFile(logPath, "utf8");
   assert.match(log, /symphony_app_server_adapter_result/);
+  assert.match(log, /symphony_app_server_adapter_state_snapshot/);
   assert.match(log, /thread-1-turn-1/);
   assert.match(result.stderr, /turn\/completed/);
 });
@@ -475,6 +496,22 @@ test("runCodexAppServerAdapter fails when the process exits before completion", 
   assert.equal(result.ok, false);
   assert.equal(result.reason, "process_exit_before_completion");
   assert.equal(result.code, 1);
+  assert.deepEqual(result.adapter_state_snapshot, {
+    pid: 12345,
+    thread_id: null,
+    turn_id: null,
+    session_id: null,
+    turn_count: 0,
+    last_protocol_event: null,
+    last_protocol_event_at: null,
+    token_usage: null,
+    rate_limits: null,
+    adapter_events_count: 2,
+    protocol_events_count: 1,
+    terminal_status: "failed",
+    terminal_reason: "process_exit_before_completion",
+    ok: false
+  });
   assertNoActiveTimers(timerHarness);
 });
 

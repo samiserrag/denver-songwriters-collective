@@ -223,6 +223,9 @@ function appendAdapterLog({ stdout, stderr, protocolEvents, result }) {
     event: "symphony_app_server_adapter_result",
     result
   })}\n${JSON.stringify({
+    event: "symphony_app_server_adapter_state_snapshot",
+    snapshot: result.adapter_state_snapshot ?? null
+  })}\n${JSON.stringify({
     event: "symphony_app_server_protocol_events",
     events: protocolEvents
   })}\n${JSON.stringify({
@@ -285,6 +288,25 @@ export async function runCodexAppServerAdapter({
     return threadId && turnId ? `${threadId}-${turnId}` : null;
   }
 
+  function buildStateSnapshot(result) {
+    return {
+      pid: child.pid ?? null,
+      thread_id: threadId,
+      turn_id: turnId,
+      session_id: sessionId(),
+      turn_count: turnCount,
+      last_protocol_event: lastEventName,
+      last_protocol_event_at: lastEventAt,
+      token_usage: tokenUsage,
+      rate_limits: rateLimits,
+      adapter_events_count: adapterEvents.length,
+      protocol_events_count: protocolEvents.length,
+      terminal_status: result.ok ? "completed" : "failed",
+      terminal_reason: result.reason ?? null,
+      ok: result.ok
+    };
+  }
+
   function clearTimer(timer) {
     if (timer) {
       clearTimeoutFn(timer);
@@ -310,6 +332,7 @@ export async function runCodexAppServerAdapter({
     }
     settled = true;
     clearAllTimers();
+    const adapterStateSnapshot = buildStateSnapshot(result);
     const finalResult = {
       ...result,
       logPath,
@@ -324,7 +347,8 @@ export async function runCodexAppServerAdapter({
       token_usage: tokenUsage,
       rate_limits: rateLimits,
       protocol_events: protocolEvents,
-      adapter_events: adapterEvents
+      adapter_events: adapterEvents,
+      adapter_state_snapshot: adapterStateSnapshot
     };
     try {
       await writeFile(logPath, appendAdapterLog({
