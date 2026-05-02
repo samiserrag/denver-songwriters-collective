@@ -88,6 +88,10 @@ function sentMessages(child) {
   return child.stdin.writes.map((line) => JSON.parse(line));
 }
 
+function assertNoActiveTimers(timerHarness) {
+  assert.deepEqual(timerHarness.timers.filter((timer) => !timer.cleared), []);
+}
+
 test("buildCodexAppServerLaunch uses a shell command for the app-server process", () => {
   assert.deepEqual(buildCodexAppServerLaunch({ command: "codex app-server" }), {
     command: "bash",
@@ -154,8 +158,7 @@ test("runCodexAppServerAdapter completes a single app-server turn and preserves 
   });
   assert.deepEqual(result.rate_limits, { requests_remaining: 99 });
   assert.deepEqual(child.killSignals, ["SIGTERM"]);
-  assert.equal(timerHarness.activeTimer(5000), undefined);
-  assert.equal(timerHarness.activeTimer(60000), undefined);
+  assertNoActiveTimers(timerHarness);
 
   const log = await readFile(logPath, "utf8");
   assert.match(log, /symphony_app_server_adapter_result/);
@@ -178,8 +181,38 @@ test("runCodexAppServerAdapter buffers partial stdout lines before parsing", asy
   assert.equal(result.session_id, "thread-split-turn-split");
 });
 
-test("runCodexAppServerAdapter fails closed on malformed JSON protocol lines", async () => {
+test("runCodexAppServerAdapter parses a valid final stdout buffer on process close", async () => {
   const { child, resultPromise } = await startAdapter();
+
+  child.stdout.emit("data", protocolLine({ id: 1, result: {} }));
+  child.stdout.emit("data", protocolLine({ id: 2, result: { thread: { id: "thread-tail" } } }));
+  child.stdout.emit("data", protocolLine({ id: 3, result: { turn: { id: "turn-tail" } } }));
+  child.stdout.emit("data", JSON.stringify({ method: "turn/completed" }));
+  child.emit("close", 0, null);
+
+  const result = await resultPromise;
+  assert.equal(result.ok, true);
+  assert.equal(result.reason, "turn_completed");
+  assert.equal(result.session_id, "thread-tail-turn-tail");
+});
+
+test("runCodexAppServerAdapter fails closed on an invalid final stdout buffer", async () => {
+  const { child, resultPromise, timerHarness } = await startAdapter();
+
+  child.stdout.emit("data", protocolLine({ id: 1, result: {} }));
+  child.stdout.emit("data", "{unterminated");
+  child.emit("close", 1, null);
+
+  const result = await resultPromise;
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, "malformed_protocol_message");
+  assert.equal(result.unterminated, true);
+  assert.deepEqual(child.killSignals, ["SIGTERM"]);
+  assertNoActiveTimers(timerHarness);
+});
+
+test("runCodexAppServerAdapter fails closed on malformed JSON protocol lines", async () => {
+  const { child, resultPromise, timerHarness } = await startAdapter();
 
   child.stdout.emit("data", "{not json}\n");
 
@@ -187,6 +220,89 @@ test("runCodexAppServerAdapter fails closed on malformed JSON protocol lines", a
   assert.equal(result.ok, false);
   assert.equal(result.reason, "malformed_protocol_message");
   assert.deepEqual(child.killSignals, ["SIGTERM"]);
+  assertNoActiveTimers(timerHarness);
+});
+
+test("runCodexAppServerAdapter fails closed on initialize JSON-RPC errors", async () => {
+  const { child, resultPromise, timerHarness } = await startAdapter();
+
+  child.stdout.emit("data", protocolLine({
+    id: 1,
+    error: { code: -32603, message: "initialize failed" }
+  }));
+
+  const result = await resultPromise;
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, "initialize_error");
+  assert.deepEqual(result.responseError, { code: -32603, message: "initialize failed" });
+  assert.deepEqual(child.killSignals, ["SIGTERM"]);
+  assertNoActiveTimers(timerHarness);
+});
+
+test("runCodexAppServerAdapter fails closed on thread/start JSON-RPC errors", async () => {
+  const { child, resultPromise, timerHarness } = await startAdapter();
+
+  child.stdout.emit("data", protocolLine({ id: 1, result: {} }));
+  child.stdout.emit("data", protocolLine({
+    id: 2,
+    error: { code: -32000, message: "thread start failed" }
+  }));
+
+  const result = await resultPromise;
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, "thread_start_error");
+  assert.deepEqual(result.responseError, { code: -32000, message: "thread start failed" });
+  assert.deepEqual(child.killSignals, ["SIGTERM"]);
+  assertNoActiveTimers(timerHarness);
+});
+
+test("runCodexAppServerAdapter fails closed on turn/start JSON-RPC errors", async () => {
+  const { child, resultPromise, timerHarness } = await startAdapter();
+
+  child.stdout.emit("data", protocolLine({ id: 1, result: {} }));
+  child.stdout.emit("data", protocolLine({ id: 2, result: { thread: { id: "thread-error" } } }));
+  child.stdout.emit("data", protocolLine({
+    id: 3,
+    error: { code: -32000, message: "turn start failed" }
+  }));
+
+  const result = await resultPromise;
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, "turn_start_error");
+  assert.equal(result.thread_id, "thread-error");
+  assert.deepEqual(result.responseError, { code: -32000, message: "turn start failed" });
+  assert.deepEqual(child.killSignals, ["SIGTERM"]);
+  assertNoActiveTimers(timerHarness);
+});
+
+test("runCodexAppServerAdapter fails closed when thread/start omits thread id", async () => {
+  const { child, resultPromise, timerHarness } = await startAdapter();
+
+  child.stdout.emit("data", protocolLine({ id: 1, result: {} }));
+  child.stdout.emit("data", protocolLine({ id: 2, result: { thread: {} } }));
+
+  const result = await resultPromise;
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, "missing_thread_id");
+  assert.equal(result.thread_id, null);
+  assert.deepEqual(child.killSignals, ["SIGTERM"]);
+  assertNoActiveTimers(timerHarness);
+});
+
+test("runCodexAppServerAdapter fails closed when turn/start omits turn id", async () => {
+  const { child, resultPromise, timerHarness } = await startAdapter();
+
+  child.stdout.emit("data", protocolLine({ id: 1, result: {} }));
+  child.stdout.emit("data", protocolLine({ id: 2, result: { thread: { id: "thread-no-turn" } } }));
+  child.stdout.emit("data", protocolLine({ id: 3, result: { turn: {} } }));
+
+  const result = await resultPromise;
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, "missing_turn_id");
+  assert.equal(result.thread_id, "thread-no-turn");
+  assert.equal(result.turn_id, null);
+  assert.deepEqual(child.killSignals, ["SIGTERM"]);
+  assertNoActiveTimers(timerHarness);
 });
 
 test("runCodexAppServerAdapter maps turn/failed to a failed result", async () => {
@@ -202,6 +318,22 @@ test("runCodexAppServerAdapter maps turn/failed to a failed result", async () =>
   assert.equal(result.reason, "turn_failed");
   assert.equal(result.session_id, "thread-fail-turn-fail");
   assert.deepEqual(child.killSignals, ["SIGTERM"]);
+});
+
+test("runCodexAppServerAdapter maps turn/cancelled to a failed result", async () => {
+  const { child, resultPromise, timerHarness } = await startAdapter();
+
+  child.stdout.emit("data", protocolLine({ id: 1, result: {} }));
+  child.stdout.emit("data", protocolLine({ id: 2, result: { thread_id: "thread-cancel" } }));
+  child.stdout.emit("data", protocolLine({ id: 3, result: { turn_id: "turn-cancel" } }));
+  child.stdout.emit("data", protocolLine({ method: "turn/cancelled" }));
+
+  const result = await resultPromise;
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, "turn_cancelled");
+  assert.equal(result.session_id, "thread-cancel-turn-cancel");
+  assert.deepEqual(child.killSignals, ["SIGTERM"]);
+  assertNoActiveTimers(timerHarness);
 });
 
 test("runCodexAppServerAdapter fails closed when app-server requests user input", async () => {
@@ -232,8 +364,25 @@ test("runCodexAppServerAdapter treats dynamic tool calls as unsupported in the s
   assert.deepEqual(child.killSignals, ["SIGTERM"]);
 });
 
+test("runCodexAppServerAdapter treats stderr as diagnostics only", async () => {
+  const { child, resultPromise, timerHarness } = await startAdapter();
+
+  child.stdout.emit("data", protocolLine({ id: 1, result: {} }));
+  child.stdout.emit("data", protocolLine({ id: 2, result: { thread: { id: "thread-stderr" } } }));
+  child.stdout.emit("data", protocolLine({ id: 3, result: { turn: { id: "turn-stderr" } } }));
+  child.stderr.emit("data", protocolLine({ method: "turn/completed" }));
+  child.emit("close", 1, null);
+
+  const result = await resultPromise;
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, "process_exit_before_completion");
+  assert.equal(result.session_id, "thread-stderr-turn-stderr");
+  assert.match(result.stderr, /turn\/completed/);
+  assertNoActiveTimers(timerHarness);
+});
+
 test("runCodexAppServerAdapter fails when the process exits before completion", async () => {
-  const { child, resultPromise } = await startAdapter();
+  const { child, resultPromise, timerHarness } = await startAdapter();
 
   child.stdout.emit("data", protocolLine({ id: 1, result: {} }));
   child.emit("close", 1, null);
@@ -242,6 +391,7 @@ test("runCodexAppServerAdapter fails when the process exits before completion", 
   assert.equal(result.ok, false);
   assert.equal(result.reason, "process_exit_before_completion");
   assert.equal(result.code, 1);
+  assertNoActiveTimers(timerHarness);
 });
 
 test("runCodexAppServerAdapter enforces startup response timeout with fake timers", async () => {
@@ -256,6 +406,7 @@ test("runCodexAppServerAdapter enforces startup response timeout with fake timer
   assert.equal(result.reason, "response_timeout");
   assert.equal(result.timeout.phase, "initialize");
   assert.deepEqual(child.killSignals, ["SIGTERM"]);
+  assertNoActiveTimers(timerHarness);
 });
 
 test("runCodexAppServerAdapter enforces turn timeout with fake timers", async () => {
@@ -274,4 +425,5 @@ test("runCodexAppServerAdapter enforces turn timeout with fake timers", async ()
   assert.equal(result.timeout.phase, "turn");
   assert.equal(result.session_id, "thread-timeout-turn-timeout");
   assert.deepEqual(child.killSignals, ["SIGTERM"]);
+  assertNoActiveTimers(timerHarness);
 });

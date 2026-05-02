@@ -201,6 +201,23 @@ function summarizeMessage(message) {
   };
 }
 
+function jsonRpcError(message) {
+  return message?.error && typeof message.error === "object" ? message.error : null;
+}
+
+function responseErrorReason(id) {
+  if (id === 1) {
+    return "initialize_error";
+  }
+  if (id === 2) {
+    return "thread_start_error";
+  }
+  if (id === 3) {
+    return "turn_start_error";
+  }
+  return "response_error";
+}
+
 function appendAdapterLog({ stdout, stderr, protocolEvents, result }) {
   return `${JSON.stringify({
     event: "symphony_app_server_adapter_result",
@@ -379,6 +396,14 @@ export async function runCodexAppServerAdapter({
   function handleMessage(message) {
     recordProtocolEvent(message);
     const name = messageName(message);
+    const error = jsonRpcError(message);
+    if (error && [1, 2, 3].includes(message?.id)) {
+      fail(responseErrorReason(message.id), {
+        protocolMessage: summarizeMessage(message),
+        responseError: error
+      });
+      return;
+    }
 
     if (message?.id === 1) {
       clearTimer(readTimer);
@@ -446,6 +471,23 @@ export async function runCodexAppServerAdapter({
     }
   }
 
+  function handleBufferedProtocolTail() {
+    const line = stdoutBuffer;
+    stdoutBuffer = "";
+    if (line.trim().length === 0) {
+      return;
+    }
+    try {
+      handleMessage(JSON.parse(line));
+    } catch (error) {
+      fail("malformed_protocol_message", {
+        error: error instanceof Error ? error.message : String(error),
+        line,
+        unterminated: true
+      });
+    }
+  }
+
   return new Promise((resolve, reject) => {
     resolveResult = resolve;
     rejectResult = reject;
@@ -484,6 +526,10 @@ export async function runCodexAppServerAdapter({
       }
     });
     child.on("close", (code, signal) => {
+      if (settled) {
+        return;
+      }
+      handleBufferedProtocolTail();
       if (settled) {
         return;
       }
