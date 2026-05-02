@@ -3,7 +3,7 @@
 **Status:** Living
 **Last updated:** 2026-05-02
 
-This file is the lightweight coordination ledger for Track 1 (AI edit and update existing events). Every active PR in Track 1 must list its branch, owner, scope, files claimed, base SHA, and status here so other agents know what is safe to touch.
+This file is the legacy coordination ledger for Track 1 (AI edit and update existing events) plus lightweight notes for lane routing while the older Track 1 guardrails still reference this file. Every active Track 1 PR must list its branch, owner, scope, files claimed, base SHA, and status here so other agents know what is safe to touch.
 
 Read order before editing this file:
 
@@ -22,23 +22,7 @@ Rules:
 
 ## Active claims
 
-### Track 1 follow-up — AI existing-event editor parity + uploaded cover support
-
-- **Branch:** `codex/ai-existing-event-editor-parity-cover`
-- **Owner:** Claude (web)
-- **Base SHA:** `68ac89ba064e3b0bcb8677fdd414d731121a6a30`
-- **Status:** `awaiting_review`
-- **Files claimed:**
-  - `web/src/app/(protected)/dashboard/my-events/_components/ConversationalCreateUI.tsx`
-  - `web/src/app/(protected)/dashboard/my-events/[id]/ai/page.tsx`
-  - `web/src/app/(protected)/dashboard/my-events/[id]/overrides/[dateKey]/ai/page.tsx`
-  - `web/src/__tests__/ai-edit-existing-event-parity.test.ts`
-  - `docs/investigation/track1-claims.md`
-- **Notes:** Closes the four user-visible gaps in the existing-event AI editor without flipping `allowExistingEventWrites` broadly:
-  1. Preview card now renders the live `cover_image_url` until a staged image is selected (via new `existingEventSnapshot` prop fetched server-side in the AI edit route wrappers).
-  2. Edit page + public/profile links surface immediately for existing-event sessions (host header + sticky review aside) instead of waiting for an AI write to complete.
-  3. The existing `broadcastEventDraftSync(targetEventId, "cover_updated")` call now reaches the existing-event cover-apply path, so `EventDraftSyncReloader` refreshes open edit/profile tabs after each applied turn.
-  4. Adds a narrow `allowExistingEventCoverUpload` opt-in (default false) used only by the two AI edit page wrappers. With the opt-in set, `applyCoverCandidate` routes existing-event cover persistence through PATCH `/api/my-events/[id]` with `ai_write_source: "conversational_create_ui_auto_apply"` so `evaluatePublishedAiSafetyGate` runs server-side and high-risk published-event swaps require the existing `ai_confirm_published_high_risk` handshake. Direct Supabase `events.cover_image_url` updates remain only for the lab variant and for drafts the AI just created in the same session.
+No active Track 1 claims.
 
 ---
 
@@ -49,13 +33,19 @@ Strategic-doc PR state as of this sync:
 - PR #163 — Symphony Phase 2 Spec-Gap merged.
 - PR #165 — Track 2 telemetry consumption runbook merged.
 - PR #166 — Symphony Phase 2.G recover-stale ADR merged; it is the stop-gate doc only and does not approve the live `recover-stale --execute` test.
+- PR #183 — DSC-adapted Symphony service spec merged; Symphony is prototype-only until its full-spec gate is explicitly closed.
+- PR #185 — Symphony agent transport adapter ADR merged.
+- PR #188 — Symphony app-server adapter scaffold merged; no runner wiring or live execution approval.
+- PR #189 — Track 2 2L.6 RSVP BOLA negative tests merged.
 
 Next planned:
 
-- **Lane 1 (Coordinator):** keep the claims ledger accurate and route work; no code/runtime implementation.
-- **Lane 2 (Track 2):** begin the Track 2 security ADR phase, with 2F.0 Concierge Write Gate Hardening as the first recommended stop-gate before existing-event AI apply or CRUI extraction work.
-- **Lane 3 (Symphony):** after separate explicit approval, run the 2.G live `recover-stale --execute` test from the merged ADR, then ship the follow-up docs-update PR; 2.H outer Codex execution timeout and workflow-format correction remain next Symphony items.
-- **Backlog (small, either Lane 1 or Lane 2 by coordinator assignment):** PR 11.1 canonical `btn-accent` migration + waiting-copy refresh (carries the deferred sub-goals from PR #156); test guardrail loosening for `event-detail-type-badges.test.ts` self-claim requirement.
+- **Lane 1 (Coordinator):** route work, audit PRs, generate prompts, and keep coordinator/claims docs accurate. No code/runtime implementation.
+- **Lane 2 (Track 2):** continue Track 2 security/BOLA/concierge infrastructure. After 2L.6, the next expected BOLA cluster is 2L.7 public event claim negative coverage, unless a review/CI blocker changes ordering.
+- **Lane 3 (Symphony):** continue Symphony prototype/spec-completion implementation and tests only. Next expected follow-up after PR #188 is app-server adapter protocol hardening. Do not run live Symphony execute, daemon, or `recover-stale --execute`.
+- **Lane 4 (Symphony helper):** read-only Symphony review, critique, and decision memos unless explicitly assigned implementation.
+- **Lane 5 (Event audit/admin alerts/growth):** start with docs-only `docs/investigation/event-audit-and-admin-alerts.md` planning. No migration, email-volume, admin UI, public surface, RSS/JSON feed, or event-route implementation until Sami approves the stop-gate.
+- **Backlog:** PR 11.1 canonical `btn-accent` migration + waiting-copy refresh; test guardrail loosening for `event-detail-type-badges.test.ts` self-claim requirement.
 
 PR 8 venue requirement clarification from Sami:
 
@@ -69,6 +59,18 @@ PR 8 venue requirement clarification from Sami:
 ---
 
 ## Closed claims
+
+### Track 1 follow-up — AI existing-event editor parity + uploaded cover support
+
+- **Branch:** `codex/ai-existing-event-editor-parity-cover`
+- **Owner:** Claude (web)
+- **End SHA:** merged via PR #182 → `34112d13`
+- **Status:** `merged`
+- **Notes:** Closed the four user-visible gaps in the existing-event AI editor without flipping `allowExistingEventWrites` broadly:
+  1. Preview card renders the live `cover_image_url` until a staged image is selected.
+  2. Edit page + public/profile links surface immediately for existing-event sessions.
+  3. Existing-event cover apply broadcasts `broadcastEventDraftSync(targetEventId, "cover_updated")` so open edit/profile tabs refresh.
+  4. Existing-event cover persistence routes through PATCH `/api/my-events/[id]` with `ai_write_source: "conversational_create_ui_auto_apply"` and the published-event confirmation handshake. Direct Supabase cover writes remain excluded for published existing events.
 
 ### Track 2 Phase 5.0 Option B — AI telemetry consumption runbook
 
