@@ -10,6 +10,10 @@ import {
   STATE_RUNNING,
   STATE_STALE
 } from "./orchestratorState.mjs";
+import {
+  collectSnapshotAccounting,
+  normalizeAdapterAccounting
+} from "./orchestratorAccounting.mjs";
 import { validateOrchestratorStateSnapshot } from "./orchestratorStateManifest.mjs";
 
 const STATE_VALUES = Object.freeze(Object.values(ORCHESTRATOR_STATES));
@@ -37,14 +41,17 @@ function buildStatus(snapshot, generatedAt, options) {
   const retryDue = [];
   const retryNotDue = [];
   const summaries = emptyStateSummaries();
-  const accounting = emptyAccounting(snapshot);
+  const accountingResult = collectSnapshotAccounting(snapshot);
+  if (!accountingResult.ok) {
+    throw new Error(accountingResult.error);
+  }
+  const accounting = accountingResult.accounting;
 
   const issues = Object.values(snapshot.issues)
     .sort((left, right) => left.issue_number - right.issue_number);
 
   for (const issue of issues) {
     countsByState[issue.state] += 1;
-    collectAccounting(accounting, issue);
 
     const summary = issueSummary(issue, generatedAt);
     if (summary.adapter_state_snapshot) {
@@ -121,21 +128,23 @@ function buildStatus(snapshot, generatedAt, options) {
 
 function runningSummary(issue, generatedAt) {
   const adapter = adapterSnapshot(issue);
+  const adapterAccounting = normalizeAdapterAccounting(adapter);
+  const session = adapterAccounting.ok ? adapterAccounting.session : {};
   return {
     ...issueSummary(issue, generatedAt),
     owner: adapter.owner ?? adapter.user ?? adapter.created_by ?? null,
     pid: adapter.pid ?? null,
-    thread_id: adapter.thread_id ?? null,
-    turn_id: adapter.turn_id ?? null,
-    session_id: adapter.session_id ?? null,
-    turn_count: adapter.turn_count ?? null,
-    last_protocol_event: adapter.last_protocol_event ?? null,
-    last_protocol_event_at: adapter.last_protocol_event_at ?? null,
-    terminal_status: issue.terminal_status ?? adapter.terminal_status ?? null,
-    terminal_reason: issue.terminal_reason ?? adapter.terminal_reason ?? null,
+    thread_id: session.thread_id ?? null,
+    turn_id: session.turn_id ?? null,
+    session_id: session.session_id ?? null,
+    turn_count: session.turn_count ?? null,
+    last_protocol_event: session.last_protocol_event ?? null,
+    last_protocol_event_at: session.last_protocol_event_at ?? null,
+    terminal_status: issue.terminal_status ?? session.terminal_status ?? null,
+    terminal_reason: issue.terminal_reason ?? session.terminal_reason ?? null,
     seconds_running: secondsBetween(issue.updated_at, generatedAt),
-    token_usage: adapter.token_usage ?? null,
-    rate_limits: adapter.rate_limits ?? null,
+    token_usage: adapterAccounting.ok ? adapterAccounting.token_usage : null,
+    rate_limits: adapterAccounting.ok ? adapterAccounting.rate_limits : null,
     adapter_state_snapshot: issue.adapter_state_snapshot ?? null
   };
 }
@@ -177,49 +186,6 @@ function issueSummary(issue, generatedAt) {
     summary.adapter_state_snapshot = issue.adapter_state_snapshot;
   }
   return summary;
-}
-
-function collectAccounting(accounting, issue) {
-  const adapter = adapterSnapshot(issue);
-  const hasSession = adapter.thread_id !== undefined
-    || adapter.turn_id !== undefined
-    || adapter.session_id !== undefined
-    || adapter.turn_count !== undefined;
-  if (hasSession) {
-    accounting.sessions.push({
-      issue_number: issue.issue_number,
-      thread_id: adapter.thread_id ?? null,
-      turn_id: adapter.turn_id ?? null,
-      session_id: adapter.session_id ?? null,
-      turn_count: adapter.turn_count ?? null,
-      last_protocol_event: adapter.last_protocol_event ?? null,
-      last_protocol_event_at: adapter.last_protocol_event_at ?? null,
-      terminal_status: issue.terminal_status ?? adapter.terminal_status ?? null,
-      terminal_reason: issue.terminal_reason ?? adapter.terminal_reason ?? null
-    });
-  }
-  if (adapter.token_usage !== undefined && adapter.token_usage !== null) {
-    accounting.token_usage_by_issue.push({
-      issue_number: issue.issue_number,
-      token_usage: adapter.token_usage
-    });
-  }
-  if (adapter.rate_limits !== undefined && adapter.rate_limits !== null) {
-    accounting.rate_limits_by_issue.push({
-      issue_number: issue.issue_number,
-      rate_limits: adapter.rate_limits
-    });
-  }
-}
-
-function emptyAccounting(snapshot) {
-  return {
-    manifest_codex_totals: snapshot.codex_totals,
-    manifest_rate_limits: snapshot.codex_rate_limits ?? null,
-    sessions: [],
-    token_usage_by_issue: [],
-    rate_limits_by_issue: []
-  };
 }
 
 function emptyStateCounts() {
