@@ -22,6 +22,17 @@ Rules:
 
 ## Active claims
 
+### Track 2 Phase 5.0 Option B — AI telemetry consumption runbook
+
+- **Branch:** `codex/track2-telemetry-consumption-runbook`
+- **Owner:** Codex
+- **Base SHA:** `231fd3b144ed6bde2f9f0a70effbfde038d1e1b6` (post-#164 main)
+- **Status:** `awaiting_review`
+- **Files claimed:**
+  - `docs/runbooks/ai-telemetry-consumption.md`
+  - `docs/investigation/track1-claims.md`
+- **Notes:** Docs-only Track 2 Phase 5.0 housekeeping. Documents the Axiom saved-query pattern for joining `[edit-turn-telemetry]` initial events with `[edit-turn-outcome]` follow-up events by `turnId`, plus expected result shape and dashboard follow-ups. References the PR 3 telemetry stack (#142, #146, #148). Refreshed after #164 and keeps this active claim because the PR still edits the claims ledger. No code, schema, runtime behavior, or §8.2 locked implementation files.
+
 ### Coordinator sync — track1-claims.md cleanup after PR #156, transition to three-lane operating model
 
 - **Branch:** `claude/coordinator-sync-after-track1-pr11`
