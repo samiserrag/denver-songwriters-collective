@@ -158,6 +158,22 @@ export async function POST(
     return NextResponse.json({ error: "Event not found" }, { status: 404 });
   }
 
+  if (parent_id) {
+    const { data: parentComment } = await supabase
+      .from("event_comments")
+      .select("id")
+      .eq("id", parent_id)
+      .eq("event_id", eventId)
+      .eq("date_key", effectiveDateKey)
+      .eq("is_hidden", false)
+      .eq("is_deleted", false)
+      .maybeSingle();
+
+    if (!parentComment) {
+      return NextResponse.json({ error: "Parent comment not found" }, { status: 404 });
+    }
+  }
+
   // Get commenter's profile for notification
   const { data: commenterProfile } = await supabase
     .from("profiles")
