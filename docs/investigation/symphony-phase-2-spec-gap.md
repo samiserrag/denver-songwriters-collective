@@ -2,7 +2,7 @@
 
 **Date:** 2026-05-02
 **Status:** Investigation document for Codex collaborative review
-**Companion to:** `docs/runbooks/symphony.md`, `tools/symphony/README.md`, and the operational notes in the supervised-activation runbook
+**Companion to:** `docs/investigation/symphony-service-spec-v1-dsc.md`, `docs/runbooks/symphony.md`, `tools/symphony/README.md`, and the supervised-activation evidence
 **Authoritative reference:** the original Symphony Service Specification v1 (https://openai.com/index/open-source-codex-orchestration-symphony/) — referenced as **"the spec"** throughout this document.
 **Audience:** Codex (review + critique) + Sami (final approver) + future Symphony builders.
 
@@ -12,9 +12,13 @@
 
 ### 1.1 The strategic distinction (locked 2026-05-02)
 
-After Symphony Phase 1.3 closed (PR #145 + #147 + #151 + #154 + #160 + #162; supervised daemon use ready, one ready issue at a time), Sami flagged an important boundary:
+After Symphony Phase 1.3 closed (PR #145 + #147 + #151 + #154 + #160 + #162; supervised daemon evidence collected), Sami flagged an important boundary:
 
 > Current repo implementation is **not the full original Symphony spec.** It is a safety-first Phase 1 adaptation using GitHub Issues, local worktrees, `codex exec --json`, explicit labels, manifests, locks, and human review. It is much narrower than the draft v1 service spec.
+
+Sami later tightened that boundary: current Symphony is prototype-only and is
+not approved for operational repo work until the DSC-adapted full-spec gate in
+`docs/investigation/symphony-service-spec-v1-dsc.md` is met.
 
 The current Phase 1 implementation deliberately diverges from the spec along several axes (control-plane choice, single-agent concurrency, supervised mode, codex invocation form). Some of those divergences are durable design choices for safety; others are real implementation gaps that Phase 2 work could close.
 
@@ -30,7 +34,7 @@ This document is the **honest section-by-section gap inventory** — what the sp
 ### 1.3 What this doc IS NOT
 
 - A commitment to build all missing items. Sami decides per item whether it's Phase 2 work.
-- A replacement for `docs/runbooks/symphony.md` (operational) or `tools/symphony/README.md` (developer-facing).
+- A replacement for the binding DSC operational gate in `docs/investigation/symphony-service-spec-v1-dsc.md`.
 - A substitute for the Track 2 roadmap (PR #157) — Symphony Phase 2 is its own track.
 - A complete specification of Phase 2 design. Items marked "Phase 2 candidate" require their own ADRs before implementation begins.
 
@@ -61,6 +65,7 @@ What exists today, for reviewer grounding:
 - **Eligibility / preflight:** `tools/symphony/lib/preflight.mjs` (label gates, approved-write-set parsing, acceptance-criteria parsing, high-risk scope detection per PR #147)
 - **Recovery:** `recover-stale --dry-run` + `recover-stale --execute` (latter not yet tested live)
 - **Workflow loader:** static load of `WORKFLOW.md` at process start (`tools/symphony/lib/workflow.mjs`); no dynamic reload
+- **Operational status:** prototype-only; not approved for operational repo work until the DSC full-spec gate is met
 
 CLI surface (`tools/symphony/cli.mjs`):
 
@@ -71,7 +76,7 @@ CLI surface (`tools/symphony/cli.mjs`):
 - `recover-stale --dry-run | --execute`
 - `daemon` (only when `SYMPHONY_ENABLE_DAEMON=1`)
 
-Trust model: human-in-the-loop at every transition; no auto-merge; supervised execute defaults to halt-at-`human-review`; daemon use one-issue-at-a-time post-#162.
+Trust model: human-in-the-loop at every transition; no auto-merge; supervised execute defaults to halt-at-`human-review`. Historical daemon trials produced useful evidence, but daemon use is not approved operationally until the DSC full-spec gate is met.
 
 ---
 
@@ -81,7 +86,7 @@ Trust model: human-in-the-loop at every transition; no auto-merge; supervised ex
 
 | Requirement | Disposition | Notes |
 |---|---|---|
-| Long-running automation reads from issue tracker, creates per-issue workspace, runs coding agent | ✅ done | Phase 1 uses GitHub Issues; supervised daemon + `once --execute` cover the loop |
+| Long-running automation reads from issue tracker, creates per-issue workspace, runs coding agent | 🟡 partial | Phase 1 has GitHub Issues, worktrees, supervised daemon, and `once --execute` mechanics, but they are prototype-only and not approved for operational repo work until the DSC full-spec gate is met |
 | Repeatable daemon workflow, not manual scripts | 🟡 partial | Daemon exists post-#160; supervised use only; not yet "long-running" in the spec sense |
 | Per-issue workspace isolation | ✅ done | Git worktrees under `.symphony/worktrees/` |
 | Workflow policy in-repo (`WORKFLOW.md`) | ✅ done | `WORKFLOW.md` is repo-owned and enforced. Workflow-format correction adds spec-compatible YAML front matter + prompt body parsing while preserving the legacy JSON-comment block as a warning-only migration fallback. |
@@ -89,7 +94,7 @@ Trust model: human-in-the-loop at every transition; no auto-merge; supervised ex
 | Trust/safety posture documented explicitly | ✅ done | Phase 1.2 README + runbook + Phase 1.3 daemon controls section |
 | Symphony as scheduler/runner + tracker reader (NOT writer) | 🟡 partial — **deliberate divergence** | Codex review correction (2026-05-02): `runner.mjs` directly applies label transitions (symphony:running, symphony:human-review, symphony:blocked) AND upserts the workpad comment before/after Codex execution. The orchestrator core is NOT read-only on the tracker in current Phase 1. The worker also makes some tracker mutations during its session (PR opens, labels via `gh` from the worker). This is a trust-boundary divergence from the spec's "scheduler is reader; writes live in the worker tools" intent. Phase 2 candidate: clarify which mutations belong to the scheduler vs the worker; spec leans heavily worker-side. |
 
-**Disposition for §1: largely ✅ done with one Phase 1 specialization (single-agent concurrency).**
+**Disposition for §1: 🟡 partial. The prototype has useful scheduler pieces, but operational use is blocked until the DSC full-spec gate is met.**
 
 ---
 
@@ -575,7 +580,7 @@ Grouping missing/partial items into coherent sub-tracks. Each is a Phase 2 candi
 
 ### Phase 2.G — Live recover-stale --execute Test + Recovery Hardening
 
-**Why this matters:** Daemon-readiness checklist item 3 still partial (live recover-stale untested). Closing this gap is a precondition for fuller daemon trust.
+**Why this matters:** Daemon-readiness checklist item 3 still partial (live recover-stale untested). Closing this gap is one precondition for the DSC full-spec gate, not an authorization for operational use by itself.
 
 **Sub-PRs:**
 1. Test plan ADR for safely producing a stuck `symphony:running` issue
@@ -700,9 +705,11 @@ These are explicit non-pursuits:
 
 ---
 
-## 9. Definition of Done for Phase 2 (when/if pursued)
+## 9. Definition of Done for Phase 2 / DSC Full-Spec Gate
 
-Phase 2 is "broad live use" complete when:
+Symphony is not approved for operational DSC repo work until the binding gate in
+`docs/investigation/symphony-service-spec-v1-dsc.md` is complete. In gap-map
+terms, that requires at least:
 
 - Codex app-server adapter (2.A) is the default; `codex exec` adapter retained for fallback or removed deliberately.
 - Multi-turn continuation works with per-workflow `max_turns` cap.
@@ -715,9 +722,10 @@ Phase 2 is "broad live use" complete when:
 - Live `recover-stale --execute` (2.G) tested and documented.
 - ✅ Outer Codex timeout (2.H) live with sensible default cap.
 - Multi-agent concurrency raised from 1 to N safely (still bounded; default 1; per-workflow config).
-- Daemon runs unattended for hours with no operator intervention required for healthy paths.
+- End-to-end daemon trial after all required gates above, with clean shutdown and no stale lock.
+- Sami explicitly approves operational use after the evidence is in main.
 
-Phase 2 does NOT need to ship Linear adapter, multi-tenant features, or autonomous web discovery to be "broad live use" complete.
+Phase 2 does NOT need to ship Linear adapter, multi-tenant features, or autonomous web discovery to satisfy the DSC full-spec gate.
 
 ---
 
@@ -754,8 +762,9 @@ When blocked → draft PR with question. Don't improvise.
 
 1. ~~Codex reviews this document.~~ ✅ done — Codex review completed 2026-05-02; four disposition corrections (P1/P1/P2/P3) accepted and patched into this revision; six §6/§7 review responses locked in §6 alongside the original questions.
 2. **Sami responds to remaining open dispositions** if any after Codex's review patch.
-3. **MVP decision (Codex-recommended):** ops hardening first — **2.G** (live `recover-stale --execute` test) + **2.H** (outer Codex execution timeout) + **workflow-format correction** (resolve the `<!-- symphony-config -->` JSON vs spec YAML front matter divergence either as a Phase 2 sub-PR or as a deliberately-documented divergence). Codex's reasoning: dynamic reload (2.D) is useful but less urgent than preventing stuck/hung daemon behavior; 2.A app-server migration is the bigger architectural lift after ops hardening proves stable.
-4. **First implementation PR is whichever MVP ADR closes first.** All three MVP items are independent; can be parallelized.
+3. **DSC full-spec gate:** use `docs/investigation/symphony-service-spec-v1-dsc.md` as the binding operational checklist before any real Symphony repo work.
+4. **MVP decision (Codex-recommended):** ops hardening first — **2.G** (live `recover-stale --execute` test) + **2.H** (outer Codex execution timeout) + **workflow-format correction** (resolve the `<!-- symphony-config -->` JSON vs spec YAML front matter divergence either as a Phase 2 sub-PR or as a deliberately-documented divergence). Codex's reasoning: dynamic reload (2.D) is useful but less urgent than preventing stuck/hung daemon behavior; 2.A app-server migration is the bigger architectural lift after ops hardening proves stable.
+5. **First implementation PR is whichever MVP ADR closes first.** All three MVP items are independent; can be parallelized.
 
 ---
 

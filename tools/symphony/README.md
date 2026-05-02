@@ -2,6 +2,16 @@
 
 Local GitHub-Issues-backed orchestration for this repository.
 
+## Operational Status
+
+Symphony is currently prototype infrastructure only. It is not approved for
+operational repo work until the DSC full-spec gate in
+`docs/investigation/symphony-service-spec-v1-dsc.md` is met.
+
+Do not apply `symphony:ready`, run `once --execute`, run daemon mode, run
+`recover-stale --execute`, set `SYMPHONY_EXECUTION_APPROVED=1`, or use
+Symphony for real coding tasks before that gate is complete.
+
 This is intentionally smaller and safer than the upstream Symphony
 prototype:
 
@@ -9,34 +19,31 @@ prototype:
 - GitHub Mobile is the phone workflow.
 - `max_concurrent_agents` starts at `1`.
 - `once` defaults to dry-run.
-- real Codex execution requires both `--execute` and
-  `SYMPHONY_EXECUTION_APPROVED=1`.
+- real Codex execution remains disabled until the DSC full-spec gate is met.
 - no public Codex App Server listener is started.
 
 ## Commands
 
-From the repository root:
+Development and investigation commands from the repository root:
 
 ```bash
 npm run symphony:doctor
-npm run symphony:dry-run
-npm run symphony:once
-npm run symphony:recover-stale
 npm run symphony:test
 ```
 
-`symphony:once` is also dry-run by default. To run against a specific
-mock fixture without GitHub auth:
+To run against a specific mock fixture without GitHub auth:
 
 ```bash
 node tools/symphony/cli.mjs once --dry-run --mock-issues tools/symphony/examples/issues.sample.json
 ```
 
-Real execution is intentionally gated:
+Real execution commands exist in the prototype but are not operationally
+approved:
 
-```bash
-SYMPHONY_EXECUTION_APPROVED=1 node tools/symphony/cli.mjs once --execute
-```
+- do not run `once --execute`
+- do not run daemon mode
+- do not run `recover-stale --execute`
+- do not set `SYMPHONY_EXECUTION_APPROVED=1`
 
 `--execute` cannot be combined with `--mock-issues`; mock fixtures are
 offline dry-run input only.
@@ -44,7 +51,7 @@ offline dry-run input only.
 Each real Codex execution has a Symphony-owned outer wall-clock timeout.
 The defaults are `codex.execution_timeout_minutes: 30` and
 `codex.execution_timeout_kill_grace_seconds: 15` in `WORKFLOW.md`.
-Override them only for a supervised run with
+Override them only for a future separately approved gate-closing run with
 `SYMPHONY_CODEX_EXECUTION_TIMEOUT_MINUTES` and
 `SYMPHONY_CODEX_EXECUTION_TIMEOUT_KILL_GRACE_SECONDS`; invalid values fail
 closed before GitHub mutation. On timeout, Symphony sends `SIGTERM` to the
@@ -54,23 +61,16 @@ in the manifest, and releases `runner.lock`. Descendant process cleanup is
 a residual risk for this phase because the runner does not yet use
 process-group termination.
 
-Stale `symphony:running` recovery is explicit and dry-run by default:
-
-```bash
-npm run symphony:recover-stale
-SYMPHONY_EXECUTION_APPROVED=1 node tools/symphony/cli.mjs recover-stale --execute
-```
+Stale `symphony:running` recovery is explicit and dry-run by default, but live
+`recover-stale --execute` must not run except as a separately approved
+gate-closing test.
 
 Recovery moves stale running issues to `symphony:blocked`; it does not
 start replacement work in the same command.
 
-Do not use real execution until:
-
-1. `npm run symphony:doctor` passes.
-2. Sami has separately approved the test issue/auth setup.
-3. The issue has the explicit `symphony:ready` label.
-4. The issue body has `Approved write set` and `Acceptance criteria`
-   sections.
+Do not use real execution. After the DSC full-spec gate is met, a new
+operating procedure must be written and approved before any repo work runs
+through Symphony.
 
 Dry-runs now show both planned issues and skipped/ineligible issues with
 deterministic reasons. Every `once` run and stale recovery dry-run writes
@@ -156,6 +156,8 @@ Note: `tools/symphony/**` requires explicit high-risk approval, for example `Exp
 ## Adapter Boundary
 
 The code keeps Codex execution behind `tools/symphony/lib/codexAdapter.mjs`.
-The Phase 1 adapter uses `codex exec --json`. `doctor` still checks
-`codex app-server --help` so App Server protocol drift is visible early,
-but App Server is not exposed or required for Phase 1.
+The Phase 1/2 prototype adapter uses `codex exec --json`. That adapter is
+temporary unless a future ADR explicitly approves it as the DSC full-spec
+replacement for the original app-server transport. `doctor` still checks
+`codex app-server --help` so App Server protocol drift is visible early, but
+App Server is not exposed or required for the prototype.
