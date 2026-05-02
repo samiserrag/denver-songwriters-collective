@@ -22,31 +22,27 @@ Rules:
 
 ## Active claims
 
-### PR 11 — Track 1 UI polish
+### Coordinator sync — track1-claims.md cleanup after PR #156, transition to three-lane Track 2
 
-- **Branch:** `claude/ui-polish-pr11`
-- **Owner:** Claude (web)
-- **Base SHA:** `482e7547b67f0500dd3ee22ffc18ed52bd537359`
-- **Status:** `in_progress`
-- **Files claimed:**
-  - `web/src/app/(protected)/dashboard/my-events/_components/ConversationalCreateUI.tsx` (§8.2 lock released for UI polish only)
-  - `web/src/app/(protected)/dashboard/my-events/_components/WhatChanged.tsx` (new)
-  - `web/src/__tests__/conversational-create-ui-pr11-polish.test.ts` (new)
-  - `web/src/__tests__/what-changed-component.test.ts` (new)
-  - `docs/investigation/track1-claims.md`
-- **Notes:** Final §6 Track 1 PR. Five sub-goals: distinct result vs follow-up visual treatment, "What changed" section consuming `computePatchDiff`, orange draft-preview CTA via canonical `btn-accent` token, calmer waiting state (drop amber ring + element-level animate-pulse), copy audit reflecting create + edit capabilities. No behavior changes — UI polish only. Existing tests (PR 3 follow-up + interpreter-lab-conversation-ux + interpreter-host-draft-sync + conversational-create-launch-surface) must remain green. Closes Track 1 §12 definition of done.
-
-### Coordinator sync — track1-claims.md cleanup after PR #143, #148 merge
-
-- **Branch:** `claude/coordinator-sync-after-148`
+- **Branch:** `claude/coordinator-sync-after-track1-pr11`
 - **Owner:** Coordinator
-- **Base SHA:** `30dd7e2` (post-#148 main)
+- **Base SHA:** `a9fd3fd8` (post-#162 main)
 - **Status:** `in_progress`
 - **Files claimed:**
   - `docs/investigation/track1-claims.md`
-- **Notes:** Coordinator-only docs maintenance. Moves the prior Coordinator-sync entry (merged via #143) and the PR 3 follow-up entry (merged via #148) from Active to Closed. Self-claims `docs/investigation/track1-claims.md` so the Track 1 guardrail in `web/src/__tests__/event-detail-type-badges.test.ts` is satisfied. This PR's own Coordinator-sync entry will be moved to Closed by the next coordinator sync after this PR merges. Track 1 PR 3 stack is now fully shipped end-to-end (module #142 → server wiring #146 → client hook + endpoint + comment refinement #148).
+- **Notes:** Coordinator-only docs maintenance. Moves PR 11 (UI polish, merged via #156) and the prior Coordinator sync (merged via #150) from Active to Closed. Updates "Next planned" line to reflect the locked three-lane operating model: Lane 1 (Codex Cloud Track 2), Lane 2 (Claude Code Track 2), Lane 3 (Codex Symphony Phase 2). Track 1 §6 is fully shipped; future Track 1 follow-ups (PR 11.1 canonical btn-accent + waiting-copy refresh, test guardrail loosening) tracked as small backlog items, not as active Track 1 work. Self-claims `docs/investigation/track1-claims.md` so the Track 1 guardrail in `web/src/__tests__/event-detail-type-badges.test.ts` is satisfied. This PR's own Coordinator-sync entry will be moved to Closed by the next coordinator sync.
 
-Next planned Track 1 order: PR 11 (UI polish, Codex) — only remaining §6 PR. §13.2 explicit Sami approval required before any code is written.
+Three open strategic-doc PRs are pending merge but do not appear here as Track 1 active claims (each is its own coordinator-authored investigation PR):
+
+- PR #157 — Track 2 roadmap (`claude/track2-roadmap-draft`)
+- PR #158 — Agent Concierge Unification Plan (`claude/agent-concierge-plan`)
+- PR #163 — Symphony Phase 2 Spec-Gap (`claude/symphony-phase2-spec-gap`)
+
+Next planned (post-merge of #157, #158, #163):
+
+- **Lane 1 + Lane 2 (parallel):** Track 2 Phase 5.0 housekeeping → security ADR phase (2F.0, 2I.0, 2J.0, 2K.0, 2L.0) → per-sub-track implementation per Track 2 roadmap §5 sequencing.
+- **Lane 3 (Codex Symphony):** Symphony Phase 2 MVP — 2.G live `recover-stale --execute` test + 2.H outer Codex execution timeout + workflow-format correction (per Codex's review of PR #163).
+- **Backlog (small, either lane):** PR 11.1 canonical `btn-accent` migration + waiting-copy refresh (carries the deferred sub-goals from PR #156); test guardrail loosening for `event-detail-type-badges.test.ts` self-claim requirement.
 
 PR 8 venue requirement clarification from Sami:
 
@@ -60,6 +56,22 @@ PR 8 venue requirement clarification from Sami:
 ---
 
 ## Closed claims
+
+### PR 11 — Track 1 UI polish (final §6 PR)
+
+- **Branch:** `claude/ui-polish-pr11`
+- **Owner:** Claude (web)
+- **End SHA:** merged via PR #156 → `ca14e6ba`
+- **Status:** `merged`
+- **Notes:** Final §6 Track 1 PR. Four sub-goals shipped: distinct result vs follow-up visual treatment, "What changed" section consuming `computePatchDiff` (new `WhatChanged.tsx` component, 13 RTL tests), calmer waiting state (drop amber ring + element-level animate-pulse), description-layer copy reflecting create + edit capabilities. Two sub-goals deferred for PR 11.1 follow-up: canonical `btn-accent` migration + waiting-bubble copy refresh (each requires coordinated update to existing pinned tests in `interpreter-14-host-ux-polish.test.ts`). 39 new tests; PR 1 + PR 9 + interpreter-phase9 + PR 3 stack regression suites all green. Closes Track 1 §12 definition of done modulo the deferred follow-up.
+
+### Coordinator sync — track1-claims.md cleanup after PR #143, #148 merge
+
+- **Branch:** `claude/coordinator-sync-after-148`
+- **Owner:** Coordinator
+- **End SHA:** merged via PR #150 → `482e7547`
+- **Status:** `merged`
+- **Notes:** Coordinator-only docs maintenance. Moved the prior Coordinator-sync entry (merged via #143) and the PR 3 follow-up entry (merged via #148) from Active to Closed. Self-claimed `docs/investigation/track1-claims.md` so the Track 1 guardrail in `web/src/__tests__/event-detail-type-badges.test.ts` was satisfied. Continued the recursive coordinator-sync pattern.
 
 ### PR 3 follow-up — Client userOutcome capture with turnId correlation
 
