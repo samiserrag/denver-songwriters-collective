@@ -18,17 +18,6 @@ export async function GET(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Phase ABC7: Get date_key from query params
-  const url = new URL(request.url);
-  const providedDateKey = url.searchParams.get("date_key");
-
-  // Resolve effective date_key (required for per-occurrence RSVP list)
-  const dateKeyResult = await resolveEffectiveDateKey(eventId, providedDateKey);
-  if (!dateKeyResult.success) {
-    return dateKeyErrorResponse(dateKeyResult.error);
-  }
-  const { effectiveDateKey } = dateKeyResult;
-
   // Check if user is host or admin (using profiles.role, not app_metadata)
   const isAdmin = await checkAdminRole(supabase, sessionUser.id);
 
@@ -45,6 +34,17 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
   }
+
+  // Phase ABC7: Get date_key from query params
+  const url = new URL(request.url);
+  const providedDateKey = url.searchParams.get("date_key");
+
+  // Resolve effective date_key (required for per-occurrence RSVP list)
+  const dateKeyResult = await resolveEffectiveDateKey(eventId, providedDateKey);
+  if (!dateKeyResult.success) {
+    return dateKeyErrorResponse(dateKeyResult.error);
+  }
+  const { effectiveDateKey } = dateKeyResult;
 
   // Phase ABC7: Filter RSVPs by (event_id, date_key) for per-occurrence results
   const { data: rsvps, error } = await supabase
@@ -168,7 +168,8 @@ export async function DELETE(
       offer_expires_at: null,
       updated_at: new Date().toISOString(),
     })
-    .eq("id", rsvpId);
+    .eq("id", rsvpId)
+    .eq("event_id", eventId);
 
   if (updateError) {
     return NextResponse.json({ error: updateError.message }, { status: 500 });
