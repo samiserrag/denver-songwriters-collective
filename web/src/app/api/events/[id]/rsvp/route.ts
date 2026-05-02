@@ -214,6 +214,9 @@ export async function POST(
         updated_at: new Date().toISOString()
       })
       .eq("id", existing.id)
+      .eq("event_id", eventId)
+      .eq("date_key", effectiveDateKey)
+      .eq("user_id", sessionUser.id)
       .select()
       .single();
     rsvp = data;
@@ -343,7 +346,10 @@ export async function DELETE(
       offer_expires_at: null,
       updated_at: new Date().toISOString()
     })
-    .eq("id", currentRsvp.id);
+    .eq("id", currentRsvp.id)
+    .eq("event_id", eventId)
+    .eq("date_key", effectiveDateKey)
+    .eq("user_id", sessionUser.id);
 
   if (updateError) {
     return NextResponse.json({ error: updateError.message }, { status: 500 });
