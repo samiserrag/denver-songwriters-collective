@@ -2,7 +2,7 @@
 
 **Date:** 2026-05-02
 **Status:** Investigation document for Codex collaborative review
-**Companion to:** `docs/investigation/symphony-service-spec-v1-dsc.md`, `docs/runbooks/symphony.md`, `tools/symphony/README.md`, and the supervised-activation evidence
+**Companion to:** `docs/investigation/symphony-service-spec-v1-dsc.md`, `docs/investigation/symphony-agent-transport-adapter-adr.md`, `docs/runbooks/symphony.md`, `tools/symphony/README.md`, and the supervised-activation evidence
 **Authoritative reference:** the original Symphony Service Specification v1 (https://openai.com/index/open-source-codex-orchestration-symphony/) — referenced as **"the spec"** throughout this document.
 **Audience:** Codex (review + critique) + Sami (final approver) + future Symphony builders.
 
@@ -363,7 +363,7 @@ Phase 1 uses `codex exec --json` (`tools/symphony/lib/codexAdapter.mjs`) — a o
 
 | Item | Disposition |
 |---|---|
-| App-server JSON-RPC protocol | ❌ missing — uses `codex exec --json` |
+| App-server JSON-RPC protocol | ❌ missing — uses `codex exec --json`; decision-in-progress via `docs/investigation/symphony-agent-transport-adapter-adr.md` |
 | `initialize` / `thread/start` / `turn/start` handshake | ❌ missing |
 | Streaming turn events | ❌ missing |
 | Multi-turn continuation on same thread | ❌ missing |
@@ -376,7 +376,7 @@ Phase 1 uses `codex exec --json` (`tools/symphony/lib/codexAdapter.mjs`) — a o
 | Timeout categories (read/turn/stall) | ❌ missing — only the codex CLI's own timeout |
 | Normalized error categories | ❌ missing — current errors are ad-hoc |
 
-**Disposition for §10: ❌ missing. This is the largest single Phase 2 candidate. Migration from `codex exec --json` to `codex app-server` would unlock multi-turn, token accounting, rate limiting, approval handling, and stall detection — but is a substantial refactor of `codexAdapter.mjs` + `runner.mjs`.**
+**Disposition for §10: ❌ missing, with adapter decision now proposed in `docs/investigation/symphony-agent-transport-adapter-adr.md`. This is the largest single Phase 2 candidate. Migration from `codex exec --json` to `codex app-server` would unlock multi-turn, token accounting, rate limiting, approval handling, and stall detection — but is a substantial refactor of `codexAdapter.mjs` + `runner.mjs`.**
 
 ---
 
@@ -500,7 +500,7 @@ Grouping missing/partial items into coherent sub-tracks. Each is a Phase 2 candi
 **Why this is the highest-leverage:** unlocks multi-turn continuation (§7.1), token accounting (§13.5), rate limit tracking (§13.5), stall detection (§7.3, §8.5), approval handling (§10.5), session metadata (§4.1.6). Single architectural change with cascading benefits.
 
 **Sub-PRs (proposed):**
-1. App-server adapter ADR (investigation: protocol fit, error mapping, timeout policy, app-server CLI version pinning)
+1. App-server adapter ADR (investigation: protocol fit, error mapping, timeout policy, app-server CLI version pinning) — decision proposed in `docs/investigation/symphony-agent-transport-adapter-adr.md`
 2. New `codexAppServerAdapter.mjs` alongside existing `codexAdapter.mjs` (parallel implementation, not replacement, until proven)
 3. Streaming event handler with structured events
 4. Session metadata tracking (`session_id`, `thread_id`, `turn_id`)
