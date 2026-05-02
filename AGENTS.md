@@ -89,6 +89,38 @@ axiom dataset list --deployment axiom
 axiom query "['vercel-runtime'] | limit 20" --format table
 ```
 
+### GitHub Access in Codex: Plugin vs Shell
+
+Codex may have two different GitHub access paths:
+
+- **GitHub plugin / connector tools** - use these first for GitHub issues,
+  labels, comments, PRs, and repository metadata when available. They can
+  work even when the shell cannot reach `api.github.com`.
+- **Shell network access** through `gh`, `git`, `curl`, Node `fetch`, or repo
+  scripts - required when the code under test itself calls GitHub, such as
+  `tools/symphony` doctor, dry-run, daemon, and recovery commands.
+
+Do not confuse the two. If `gh issue list`, `curl https://api.github.com`,
+or Node `fetch("https://api.github.com")` fails inside Codex, first check
+whether the GitHub plugin is available before declaring GitHub unavailable.
+Use the plugin for GitHub mutations that do not need to be performed by the
+repo runtime itself.
+
+If a repo command must call GitHub from the shell, the plugin is not enough.
+That shell must have both valid GitHub auth and network access to GitHub. For
+Codex Cloud / restricted environments, enable agent internet access for the
+environment and allow the required domains and HTTP methods. Minimum domains
+for this repo's GitHub/Symphony operations are typically:
+
+- `api.github.com`
+- `github.com`
+
+Issue staging and label/comment changes require write methods such as `POST`,
+`PATCH`, and `DELETE`; a read-only `GET` allowlist is insufficient for live
+GitHub issue operations. If Codex shell networking remains blocked, run the
+shell-dependent command from Sami's normal local terminal and paste the output
+back for audit.
+
 ### Supabase CLI
 
 Use Supabase CLI often for local DB/auth/template workflows and migration confidence.
