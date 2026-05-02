@@ -323,6 +323,36 @@ test("runOnce execute writes manifest before mutation and fails closed if it can
   assert.deepEqual(mutatingCalls(calls), []);
 });
 
+test("runOnce fails before GitHub mutation when timeout env config is invalid", async () => {
+  const repoRoot = await makeRepoRoot();
+  const calls = [];
+  const client = makeExecuteClient({ calls });
+
+  await assert.rejects(
+    () => runOnce({
+      repoRoot,
+      dryRun: false,
+      execute: true,
+      env: {
+        SYMPHONY_EXECUTION_APPROVED: "1",
+        SYMPHONY_CODEX_EXECUTION_TIMEOUT_MINUTES: "0"
+      },
+      client,
+      repo: "owner/repo",
+      tokenInfo: { token: "test-token" },
+      gitSnapshot: cleanGitSnapshot(),
+      createWorktreeFn: async () => {
+        throw new Error("worktree should not be created");
+      },
+      runCodexAdapter: async () => {
+        throw new Error("codex should not run");
+      }
+    }),
+    /SYMPHONY_CODEX_EXECUTION_TIMEOUT_MINUTES must be a positive number/
+  );
+  assert.deepEqual(mutatingCalls(calls), []);
+});
+
 test("runOnce releases runner lock when execution fails", async () => {
   const repoRoot = await makeRepoRoot();
   const calls = [];
@@ -346,6 +376,75 @@ test("runOnce releases runner lock when execution fails", async () => {
 
   assert.equal(result.ok, false);
   assert.match(JSON.stringify(result.plans), /worktree failed/);
+  await assert.rejects(() => access(path.join(repoRoot, ".symphony/state/runner.lock")), /ENOENT/);
+});
+
+test("runOnce blocks issue, writes timeout manifest, and releases lock on Codex outer timeout", async () => {
+  const repoRoot = await makeRepoRoot();
+  const calls = [];
+  const client = makeExecuteClient({ calls });
+  let adapterCalls = 0;
+
+  const result = await runOnce({
+    repoRoot,
+    dryRun: false,
+    execute: true,
+    env: { SYMPHONY_EXECUTION_APPROVED: "1" },
+    client,
+    repo: "owner/repo",
+    tokenInfo: { token: "test-token" },
+    gitSnapshot: cleanGitSnapshot(),
+    createWorktreeFn: async () => {},
+    runCodexAdapter: async ({ logPath, executionTimeoutMs, executionTimeoutKillGraceMs }) => {
+      adapterCalls += 1;
+      assert.equal(executionTimeoutMs, 30 * 60 * 1000);
+      assert.equal(executionTimeoutKillGraceMs, 15 * 1000);
+      return {
+        ok: false,
+        code: null,
+        signal: "SIGKILL",
+        logPath,
+        stdout: "",
+        stderr: "",
+        timedOut: true,
+        reason: "outer_timeout",
+        timeout: {
+          reason: "outer_timeout",
+          timeoutMs: executionTimeoutMs,
+          graceMs: executionTimeoutKillGraceMs,
+          startedAt: "2026-05-01T00:00:00.000Z",
+          deadlineAt: "2026-05-01T00:30:00.000Z",
+          firedAt: "2026-05-01T00:30:00.000Z",
+          gracefulSignal: "SIGTERM",
+          forcedKill: true,
+          exitCode: null,
+          exitSignal: "SIGKILL"
+        }
+      };
+    }
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(adapterCalls, 1);
+  assert.equal(result.plans[0].finalState, "blocked");
+  assert.equal(result.plans[0].codexResult.reason, "outer_timeout");
+  assert.deepEqual(calls.find((call) => (
+    call[0] === "addLabels" &&
+    call[2].includes("symphony:blocked")
+  )), ["addLabels", 41, ["symphony", "symphony:blocked"]]);
+
+  const finalWorkpad = calls
+    .filter((call) => call[0] === "createComment" || call[0] === "updateComment")
+    .at(-1)[2];
+  assert.match(finalWorkpad, /- State: blocked/);
+  assert.match(finalWorkpad, /- Blocked Reason: outer Codex execution timeout after 30 minutes/);
+  assert.match(finalWorkpad, /sent SIGTERM, then SIGKILL after 15 seconds/);
+
+  const manifest = JSON.parse(await readFile(result.manifestPath, "utf8"));
+  assert.equal(manifest.outcome.ok, false);
+  assert.equal(manifest.outcome.reason, "outer_timeout");
+  assert.equal(manifest.outcome.timeout.issueNumber, 41);
+  assert.equal(manifest.outcome.timeout.forcedKill, true);
   await assert.rejects(() => access(path.join(repoRoot, ".symphony/state/runner.lock")), /ENOENT/);
 });
 

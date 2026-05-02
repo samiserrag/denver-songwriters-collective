@@ -585,7 +585,7 @@ Grouping missing/partial items into coherent sub-tracks. Each is a Phase 2 candi
 
 **Estimate:** 2-3 PRs.
 
-### Phase 2.H — Outer Codex Execution Timeout (from daemon-readiness audit item 8)
+### Phase 2.H — ✅ Outer Codex Execution Timeout (from daemon-readiness audit item 8)
 
 **Why this matters:** Single hung Codex process can block the daemon indefinitely.
 
@@ -713,7 +713,7 @@ Phase 2 is "broad live use" complete when:
 - Runtime snapshot (2.E) accessible via local CLI subcommand at minimum; optional HTTP server documented.
 - Strict templating (2.F) replaces string-concat prompt assembly.
 - Live `recover-stale --execute` (2.G) tested and documented.
-- Outer Codex timeout (2.H) live with sensible default cap.
+- ✅ Outer Codex timeout (2.H) live with sensible default cap.
 - Multi-agent concurrency raised from 1 to N safely (still bounded; default 1; per-workflow config).
 - Daemon runs unattended for hours with no operator intervention required for healthy paths.
 

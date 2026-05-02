@@ -1,6 +1,6 @@
 # Symphony Phase 2.H Outer Codex Execution Timeout ADR
 
-Status: Proposed for coordinator review
+Status: Accepted for Phase 2.H implementation
 Date: 2026-05-02
 Scope: Symphony Phase 2.H operational hardening
 
@@ -147,7 +147,8 @@ When the timer fires:
 Preferred implementation detail: terminate the process group when Node and the
 platform support it. If that creates risky cross-platform behavior, direct
 child termination is acceptable for Phase 2.H, with descendant cleanup recorded
-as residual risk.
+as residual risk. The implementation PR uses direct child termination and keeps
+process-group termination as future hardening.
 
 Do not reject the adapter promise on timeout. Return a structured result so
 `runner.mjs` can use its existing blocked-transition path.
@@ -418,3 +419,13 @@ That implementation PR should update this ADR only if final code changes a
 decision above. It should update
 `docs/investigation/symphony-phase-2-spec-gap.md` only after the feature ships,
 changing the 2.H disposition from missing to done or partial as appropriate.
+
+## Implementation Notes
+
+The implementation follows this ADR with direct-child termination only:
+`SIGTERM` first, then `SIGKILL` after the configured grace period if the child
+has not exited. If Codex or a tool it launched leaves descendant processes
+behind, the operator must detect and clean them manually before retrying. If
+operator shutdown or a GitHub mutation failure occurs mid-timeout handling, the
+local lock cleanup may complete while GitHub labels/workpad still need manual
+recovery.

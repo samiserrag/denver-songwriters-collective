@@ -41,6 +41,19 @@ SYMPHONY_EXECUTION_APPROVED=1 node tools/symphony/cli.mjs once --execute
 `--execute` cannot be combined with `--mock-issues`; mock fixtures are
 offline dry-run input only.
 
+Each real Codex execution has a Symphony-owned outer wall-clock timeout.
+The defaults are `codex.execution_timeout_minutes: 30` and
+`codex.execution_timeout_kill_grace_seconds: 15` in `WORKFLOW.md`.
+Override them only for a supervised run with
+`SYMPHONY_CODEX_EXECUTION_TIMEOUT_MINUTES` and
+`SYMPHONY_CODEX_EXECUTION_TIMEOUT_KILL_GRACE_SECONDS`; invalid values fail
+closed before GitHub mutation. On timeout, Symphony sends `SIGTERM` to the
+direct Codex child, sends `SIGKILL` after the grace period if needed, moves
+the issue to `symphony:blocked`, writes `outcome.reason: "outer_timeout"`
+in the manifest, and releases `runner.lock`. Descendant process cleanup is
+a residual risk for this phase because the runner does not yet use
+process-group termination.
+
 Stale `symphony:running` recovery is explicit and dry-run by default:
 
 ```bash
