@@ -76,6 +76,20 @@ Dry-runs now show both planned issues and skipped/ineligible issues with
 deterministic reasons. Every `once` run and stale recovery dry-run writes
 a JSON manifest under `.symphony/state/manifests`.
 
+## Workflow Format
+
+`WORKFLOW.md` uses YAML front matter for Symphony configuration, followed by
+the Markdown prompt body that is passed into Codex. The parser returns the
+Markdown body as `prompt_template`; the compatibility `markdown` field is an
+alias of that same prompt in YAML mode.
+
+Legacy `<!-- symphony-config ... -->` JSON comment blocks remain accepted for
+one migration window. In legacy mode, `prompt_template` preserves the current
+behavior by returning the full Markdown file. `doctor` reports a warning for
+legacy format but does not fail when the config is otherwise valid. If a YAML
+workflow still contains a stale legacy config comment, that comment is stripped
+from the prompt body before Codex sees it.
+
 ## Labels
 
 Required labels:
