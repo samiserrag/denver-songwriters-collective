@@ -42,6 +42,8 @@ Read-only auditor and traffic controller for the multi-lane buildout.
 
 **You may edit other docs only when Sami explicitly asks for coordinator-doc maintenance or investigation-only coordinator work.**
 
+**Canonical GitHub tool rule:** use the GitHub plugin / connector first for PR metadata, diffs, review threads, comments, statuses, merges, issues, labels, branch/file operations when appropriate, and repository metadata. Do not use `gh`, raw REST, `curl api.github.com`, or shell GitHub commands when the plugin can perform the operation. Shell GitHub is only acceptable for repo-runtime tests that must exercise shell GitHub access, or when the plugin lacks the needed capability and the fallback is stated in the report.
+
 **You may not edit:**
 
 - Any file under `web/`
@@ -93,7 +95,7 @@ Never present an open menu. Always recommend a specific option.
 
 ## Standing Tasks Each Ping
 
-1. Inspect open PRs and current `origin/main`.
+1. Inspect open PRs and current `origin/main` using the GitHub plugin first.
 2. Read PR comments/status for every open PR relevant to active lanes.
 3. Map each PR to Lane 2, Lane 3, Lane 4, Lane 5, Lane 6, or coordinator docs.
 4. Compare PR state against `docs/investigation/track1-claims.md` and lane docs. Note drift.
@@ -161,7 +163,7 @@ Every builder prompt block must be self-contained and mobile-pasteable. Include:
 
 ## When Blocked Or Uncertain
 
-- If a builder reports completion, verify on GitHub before believing it.
+- If a builder reports completion, verify on GitHub with the plugin before believing it.
 - If GitHub state contradicts an agent's claim, report the contradiction.
 - If a check is pending, say "hold" unless Sami explicitly authorized merge after green checks.
 - If a task would cross lanes, recommend sequencing instead of allowing both writers.
