@@ -171,17 +171,17 @@ export async function generateMetadata({
   const { data: event } = isUUID(id)
     ? await supabase
         .from("events")
-        .select("title, description, event_type, venue_name, slug, visibility, updated_at")
+        .select("title, description, event_type, venue_name, slug, visibility, is_published, updated_at")
         .eq("id", id)
         .single()
     : await supabase
         .from("events")
-        .select("title, description, event_type, venue_name, slug, visibility, updated_at")
+        .select("title, description, event_type, venue_name, slug, visibility, is_published, updated_at")
         .eq("slug", id)
         .single();
 
-  // PR4: Return generic metadata for missing OR invite-only events (404-not-403: don't leak existence)
-  if (!event || event.visibility !== "public") {
+  // PR4: Return generic metadata for missing, draft, or invite-only events (404-not-403: don't leak existence)
+  if (!event || !event.is_published || event.visibility !== "public") {
     return {
       title: "Happening Not Found | The Colorado Songwriters Collective",
       description: "This happening could not be found.",
@@ -322,8 +322,13 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
           .eq("id", slugRedirect.event_id)
           .maybeSingle();
 
-        if (redirectedResult.data) {
-          const canonicalIdentifier = redirectedResult.data.slug || redirectedResult.data.id;
+        const redirectedEvent = redirectedResult.data;
+        if (
+          redirectedEvent &&
+          redirectedEvent.is_published &&
+          redirectedEvent.visibility === "public"
+        ) {
+          const canonicalIdentifier = redirectedEvent.slug || redirectedEvent.id;
           redirect(buildCanonicalEventPath(canonicalIdentifier, selectedDateKey));
         }
       }
