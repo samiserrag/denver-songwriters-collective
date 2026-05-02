@@ -1,8 +1,8 @@
 # Runbook: AI Edit-Turn Telemetry Consumption
 
-**Status:** ACTIVE  
-**Owner:** Engineering  
-**Last updated:** 2026-05-01  
+**Status:** ACTIVE
+**Owner:** Engineering
+**Last updated:** 2026-05-01
 **Scope:** Track 1 PR 3 telemetry stack consumed from Axiom for Track 2 operations
 
 ---
