@@ -22,39 +22,20 @@ Rules:
 
 ## Active claims
 
-### Track 2 Phase 5.0 Option B — AI telemetry consumption runbook
-
-- **Branch:** `codex/track2-telemetry-consumption-runbook`
-- **Owner:** Codex
-- **Base SHA:** `231fd3b144ed6bde2f9f0a70effbfde038d1e1b6` (post-#164 main)
-- **Status:** `awaiting_review`
-- **Files claimed:**
-  - `docs/runbooks/ai-telemetry-consumption.md`
-  - `docs/investigation/track1-claims.md`
-- **Notes:** Docs-only Track 2 Phase 5.0 housekeeping. Documents the Axiom saved-query pattern for joining `[edit-turn-telemetry]` initial events with `[edit-turn-outcome]` follow-up events by `turnId`, plus expected result shape and dashboard follow-ups. References the PR 3 telemetry stack (#142, #146, #148). Refreshed after #164 and keeps this active claim because the PR still edits the claims ledger. No code, schema, runtime behavior, or §8.2 locked implementation files.
-
-### Coordinator sync — track1-claims.md cleanup after PR #156, transition to three-lane operating model
-
-- **Branch:** `claude/coordinator-sync-after-track1-pr11`
-- **Owner:** Coordinator
-- **Base SHA:** `5553d2b1` (post-#166 main)
-- **Status:** `in_progress`
-- **Files claimed:**
-  - `docs/investigation/track1-claims.md`
-- **Notes:** Coordinator-only docs maintenance. Moves PR 11 (UI polish, merged via #156) and the prior Coordinator sync (merged via #150) from Active to Closed. Updates "Next planned" line to reflect the locked three-lane operating model: Lane 1 is the coordinator lane, Lane 2 is Track 2, and Lane 3 is Symphony. Track 1 §6 is fully shipped; future Track 1 follow-ups (PR 11.1 canonical btn-accent + waiting-copy refresh, test guardrail loosening) are tracked as small backlog items, not as active Track 1 work. Self-claims `docs/investigation/track1-claims.md` so the Track 1 guardrail in `web/src/__tests__/event-detail-type-badges.test.ts` is satisfied. This PR's own Coordinator-sync entry will be moved to Closed by the next coordinator sync.
+No active claims at this sync.
 
 Strategic-doc PR state as of this sync:
 
 - PR #157 — Track 2 roadmap merged.
+- PR #158 — Agent Concierge Unification Plan merged.
 - PR #163 — Symphony Phase 2 Spec-Gap merged.
+- PR #165 — Track 2 telemetry consumption runbook merged.
 - PR #166 — Symphony Phase 2.G recover-stale ADR merged; it is the stop-gate doc only and does not approve the live `recover-stale --execute` test.
-- PR #158 — Agent Concierge Unification Plan remains open and needs its planned revision.
-- PR #165 — Track 2 telemetry consumption runbook remains draft/held because it also edits this claims ledger.
 
 Next planned:
 
 - **Lane 1 (Coordinator):** keep the claims ledger accurate and route work; no code/runtime implementation.
-- **Lane 2 (Track 2):** revise PR #158 per Codex review, then continue Track 2 Phase 5.0 housekeeping and the security ADR phase (2F.0, 2I.0, 2J.0, 2K.0, 2L.0) per Track 2 roadmap §5 sequencing.
+- **Lane 2 (Track 2):** begin the Track 2 security ADR phase, with 2F.0 Concierge Write Gate Hardening as the first recommended stop-gate before existing-event AI apply or CRUI extraction work.
 - **Lane 3 (Symphony):** after separate explicit approval, run the 2.G live `recover-stale --execute` test from the merged ADR, then ship the follow-up docs-update PR; 2.H outer Codex execution timeout and workflow-format correction remain next Symphony items.
 - **Backlog (small, either Lane 1 or Lane 2 by coordinator assignment):** PR 11.1 canonical `btn-accent` migration + waiting-copy refresh (carries the deferred sub-goals from PR #156); test guardrail loosening for `event-detail-type-badges.test.ts` self-claim requirement.
 
@@ -70,6 +51,22 @@ PR 8 venue requirement clarification from Sami:
 ---
 
 ## Closed claims
+
+### Track 2 Phase 5.0 Option B — AI telemetry consumption runbook
+
+- **Branch:** `codex/track2-telemetry-consumption-runbook`
+- **Owner:** Codex
+- **End SHA:** merged via PR #165 → `56e7094a`
+- **Status:** `merged`
+- **Notes:** Docs-only Track 2 Phase 5.0 housekeeping. Documents the Axiom saved-query pattern for joining `[edit-turn-telemetry]` initial events with `[edit-turn-outcome]` follow-up events by `turnId`, plus expected result shape and dashboard follow-ups. References the PR 3 telemetry stack (#142, #146, #148). No code, schema, runtime behavior, or §8.2 locked implementation files.
+
+### Coordinator sync — track1-claims.md cleanup after PR #156, transition to three-lane operating model
+
+- **Branch:** `claude/coordinator-sync-after-track1-pr11`
+- **Owner:** Coordinator
+- **End SHA:** merged via PR #164 → `231fd3b1`
+- **Status:** `merged`
+- **Notes:** Coordinator-only docs maintenance. Moved PR 11 (UI polish, merged via #156) and the prior Coordinator sync (merged via #150) from Active to Closed. Updated "Next planned" to reflect the locked three-lane operating model: Lane 1 is the coordinator lane, Lane 2 is Track 2, and Lane 3 is Symphony. Track 1 §6 is fully shipped; future Track 1 follow-ups are tracked as small backlog items, not as active Track 1 work.
 
 ### PR 11 — Track 1 UI polish (final §6 PR)
 
