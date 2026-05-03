@@ -23,11 +23,13 @@ This document is not a substitute for reading the current code. If code and this
 
 The portal should become an AI-assisted event operations tool, not just a one-shot event creator.
 
+As of 2026-05-03, this plan should be interpreted through `docs/strategy/OPEN_MICS_AND_GRASSROOTS_PERFORMANCE_SCOPE.md`. CSC is narrowing from broad cultural-event aggregation to open mics and grassroots performance communities. The AI operations portal remains strategic infrastructure, but its first target is the maintenance burden of recurring, messy, relationship-driven performance events.
+
 The core product value is:
 
 - create new happenings from messy inputs
 - update existing happenings from natural language
-- keep recurring events current as details drift over time
+- keep recurring open mics, songwriter rounds, poetry readings, comedy mics, jams, workshops, showcases, and small gigs current as details drift over time
 - compare screenshots, links, and scraped pages against existing listings
 - avoid duplicate venues, organizations, performers, festivals, and recurring series
 
@@ -85,7 +87,7 @@ A real user tried the site and gave useful feedback:
 Strategic response:
 
 - Add AI edit/update first because current users need maintenance, not just creation.
-- Expand categories so dance, martial arts, cultural events, festivals, workshops, performances, and similar communities feel included.
+- Expand categories only where needed for the grassroots performance wedge: music, poetry, comedy, jams, workshops, showcases, small gigs, and directly adjacent community performance scenes.
 - Add festival awareness before bulk import lands, even if v1 is only `parent_festival_id`.
 - Add URL schedule import only after dedup and entity matching can prevent data pollution.
 

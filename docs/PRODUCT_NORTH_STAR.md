@@ -3,8 +3,8 @@
 ## Product North Star & System Truths (Canonical)
 
 **Status:** LOCKED (living document — changes require explicit version bump)
-**Version:** 2.0
-**Last Updated:** December 2025
+**Version:** 2.1
+**Last Updated:** May 2026
 **Audience:** Humans, repo agents, browser agents, future contributors
 
 > **This document is canonical. If something conflicts, this wins.**
@@ -17,6 +17,7 @@
 |---------|------|---------|
 | v1.x | Nov 2025 | Text-first, list-only event discovery |
 | v2.0 | Dec 2025 | Image-forward, scan-first, poster-constrained cards |
+| v2.1 | May 2026 | Strategic scope narrowed to open mics and grassroots performance communities |
 
 **v2.0 Rationale:** Text-only rows failed the "legitimacy test" in user feedback and did not convey event quality, intent, or credibility at a glance. Poster-based cards give events presence and visual weight.
 
@@ -24,7 +25,11 @@
 
 ## 1. Purpose (Why DSC Exists)
 
-The Colorado Songwriters Collective is a **real-world music community platform**, not a content feed and not a SaaS tool.
+The Colorado Songwriters Collective is a **real-world grassroots performance community platform**, not a content feed, not a SaaS tool, and not a generic event aggregator.
+
+CSC is a trusted guide and maintenance layer for **open mics and grassroots performance communities**, starting with Colorado music, poetry, comedy, songwriter, jam, workshop, showcase, and small-gig ecosystems.
+
+This is a scope correction, not a runtime filtering change or data purge. Existing functionality and existing event records remain valid. Broader cultural events are out of current strategic scope unless they directly serve open mic, songwriter, poetry, comedy, jam, workshop, showcase, small-venue, or adjacent grassroots performance communities.
 
 The product exists to answer, **at a glance**, for real humans:
 
@@ -35,6 +40,38 @@ The product exists to answer, **at a glance**, for real humans:
 * *Is this welcoming and worth my time?*
 
 If the UI fails to answer those in **5 seconds**, it has failed.
+
+### 1.1 Current Strategic Wedge
+
+Primary focus:
+
+* Open mics
+* Songwriter rounds
+* Poetry readings
+* Comedy mics
+* Acoustic showcases
+* Jams
+* Workshops
+* Small community gigs
+* Low-cost creator gatherings
+
+Adjacent allowed scope:
+
+* Featured performances by community members
+* Small venue lineups relevant to these scenes
+* Showcases involving local music, poetry, comedy, or spoken-word communities
+* Local festivals only when they directly serve these communities
+* Community-building events for performers, hosts, venues, and organizers in these scenes
+
+Explicitly out of current scope:
+
+* Broad all-cultural-events aggregation
+* National or global event discovery
+* Generic ticketing/event-platform competition
+* Competing with general event platforms on total event count
+* Turning CSC into a generic consumer event search product
+
+> **Product principle:** CSC serves open mic and grassroots performance communities across music, poetry, comedy, and adjacent grassroots performance scenes. Broader cultural events are out of scope unless they directly serve those communities.
 
 ---
 
@@ -80,6 +117,7 @@ See [docs/GOVERNANCE.md](./GOVERNANCE.md) for the full workflow.
 * A **music venue calendar**
 * A **flyer wall**
 * A **community bulletin board**
+* A **trusted open mic and grassroots performance guide**
 
 ### 3.2 What We Are NOT Building
 
@@ -88,6 +126,8 @@ See [docs/GOVERNANCE.md](./GOVERNANCE.md) for the full workflow.
 * Admin-first layouts
 * Engagement farming
 * Popularity contests
+* Generic all-events aggregation
+* Broad cultural-event search detached from grassroots performance communities
 
 ---
 

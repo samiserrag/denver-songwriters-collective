@@ -1,13 +1,15 @@
 # Ingestion & Fair Competition Strategy
 
 **Status:** ACTIVE — policy and disciplines effective immediately for all new ingestion work
-**Version:** 1.0
-**Last Updated:** 2026-05-02
+**Version:** 1.1
+**Last Updated:** 2026-05-03
 **Audience:** Repo agents, contributors, integrators, partners
 
 > **Top rule:** Trust the evidence trail, not the agent's confidence alone.
 
 This document defines how CSC collects, verifies, and publishes external event information. It is the citable policy for any new ingestion source, crawler, extractor, or write API. It does not modify any active confirmation behavior contracted in [CONTRACTS.md](../CONTRACTS.md) §Confirmation Invariants. The future verification model lives in [SOURCE_REGISTRY.md](SOURCE_REGISTRY.md) (PROPOSED, not yet active).
+
+This policy is scoped by the current product wedge in [OPEN_MICS_AND_GRASSROOTS_PERFORMANCE_SCOPE.md](OPEN_MICS_AND_GRASSROOTS_PERFORMANCE_SCOPE.md). Ingestion exists to support open mics and grassroots performance communities, not broad all-cultural-events aggregation.
 
 ---
 
@@ -30,7 +32,7 @@ The line between manual research and scraping is automation, not the source. Hum
 
 ## 2. Fair-Competition Posture (Public Statement)
 
-> **CSC competes by making public cultural event information more useful, fresh, transparent, and accessible. CSC does not evade access controls, ignore robots.txt, violate explicit no-scrape terms, collect private user data, or copy expressive content. CSC links back to original sources and gives venues, artists, and organizations claim, correction, and opt-out paths.**
+> **CSC competes by making public grassroots performance event information more useful, fresh, transparent, and accessible. CSC does not evade access controls, ignore robots.txt, violate explicit no-scrape terms, collect private user data, or copy expressive content. CSC links back to original sources and gives venues, artists, hosts, performers, and organizations claim, correction, and opt-out paths.**
 
 This is the language to publish on `/about/data`, `/llms.txt`, and any partner-facing material.
 
@@ -50,6 +52,8 @@ This is the language to publish on `/about/data`, `/llms.txt`, and any partner-f
 * Ticket pages where terms permit factual extraction
 
 Default-allowed does not mean automatic ingestion — every source must be registered, classified, and rate-budgeted before crawling begins (see §5–§6).
+
+Default-allowed also does not mean all-event ingestion. A source is strategically relevant only when it serves open mic, songwriter, poetry, comedy, jam, workshop, showcase, small-gig, small-venue, or adjacent grassroots performance communities.
 
 ## 4. Disallowed Sources (Default Deny)
 
@@ -144,8 +148,9 @@ Cadence may be adjusted per source by the Source Policy agent within budget.
 ## 11. What This Document Does Not Do
 
 * It does not change the active Confirmation Invariants in [CONTRACTS.md](../CONTRACTS.md).
-* It does not authorize any specific crawler, source, or pipeline. Each requires registration, classification, and stop-gate review.
+* It does not authorize any specific crawler, source, or pipeline. Each requires registration, classification, scope fit, and stop-gate review.
 * It does not commit CSC to publishing externally-ingested events at all in Phase 1. Manual and conversational creation remain the active paths until the Source Observation data model ships (see [SOURCE_REGISTRY.md](SOURCE_REGISTRY.md)).
+* It does not authorize broad crawler ambitions detached from the grassroots performance wedge.
 
 ---
 

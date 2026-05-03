@@ -1,8 +1,8 @@
 # Source Registry & Verification Model (Proposed)
 
 **Status:** PROPOSED — not active
-**Version:** 0.1 (draft)
-**Last Updated:** 2026-05-02
+**Version:** 0.2 (draft)
+**Last Updated:** 2026-05-03
 **Audience:** Repo agents, contributors, system designers
 **Supersedes:** Nothing yet. Active confirmation behavior remains as defined in [CONTRACTS.md](../CONTRACTS.md) §Confirmation Invariants.
 
@@ -13,6 +13,8 @@
 ## 1. Purpose
 
 This document is the architectural plan for how CSC will (eventually) decide what to publish, how to label trust, and how to keep the event graph honest at scale. It is the design counterpart to the policy in [INGESTION_AND_FAIR_COMPETITION.md](INGESTION_AND_FAIR_COMPETITION.md).
+
+The target market is now explicitly narrowed by [OPEN_MICS_AND_GRASSROOTS_PERFORMANCE_SCOPE.md](OPEN_MICS_AND_GRASSROOTS_PERFORMANCE_SCOPE.md). The source registry, observations, change log, AI concierge, and agent-readable surfaces remain strategic infrastructure, but their first target is open mics and grassroots performance communities rather than all cultural events.
 
 ## 2. Source Type Taxonomy
 

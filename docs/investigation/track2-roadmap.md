@@ -25,6 +25,12 @@ If reality and this plan disagree, verify reality and update this document or th
 
 ## 2. Strategic context
 
+### Scope correction — grassroots performance wedge
+
+As of 2026-05-03, Track 2 should be interpreted through [docs/strategy/OPEN_MICS_AND_GRASSROOTS_PERFORMANCE_SCOPE.md](../strategy/OPEN_MICS_AND_GRASSROOTS_PERFORMANCE_SCOPE.md). CSC is not pursuing broad all-cultural-events aggregation. The event graph, public APIs, import pipeline, categories, source observation, and AI concierge remain important, but their first target is open mics and grassroots performance communities: music, poetry, comedy, jams, workshops, showcases, small community gigs, and adjacent local performance scenes.
+
+Earlier broad cultural-event language in this roadmap is historical context unless it directly serves that wedge. Existing functionality and event records are not deprecated by this correction.
+
 ### What Track 1 left us
 
 After the Track 1 §6 PRs (#124, #125, #126, #127, #128, #129, #131, #135, #139, #142, #146, #148, and PR 11 in flight at time of writing):
@@ -40,7 +46,7 @@ What Track 1 did **not** address:
 - The data model is still flat — `events` is one big table; festivals, organizations, performers, categories aren't first-class.
 - Bulk import (URL schedule, CSV, screenshot) is still future work.
 - Dedup against existing events relies on human review, not deterministic keys.
-- Categories are a closed text array; doesn't fit dance, martial arts, cultural events, festivals, workshops naturally.
+- Categories are a closed text array; doesn't fit the narrowed grassroots performance wedge or adjacent community formats cleanly enough.
 
 ### What Track 2 unlocks
 
@@ -50,7 +56,7 @@ Per collab plan §3.2:
 
 The 2026-05-01 strategic conversation (between Sami, Codex, and Claude) sharpened this into the **operative north star for Track 2**:
 
-> **CSC is a living local event graph maintained by hosts, verified by agents, and exposed as the most trustworthy source for humans and AI systems.**
+> **CSC is a living local grassroots performance event graph maintained by hosts, verified by agents, and exposed as the most trustworthy source for humans and AI systems.**
 
 The defensive logic against consumer-side AI disintermediation (Claude/GPT/Perplexity/Gemini deep-search rendering "what's happening tonight" without sending users to traditional events sites) is the **three strategic legs**:
 
@@ -65,7 +71,7 @@ Concretely:
 - A user's "open mic at Lost Lake on Tuesdays" creates one series row; future imports of the same series match against it deterministically rather than creating duplicates.
 - An organization performing inside a larger festival (the §4 Arcinda + Colorado Dragon Boat Festival example) is modeled with a parent-festival relationship, not crammed into a single event row.
 - A scraped schedule.html is decomposed into known venues, organizations, and recurring series; new rows only created when the dedup engine is confident none exist.
-- Event types expand beyond the current music-focused closed set without breaking existing filters.
+- Event types expand beyond the current music-focused closed set where doing so helps open mics, poetry, comedy, jams, workshops, showcases, and adjacent grassroots performance communities.
 - A host says "the Tuesday open mic moved to 8" from any chat surface, and the agent finds the right event and proposes the patch.
 - A consumer-side AI like Perplexity scrapes CSC's `/events.json`, gets clean schema-compliant data, and cites CSC as the source — driving citation traffic that CSC owns.
 - CSC's reverification workers re-check known source URLs nightly; drift gets surfaced to hosts as evidence-backed alerts; data stays current without human intervention on the easy cases.
@@ -103,7 +109,7 @@ Track 2 is bigger, slower, and pays back the moat. Don't rush it.
 
 ### 2A — Categories: format and discipline model
 
-**Why this matters:** §4 user feedback said "manual event creation felt too focused on existing CSC/open mic categories." Categories drift kills feature adoption for non-music communities. In the updated §5 sequencing, 2A runs after the security-ADR phase, 2F concierge, 2E series matching, and 2I AI source optimization — but it remains foundational for the broader cultural-event graph and is still a Track 2 priority before festivals/imports.
+**Why this matters:** §4 user feedback said "manual event creation felt too focused on existing CSC/open mic categories." Categories drift kills feature adoption for adjacent grassroots performance communities. In the updated §5 sequencing, 2A runs after the security-ADR phase, 2F concierge, 2E series matching, and 2I AI source optimization — but it remains foundational for the narrowed grassroots performance graph and is still a Track 2 priority before festivals/imports.
 
 **Today:** `events.event_type text[]` validated against `eventTypeContract.ts` (closed set, music-focused). Format and discipline are conflated.
 
@@ -348,7 +354,7 @@ This sub-track flips the surface: the host types a free-text update from anywher
 
 **Today:** unknown coverage. We may have partial Schema.org Event JSON-LD; no audit done. No `events.json` public API. robots.txt may or may not block AI crawlers. No AI-shaped query endpoints. No AI traffic visibility.
 
-**Goal:** the most trustworthy structured public source for cultural events in Denver / Colorado. Every AI deep-search agent that scrapes for events finds CSC's data clean, fresh, complete, schema-compliant, and rate-limited fairly.
+**Goal:** the most trustworthy structured public source for open mics and grassroots performance communities in Denver / Colorado. Every AI deep-search agent that scrapes for these events finds CSC's data clean, fresh, complete, schema-compliant, and rate-limited fairly.
 
 **Sub-PRs:**
 
@@ -374,7 +380,7 @@ This sub-track flips the surface: the host types a free-text update from anywher
 
 **Why this is the third strategic leg:** the agent (host concierge, 2F) maintains source data. Public APIs (2I) expose it. **2J keeps it fresh against the outside world.** Schedules drift; venues change details; events get cancelled and the host doesn't update. 2J watches known sources and flags drift before humans notice.
 
-**Critical scope discipline (Codex-locked):** v1 is **known-source reverification only**. No broad autonomous cultural-web crawling. The review queue and evidence trail matter more than scrape volume. Architecture must NOT hard-code songwriter/open-mic assumptions — the long-term object is cultural event intelligence (music + comedy + jams + poetry + art shows + festivals + eventually sports), but the graph and matching model must be strong before category expansion.
+**Critical scope discipline (Codex-locked):** v1 is **known-source reverification only**. No broad autonomous cultural-web crawling. The review queue and evidence trail matter more than scrape volume. Architecture must NOT hard-code songwriter/open-mic assumptions, but the intended flexibility is for adjacent grassroots performance communities (music, comedy, jams, poetry, spoken-word, workshops, showcases, small venue lineups, and directly relevant local festivals), not generic all-cultural-events coverage.
 
 **Today:** zero. No reverification, no drift detection, no source-sync workers.
 
@@ -393,9 +399,9 @@ This sub-track flips the surface: the host types a free-text update from anywher
 
 **Defer:**
 
-- Broad autonomous web discovery across the wider cultural-events web (Phase 2.J or later — only after known-source reverification proves the matching model).
+- Broad autonomous web discovery across the wider cultural-events web. This is out of current scope and would require a separate product-scope stop-gate.
 - Venue calendar discovery for venues with no known-source URL yet.
-- Category expansion rollout (cultural genres beyond music) — the graph and matching model needs strength first.
+- Category expansion rollout beyond the initial grassroots performance wedge — the graph and matching model needs strength first.
 
 **Risks (significant):**
 
@@ -587,7 +593,7 @@ If ordered for highest leverage. **Each sub-track's `.0` security ADR is a hard 
 | **2F — AI Host Concierge: cross-event find-and-edit + multipurpose agent** | The killer operator-ergonomics unlock + the host-side moat in the three-leg framing | 8–10 |
 | 2E — Recurring series matching | Data hygiene; series identity directly improves 2F match quality | 4–5 |
 | **2I — AI Agent Source Optimization** | Second strategic leg; can run in parallel with 2F after 2I.0 ADR | 6–9 |
-| 2A — Categories | Live user pain; foundational; broadens the data graph for cultural-event coverage | 6–8 |
+| 2A — Categories | Live user pain; foundational; broadens the data graph for grassroots performance coverage | 6–8 |
 | 2B — Festivals | Small, valuable, well-bounded; validates entity-relationship model | 4–5 |
 | **2J — Proactive Reality Sync (narrow first)** | Third strategic leg; depends on 2J.1 safe fetcher landing first | 8–10 |
 | 2D.0 — Import foundations (schema, sanitization, dedup) | Some pieces overlap with 2J's safeFetch + parsing; coordinate | 3 |
