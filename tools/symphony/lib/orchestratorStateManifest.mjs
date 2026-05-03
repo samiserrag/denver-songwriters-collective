@@ -1,6 +1,10 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { ORCHESTRATOR_STATES, STATE_RETRY_WAIT } from "./orchestratorState.mjs";
+import {
+  normalizeCapabilitySnapshotEvidence,
+  normalizeToolPolicyDecisionEvidenceList
+} from "./orchestratorToolEvidence.mjs";
 
 export const ORCHESTRATOR_STATE_MANIFEST_KIND = "symphony_orchestrator_state";
 export const ORCHESTRATOR_STATE_MANIFEST_VERSION = 1;
@@ -39,6 +43,8 @@ export function createOrchestratorStateSnapshot({
   codexRateLimits = null,
   lastOutcome = null,
   workflow = null,
+  capabilitySnapshot = null,
+  toolPolicyDecisions = null,
   repo = null,
   lock = null
 } = {}) {
@@ -89,7 +95,7 @@ export function createOrchestratorStateSnapshot({
     transitions.push(normalizeTransition(transition, generatedAtIso));
   }
 
-  return validateOrchestratorStateSnapshot({
+  const snapshot = {
     manifest_kind: ORCHESTRATOR_STATE_MANIFEST_KIND,
     orchestrator_state_version: ORCHESTRATOR_STATE_MANIFEST_VERSION,
     generated_at: generatedAtIso,
@@ -102,7 +108,14 @@ export function createOrchestratorStateSnapshot({
     codex_rate_limits: codexRateLimits,
     last_outcome: lastOutcome,
     workflow
-  });
+  };
+  if (capabilitySnapshot !== undefined && capabilitySnapshot !== null) {
+    snapshot.capability_snapshot = normalizeCapabilitySnapshotEvidence(capabilitySnapshot);
+  }
+  if (toolPolicyDecisions !== undefined && toolPolicyDecisions !== null) {
+    snapshot.tool_policy_decisions = normalizeToolPolicyDecisionEvidenceList(toolPolicyDecisions);
+  }
+  return validateOrchestratorStateSnapshot(snapshot);
 }
 
 export function validateOrchestratorStateSnapshot(snapshot) {
@@ -138,13 +151,20 @@ export function validateOrchestratorStateSnapshot(snapshot) {
     normalizeTransition(transition, null, `state_transitions.${index}`)
   ));
 
-  return {
+  const normalizedSnapshot = {
     ...snapshot,
     issues,
     retry_attempts: retryAttempts,
     state_transitions: stateTransitions,
     codex_totals: normalizeCodexTotals(snapshot.codex_totals)
   };
+  if (snapshot.capability_snapshot !== undefined && snapshot.capability_snapshot !== null) {
+    normalizedSnapshot.capability_snapshot = normalizeCapabilitySnapshotEvidence(snapshot.capability_snapshot);
+  }
+  if (snapshot.tool_policy_decisions !== undefined && snapshot.tool_policy_decisions !== null) {
+    normalizedSnapshot.tool_policy_decisions = normalizeToolPolicyDecisionEvidenceList(snapshot.tool_policy_decisions);
+  }
+  return normalizedSnapshot;
 }
 
 export async function writeOrchestratorStateManifest(filePath, snapshot, {

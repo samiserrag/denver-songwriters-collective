@@ -1,5 +1,10 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
+import {
+  CAPABILITY_CATEGORIES,
+  buildCapabilitySnapshot
+} from "../lib/orchestratorCapabilitySnapshot.mjs";
 import {
   STATE_BLOCKED,
   STATE_CANCELLED,
@@ -18,6 +23,7 @@ import {
   validateOrchestratorStateSnapshot
 } from "../lib/orchestratorStateManifest.mjs";
 import { buildOrchestratorStatusSnapshot } from "../lib/orchestratorStatusSnapshot.mjs";
+import { decideToolPolicy } from "../lib/orchestratorToolPolicy.mjs";
 
 const NOW = "2026-05-02T22:00:00.000Z";
 const RUN_STARTED = "2026-05-02T21:59:30.000Z";
@@ -116,6 +122,52 @@ function adapterSnapshot(overrides = {}) {
     },
     ...overrides
   };
+}
+
+function tool(overrides = {}) {
+  return {
+    tool_id: "repo-reader",
+    display_name: "Repo Reader",
+    provider: "filesystem",
+    source: "codex_builtin",
+    category: CAPABILITY_CATEGORIES.repoFileRead,
+    available: true,
+    credential_state: "none",
+    approved_actions: ["read_file"],
+    denied_actions: ["write_file"],
+    ...overrides
+  };
+}
+
+function capabilitySnapshot() {
+  const result = buildCapabilitySnapshot({
+    catalog_version: "codex-tools-v1",
+    source: "codex_tool_catalog",
+    tools: [
+      tool(),
+      tool({
+        tool_id: "github-mutation",
+        display_name: "GitHub mutation",
+        provider: "github",
+        category: CAPABILITY_CATEGORIES.githubMutation,
+        approved_actions: ["comment_issue"],
+        denied_actions: []
+      }),
+      tool({
+        tool_id: "revoked-gmail",
+        display_name: "Gmail",
+        provider: "gmail",
+        category: CAPABILITY_CATEGORIES.credentialConnectorWrite,
+        available: false,
+        availability_reason: "tool_auth_revoked",
+        credential_state: "revoked",
+        approved_actions: ["send_email"],
+        denied_actions: []
+      })
+    ]
+  }, { now: RUN_STARTED });
+  assert.equal(result.ok, true, JSON.stringify(result.errors ?? []));
+  return result;
 }
 
 test("valid multi-issue snapshot produces expected status counts", () => {
@@ -315,6 +367,64 @@ test("unknown adapter snapshot fields pass through without reinterpretation", ()
   });
 });
 
+test("status snapshot reports capability fingerprint and counts", () => {
+  const capabilities = capabilitySnapshot();
+  const snapshot = emptySnapshot({
+    capability_snapshot: capabilities
+  });
+
+  const status = buildOrchestratorStatusSnapshot(snapshot, { now: NOW });
+
+  assert.equal(status.ok, true);
+  assert.deepEqual(status.tooling.capability_snapshot, {
+    present: true,
+    fingerprint: capabilities.fingerprint,
+    catalog_version: "codex-tools-v1",
+    generated_at: RUN_STARTED,
+    unavailable_tool_count: 1,
+    approval_required_tool_count: 2,
+    counts_by_category: snapshot.capability_snapshot.counts_by_category,
+    counts_by_risk: snapshot.capability_snapshot.counts_by_risk
+  });
+});
+
+test("status snapshot reports recent blocked reasons and allowed categories", () => {
+  const capabilities = capabilitySnapshot();
+  const allowed = decideToolPolicy(capabilities, {
+    tool_id: "repo-reader",
+    action: "read_file",
+    category: CAPABILITY_CATEGORIES.repoFileRead
+  });
+  const blocked = decideToolPolicy(capabilities, {
+    tool_id: "github-mutation",
+    action: "comment_issue",
+    category: CAPABILITY_CATEGORIES.githubMutation,
+    context: {
+      operation: "comment_issue",
+      target_environment: "local"
+    }
+  });
+  const snapshot = emptySnapshot({
+    capability_snapshot: capabilities,
+    tool_policy_decisions: [allowed, blocked]
+  });
+
+  const status = buildOrchestratorStatusSnapshot(snapshot, { now: NOW });
+
+  assert.equal(status.tooling.tool_policy.decision_count, 2);
+  assert.equal(status.tooling.tool_policy.allowed_count, 1);
+  assert.equal(status.tooling.tool_policy.blocked_count, 1);
+  assert.deepEqual(status.tooling.tool_policy.recent_blocked_reasons, [{
+    tool_id: "github-mutation",
+    action: "comment_issue",
+    category: CAPABILITY_CATEGORIES.githubMutation,
+    reason: "tool_approval_required"
+  }]);
+  assert.deepEqual(status.tooling.tool_policy.recent_allowed_categories, [
+    CAPABILITY_CATEGORIES.repoFileRead
+  ]);
+});
+
 test("malformed snapshot fails closed", () => {
   const status = buildOrchestratorStatusSnapshot({
     manifest_kind: ORCHESTRATOR_STATE_MANIFEST_KIND,
@@ -329,6 +439,24 @@ test("malformed snapshot fails closed", () => {
   assert.equal(status.ok, false);
   assert.equal(status.reason, "orchestrator_status_snapshot_failed");
   assert.match(status.error, /issues must be an object/);
+});
+
+test("malformed tool evidence fails closed without throwing from status builder", () => {
+  const snapshot = emptySnapshot();
+  const status = buildOrchestratorStatusSnapshot({
+    ...snapshot,
+    tool_policy_decisions: [{
+      tool_id: "repo-reader",
+      action: "read_file",
+      category: CAPABILITY_CATEGORIES.repoFileRead,
+      allowed: "yes",
+      reason: "tool_allowed"
+    }]
+  }, { now: NOW });
+
+  assert.equal(status.ok, false);
+  assert.equal(status.reason, "orchestrator_status_snapshot_failed");
+  assert.match(status.error, /tool_policy_decisions\.0\.allowed must be a boolean/);
 });
 
 test("invalid injected clock fails closed", () => {
@@ -349,6 +477,21 @@ test("empty no-work snapshot is valid and reports zero counts", () => {
   assert.equal(status.counts_by_state[STATE_RUNNING], 0);
   assert.equal(status.counts_by_state[STATE_RETRY_WAIT], 0);
   assert.deepEqual(status.accounting.sessions, []);
+  assert.equal(status.tooling.capability_snapshot.present, false);
+  assert.equal(status.tooling.tool_policy.decision_count, 0);
+});
+
+test("tool evidence plumbing does not import runner, CLI, or execution modules", () => {
+  for (const modulePath of [
+    "../lib/orchestratorStateManifest.mjs",
+    "../lib/orchestratorStatusSnapshot.mjs",
+    "../lib/orchestratorToolEvidence.mjs"
+  ]) {
+    const source = readFileSync(new URL(modulePath, import.meta.url), "utf8");
+
+    assert.doesNotMatch(source, /node:child_process|node:net|node:http|node:https/);
+    assert.doesNotMatch(source, /runner\.mjs|cli\.mjs|github\.mjs|codexAdapter\.mjs|codexAppServerAdapter\.mjs/);
+  }
 });
 
 function retryObject(attempt, dueAt, reason = "read_timeout") {

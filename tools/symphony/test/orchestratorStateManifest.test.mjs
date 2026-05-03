@@ -4,6 +4,10 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import {
+  CAPABILITY_CATEGORIES,
+  buildCapabilitySnapshot
+} from "../lib/orchestratorCapabilitySnapshot.mjs";
+import {
   EVENT_ADAPTER_TERMINAL_RETRYABLE_FAILURE,
   EVENT_RETRY_DUE,
   reduceOrchestratorState,
@@ -20,6 +24,7 @@ import {
   validateOrchestratorStateSnapshot,
   writeOrchestratorStateManifest
 } from "../lib/orchestratorStateManifest.mjs";
+import { decideToolPolicy } from "../lib/orchestratorToolPolicy.mjs";
 
 const NOW = "2026-05-02T19:45:00.000Z";
 
@@ -51,6 +56,52 @@ function makeRunningSnapshot(overrides = {}) {
     },
     ...overrides
   });
+}
+
+function tool(overrides = {}) {
+  return {
+    tool_id: "repo-reader",
+    display_name: "Repo Reader",
+    provider: "filesystem",
+    source: "codex_builtin",
+    category: CAPABILITY_CATEGORIES.repoFileRead,
+    available: true,
+    credential_state: "none",
+    approved_actions: ["read_file"],
+    denied_actions: ["write_file"],
+    ...overrides
+  };
+}
+
+function capabilitySnapshot() {
+  const result = buildCapabilitySnapshot({
+    catalog_version: "codex-tools-v1",
+    source: "codex_tool_catalog",
+    tools: [
+      tool(),
+      tool({
+        tool_id: "github-mutation",
+        display_name: "GitHub mutation",
+        provider: "github",
+        category: CAPABILITY_CATEGORIES.githubMutation,
+        approved_actions: ["comment_issue"],
+        denied_actions: []
+      }),
+      tool({
+        tool_id: "revoked-gmail",
+        display_name: "Gmail",
+        provider: "gmail",
+        category: CAPABILITY_CATEGORIES.credentialConnectorWrite,
+        available: false,
+        availability_reason: "tool_auth_revoked",
+        credential_state: "revoked",
+        approved_actions: ["send_email"],
+        denied_actions: []
+      })
+    ]
+  }, { now: NOW });
+  assert.equal(result.ok, true, JSON.stringify(result.errors ?? []));
+  return result;
 }
 
 test("writes and reads a valid orchestrator state manifest round trip", async () => {
@@ -277,6 +328,106 @@ test("persists terminal status/reason and adapter_state_snapshot without interpr
   assert.equal(snapshot.issues["42"].terminal_status, "failure");
   assert.equal(snapshot.issues["42"].terminal_reason, "future_adapter_reason");
   assert.deepEqual(snapshot.issues["42"].adapter_state_snapshot, adapterStateSnapshot);
+});
+
+test("manifest includes capability snapshot summary from plain data", () => {
+  const capabilities = capabilitySnapshot();
+  const snapshot = makeRunningSnapshot({
+    capabilitySnapshot: capabilities
+  });
+
+  assert.equal(snapshot.capability_snapshot.fingerprint, capabilities.fingerprint);
+  assert.equal(snapshot.capability_snapshot.catalog_version, "codex-tools-v1");
+  assert.equal(snapshot.capability_snapshot.generated_at, NOW);
+  assert.equal(snapshot.capability_snapshot.counts_by_category.github_mutation, 1);
+  assert.equal(snapshot.capability_snapshot.counts_by_risk.high, 2);
+  assert.equal(snapshot.capability_snapshot.unavailable_tool_count, 1);
+  assert.deepEqual(snapshot.capability_snapshot.unavailable_tools, [{
+    tool_id: "revoked-gmail",
+    display_name: "Gmail",
+    category: CAPABILITY_CATEGORIES.credentialConnectorWrite,
+    availability_reason: "tool_auth_revoked",
+    credential_state: "revoked"
+  }]);
+  assert.equal(snapshot.capability_snapshot.approval_required_tool_count, 2);
+  assert.deepEqual(snapshot.capability_snapshot.approval_required_tools.map((entry) => entry.tool_id), [
+    "revoked-gmail",
+    "github-mutation"
+  ]);
+});
+
+test("manifest includes allowed and blocked tool-policy evidence", () => {
+  const capabilities = capabilitySnapshot();
+  const allowed = decideToolPolicy(capabilities, {
+    tool_id: "repo-reader",
+    action: "read_file",
+    category: CAPABILITY_CATEGORIES.repoFileRead
+  });
+  const blocked = decideToolPolicy(capabilities, {
+    tool_id: "github-mutation",
+    action: "comment_issue",
+    category: CAPABILITY_CATEGORIES.githubMutation,
+    context: {
+      operation: "comment_issue",
+      target_environment: "local"
+    }
+  });
+
+  const snapshot = makeRunningSnapshot({
+    capabilitySnapshot: capabilities,
+    toolPolicyDecisions: [blocked, allowed]
+  });
+
+  assert.deepEqual(snapshot.tool_policy_decisions.map((decision) => [
+    decision.tool_id,
+    decision.action,
+    decision.allowed,
+    decision.reason
+  ]), [
+    ["github-mutation", "comment_issue", false, "tool_approval_required"],
+    ["repo-reader", "read_file", true, "tool_allowed"]
+  ]);
+  assert.deepEqual(snapshot.tool_policy_decisions[0].matched_tool, {
+    tool_id: "github-mutation",
+    display_name: "GitHub mutation",
+    provider: "github",
+    source: "codex_builtin"
+  });
+  assert.equal(snapshot.tool_policy_decisions[0].requires_explicit_approval, true);
+  assert.equal(snapshot.tool_policy_decisions[0].approval_satisfied, false);
+});
+
+test("secret-like capability and tool-policy evidence is rejected", () => {
+  const capabilities = capabilitySnapshot();
+  const allowed = decideToolPolicy(capabilities, {
+    tool_id: "repo-reader",
+    action: "read_file",
+    category: CAPABILITY_CATEGORIES.repoFileRead
+  });
+  const base = makeRunningSnapshot();
+
+  assert.throws(
+    () => validateOrchestratorStateSnapshot({
+      ...base,
+      capability_snapshot: {
+        ...capabilities,
+        token: "ghp_abcdefghijklmnopqrstuvwxyz123456"
+      }
+    }),
+    /tool_evidence_secret_field_denied/
+  );
+  assert.throws(
+    () => validateOrchestratorStateSnapshot({
+      ...base,
+      tool_policy_decisions: [{
+        ...allowed,
+        result_summary: {
+          note: "Bearer abcdefghijklmnopqrstuvwxyz123456"
+        }
+      }]
+    }),
+    /tool_evidence_secret_value_denied/
+  );
 });
 
 test("readOrchestratorStateManifest rejects invalid JSON with a useful error", async () => {

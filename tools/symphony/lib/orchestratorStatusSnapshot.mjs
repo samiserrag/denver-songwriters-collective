@@ -15,6 +15,7 @@ import {
   normalizeAdapterAccounting
 } from "./orchestratorAccounting.mjs";
 import { validateOrchestratorStateSnapshot } from "./orchestratorStateManifest.mjs";
+import { buildToolEvidenceStatus } from "./orchestratorToolEvidence.mjs";
 
 const STATE_VALUES = Object.freeze(Object.values(ORCHESTRATOR_STATES));
 
@@ -46,6 +47,12 @@ function buildStatus(snapshot, generatedAt, options) {
     throw new Error(accountingResult.error);
   }
   const accounting = accountingResult.accounting;
+  const tooling = buildToolEvidenceStatus({
+    capabilitySnapshot: snapshot.capability_snapshot ?? null,
+    toolPolicyDecisions: snapshot.tool_policy_decisions ?? []
+  }, {
+    recentLimit: options.toolPolicyRecentLimit ?? 5
+  });
 
   const issues = Object.values(snapshot.issues)
     .sort((left, right) => left.issue_number - right.issue_number);
@@ -120,6 +127,7 @@ function buildStatus(snapshot, generatedAt, options) {
     codex_totals: snapshot.codex_totals,
     rate_limits: snapshot.codex_rate_limits ?? null,
     accounting,
+    tooling,
     last_outcome: snapshot.last_outcome ?? null,
     actions: [],
     durableWrites: []
