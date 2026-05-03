@@ -22,12 +22,31 @@ Rules:
 
 ## Active claims
 
+### Lane 9 follow-up — Concierge search timeout fallback
+
+- **Branch:** `codex/track1-lane9-search-timeout-fallback`
+- **Owner:** Lane 9
+- **Base SHA:** `6035d8548596` (current `origin/main` at claim time)
+- **Status:** `in_progress`
+- **Purpose:** Make venue enrichment resilient when exact-event web search times out.
+- **Files claimed:**
+  - `docs/investigation/track1-claims.md`
+  - `web/src/app/api/events/interpret/route.ts`
+  - `web/src/lib/events/interpretEventContract.ts`
+  - `web/src/lib/events/venueResolver.ts`
+  - `web/src/__tests__/interpret-venue-resolution.test.ts`
+  - `web/src/__tests__/interpreter-concierge-search.test.ts`
+  - `web/src/__tests__/interpreter-phase9-reliability.test.ts`
+  - `web/src/__tests__/venue-resolver.test.ts`
+
+---
+
 ### Lane 9 — Concierge search venue enrichment quality fix
 
 - **Branch:** `codex/track1-lane9-concierge-search`
 - **Owner:** Lane 9
 - **Base SHA:** `f817c72ddf6f` (current `origin/main` at claim time)
-- **Status:** `awaiting_review`
+- **Status:** `merged`
 - **Purpose:** Concierge search venue enrichment quality fix.
 - **Files claimed:**
   - `docs/investigation/track1-claims.md`
