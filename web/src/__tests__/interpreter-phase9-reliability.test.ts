@@ -257,18 +257,22 @@ describe("Phase 9B — event-type reliability", () => {
 
   it("does not silently drop explicit search requests when web search cannot produce sources", () => {
     expect(interpretRouteSource).toContain("buildNoReliableWebSearchResult");
-    expect(interpretRouteSource).toContain('tool_choice: input.returnNoReliableResult ? "required" : "auto"');
+    expect(interpretRouteSource).toContain('tool_choice: "required"');
+    expect(interpretRouteSource).toContain("runWebSearchCategory");
+    expect(interpretRouteSource).toContain("combineWebSearchCategoryAttempts");
     expect(interpretRouteSource).toContain("const ROUTE_SAFETY_MARGIN_MS = 8_000");
     expect(interpretRouteSource).toContain("const WEB_SEARCH_TIMEOUT_MS = 16_000");
+    expect(interpretRouteSource).toContain("const VENUE_WEB_SEARCH_TIMEOUT_MS = 10_000");
+    expect(interpretRouteSource).toContain("const EVENT_WEB_SEARCH_TIMEOUT_MS = 12_000");
     expect(interpretRouteSource).toContain("const INTERPRETER_TIMEOUT_MS = 85_000");
     expect(interpretRouteSource).toContain("const DRAFT_VERIFIER_TIMEOUT_MS = 8_000");
     expect(interpretRouteSource).toContain("getBoundedStepTimeoutMs");
     expect(interpretRouteSource).toContain("canRunDraftVerifier");
     expect(interpretRouteSource).toContain("export const maxDuration = 120");
-    expect(interpretRouteSource).toContain("web-search service returned an upstream error");
+    expect(interpretRouteSource).toContain("web search category skipped after upstream error");
     expect(interpretRouteSource).toContain("returned no usable verification text");
-    expect(interpretRouteSource).toContain("did not return a readable exact-event source");
-    expect(interpretRouteSource).toContain("I could not find a reliable venue/address source before timeout");
+    expect(interpretRouteSource).toContain("did not return readable structured verification details");
+    expect(interpretRouteSource).toContain("Search timed out before returning reliable venue or exact-event sources");
   });
 
   it("keeps optional follow-up copy separate from the result summary", () => {
