@@ -1,11 +1,11 @@
 # Operating Thesis
 
 **Status:** ACTIVE
-**Version:** 1.0
-**Last Updated:** 2026-05-02
+**Version:** 1.1
+**Last Updated:** 2026-05-03
 **Audience:** Founders, contributors, repo agents, partners, future operators
 
-> **Operating thesis (one sentence):** CSC is a lean, AI-leveraged, community-benefit event utility that pays a small team fairly by making Colorado cultural events radically easier to create, maintain, verify, discover, and consume — for both humans and agents.
+> **Operating thesis (one sentence):** CSC is a lean, AI-leveraged, community-benefit event utility that pays a small team fairly by making open mics and grassroots performance communities radically easier to create, maintain, verify, discover, and consume — for both humans and agents.
 
 This document describes the kind of business and organization CSC intends to be. It is durable but evolvable. It does not override [PRODUCT_NORTH_STAR.md](../PRODUCT_NORTH_STAR.md) on philosophy, [CONTRACTS.md](../CONTRACTS.md) on enforceable behavior, or [GOVERNANCE.md](../GOVERNANCE.md) on workflow. It does set the operating frame those documents live inside.
 
@@ -13,7 +13,7 @@ This document describes the kind of business and organization CSC intends to be.
 
 ## 1. What CSC Is
 
-* Lean public-good infrastructure for local cultural events.
+* Lean public-good infrastructure for open mics and grassroots performance communities.
 * AI-leveraged, with humans focused on trust, relationships, edge cases, partnerships, and product judgment.
 * Source-transparent, link-back, claim/correct/opt-out friendly.
 * Useful for humans and AI agents at the same time.
@@ -25,7 +25,8 @@ This document describes the kind of business and organization CSC intends to be.
 * Not an extractive aggregator that buries source links to keep traffic.
 * Not pay-to-play for trust, accuracy, or visibility.
 * Not a content feed, social network, or engagement-farming platform.
-* Not built to dominate every event category — wedge first, expand only with density and trust.
+* Not built to dominate every event category — grassroots performance wedge first, expand only with density and trust.
+* Not a generic all-events, all-cultural-events, or consumer event search product.
 
 ## 3. Lean Team Shape
 
@@ -62,7 +63,7 @@ Revenue must reinforce the public-good event layer, not replace it.
 * API access tiers for larger partners (rate limits, write actions, support, SLAs)
 * Donations and supporter memberships
 * Local business sponsorships
-* White-label cultural calendars
+* White-label community performance calendars
 
 **Forbidden:**
 
@@ -112,12 +113,14 @@ These tradeoffs buy durability, community trust, and an honest data layer that A
 
 CSC starts narrow and expands as density and trust earn the right.
 
-* Phase 1: Songwriter, open mic, listening room events
-* Phase 2: Broader local music + poetry + arts + community culture
-* Phase 3: All Colorado cultural events
-* Phase 4: General cultural event discovery in regions where CSC has density and trust
+* Phase 1: Songwriter, open mic, listening room, jam, showcase, and workshop events
+* Phase 2: Grassroots performance communities across music, poetry, comedy, and adjacent spoken-word / small-venue scenes
+* Phase 3: Colorado city-by-city density for those communities, with local festivals only when they directly serve the wedge
+* Phase 4: New regions only after the model works locally; broad cultural-event aggregation remains out of scope unless it directly serves grassroots performance communities
 
 Naming and positioning expand only when the data and community already do. The architectural substrate for region/community-type expansion is already documented as STRAT-01 in [CONTRACTS.md](../CONTRACTS.md).
+
+Earlier broad cultural-event language in planning docs should be interpreted through this narrowed wedge. The trust layer, source registry, AI concierge, and agent-readable surfaces remain important, but their first target is grassroots performance communities rather than all cultural events.
 
 ---
 
