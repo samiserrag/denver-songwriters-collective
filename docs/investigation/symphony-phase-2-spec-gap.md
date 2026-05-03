@@ -706,6 +706,13 @@ Spec defines an optional client-side tool extension (`linear_graphql`) that the 
 
 **Codex response (locked 2026-05-02):** Skip `github_graphql` for now. `gh` plus the GitHub REST client is enough until app-server tool extensions are real (i.e., until Phase 2.A app-server migration ships and tool extension infrastructure exists). Revisit after 2.A.
 
+Status note (2026-05-03): proposed tool/MCP/connector capability policy ADR
+added in `docs/investigation/symphony-tool-capability-policy-adr.md`. The ADR
+keeps `github_graphql` deferred while defining the broader future capability
+catalog, availability-vs-authority boundary, high-risk tool gates, and
+manifest/status evidence requirements. It is not active and does not authorize
+operational Symphony use.
+
 ### 6.6 Status snapshot with HTTP server — auth posture concern
 
 Spec mentions `server.port` extension is optional. If we ship Phase 2.E HTTP server, the snapshot data includes per-issue state, token totals, rate limits. Defaulting to localhost-only is the safe move. But some operators want remote dashboards. **Codex critique invited:** should Phase 2.E ship localhost-only with no remote-bind capability, or with explicit remote-bind config + auth?
