@@ -106,6 +106,19 @@ function venueSearchPayload(eventStatus: "not_found" | "timeout" | "not_applicab
   };
 }
 
+function fastVenueSearchPayload() {
+  return {
+    status: "verified",
+    summary: "Official venue page found for RMU Breckenridge.",
+    confidence: "high",
+    attempted_queries: ["RMU Breckenridge", "RMU Breckenridge address", "@rmubreck"],
+    facts: [
+      "RMU Breckenridge official page confirms the venue identity and Breckenridge, CO address.",
+    ],
+    sources: [{ url: "https://example.com/rmu-breckenridge", title: "RMU Breckenridge" }],
+  };
+}
+
 function eventSearchMissPayload() {
   return {
     status: "no_reliable_sources",
@@ -158,9 +171,11 @@ function installFetchMock() {
         throw error;
       }
       const payload =
-        searchPrompt.search_category === "venue"
-          ? venueSearchPayload()
-          : eventSearchMissPayload();
+        searchPrompt.task === "fast_venue_enrichment_for_event_draft"
+          ? fastVenueSearchPayload()
+          : searchPrompt.search_category === "venue"
+            ? venueSearchPayload()
+            : eventSearchMissPayload();
       return new Response(
         JSON.stringify(openAiResponse(payload)),
         { status: 200, headers: { "content-type": "application/json" } }
@@ -269,16 +284,13 @@ describe("POST /api/events/interpret — concierge search enrichment", () => {
     expect(body.human_summary).toContain("official venue page");
     expect(body.human_summary).toContain("Cost/signup/source link are still unknown");
 
-    const venuePrompt = capturedSearchPrompts.find((prompt) => prompt.search_category === "venue");
+    const venuePrompt = capturedSearchPrompts.find((prompt) => prompt.task === "fast_venue_enrichment_for_event_draft");
     const eventPrompt = capturedSearchPrompts.find((prompt) => prompt.search_category === "event");
-    const searchPlan = venuePrompt?.search_query_plan as {
-      venue_queries: string[];
-      event_queries: string[];
-    };
-    expect(searchPlan.venue_queries).toEqual(
-      expect.arrayContaining(["RMU Breck", "RMU Breckenridge", "@rmubreck", "RMU Breckenridge address"])
+    expect(capturedSearchPrompts.some((prompt) => prompt.search_category === "venue")).toBe(false);
+    expect(venuePrompt?.venue_queries).toEqual(
+      expect.arrayContaining(["RMU Breckenridge", "RMU Breckenridge address", "@rmubreck"])
     );
-    expect(searchPlan.event_queries).toEqual([]);
+    expect((venuePrompt?.venue_queries as string[]).length).toBeLessThanOrEqual(3);
     const eventSearchPlan = eventPrompt?.search_query_plan as {
       venue_queries: string[];
       event_queries: string[];
@@ -318,9 +330,10 @@ describe("POST /api/events/interpret — concierge search enrichment", () => {
       venue_search: { status: "verified" },
       event_search: { status: "timeout" },
     });
+    expect(capturedSearchPrompts.some((prompt) => prompt.search_category === "venue")).toBe(false);
   });
 
-  it("reports venue and event query attempts separately on search timeout", async () => {
+  it("forces deterministic guidance when all search times out even if the interpreter returns valid JSON", async () => {
     searchMode = "timeout";
     installFetchMock();
 
@@ -338,6 +351,7 @@ describe("POST /api/events/interpret — concierge search enrichment", () => {
     );
 
     expect(response.status).toBe(200);
+    const body = await response.json();
     const webSearch = capturedInterpreterPrompt?.web_search_verification as {
       summary: string;
       venue_search: { status: string; attempted_queries: string[] };
@@ -346,8 +360,93 @@ describe("POST /api/events/interpret — concierge search enrichment", () => {
     expect(webSearch.summary).toContain("Venue search tried");
     expect(webSearch.summary).toContain("Exact-event search tried");
     expect(webSearch.venue_search.status).toBe("timeout");
-    expect(webSearch.venue_search.attempted_queries).toEqual(expect.arrayContaining(["RMU Breck", "RMU Breckenridge", "@rmubreck", "RMU Breckenridge address"]));
+    expect(webSearch.venue_search.attempted_queries).toEqual(
+      expect.arrayContaining(["RMU Breckenridge", "RMU Breckenridge address", "@rmubreck"])
+    );
+    expect(webSearch.venue_search.attempted_queries).toHaveLength(3);
     expect(webSearch.event_search.status).toBe("timeout");
     expect(webSearch.event_search.attempted_queries).toContain("RMU Breckenridge open mic");
+    expect(capturedSearchPrompts.some((prompt) => prompt.search_category === "venue")).toBe(false);
+    expect(body.next_action).toBe("ask_clarification");
+    expect(body.human_summary).toContain("Venue search and exact-event search both timed out");
+    expect(body.human_summary).toContain("Cost, signup link, and direct source link are still unknown");
+    expect(body.clarification_question).toContain("retry search");
+    expect(body.clarification_question).toContain("custom location");
+    expect(body.clarification_question).not.toMatch(/street address|address/i);
+    expect(body.draft_payload.title).toContain("RMU");
+    expect(body.draft_payload.event_type).toEqual(["open_mic"]);
+    expect(body.draft_payload.start_time).toBe("19:00:00");
+    expect(body.draft_payload.end_time).toBe("21:00:00");
+    expect(body.draft_payload.cost_label).toBeUndefined();
+    expect(body.draft_payload.signup_url).toBeUndefined();
+    expect(body.draft_payload.external_url).toBeUndefined();
+    expect(body.draft_payload.custom_address).toBeUndefined();
+    expect(body.web_search_verification.venue_search.status).toBe("timeout");
+    expect(body.web_search_verification.event_search.status).toBe("timeout");
+  });
+
+  it("recovers with structured fallback JSON when all search times out and the interpreter emits non-json", async () => {
+    searchMode = "timeout";
+    const fetchMock = installFetchMock();
+    fetchMock.mockImplementation(async (_url, init) => {
+      const body = JSON.parse(String(init?.body ?? "{}")) as { model?: string; input?: unknown };
+      if (body.model === "test-search-model") {
+        const searchPrompt = JSON.parse(String(body.input)) as Record<string, unknown>;
+        capturedSearchPrompts.push(searchPrompt);
+        const error = new Error("search timeout");
+        error.name = "AbortError";
+        throw error;
+      }
+      if (body.model === "test-interpreter-model") {
+        capturedInterpreterPrompt = JSON.parse(String(body.input)) as Record<string, unknown>;
+        return new Response(
+          JSON.stringify({
+            id: "resp_non_json",
+            output: [
+              {
+                type: "message",
+                role: "assistant",
+                content: [
+                  {
+                    type: "output_text",
+                    text: "I drafted this as a weekly RMU Breck open mic, but search timed out.",
+                  },
+                ],
+              },
+            ],
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        );
+      }
+      throw new Error(`Unexpected fetch model: ${body.model ?? "unknown"}`);
+    });
+
+    const response = await POST(
+      new Request("http://localhost/api/events/interpret", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          mode: "create",
+          message:
+            "Open mic RMU update. RMU Breck / @rmubreck. Every Wednesday 7-9pm. Search for RMU Breckenridge. I do not know the address, cost, signup link, or source URL.",
+          use_web_search: true,
+        }),
+      })
+    );
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.next_action).toBe("ask_clarification");
+    expect(body.human_summary).toContain("Venue search and exact-event search both timed out");
+    expect(body.clarification_question).toContain("retry search");
+    expect(body.draft_payload.title).toContain("RMU");
+    expect(body.draft_payload.event_type).toEqual(["open_mic"]);
+    expect(body.draft_payload.start_time).toBe("19:00:00");
+    expect(body.draft_payload.end_time).toBe("21:00:00");
+    expect(body.draft_payload.cost_label).toBeUndefined();
+    expect(body.draft_payload.signup_url).toBeUndefined();
+    expect(body.draft_payload.external_url).toBeUndefined();
+    expect(body.web_search_verification.venue_search.status).toBe("timeout");
+    expect(body.web_search_verification.event_search.status).toBe("timeout");
   });
 });
