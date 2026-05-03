@@ -118,7 +118,8 @@ describe("INTERPRETER-14 — Host chat-first workspace", () => {
   });
 
   it("demotes duplicate details and source checks in host flow", () => {
-    expect(src).toContain("Sources checked");
+    expect(src).toContain("searchEvidenceDisplay.label");
+    expect(src).toContain("searchEvidenceDisplay.summary");
     expect(src).toContain("Key fields");
     expect(src).toContain("!isHostVariant && statusCode === 200 && responseGuidance");
   });
@@ -208,8 +209,9 @@ describe("INTERPRETER-14 — Host chat-first workspace", () => {
   it("auto-scrolls the host chat and surfaces attempted searches", () => {
     expect(src).toContain("chatEndRef");
     expect(src).toContain("scrollIntoView");
-    expect(src).toContain("Search tried");
-    expect(src).toContain("Searched online:");
+    expect(src).toContain("buildConciergeSearchEvidenceDisplay");
+    expect(src).toContain("searchDisplay.label");
+    expect(src).toContain("searchDisplay.summary");
   });
 
   it("shows relaxed in-chat progress feedback while the agent is working", () => {

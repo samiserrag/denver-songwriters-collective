@@ -1,7 +1,7 @@
 # Track 1 Claims Doc
 
 **Status:** Living
-**Last updated:** 2026-05-02
+**Last updated:** 2026-05-03
 
 This file is the legacy coordination ledger for Track 1 (AI edit and update existing events) plus lightweight notes for lane routing while the older Track 1 guardrails still reference this file. Every active Track 1 PR must list its branch, owner, scope, files claimed, base SHA, and status here so other agents know what is safe to touch.
 
@@ -22,12 +22,37 @@ Rules:
 
 ## Active claims
 
+### Lane 9 follow-up — Source-confidence concierge display
+
+- **Branch:** `codex/track1-lane9-source-confidence-display`
+- **Owner:** Lane 9
+- **Base SHA:** `bbd7db166e71` (current `origin/main` after refresh)
+- **Status:** `in_progress`
+- **Purpose:** Show separated venue/event search confidence and smarter follow-up wording in event-creation concierge UI.
+- **Notes:** Follow-up to PR #243. Keeps scope to route-local display of interpreter evidence; no save semantics, publishing gates, migrations, Lane 5, Lane 6, Symphony, or Maps `external_url` behavior changes.
+- **Files claimed:**
+  - `docs/investigation/track1-claims.md`
+  - `web/src/app/(protected)/dashboard/my-events/_components/conciergeSearchEvidence.ts`
+  - `web/src/app/(protected)/dashboard/my-events/_components/ConversationalCreateUI.tsx`
+  - `web/src/lib/events/interpretEventContract.ts`
+  - `web/src/lib/events/aiPromptContract.ts`
+  - `web/src/__tests__/conversational-create-search-confidence.test.ts`
+  - `web/src/__tests__/conversational-create-ui-pr11-polish.test.ts`
+  - `web/src/__tests__/interpreter-14-host-ux-polish.test.ts`
+  - `web/src/__tests__/interpreter-lab-post-create-ux.test.ts`
+  - `web/src/__tests__/interpreter-lab-clarification-ux.test.ts`
+  - `web/src/__tests__/interpreter-lab-conversation-ux.test.ts`
+  - `web/src/__tests__/interpreter-concierge-search.test.ts`
+  - `web/src/__tests__/interpreter-phase9-reliability.test.ts`
+
+---
+
 ### Lane 9 follow-up — Concierge search timeout fallback
 
 - **Branch:** `codex/track1-lane9-search-timeout-fallback`
 - **Owner:** Lane 9
 - **Base SHA:** `6035d8548596` (current `origin/main` at claim time)
-- **Status:** `in_progress`
+- **Status:** `merged`
 - **Purpose:** Make venue enrichment resilient when exact-event web search times out.
 - **Notes:** Follow-up implementation keeps venue-search and exact-event search results independently timed so completed venue evidence is not discarded when exact-event verification times out.
 - **Files claimed:**

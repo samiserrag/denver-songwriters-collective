@@ -42,6 +42,10 @@ import { humanizeRecurrence } from "@/lib/recurrenceHumanizer";
 import { CropModal } from "@/components/gallery/CropModal";
 import { broadcastEventDraftSync } from "@/lib/events/eventDraftSync";
 import { WhatChanged } from "./WhatChanged";
+import {
+  buildConciergeSearchEvidenceDisplay,
+  shouldSuppressVenueAddressQuestion,
+} from "./conciergeSearchEvidence";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -87,11 +91,36 @@ interface WebSearchVerificationSource {
   domain: string | null;
 }
 
+type WebSearchConfidence = "high" | "medium" | "low" | "unknown";
+type WebSearchCategoryStatus = "verified" | "not_found" | "timeout" | "not_applicable";
+
+interface WebSearchCategoryResult {
+  status: WebSearchCategoryStatus;
+  summary: string;
+  confidence: WebSearchConfidence;
+  attempted_queries: string[];
+  facts: string[];
+  sources: WebSearchVerificationSource[];
+}
+
+interface WebSearchFactBuckets {
+  user_provided: string[];
+  extracted: string[];
+  inferred: string[];
+  searched_verified: string[];
+  conflicts: string[];
+  true_unknowns: string[];
+}
+
 interface WebSearchVerification {
   status: "searched" | "no_reliable_sources";
   summary: string;
   facts: string[];
   sources: WebSearchVerificationSource[];
+  venue_search?: WebSearchCategoryResult;
+  event_search?: WebSearchCategoryResult;
+  fact_buckets?: WebSearchFactBuckets;
+  suggested_questions?: string[];
 }
 
 interface DraftVerificationIssue {
@@ -403,33 +432,93 @@ function getConfidenceLabel(confidence: number | null): string | null {
   return "Low confidence";
 }
 
+function parseWebSearchSource(value: unknown): WebSearchVerificationSource | null {
+  if (!value || typeof value !== "object") return null;
+  const row = value as Record<string, unknown>;
+  if (typeof row.url !== "string") return null;
+  return {
+    url: row.url,
+    title: typeof row.title === "string" ? row.title : null,
+    domain: typeof row.domain === "string" ? row.domain : null,
+  };
+}
+
+function parseStringArray(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((entry): entry is string => typeof entry === "string" && entry.trim().length > 0)
+    : [];
+}
+
+function parseWebSearchCategory(value: unknown): WebSearchCategoryResult | null {
+  if (!value || typeof value !== "object") return null;
+  const row = value as Record<string, unknown>;
+  if (
+    row.status !== "verified" &&
+    row.status !== "not_found" &&
+    row.status !== "timeout" &&
+    row.status !== "not_applicable"
+  ) {
+    return null;
+  }
+  if (typeof row.summary !== "string") return null;
+  const confidence: WebSearchConfidence =
+    row.confidence === "high" ||
+    row.confidence === "medium" ||
+    row.confidence === "low" ||
+    row.confidence === "unknown"
+      ? row.confidence
+      : "unknown";
+  return {
+    status: row.status,
+    summary: row.summary,
+    confidence,
+    attempted_queries: parseStringArray(row.attempted_queries),
+    facts: parseStringArray(row.facts),
+    sources: Array.isArray(row.sources)
+      ? row.sources
+          .map(parseWebSearchSource)
+          .filter((source): source is WebSearchVerificationSource => source !== null)
+      : [],
+  };
+}
+
+function parseWebSearchFactBuckets(value: unknown): WebSearchFactBuckets | null {
+  if (!value || typeof value !== "object") return null;
+  const row = value as Record<string, unknown>;
+  return {
+    user_provided: parseStringArray(row.user_provided),
+    extracted: parseStringArray(row.extracted),
+    inferred: parseStringArray(row.inferred),
+    searched_verified: parseStringArray(row.searched_verified),
+    conflicts: parseStringArray(row.conflicts),
+    true_unknowns: parseStringArray(row.true_unknowns),
+  };
+}
+
 function parseWebSearchVerification(value: unknown): WebSearchVerification | null {
   if (!value || typeof value !== "object") return null;
   const maybe = value as Record<string, unknown>;
   if (maybe.status !== "searched" && maybe.status !== "no_reliable_sources") return null;
   if (typeof maybe.summary !== "string") return null;
-  const facts = Array.isArray(maybe.facts)
-    ? maybe.facts.filter((fact): fact is string => typeof fact === "string" && fact.trim().length > 0)
-    : [];
+  const facts = parseStringArray(maybe.facts);
   const sources = Array.isArray(maybe.sources)
     ? maybe.sources
-        .map((source): WebSearchVerificationSource | null => {
-          if (!source || typeof source !== "object") return null;
-          const row = source as Record<string, unknown>;
-          if (typeof row.url !== "string") return null;
-          return {
-            url: row.url,
-            title: typeof row.title === "string" ? row.title : null,
-            domain: typeof row.domain === "string" ? row.domain : null,
-          };
-        })
+        .map(parseWebSearchSource)
         .filter((source): source is WebSearchVerificationSource => source !== null)
     : [];
+  const venueSearch = parseWebSearchCategory(maybe.venue_search);
+  const eventSearch = parseWebSearchCategory(maybe.event_search);
+  const factBuckets = parseWebSearchFactBuckets(maybe.fact_buckets);
+  const suggestedQuestions = parseStringArray(maybe.suggested_questions);
   return {
     status: maybe.status,
     summary: maybe.summary,
     facts,
     sources,
+    ...(venueSearch ? { venue_search: venueSearch } : {}),
+    ...(eventSearch ? { event_search: eventSearch } : {}),
+    ...(factBuckets ? { fact_buckets: factBuckets } : {}),
+    ...(suggestedQuestions.length > 0 ? { suggested_questions: suggestedQuestions } : {}),
   };
 }
 
@@ -1616,22 +1705,49 @@ export function ConversationalCreateUI({
   const chatMode: InterpretMode = isHostVariant ? hostChatMode : mode;
 
   const hasAssistantResponse = conversationHistory.some((entry) => entry.role === "assistant");
+  const searchEvidenceDisplay = useMemo(
+    () =>
+      buildConciergeSearchEvidenceDisplay({
+        verification: responseGuidance?.web_search_verification,
+        draftPayload: responseGuidance?.draft_payload,
+      }),
+    [responseGuidance]
+  );
+  const suppressVenueAddressClarification = shouldSuppressVenueAddressQuestion({
+    display: searchEvidenceDisplay,
+    clarificationQuestion: responseGuidance?.clarification_question,
+    blockingFields: responseGuidance?.blocking_fields,
+  });
+  // Suppressed address questions are display-only: keep the underlying
+  // next_action aligned with create/save gates, but replace the prompt copy
+  // with event-focused follow-up text.
+  const visibleNextAction = responseGuidance?.next_action;
+  const visibleFollowupQuestion =
+    searchEvidenceDisplay?.followupQuestion ??
+    responseGuidance?.followup_question ??
+    null;
+  const suppressedAddressPrompt =
+    "I found source-backed venue details, so I do not need the street address. Reply with any missing event detail or ask me to change the draft.";
+  const visibleClarificationQuestion = suppressVenueAddressClarification
+    ? visibleFollowupQuestion ?? suppressedAddressPrompt
+    : responseGuidance?.clarification_question ?? null;
+  const visibleBlockingFields = suppressVenueAddressClarification ? [] : responseGuidance?.blocking_fields ?? [];
 
   // Host flow behaves like a normal AI chat: first turn drafts, later turns reply or update.
   const runActionLabel = isHostVariant
-    ? responseGuidance?.next_action === "ask_clarification"
+    ? visibleNextAction === "ask_clarification"
       ? "Send Answer"
       : hasCreatedDraft
         ? "Update Draft"
         : hasAssistantResponse
           ? "Send Message"
           : "Generate Draft"
-    : responseGuidance?.next_action === "ask_clarification"
+    : visibleNextAction === "ask_clarification"
       ? "Send Answer"
       : conversationHistory.length > 0
         ? "Update Draft"
         : "Generate Draft";
-  const isClarificationTurn = responseGuidance?.next_action === "ask_clarification";
+  const isClarificationTurn = visibleNextAction === "ask_clarification";
   const canSubmitInterpret =
     !isSubmitting && (message.trim().length > 0 || stagedImages.length > 0);
   const selectedCoverImage =
@@ -2167,22 +2283,46 @@ export function ConversationalCreateUI({
           assistantParts.push(body.human_summary.trim());
         }
         const webSearch = parseWebSearchVerification(body.web_search_verification);
-        if (webSearch?.status === "searched" && webSearch.sources.length > 0) {
+        const searchDisplay = buildConciergeSearchEvidenceDisplay({
+          verification: webSearch,
+          draftPayload:
+            body.draft_payload && typeof body.draft_payload === "object"
+              ? (body.draft_payload as Record<string, unknown>)
+              : null,
+        });
+        if (searchDisplay) {
+          assistantParts.push(`${searchDisplay.label}: ${searchDisplay.summary}`);
+        }
+        if (searchDisplay?.sourceLinks.length) {
           assistantParts.push(
-            `Checked online: ${webSearch.sources
+            `Checked online: ${searchDisplay.sourceLinks
               .slice(0, 3)
               .map((source) => source.domain || source.title || "source")
               .join(", ")}`
           );
-        } else if (webSearch?.status === "no_reliable_sources") {
-          assistantParts.push(`Searched online: ${webSearch.summary}`);
         }
+        const suppressAddressQuestion = shouldSuppressVenueAddressQuestion({
+          display: searchDisplay,
+          clarificationQuestion:
+            typeof body.clarification_question === "string" ? body.clarification_question : null,
+          blockingFields: Array.isArray(body.blocking_fields)
+            ? body.blocking_fields.filter((field: unknown): field is string => typeof field === "string")
+            : [],
+        });
         if (
+          !suppressAddressQuestion &&
           body.next_action === "ask_clarification" &&
           typeof body.clarification_question === "string" &&
           body.clarification_question.trim().length > 0
         ) {
           assistantParts.push(`Question: ${body.clarification_question.trim()}`);
+        } else if (suppressAddressQuestion) {
+          assistantParts.push(
+            `Question: ${
+              searchDisplay?.followupQuestion ??
+              "I found source-backed venue details, so I do not need the street address. Reply with any missing event detail or ask me to change the draft."
+            }`
+          );
         } else if (
           typeof body.followup_question === "string" &&
           body.followup_question.trim().length > 0
@@ -3152,25 +3292,25 @@ export function ConversationalCreateUI({
             // tell at a glance whether the AI is answering or asking back.
             <div
               data-testid={
-                responseGuidance.next_action === "ask_clarification"
+                isClarificationTurn
                   ? "host-followup-panel"
                   : "host-result-panel"
               }
               role={
-                responseGuidance.next_action === "ask_clarification"
+                isClarificationTurn
                   ? "region"
                   : isResponsePanelHighlighted
                     ? "status"
                     : undefined
               }
               aria-label={
-                responseGuidance.next_action === "ask_clarification"
+                isClarificationTurn
                   ? "Follow-up question — needs your input"
                   : "Draft result"
               }
               aria-live={isResponsePanelHighlighted ? "polite" : undefined}
               className={`rounded-lg border p-4 transition-colors duration-300 ${
-                responseGuidance.next_action === "ask_clarification"
+                isClarificationTurn
                   ? "border-amber-500/30 bg-amber-500/5"
                   : "border-blue-500/20 bg-blue-500/5"
               } ${isResponsePanelHighlighted ? RESPONSE_PANEL_ATTENTION_CLASS : ""}`}
@@ -3179,17 +3319,17 @@ export function ConversationalCreateUI({
                 <div className="min-w-0 flex-1 space-y-3">
                   <p
                     className={`flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide ${
-                      responseGuidance.next_action === "ask_clarification"
+                      isClarificationTurn
                         ? "text-amber-600"
                         : "text-blue-600"
                     }`}
                   >
-                    {responseGuidance.next_action === "ask_clarification" ? (
+                    {isClarificationTurn ? (
                       <HelpCircle className="h-3.5 w-3.5" aria-hidden="true" />
                     ) : (
                       <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
                     )}
-                    {responseGuidance.next_action === "ask_clarification"
+                    {isClarificationTurn
                       ? "Needs your input"
                       : "Draft result"}
                   </p>
@@ -3198,23 +3338,50 @@ export function ConversationalCreateUI({
                       {responseGuidance.human_summary}
                     </p>
                   )}
-                  {responseGuidance.next_action === "ask_clarification" && (
+                  {searchEvidenceDisplay && (
+                    <div
+                      className={`rounded-lg border px-3 py-2 ${
+                        searchEvidenceDisplay.tone === "success"
+                          ? "border-emerald-500/20 bg-emerald-500/5"
+                          : "border-amber-500/20 bg-amber-500/5"
+                      }`}
+                    >
+                      <p
+                        className={`text-[11px] font-semibold uppercase tracking-wide ${
+                          searchEvidenceDisplay.tone === "success" ? "text-emerald-600" : "text-amber-600"
+                        }`}
+                      >
+                        {searchEvidenceDisplay.label}
+                      </p>
+                      <p className="mt-1 text-sm text-[var(--color-text-primary)]">
+                        {searchEvidenceDisplay.summary}
+                      </p>
+                      {searchEvidenceDisplay.details.length > 0 && (
+                        <ul className="mt-2 space-y-1 text-xs text-[var(--color-text-secondary)]">
+                          {searchEvidenceDisplay.details.slice(0, 3).map((detail) => (
+                            <li key={detail}>{detail}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
+                  {isClarificationTurn && (
                     <div className="rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-2">
                       <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-600">
                         Question
                       </p>
                       <p className="mt-1 text-sm font-medium text-[var(--color-text-primary)]">
-                        {responseGuidance.clarification_question || "What detail should I use to finish the draft?"}
+                        {visibleClarificationQuestion || "What detail should I use to finish the draft?"}
                       </p>
                     </div>
                   )}
-                  {responseGuidance.next_action !== "ask_clarification" && responseGuidance.followup_question && (
+                  {!isClarificationTurn && visibleFollowupQuestion && (
                     <div className="rounded-lg border border-[var(--color-border-input)] bg-[var(--color-bg-secondary)]/55 px-3 py-2">
                       <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text-tertiary)]">
                         Optional follow-up
                       </p>
                       <p className="mt-1 text-sm font-medium text-[var(--color-text-primary)]">
-                        {responseGuidance.followup_question}
+                        {visibleFollowupQuestion}
                       </p>
                     </div>
                   )}
@@ -3223,7 +3390,7 @@ export function ConversationalCreateUI({
                       Only renders in edit modes and only when there's a
                       meaningful prior draft to compare against. */}
                   {(effectiveMode === "edit_series" || effectiveMode === "edit_occurrence") &&
-                    responseGuidance.next_action !== "ask_clarification" &&
+                    !isClarificationTurn &&
                     responseGuidance.draft_payload && (
                       <WhatChanged
                         mode={effectiveMode}
@@ -3241,16 +3408,15 @@ export function ConversationalCreateUI({
                       {createMessage.text}
                     </p>
                   )}
-                  {responseGuidance.web_search_verification?.status === "searched" &&
-                    responseGuidance.web_search_verification.sources.length > 0 && (
+                  {searchEvidenceDisplay?.sourceLinks.length ? (
                       <p className="text-xs text-[var(--color-text-secondary)]">
                         Checked online:{" "}
-                        {responseGuidance.web_search_verification.sources
+                        {searchEvidenceDisplay.sourceLinks
                           .slice(0, 3)
                           .map((source) => source.domain || source.title || "source")
                           .join(", ")}
                       </p>
-                    )}
+                    ) : null}
                 </div>
                 {createdSummary && createdPublicHref && (
                   <div className="flex shrink-0 flex-wrap gap-2">
@@ -3292,10 +3458,10 @@ export function ConversationalCreateUI({
               rows={isHostVariant ? 4 : 5}
               className="w-full rounded-lg bg-[var(--color-bg-input)] border border-[var(--color-border-input)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
               placeholder={isHostVariant
-                ? isClarificationTurn && responseGuidance?.clarification_question
-                  ? responseGuidance.clarification_question
-                  : responseGuidance?.followup_question
-                    ? responseGuidance.followup_question
+                ? isClarificationTurn && visibleClarificationQuestion
+                  ? visibleClarificationQuestion
+                  : visibleFollowupQuestion
+                    ? visibleFollowupQuestion
                   : hasCreatedDraft || hasAssistantResponse
                     ? "Ask me to search again, change a field, add a missing detail, or fix anything that looks off..."
                   : "e.g. Open mic night at Dazzle Jazz, every Tuesday at 7pm, $10 cover. Source: venue website..."
@@ -3629,19 +3795,19 @@ export function ConversationalCreateUI({
                   Draft Status
                 </p>
                 <span className="rounded-full bg-[var(--color-bg-secondary)] px-2 py-0.5 text-[11px] font-medium text-[var(--color-text-secondary)]">
-                  {getDraftReadinessLabel(responseGuidance)}
+                  {isClarificationTurn ? getDraftReadinessLabel(responseGuidance) : "Ready"}
                 </span>
               </div>
-              {responseGuidance.next_action === "ask_clarification" ? (
+              {isClarificationTurn ? (
                 <p className="text-sm font-medium text-[var(--color-text-primary)]">
-                  {responseGuidance.clarification_question || "Please provide the missing detail."}
+                  {visibleClarificationQuestion || "Please provide the missing detail."}
                 </p>
               ) : (
                 <p className="text-sm text-[var(--color-text-primary)]">
-                  {responseGuidance.human_summary || "Draft updated. Review the fields below before creating it."}
+                  {visibleFollowupQuestion || responseGuidance.human_summary || "Draft updated. Review the fields below before creating it."}
                 </p>
               )}
-              {responseGuidance.next_action === "ask_clarification" && (
+              {isClarificationTurn && (
                 <p className="text-xs text-[var(--color-text-tertiary)]">
                   Continue by answering above, then click{" "}
                   <span className="font-semibold text-[var(--color-text-secondary)]">Send Answer</span>.
@@ -3923,25 +4089,30 @@ export function ConversationalCreateUI({
                     </button>
                   )}
 
-                  {responseGuidance?.web_search_verification && (
+                  {searchEvidenceDisplay && (
                       <details
                         className={`rounded-lg border p-3 ${
-                          responseGuidance.web_search_verification.status === "searched"
+                          searchEvidenceDisplay.tone === "success"
                             ? "border-emerald-500/20 bg-emerald-500/5"
                             : "border-amber-500/20 bg-amber-500/5"
                         }`}
                       >
                         <summary className="cursor-pointer text-xs font-semibold text-[var(--color-text-secondary)]">
-                          {responseGuidance.web_search_verification.status === "searched"
-                            ? `Sources checked (${responseGuidance.web_search_verification.sources.length})`
-                            : "Search tried"}
+                          {searchEvidenceDisplay.label}
                         </summary>
                         <p className="mt-2 text-xs text-[var(--color-text-secondary)]">
-                          {responseGuidance.web_search_verification.summary}
+                          {searchEvidenceDisplay.summary}
                         </p>
-                        {responseGuidance.web_search_verification.sources.length > 0 && (
+                        {searchEvidenceDisplay.details.length > 0 && (
+                          <ul className="mt-2 space-y-1 text-xs text-[var(--color-text-secondary)]">
+                            {searchEvidenceDisplay.details.slice(0, 4).map((detail) => (
+                              <li key={detail}>{detail}</li>
+                            ))}
+                          </ul>
+                        )}
+                        {searchEvidenceDisplay.sourceLinks.length > 0 && (
                           <div className="mt-2 flex flex-wrap gap-2">
-                            {responseGuidance.web_search_verification.sources.slice(0, 3).map((source) => (
+                            {searchEvidenceDisplay.sourceLinks.slice(0, 3).map((source) => (
                               <a
                                 key={source.url}
                                 href={source.url}
@@ -3993,11 +4164,11 @@ export function ConversationalCreateUI({
                     </details>
                   )}
 
-                  {responseGuidance?.next_action === "ask_clarification" && (
+                  {isClarificationTurn && (
                     <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3">
                       <p className="text-xs font-semibold uppercase text-amber-600">One thing I need</p>
                       <p className="mt-1 text-sm text-[var(--color-text-primary)]">
-                        {responseGuidance.clarification_question || "Please provide the missing detail."}
+                        {visibleClarificationQuestion || "Please provide the missing detail."}
                       </p>
                     </div>
                   )}
@@ -4131,14 +4302,14 @@ export function ConversationalCreateUI({
               </h2>
               <span
                 className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                  responseGuidance.next_action === "ask_clarification"
+                  isClarificationTurn
                     ? "bg-amber-500/15 text-amber-600"
-                    : responseGuidance.next_action === "done"
+                    : visibleNextAction === "done"
                       ? "bg-emerald-500/15 text-emerald-600"
                       : "bg-blue-500/15 text-blue-600"
                   }`}
               >
-                {getDraftReadinessLabel(responseGuidance)}
+                {isClarificationTurn ? getDraftReadinessLabel(responseGuidance) : "Ready"}
               </span>
               {getConfidenceLabel(responseGuidance.confidence) && (
                 <span className="text-xs text-[var(--color-text-tertiary)]">
@@ -4154,10 +4325,10 @@ export function ConversationalCreateUI({
               </p>
             )}
 
-            {responseGuidance.web_search_verification && (
+            {searchEvidenceDisplay && (
                 <div
                   className={`rounded-lg border p-4 ${
-                    responseGuidance.web_search_verification.status === "searched"
+                    searchEvidenceDisplay.tone === "success"
                       ? "border-emerald-500/20 bg-emerald-500/5"
                       : "border-amber-500/20 bg-amber-500/5"
                   }`}
@@ -4165,22 +4336,27 @@ export function ConversationalCreateUI({
                   <div className="flex items-center gap-2 text-sm font-semibold text-[var(--color-text-primary)]">
                     <CheckCircle2
                       className={`h-4 w-4 ${
-                        responseGuidance.web_search_verification.status === "searched"
+                        searchEvidenceDisplay.tone === "success"
                           ? "text-emerald-500"
                           : "text-amber-500"
                       }`}
                       aria-hidden="true"
                     />
-                    {responseGuidance.web_search_verification.status === "searched"
-                      ? "Checked online"
-                      : "Search tried"}
+                    {searchEvidenceDisplay.label}
                   </div>
                   <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
-                    {responseGuidance.web_search_verification.summary}
+                    {searchEvidenceDisplay.summary}
                   </p>
-                  {responseGuidance.web_search_verification.sources.length > 0 && (
+                  {searchEvidenceDisplay.details.length > 0 && (
+                    <ul className="mt-2 space-y-1 text-xs text-[var(--color-text-secondary)]">
+                      {searchEvidenceDisplay.details.slice(0, 4).map((detail) => (
+                        <li key={detail}>{detail}</li>
+                      ))}
+                    </ul>
+                  )}
+                  {searchEvidenceDisplay.sourceLinks.length > 0 && (
                     <div className="mt-3 flex flex-wrap gap-2">
-                      {responseGuidance.web_search_verification.sources.slice(0, 4).map((source) => (
+                      {searchEvidenceDisplay.sourceLinks.slice(0, 4).map((source) => (
                         <a
                           key={source.url}
                           href={source.url}
@@ -4195,21 +4371,21 @@ export function ConversationalCreateUI({
                     </div>
                   )}
                 </div>
-              )}
+            )}
 
             {/* Phase 8C: Enhanced clarification prompt with input hints */}
-            {responseGuidance.next_action === "ask_clarification" && (
+            {isClarificationTurn && (
               <div className="space-y-3 rounded-lg bg-amber-500/5 border border-amber-500/20 p-4">
                 {/* Primary question — single visible blocking question */}
                 <p className="text-sm text-[var(--color-text-primary)] leading-relaxed">
-                  {responseGuidance.clarification_question ||
+                  {visibleClarificationQuestion ||
                     "Please provide the missing details."}
                 </p>
 
                 {/* Field-specific input hint chips */}
-                {responseGuidance.blocking_fields.length > 0 && (
+                {visibleBlockingFields.length > 0 && (
                   <div className="space-y-2">
-                    {responseGuidance.blocking_fields.map((field) => {
+                    {visibleBlockingFields.map((field) => {
                       const hint = getFieldHint(field);
                       return (
                         <div key={field} className="flex items-start gap-2 flex-wrap">
@@ -4239,10 +4415,10 @@ export function ConversationalCreateUI({
             )}
 
             {/* Ready state */}
-            {responseGuidance.next_action !== "ask_clarification" && (
+            {!isClarificationTurn && (
               <div className="rounded-lg bg-emerald-500/5 border border-emerald-500/20 p-4">
                 <p className="text-sm text-[var(--color-text-primary)]">
-                  Review the extracted fields below.
+                  {visibleFollowupQuestion || "Review the extracted fields below."}
                   {canShowCreateAction
                     ? " Click Confirm & Create Draft below to save, then Publish Event to make it public."
                     : ""}

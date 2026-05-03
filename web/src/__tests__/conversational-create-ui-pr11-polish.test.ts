@@ -98,11 +98,18 @@ describe("PR 11 — What changed section integration", () => {
   });
 
   it("does not render WhatChanged on a clarification turn (clarification has no apply)", () => {
-    // The render guard explicitly excludes ask_clarification turns so the
-    // diff block does not appear when the AI is asking a question.
+    // The render guard uses the visible clarification state so suppressed
+    // address questions do not leak into display-only edit UI.
     expect(cruiSource).toMatch(
-      /responseGuidance\.next_action !== "ask_clarification"[\s\S]*?<WhatChanged/,
+      /!isClarificationTurn[\s\S]*?<WhatChanged/,
     );
+  });
+
+  it("keeps suppressed address clarification non-actionable for create/save gates", () => {
+    expect(cruiSource).toContain("const visibleNextAction = responseGuidance?.next_action;");
+    expect(cruiSource).toContain("const visibleBlockingFields = suppressVenueAddressClarification ? [] : responseGuidance?.blocking_fields ?? [];");
+    expect(cruiSource).toContain("ACTIONABLE_NEXT_ACTIONS.has(lastInterpretResponse.next_action as NextAction)");
+    expect(cruiSource).not.toContain('suppressVenueAddressClarification\n      ? "done"');
   });
 
   it("passes mode, before, and after props to WhatChanged", () => {
