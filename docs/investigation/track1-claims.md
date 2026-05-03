@@ -101,6 +101,20 @@ Rules:
 
 ---
 
+### Lane 6 Step 3b-execute — event_source_observations append-only evidence ledger (inert)
+
+- **Branch:** `codex/source-observation-step-3b-execute`
+- **Owner:** Claude (Lane 6)
+- **Base SHA:** `728032548048b0f61f652cb93df22d34db675d4b` (PR #238 merge commit on `main`)
+- **Status:** `awaiting_review`
+- **Files claimed:**
+  - `supabase/migrations/20260503010000_event_source_observations.sql`
+  - `web/src/__tests__/source-observation-step-3b-event-source-observations.test.ts`
+  - `docs/investigation/track1-claims.md`
+- **Notes:** Implements Step 3b of the SOURCE-OBS-01 data-model phase per the brief in `docs/investigation/source-observation-step-3b-observations-brief.md` (PR #234, merged) and the open-questions decision memo in `docs/investigation/source-observation-step-3b-open-questions-decision-memo.md` (PR #238, merged). Creates `public.event_source_observations` as an inert append-only evidence ledger with admin-read RLS only — no application reader or writer, no public view, no immutability trigger (RLS-deny posture per memo Q7), no derivation/status materialization, no stored conflict or possible_cancellation flags, no GIN index on `extracted_fields`, no covering composite, no partitioning. Honors memo Q1 (`event_id` NULLABLE; FK ON DELETE CASCADE; partial index on `event_id IS NULL`), Q4 (`source_url text NOT NULL`), Q5 (`agent_run_id` bare uuid, no FK or CHECK), Q6 (`created_by_role` enum has no "user direct write" value; only `crawler` / `admin_seed` / `concierge_extract` / `community_evidence_fetch` are sanctioned), and brief §3.6 (no `normalized_fields jsonb` — flat `observed_*` columns are the normalized canonical shape; `extracted_fields jsonb` holds the long tail). RLS posture: admin SELECT only; no anon, no authenticated, no public view, no SECURITY DEFINER; service_role bypass for crawler/Deduper/retention. The Deduper's `event_id NULL → uuid` UPDATE is the only sanctioned mutation path, gated by service_role + code review. No production verification behavior changes — `last_verified_at IS NOT NULL ⇒ Confirmed` remains the only active rule per Phase 4.89 invariants. `web/src/lib/events/verification.ts` is not modified. SOURCE-OBS-01 in `docs/CONTRACTS.md` remains Draft / Proposed / Not Active. `event_audit_log` (Lane 5 PR A) semantics unchanged; Lane 5 PR B scope not expanded. COMMUNITY-CORRECTION-01 boundary structurally enforced via the `created_by_role` CHECK enum + RLS denial of `authenticated` INSERT. Migration is not yet applied to any DB; the apply step is a separate stop-gate per `.claude/rules/30-supabase-migrations-and-deploy.md`.
+
+---
+
 ---
 
 Strategic-doc PR state as of this sync:
