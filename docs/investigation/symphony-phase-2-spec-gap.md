@@ -586,6 +586,10 @@ Separate repo-hygiene follow-up: fresh worktrees have recurring dependency
 friction around the exact `yaml@2.5.1` pin. Track that as dependency hygiene,
 not as part of the Phase 2.B closeout or status-aggregator slice.
 
+Status note (2026-05-03): Phase 2.B readiness and remaining operational gates
+are summarized in
+`docs/investigation/symphony-phase-2b-readiness-and-operational-gates.md`.
+
 ### Phase 2.C — Workspace Hook Lifecycle
 
 **Why this matters:** lets `WORKFLOW.md` define workspace bootstrap (e.g., dependency install) and cleanup behaviors per repo without changing Symphony code.
