@@ -140,6 +140,20 @@ Rules:
 
 ---
 
+### Lane 6 Step 3c-execute — event_change_log workflow surface (inert)
+
+- **Branch:** `codex/source-observation-step-3c-execute`
+- **Owner:** Claude (Lane 6)
+- **Base SHA:** `bbd7db166e71d022af6ce094fb7eb9ed432b3951` (PR #256 merge commit on `main`)
+- **Status:** `awaiting_review`
+- **Files claimed:**
+  - `supabase/migrations/20260503020000_event_change_log.sql`
+  - `web/src/__tests__/source-observation-step-3c-event-change-log.test.ts`
+  - `docs/investigation/track1-claims.md`
+- **Notes:** Implements Step 3c of the SOURCE-OBS-01 data-model phase per the brief in `docs/investigation/source-observation-step-3c-event-change-log-brief.md` (PR #252, merged) and the open-questions decision memo in `docs/investigation/source-observation-step-3c-open-questions-decision-memo.md` (PR #256, merged). Creates `public.event_change_log` as the inert proposed-change workflow surface — workflow-mutable but with no application reader or writer in 3c, no public view, no derivation/badge wiring. Distinct from `event_audit_log` (Lane 5 PR A applied-change history) and `event_source_observations` (3b immutable evidence): event_change_log is *proposed/derived workflow state*. Honors memo Q1 (`event_id` NOT NULL; deltas only exist for matched events), Q2 (BOTH RLS UPDATE policies AND a BEFORE UPDATE `event_change_log_validate_transition` trigger as defense-in-depth across all roles including service_role; trigger raises on terminal-state transitions and on direct `pending → applied`), Q3 (`field_name` CHECK enum with 9-value initial allowlist), Q4 (`change_severity` CHECK enum with `minor`/`material`/`cancellation_risk`; immutable per row; emitted by Trust agent at INSERT), Q5 (`applied_audit_log_id` bare uuid, no FK in 3c — matches `agent_run_id` forward-compat pattern), Q6 (`proposal_source` enum has no "user direct write" value; only `derivation` / `admin_seed` / `concierge_extract` are sanctioned; community corrections live in a separate future surface and feed event_change_log only via service_role indirection), Q7 (no partitioning, no retention; comment for future review), Q8 (one row per (event, observation, field) — schema implicitly supports per-field status independence). RLS posture: admin SELECT only; admin transition-constrained UPDATE (pending → approved/rejected only); no anon/authenticated/admin INSERT/DELETE; service_role bypass for Trust agent / status-transition jobs / retention. Five indexes (event+status+created, observation, source, status+severity, partial pending+severity). No production verification behavior changes — `last_verified_at IS NOT NULL ⇒ Confirmed` remains the only active rule per Phase 4.89 invariants. `web/src/lib/events/verification.ts` is not modified. SOURCE-OBS-01 in `docs/CONTRACTS.md` remains Draft / Proposed / Not Active. `event_audit_log` (Lane 5 PR A) semantics unchanged; Lane 5 PR B scope not expanded. COMMUNITY-CORRECTION-01 boundary structurally enforced via the `proposal_source` CHECK enum + RLS denial of `authenticated` INSERT. Migration is not yet applied to any DB; the apply step is a separate stop-gate per `.claude/rules/30-supabase-migrations-and-deploy.md`.
+
+---
+
 ---
 
 Strategic-doc PR state as of this sync:
