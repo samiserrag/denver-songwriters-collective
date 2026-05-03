@@ -77,10 +77,14 @@ const DEFAULT_VISION_EXTRACTION_MODEL = "gpt-4.1-mini";
 const DEFAULT_DRAFT_VERIFIER_MODEL = "gpt-5.5";
 const DEFAULT_WEB_SEARCH_VERIFIER_MODEL = "gpt-5.5";
 const ROUTE_SAFETY_MARGIN_MS = 8_000;
-const WEB_SEARCH_TIMEOUT_MS = 16_000;
-const VENUE_WEB_SEARCH_TIMEOUT_MS = 10_000;
-const EVENT_WEB_SEARCH_TIMEOUT_MS = 12_000;
-const INTERPRETER_TIMEOUT_MS = 85_000;
+const WEB_SEARCH_TIMEOUT_MS = 100_000;
+const FAST_VENUE_WEB_SEARCH_TIMEOUT_MS = 50_000;
+const VENUE_WEB_SEARCH_TIMEOUT_MS = 40_000;
+const EVENT_WEB_SEARCH_TIMEOUT_MS = 50_000;
+const OPTIONAL_EVENT_WEB_SEARCH_TIMEOUT_MS = 40_000;
+const INTERPRETER_TIMEOUT_MS = 100_000;
+const INTERPRETER_MIN_USEFUL_TIMEOUT_MS = 25_000;
+const WEB_SEARCH_INTERPRETER_RESERVE_MS = INTERPRETER_MIN_USEFUL_TIMEOUT_MS;
 const DRAFT_VERIFIER_TIMEOUT_MS = 8_000;
 const GOOGLE_GEOCODING_API_URL = "https://maps.googleapis.com/maps/api/geocode/json";
 type SupabaseServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>;
@@ -1124,11 +1128,17 @@ interface WebSearchQueryPlan {
 }
 
 type WebSearchCategoryKind = "venue" | "event";
+type WebSearchCategoryPass = "fast_venue" | "full_verifier";
 
 interface WebSearchCategoryAttempt {
   category: WebSearchCategoryKind;
   result: WebSearchVerificationResult | null;
   categoryResult: WebSearchCategoryResult;
+  pass: WebSearchCategoryPass;
+  timeoutMs: number;
+  elapsedMs: number;
+  upstreamStatus: number | null;
+  error: string | null;
 }
 
 const DEFAULT_FACT_BUCKETS: WebSearchFactBuckets = {
@@ -1217,6 +1227,31 @@ function buildWebSearchQueryPlan(input: {
   const eventQueries = primaryVenue ? uniqueStrings([`${primaryVenue} ${eventPhrase}`], 3) : [];
 
   return { venueQueries, eventQueries, locationContext };
+}
+
+function buildFastVenueQueryPlan(queryPlan: WebSearchQueryPlan): WebSearchQueryPlan {
+  const prioritizedAddressQueries = queryPlan.venueQueries.filter((query) => /\baddress\b/i.test(query));
+  const prioritizedHandleQueries = queryPlan.venueQueries.filter((query) => query.trim().startsWith("@"));
+  const prioritizedIdentityQueries = queryPlan.venueQueries.filter(
+    (query) => !/\baddress\b/i.test(query) && !query.trim().startsWith("@")
+  );
+  const strongestIdentity =
+    prioritizedIdentityQueries.find((query) => /\bbreckenridge\b/i.test(query)) ??
+    prioritizedIdentityQueries[0] ??
+    null;
+  return {
+    ...queryPlan,
+    venueQueries: uniqueStrings(
+      [
+        strongestIdentity,
+        ...prioritizedAddressQueries.slice(0, 1),
+        ...prioritizedHandleQueries.slice(0, 1),
+        ...prioritizedIdentityQueries.filter((query) => query !== strongestIdentity),
+      ].filter((query): query is string => typeof query === "string" && query.trim().length > 0),
+      3
+    ),
+    eventQueries: [],
+  };
 }
 
 function emptySearchCategory(input: {
@@ -1407,6 +1442,55 @@ function buildWebSearchVerificationPrompt(input: {
   );
 }
 
+function buildFastVenueSearchPrompt(input: {
+  message: string;
+  conversationHistory: Array<{ role: "user" | "assistant"; content: string }>;
+  extractedImageText?: string;
+  googleMapsHint: GoogleMapsHint | null;
+  lockedDraft?: Record<string, unknown> | null;
+  currentEvent?: Record<string, unknown> | null;
+  currentDate: string;
+  queryPlan: WebSearchQueryPlan;
+}) {
+  return JSON.stringify(
+    {
+      task: "fast_venue_enrichment_for_event_draft",
+      current_date: input.currentDate,
+      current_timezone: "America/Denver",
+      source_message: input.message,
+      recent_user_context: input.conversationHistory
+        .filter((entry) => entry.role === "user")
+        .map((entry) => entry.content)
+        .slice(-3),
+      extracted_image_text: input.extractedImageText ?? null,
+      google_maps_hint: input.googleMapsHint,
+      locked_draft: input.lockedDraft ?? null,
+      current_event: input.currentEvent ?? null,
+      venue_queries: input.queryPlan.venueQueries,
+      location_context: input.queryPlan.locationContext,
+      instructions: [
+        "This is a fast venue-enrichment pass. Only verify venue identity and address/contact facts.",
+        "Run only venue_queries. Do not search for or verify the exact event, recurrence, cost, signup, or event source URL.",
+        "Prefer official venue pages, Google/Maps-like business listings, or trusted directory pages that clearly identify the venue.",
+        "Return verified only when a source reliably confirms venue identity plus at least one useful location/contact fact such as street address, city/state/ZIP, phone, website, Maps URL, or coordinates.",
+        "Keep output tiny. Do not include fact buckets, long summaries, or event analysis.",
+        "Do not use a Google Maps URL as an event external_url. Maps links are location hints only.",
+        "Return strict JSON only.",
+      ],
+      required_output_shape: {
+        status: "verified | not_found",
+        summary: "string",
+        confidence: "high | medium | low | unknown",
+        attempted_queries: "string[]",
+        facts: "string[]",
+        sources: [{ url: "string", title: "string|null" }],
+      },
+    },
+    null,
+    2
+  );
+}
+
 function parseWebSearchSource(value: unknown): WebSearchVerificationSource | null {
   const row = parseJsonObject(value);
   if (!row || typeof row.url !== "string" || !/^https?:\/\//i.test(row.url)) return null;
@@ -1458,6 +1542,35 @@ function parseWebSearchCategory(value: unknown): WebSearchCategoryResult | null 
     confidence,
     attempted_queries: parseStringList(obj.attempted_queries, 8, 120),
     facts: parseStringList(obj.facts, 12),
+    sources,
+  };
+}
+
+function parseFastVenueSearchCategory(value: unknown, fallbackSources: WebSearchVerificationSource[]): WebSearchCategoryResult | null {
+  const obj = parseJsonObject(value);
+  if (!obj) return null;
+  if (obj.status !== "verified" && obj.status !== "not_found") return null;
+  if (typeof obj.summary !== "string") return null;
+  const confidence: WebSearchConfidence =
+    obj.confidence === "high" ||
+    obj.confidence === "medium" ||
+    obj.confidence === "low" ||
+    obj.confidence === "unknown"
+      ? obj.confidence
+      : "unknown";
+  const parsedSources = Array.isArray(obj.sources)
+    ? obj.sources
+        .map(parseWebSearchSource)
+        .filter((source): source is WebSearchVerificationSource => source !== null)
+    : [];
+  const sources = mergeWebSearchSources(parsedSources, fallbackSources).slice(0, 4);
+
+  return {
+    status: obj.status,
+    summary: obj.summary.trim().slice(0, 360),
+    confidence,
+    attempted_queries: parseStringList(obj.attempted_queries, 3, 120),
+    facts: parseStringList(obj.facts, 8),
     sources,
   };
 }
@@ -1701,6 +1814,49 @@ function buildWebSearchResponseTextFormat() {
   };
 }
 
+function buildFastVenueSearchResponseTextFormat() {
+  return {
+    format: {
+      type: "json_schema",
+      name: "fast_venue_search_result",
+      strict: true,
+      schema: {
+        type: "object",
+        additionalProperties: false,
+        required: ["status", "summary", "confidence", "attempted_queries", "facts", "sources"],
+        properties: {
+          status: { type: "string", enum: ["verified", "not_found"] },
+          summary: { type: "string" },
+          confidence: { type: "string", enum: ["high", "medium", "low", "unknown"] },
+          attempted_queries: {
+            type: "array",
+            maxItems: 3,
+            items: { type: "string" },
+          },
+          facts: {
+            type: "array",
+            maxItems: 8,
+            items: { type: "string" },
+          },
+          sources: {
+            type: "array",
+            maxItems: 4,
+            items: {
+              type: "object",
+              additionalProperties: false,
+              required: ["url", "title"],
+              properties: {
+                url: { type: "string" },
+                title: { type: ["string", "null"] },
+              },
+            },
+          },
+        },
+      },
+    },
+  };
+}
+
 function getWebSearchCategoryQueries(queryPlan: WebSearchQueryPlan, category: WebSearchCategoryKind): string[] {
   return category === "venue" ? queryPlan.venueQueries : queryPlan.eventQueries;
 }
@@ -1785,6 +1941,275 @@ function selectCategoryResult(input: {
   };
 }
 
+function buildWebSearchCategoryAttempt(input: {
+  category: WebSearchCategoryKind;
+  result: WebSearchVerificationResult | null;
+  categoryResult: WebSearchCategoryResult;
+  pass: WebSearchCategoryPass;
+  timeoutMs: number;
+  startedAt: number;
+  upstreamStatus?: number | null;
+  error?: string | null;
+}): WebSearchCategoryAttempt {
+  return {
+    category: input.category,
+    result: input.result,
+    categoryResult: input.categoryResult,
+    pass: input.pass,
+    timeoutMs: input.timeoutMs,
+    elapsedMs: Date.now() - input.startedAt,
+    upstreamStatus: input.upstreamStatus ?? null,
+    error: input.error ?? null,
+  };
+}
+
+function logWebSearchCategoryAttempt(input: {
+  traceId: string | null;
+  attempt: WebSearchCategoryAttempt;
+}): void {
+  console.info("[events/interpret] web search category complete", {
+    traceId: input.traceId,
+    category: input.attempt.category,
+    pass: input.attempt.pass,
+    status: input.attempt.categoryResult.status,
+    timeoutMs: input.attempt.timeoutMs,
+    elapsedMs: input.attempt.elapsedMs,
+    attemptedQueries: input.attempt.categoryResult.attempted_queries,
+    sourceCount: input.attempt.categoryResult.sources.length,
+    factCount: input.attempt.categoryResult.facts.length,
+    upstreamStatus: input.attempt.upstreamStatus,
+    error: input.attempt.error,
+  });
+}
+
+function finalizeWebSearchCategoryAttempt(input: {
+  traceId: string | null;
+  attempt: WebSearchCategoryAttempt;
+}): WebSearchCategoryAttempt {
+  logWebSearchCategoryAttempt(input);
+  return input.attempt;
+}
+
+function buildSkippedWebSearchCategoryAttempt(input: {
+  traceId: string | null;
+  category: WebSearchCategoryKind;
+  queryPlan: WebSearchQueryPlan;
+  pass: WebSearchCategoryPass;
+  timeoutMs: number;
+  status: WebSearchCategoryResult["status"];
+  summary: string;
+  error?: string | null;
+}): WebSearchCategoryAttempt {
+  const startedAt = Date.now();
+  return finalizeWebSearchCategoryAttempt({
+    traceId: input.traceId,
+    attempt: buildWebSearchCategoryAttempt({
+      category: input.category,
+      result: null,
+      categoryResult: emptySearchCategory({
+        status: input.status,
+        summary: input.summary,
+        attemptedQueries: getWebSearchCategoryQueries(input.queryPlan, input.category),
+      }),
+      pass: input.pass,
+      timeoutMs: input.timeoutMs,
+      startedAt,
+      error: input.error ?? null,
+    }),
+  });
+}
+
+function buildFastVenueSearchResult(categoryResult: WebSearchCategoryResult): WebSearchVerificationResult | null {
+  if (categoryResult.status !== "verified") return null;
+  return {
+    status: "searched",
+    summary: categoryResult.summary,
+    facts: categoryResult.facts,
+    sources: categoryResult.sources,
+    venue_search: categoryResult,
+    event_search: emptySearchCategory({
+      status: "not_applicable",
+      summary: "Fast venue search does not verify exact event listings.",
+      attemptedQueries: [],
+    }),
+    fact_buckets: {
+      ...DEFAULT_FACT_BUCKETS,
+      searched_verified: categoryResult.facts,
+      true_unknowns: ["exact public event listing", "cost", "signup link", "direct source link"],
+    },
+    suggested_questions: [],
+  };
+}
+
+async function runFastVenueSearchCategory(input: {
+  openAiKey: string;
+  searchModel: string;
+  message: string;
+  conversationHistory: Array<{ role: "user" | "assistant"; content: string }>;
+  extractedImageText?: string;
+  googleMapsHint: GoogleMapsHint | null;
+  lockedDraft?: Record<string, unknown> | null;
+  currentEvent?: Record<string, unknown> | null;
+  currentDate: string;
+  traceId: string | null;
+  queryPlan: WebSearchQueryPlan;
+  timeoutMs: number;
+}): Promise<WebSearchCategoryAttempt> {
+  const fastQueryPlan = buildFastVenueQueryPlan(input.queryPlan);
+  const attemptedQueries = fastQueryPlan.venueQueries;
+  const startedAt = Date.now();
+  if (attemptedQueries.length === 0) {
+    return buildSkippedWebSearchCategoryAttempt({
+      traceId: input.traceId,
+      category: "venue",
+      queryPlan: fastQueryPlan,
+      pass: "fast_venue",
+      timeoutMs: input.timeoutMs,
+      status: "not_applicable",
+      summary: "Fast venue search was not applicable because no targeted venue queries were available.",
+    });
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), input.timeoutMs);
+
+  try {
+    const searchResponse = await fetch(OPENAI_RESPONSES_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${input.openAiKey}`,
+        "Content-Type": "application/json",
+      },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model: input.searchModel,
+        instructions:
+          "You are a fast venue enrichment assistant. Return strict JSON only. Search only for venue identity/address/contact facts.",
+        ...(supportsReasoningEffort(input.searchModel)
+          ? { reasoning: { effort: "low" } }
+          : {}),
+        input: buildFastVenueSearchPrompt({
+          ...input,
+          queryPlan: fastQueryPlan,
+        }),
+        tools: [
+          {
+            type: "web_search",
+            user_location: {
+              type: "approximate",
+              country: "US",
+              city: "Denver",
+              region: "Colorado",
+              timezone: "America/Denver",
+            },
+          },
+        ],
+        tool_choice: "required",
+        include: ["web_search_call.action.sources"],
+        max_output_tokens: 450,
+        text: buildFastVenueSearchResponseTextFormat(),
+      }),
+    });
+
+    const searchData = await searchResponse.json();
+    const fallbackSources = collectWebSearchSources(searchData);
+    if (!searchResponse.ok) {
+      console.warn("[events/interpret] fast venue search skipped after upstream error", {
+        traceId: input.traceId,
+        status: searchResponse.status,
+        data: searchData,
+      });
+      return finalizeWebSearchCategoryAttempt({
+        traceId: input.traceId,
+        attempt: buildWebSearchCategoryAttempt({
+          category: "venue",
+          result: null,
+          categoryResult: emptySearchCategory({
+            status: "not_found",
+            summary: "Fast venue search returned an upstream error before it could verify reliable venue facts.",
+            attemptedQueries,
+          }),
+          pass: "fast_venue",
+          timeoutMs: input.timeoutMs,
+          startedAt,
+          upstreamStatus: searchResponse.status,
+          error: "upstream_error",
+        }),
+      });
+    }
+
+    const searchObj = parseJsonObject(searchData);
+    const outputText = searchObj ? extractResponseText(searchObj) : null;
+    const parsed = outputText ? parseJsonFromResponseText(outputText) : null;
+    const categoryResult = parsed ? parseFastVenueSearchCategory(parsed, fallbackSources) : null;
+    if (!categoryResult) {
+      return finalizeWebSearchCategoryAttempt({
+        traceId: input.traceId,
+        attempt: buildWebSearchCategoryAttempt({
+          category: "venue",
+          result: null,
+          categoryResult: emptySearchCategory({
+            status: "not_found",
+            summary: outputText
+              ? "Fast venue search did not return readable structured venue details."
+              : "Fast venue search returned no usable verification text.",
+            attemptedQueries,
+          }),
+          pass: "fast_venue",
+          timeoutMs: input.timeoutMs,
+          startedAt,
+          upstreamStatus: searchResponse.status,
+          error: outputText ? "invalid_result_shape" : "empty_output",
+        }),
+      });
+    }
+
+    const withAttempts: WebSearchCategoryResult = {
+      ...categoryResult,
+      attempted_queries: categoryResult.attempted_queries.length > 0 ? categoryResult.attempted_queries : attemptedQueries,
+    };
+    return finalizeWebSearchCategoryAttempt({
+      traceId: input.traceId,
+      attempt: buildWebSearchCategoryAttempt({
+        category: "venue",
+        result: buildFastVenueSearchResult(withAttempts),
+        categoryResult: withAttempts,
+        pass: "fast_venue",
+        timeoutMs: input.timeoutMs,
+        startedAt,
+        upstreamStatus: searchResponse.status,
+      }),
+    });
+  } catch (error) {
+    const isTimeout = error instanceof Error && error.name === "AbortError";
+    console.warn("[events/interpret] fast venue search skipped", {
+      traceId: input.traceId,
+      isTimeout,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return finalizeWebSearchCategoryAttempt({
+      traceId: input.traceId,
+      attempt: buildWebSearchCategoryAttempt({
+        category: "venue",
+        result: null,
+        categoryResult: emptySearchCategory({
+          status: isTimeout ? "timeout" : "not_found",
+          summary: isTimeout
+            ? "Fast venue search timed out before returning reliable venue facts."
+            : "Fast venue search failed before it could verify reliable venue facts.",
+          attemptedQueries,
+        }),
+        pass: "fast_venue",
+        timeoutMs: input.timeoutMs,
+        startedAt,
+        error: error instanceof Error ? error.message : String(error),
+      }),
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 async function runWebSearchCategory(input: {
   openAiKey: string;
   searchModel: string;
@@ -1799,19 +2224,28 @@ async function runWebSearchCategory(input: {
   queryPlan: WebSearchQueryPlan;
   category: WebSearchCategoryKind;
   timeoutMs: number;
+  pass?: WebSearchCategoryPass;
 }): Promise<WebSearchCategoryAttempt> {
   const attemptedQueries = getWebSearchCategoryQueries(input.queryPlan, input.category);
   const label = input.category === "venue" ? "Venue search" : "Exact-event search";
+  const pass = input.pass ?? "full_verifier";
+  const startedAt = Date.now();
   if (attemptedQueries.length === 0) {
-    return {
-      category: input.category,
-      result: null,
-      categoryResult: emptySearchCategory({
-        status: "not_applicable",
-        summary: `${label} was not applicable because no targeted queries were available.`,
-        attemptedQueries,
+    return finalizeWebSearchCategoryAttempt({
+      traceId: input.traceId,
+      attempt: buildWebSearchCategoryAttempt({
+        category: input.category,
+        result: null,
+        categoryResult: emptySearchCategory({
+          status: "not_applicable",
+          summary: `${label} was not applicable because no targeted queries were available.`,
+          attemptedQueries,
+        }),
+        pass,
+        timeoutMs: input.timeoutMs,
+        startedAt,
       }),
-    };
+    });
   }
 
   const controller = new AbortController();
@@ -1867,29 +2301,45 @@ async function runWebSearchCategory(input: {
         status: searchResponse.status,
         data: searchData,
       });
-      return {
-        category: input.category,
-        result: null,
-        categoryResult: emptySearchCategory({
-          status: "not_found",
-          summary: `${label} returned an upstream error before it could verify reliable sources.`,
-          attemptedQueries,
+      return finalizeWebSearchCategoryAttempt({
+        traceId: input.traceId,
+        attempt: buildWebSearchCategoryAttempt({
+          category: input.category,
+          result: null,
+          categoryResult: emptySearchCategory({
+            status: "not_found",
+            summary: `${label} returned an upstream error before it could verify reliable sources.`,
+            attemptedQueries,
+          }),
+          pass,
+          timeoutMs: input.timeoutMs,
+          startedAt,
+          upstreamStatus: searchResponse.status,
+          error: "upstream_error",
         }),
-      };
+      });
     }
 
     const searchObj = parseJsonObject(searchData);
     const outputText = searchObj ? extractResponseText(searchObj) : null;
     if (!outputText) {
-      return {
-        category: input.category,
-        result: null,
-        categoryResult: emptySearchCategory({
-          status: "not_found",
-          summary: `${label} returned no usable verification text.`,
-          attemptedQueries,
+      return finalizeWebSearchCategoryAttempt({
+        traceId: input.traceId,
+        attempt: buildWebSearchCategoryAttempt({
+          category: input.category,
+          result: null,
+          categoryResult: emptySearchCategory({
+            status: "not_found",
+            summary: `${label} returned no usable verification text.`,
+            attemptedQueries,
+          }),
+          pass,
+          timeoutMs: input.timeoutMs,
+          startedAt,
+          upstreamStatus: searchResponse.status,
+          error: "empty_output",
         }),
-      };
+      });
     }
 
     const parsed = parseJsonFromResponseText(outputText);
@@ -1899,28 +2349,44 @@ async function runWebSearchCategory(input: {
         category: input.category,
         outputPreview: redactEmails(truncate(outputText, 200)),
       });
-      return {
-        category: input.category,
-        result: null,
-        categoryResult: emptySearchCategory({
-          status: "not_found",
-          summary: `${label} did not return readable structured verification details.`,
-          attemptedQueries,
+      return finalizeWebSearchCategoryAttempt({
+        traceId: input.traceId,
+        attempt: buildWebSearchCategoryAttempt({
+          category: input.category,
+          result: null,
+          categoryResult: emptySearchCategory({
+            status: "not_found",
+            summary: `${label} did not return readable structured verification details.`,
+            attemptedQueries,
+          }),
+          pass,
+          timeoutMs: input.timeoutMs,
+          startedAt,
+          upstreamStatus: searchResponse.status,
+          error: "non_json_output",
         }),
-      };
+      });
     }
 
     const result = parseWebSearchVerification(parsed, fallbackSources);
     if (!result) {
-      return {
-        category: input.category,
-        result: null,
-        categoryResult: emptySearchCategory({
-          status: "not_found",
-          summary: `${label} did not return valid verification details.`,
-          attemptedQueries,
+      return finalizeWebSearchCategoryAttempt({
+        traceId: input.traceId,
+        attempt: buildWebSearchCategoryAttempt({
+          category: input.category,
+          result: null,
+          categoryResult: emptySearchCategory({
+            status: "not_found",
+            summary: `${label} did not return valid verification details.`,
+            attemptedQueries,
+          }),
+          pass,
+          timeoutMs: input.timeoutMs,
+          startedAt,
+          upstreamStatus: searchResponse.status,
+          error: "invalid_result_shape",
         }),
-      };
+      });
     }
 
     if (input.category === "event" && isNonExactEventSearchResult(result) && !hasUsefulVenueSearch(result)) {
@@ -1929,27 +2395,41 @@ async function runWebSearchCategory(input: {
         sourceCount: result.sources.length,
         summary: redactEmails(truncate(result.summary, 200)),
       });
-      return {
-        category: input.category,
-        result,
-        categoryResult: emptySearchCategory({
-          status: "not_found",
-          summary: "Exact-event search found sources, but they did not verify the exact event or recurring series.",
-          attemptedQueries,
+      return finalizeWebSearchCategoryAttempt({
+        traceId: input.traceId,
+        attempt: buildWebSearchCategoryAttempt({
+          category: input.category,
+          result,
+          categoryResult: emptySearchCategory({
+            status: "not_found",
+            summary: "Exact-event search found sources, but they did not verify the exact event or recurring series.",
+            attemptedQueries,
+          }),
+          pass,
+          timeoutMs: input.timeoutMs,
+          startedAt,
+          upstreamStatus: searchResponse.status,
         }),
-      };
+      });
     }
 
-    return {
-      category: input.category,
-      result,
-      categoryResult: selectCategoryResult({
-        result,
+    return finalizeWebSearchCategoryAttempt({
+      traceId: input.traceId,
+      attempt: buildWebSearchCategoryAttempt({
         category: input.category,
-        queryPlan: input.queryPlan,
-        fallbackSummary: `${label} ran but did not find reliable sources for this category.`,
+        result,
+        categoryResult: selectCategoryResult({
+          result,
+          category: input.category,
+          queryPlan: input.queryPlan,
+          fallbackSummary: `${label} ran but did not find reliable sources for this category.`,
+        }),
+        pass,
+        timeoutMs: input.timeoutMs,
+        startedAt,
+        upstreamStatus: searchResponse.status,
       }),
-    };
+    });
   } catch (error) {
     const isTimeout = error instanceof Error && error.name === "AbortError";
     console.warn("[events/interpret] web search category skipped", {
@@ -1958,17 +2438,24 @@ async function runWebSearchCategory(input: {
       isTimeout,
       error: error instanceof Error ? error.message : String(error),
     });
-    return {
-      category: input.category,
-      result: null,
-      categoryResult: emptySearchCategory({
-        status: isTimeout ? "timeout" : "not_found",
-        summary: isTimeout
-          ? `${label} timed out before returning reliable sources.`
-          : `${label} failed before it could verify reliable sources.`,
-        attemptedQueries,
+    return finalizeWebSearchCategoryAttempt({
+      traceId: input.traceId,
+      attempt: buildWebSearchCategoryAttempt({
+        category: input.category,
+        result: null,
+        categoryResult: emptySearchCategory({
+          status: isTimeout ? "timeout" : "not_found",
+          summary: isTimeout
+            ? `${label} timed out before returning reliable sources.`
+            : `${label} failed before it could verify reliable sources.`,
+          attemptedQueries,
+        }),
+        pass,
+        timeoutMs: input.timeoutMs,
+        startedAt,
+        error: error instanceof Error ? error.message : String(error),
       }),
-    };
+    });
   } finally {
     clearTimeout(timeout);
   }
@@ -2069,6 +2556,151 @@ function combineWebSearchCategoryAttempts(input: {
   };
 }
 
+function getSearchTimeoutForRemainingBudget(input: {
+  startedAt: number;
+  preferredMs: number;
+  minimumUsefulMs: number;
+}): number {
+  const remainingRouteBudgetMs = getRemainingRouteBudgetMs(input.startedAt);
+  const availableForSearchMs = Math.max(
+    remainingRouteBudgetMs - WEB_SEARCH_INTERPRETER_RESERVE_MS,
+    0
+  );
+  if (availableForSearchMs <= input.minimumUsefulMs) {
+    return availableForSearchMs;
+  }
+  return Math.min(input.preferredMs, availableForSearchMs);
+}
+
+function webSearchTimedOutCompletely(value: WebSearchVerificationResult | null): value is WebSearchVerificationResult {
+  return (
+    value?.venue_search?.status === "timeout" &&
+    value.event_search?.status === "timeout"
+  );
+}
+
+const FALLBACK_WEEKDAY_INDEX: Record<string, number> = {
+  sunday: 0,
+  monday: 1,
+  tuesday: 2,
+  wednesday: 3,
+  thursday: 4,
+  friday: 5,
+  saturday: 6,
+};
+
+function nextWeekdayDateKey(currentDate: string, weekday: string): string | null {
+  const weekdayIndex = FALLBACK_WEEKDAY_INDEX[weekday.toLowerCase()];
+  if (weekdayIndex === undefined || !/^\d{4}-\d{2}-\d{2}$/.test(currentDate)) return null;
+  const date = new Date(`${currentDate}T12:00:00Z`);
+  if (Number.isNaN(date.getTime())) return null;
+  const daysUntil = (weekdayIndex - date.getUTCDay() + 7) % 7;
+  date.setUTCDate(date.getUTCDate() + daysUntil);
+  return date.toISOString().slice(0, 10);
+}
+
+function formatFallbackTime(hourText: string, minuteText: string | undefined, suffix: string | undefined): string | null {
+  let hour = Number.parseInt(hourText, 10);
+  const minute = minuteText ? Number.parseInt(minuteText, 10) : 0;
+  if (!Number.isFinite(hour) || !Number.isFinite(minute) || hour < 1 || hour > 12 || minute < 0 || minute > 59) {
+    return null;
+  }
+  const normalizedSuffix = suffix?.toLowerCase();
+  if (normalizedSuffix === "pm" && hour < 12) hour += 12;
+  if (normalizedSuffix === "am" && hour === 12) hour = 0;
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00`;
+}
+
+function extractFallbackTimeRange(text: string): { start_time: string; end_time: string | null } | null {
+  const match = text.match(/\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s*[-–—]\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/i);
+  if (!match) return null;
+  const [, startHour, startMinute, startSuffixRaw, endHour, endMinute, endSuffixRaw] = match;
+  const endSuffix = endSuffixRaw?.toLowerCase();
+  if (!endSuffix) return null;
+  const startSuffix = startSuffixRaw?.toLowerCase() ?? endSuffix;
+  const start = formatFallbackTime(startHour, startMinute, startSuffix);
+  const end = formatFallbackTime(endHour, endMinute, endSuffix);
+  return start ? { start_time: start, end_time: end } : null;
+}
+
+function fallbackVenueNameFromSearch(value: WebSearchVerificationResult | null): string | null {
+  const candidates = value?.venue_search?.attempted_queries ?? [];
+  for (const query of candidates) {
+    const cleaned = query.replace(/\baddress\b/gi, "").trim();
+    if (!cleaned || cleaned.startsWith("@")) continue;
+    if (/\bRMU\s+Breckenridge\b/i.test(cleaned)) return "RMU Breckenridge";
+    if (/\bRMU\s+Breck\b/i.test(cleaned)) return "RMU Breck";
+    return cleaned.slice(0, 80);
+  }
+  return null;
+}
+
+function buildAllSearchTimeoutInterpreterFallback(input: {
+  mode: InterpretEventRequestBody["mode"];
+  message: string;
+  conversationHistory: Array<{ role: "user" | "assistant"; content: string }>;
+  extractedImageText?: string;
+  lockedDraft: Record<string, unknown> | null;
+  webSearchVerification: WebSearchVerificationResult | null;
+  currentDate: string;
+}): Record<string, unknown> {
+  const sourceText = [
+    input.message,
+    ...input.conversationHistory.map((entry) => entry.content),
+    input.extractedImageText ?? "",
+  ].join("\n");
+  const draft: Record<string, unknown> = {
+    ...(input.mode === "create" && input.lockedDraft ? input.lockedDraft : {}),
+  };
+  const venueName = fallbackVenueNameFromSearch(input.webSearchVerification);
+  const weekdayMatch = sourceText.match(/\bevery\s+(sunday|monday|tuesday|wednesday|thursday|friday|saturday)s?\b/i);
+  const timeRange = extractFallbackTimeRange(sourceText);
+  const facts: string[] = [];
+
+  if (/\bopen\s*mic\b/i.test(sourceText)) {
+    draft.event_type = ["open_mic"];
+    facts.push("open mic");
+  }
+  if (venueName) {
+    draft.venue_name = venueName;
+    draft.location_mode = "venue";
+  }
+  if (weekdayMatch) {
+    const weekday = weekdayMatch[1].toLowerCase();
+    draft.series_mode = "weekly";
+    draft.recurrence_rule = "weekly";
+    draft.day_of_week = weekday.charAt(0).toUpperCase() + weekday.slice(1);
+    const startDate = nextWeekdayDateKey(input.currentDate, weekday);
+    if (startDate) draft.start_date = startDate;
+    facts.push(`every ${draft.day_of_week}`);
+  }
+  if (timeRange) {
+    draft.start_time = timeRange.start_time;
+    if (timeRange.end_time) draft.end_time = timeRange.end_time;
+    facts.push("7-9pm time range");
+  }
+  if (!draft.title) {
+    draft.title = venueName && /\bopen\s*mic\b/i.test(sourceText)
+      ? `${venueName} - Open Mic`
+      : /\bopen\s*mic\b/i.test(sourceText)
+        ? "Open Mic"
+        : "Draft Event";
+  }
+
+  const knownFacts = facts.length > 0 ? ` I kept the source-backed event facts I could read: ${facts.join(", ")}.` : "";
+  return {
+    next_action: "ask_clarification",
+    confidence: 0.42,
+    human_summary:
+      `Venue search and exact-event search both timed out before returning reliable public sources.${knownFacts} Cost, signup link, and direct source link are still unknown.`,
+    clarification_question:
+      "I can retry search, or save a custom location for now. To create a reusable venue safely later, send an official page or Maps link.",
+    blocking_fields: ["venue_id"],
+    scope: weekdayMatch ? "series" : "ambiguous",
+    draft_payload: draft,
+  };
+}
+
 async function verifyEventDetailsWithWebSearch(input: {
   openAiKey: string;
   searchModel: string;
@@ -2081,23 +2713,66 @@ async function verifyEventDetailsWithWebSearch(input: {
   currentDate: string;
   traceId: string | null;
   returnNoReliableResult: boolean;
+  requestStartedAt: number;
 }): Promise<WebSearchVerificationResult | null> {
   const queryPlan = buildWebSearchQueryPlan(input);
 
-  const [venueAttempt, eventAttempt] = await Promise.all([
-    runWebSearchCategory({
-      ...input,
-      queryPlan,
-      category: "venue",
-      timeoutMs: VENUE_WEB_SEARCH_TIMEOUT_MS,
+  let venueAttempt = await runFastVenueSearchCategory({
+    ...input,
+    queryPlan,
+    timeoutMs: getSearchTimeoutForRemainingBudget({
+      startedAt: input.requestStartedAt,
+      preferredMs: FAST_VENUE_WEB_SEARCH_TIMEOUT_MS,
+      minimumUsefulMs: 6_000,
     }),
-    runWebSearchCategory({
-      ...input,
-      queryPlan,
-      category: "event",
-      timeoutMs: EVENT_WEB_SEARCH_TIMEOUT_MS,
-    }),
-  ]);
+  });
+
+  if (
+    !isUsefulSearchCategory(venueAttempt.categoryResult) &&
+    venueAttempt.categoryResult.status !== "timeout"
+  ) {
+    const fullVenueTimeoutMs = getSearchTimeoutForRemainingBudget({
+      startedAt: input.requestStartedAt,
+      preferredMs: VENUE_WEB_SEARCH_TIMEOUT_MS,
+      minimumUsefulMs: 5_000,
+    });
+    if (fullVenueTimeoutMs >= 5_000) {
+      venueAttempt = await runWebSearchCategory({
+        ...input,
+        queryPlan,
+        category: "venue",
+        timeoutMs: fullVenueTimeoutMs,
+        pass: "full_verifier",
+      });
+    }
+  }
+
+  const eventTimeoutMs = getSearchTimeoutForRemainingBudget({
+    startedAt: input.requestStartedAt,
+    preferredMs: isUsefulSearchCategory(venueAttempt.categoryResult)
+      ? OPTIONAL_EVENT_WEB_SEARCH_TIMEOUT_MS
+      : EVENT_WEB_SEARCH_TIMEOUT_MS,
+    minimumUsefulMs: 3_000,
+  });
+  const eventAttempt = eventTimeoutMs >= 3_000
+    ? await runWebSearchCategory({
+        ...input,
+        queryPlan,
+        category: "event",
+        timeoutMs: eventTimeoutMs,
+        pass: "full_verifier",
+      })
+    : buildSkippedWebSearchCategoryAttempt({
+        traceId: input.traceId,
+        category: "event",
+        queryPlan,
+        pass: "full_verifier",
+        timeoutMs: eventTimeoutMs,
+        status: "timeout",
+        summary: "Exact-event search was skipped because venue enrichment consumed the available search budget.",
+        error: "insufficient_remaining_budget",
+      });
+
   const result = combineWebSearchCategoryAttempts({
     queryPlan,
     venueAttempt,
@@ -3073,6 +3748,7 @@ export async function POST(request: Request) {
       currentDate,
       traceId,
       returnNoReliableResult: explicitWebSearchRequest,
+      requestStartedAt,
     });
 
     if (webSearchVerification) {
@@ -3122,9 +3798,9 @@ export async function POST(request: Request) {
   const interpreterTimeoutMs = getBoundedStepTimeoutMs({
     startedAt: requestStartedAt,
     preferredMs: INTERPRETER_TIMEOUT_MS,
-    minimumUsefulMs: 35_000,
+    minimumUsefulMs: INTERPRETER_MIN_USEFUL_TIMEOUT_MS,
   });
-  if (interpreterTimeoutMs < 35_000) {
+  if (interpreterTimeoutMs < INTERPRETER_MIN_USEFUL_TIMEOUT_MS) {
     console.warn("[events/interpret] not enough route budget for interpreter", {
       userId: sessionUser.id,
       traceId,
@@ -3137,6 +3813,17 @@ export async function POST(request: Request) {
   const timeout = setTimeout(() => controller.abort(), interpreterTimeoutMs);
 
   let responsePayload: Record<string, unknown>;
+  const buildAllSearchTimeoutFallbackForRequest = () =>
+    buildAllSearchTimeoutInterpreterFallback({
+      mode,
+      message: normalizedMessage,
+      conversationHistory,
+      extractedImageText,
+      lockedDraft,
+      webSearchVerification,
+      currentDate,
+    });
+
   try {
     const llmResponse = await fetch(OPENAI_RESPONSES_URL, {
       method: "POST",
@@ -3180,16 +3867,41 @@ export async function POST(request: Request) {
     const parsed = parseJsonFromResponseText(outputText);
     if (!parsed) {
       console.error("[events/interpret] non-json model output", {
+        userId: sessionUser.id,
+        traceId,
+        requestId: request.headers.get("x-vercel-id") ?? null,
+        allSearchTimedOut: webSearchTimedOutCompletely(webSearchVerification),
         outputPreview: redactEmails(truncate(outputText, 200)),
       });
-      return NextResponse.json({ error: "Interpreter returned non-JSON output." }, { status: 502 });
+      if (webSearchTimedOutCompletely(webSearchVerification)) {
+        responsePayload = buildAllSearchTimeoutFallbackForRequest();
+        console.warn("[events/interpret] recovered non-json timeout output with deterministic fallback", {
+          userId: sessionUser.id,
+          traceId,
+          venueSearchStatus: webSearchVerification.venue_search?.status,
+          eventSearchStatus: webSearchVerification.event_search?.status,
+        });
+      } else {
+        return NextResponse.json({ error: "Interpreter returned non-JSON output." }, { status: 502 });
+      }
+    } else {
+      const parsedObj = parseJsonObject(parsed);
+      if (!parsedObj) {
+        return NextResponse.json({ error: "Interpreter output is not a JSON object." }, { status: 502 });
+      }
+      if (webSearchTimedOutCompletely(webSearchVerification)) {
+        responsePayload = buildAllSearchTimeoutFallbackForRequest();
+        console.warn("[events/interpret] replaced valid all-search-timeout output with deterministic fallback", {
+          userId: sessionUser.id,
+          traceId,
+          modelNextAction: typeof parsedObj.next_action === "string" ? parsedObj.next_action : null,
+          venueSearchStatus: webSearchVerification.venue_search?.status,
+          eventSearchStatus: webSearchVerification.event_search?.status,
+        });
+      } else {
+        responsePayload = parsedObj;
+      }
     }
-
-    const parsedObj = parseJsonObject(parsed);
-    if (!parsedObj) {
-      return NextResponse.json({ error: "Interpreter output is not a JSON object." }, { status: 502 });
-    }
-    responsePayload = parsedObj;
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") {
       return NextResponse.json({ error: "Interpreter timeout." }, { status: 504 });

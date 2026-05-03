@@ -22,6 +22,22 @@ Rules:
 
 ## Active claims
 
+### Lane 9 follow-up — Venue search timeout resilience
+
+- **Branch:** `codex/track1-lane9-venue-search-timeout-resilient`
+- **Owner:** Lane 9
+- **Base SHA:** `5d39e65eeaca` (current `origin/main` after refresh)
+- **Status:** `in_progress`
+- **Purpose:** Make venue enrichment search fast and timeout-resilient before exact-event verification, with structured fallback when all search times out.
+- **Notes:** Production smoke follow-up for trace `34484cd2-1ddb-48a8-a8dc-fb22f709e658`, including extended venue/exact-event search budgets after the Cleo Slam timeout report. Scope is event interpreter web-search resilience only; no migrations, production data, publishing gates, Lane 5, Lane 6, Symphony, CRUI/UI, reusable venue semantics, or Maps `external_url` behavior changes.
+- **Files claimed:**
+  - `docs/investigation/track1-claims.md`
+  - `web/src/app/api/events/interpret/route.ts`
+  - `web/src/__tests__/interpreter-concierge-search.test.ts`
+  - `web/src/__tests__/interpreter-phase9-reliability.test.ts`
+
+---
+
 ### Lane 9 follow-up — Source-confidence concierge display
 
 - **Branch:** `codex/track1-lane9-source-confidence-display`
