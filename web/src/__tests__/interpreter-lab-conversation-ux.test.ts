@@ -37,13 +37,13 @@ describe("Phase 8B — human-readable guidance is primary", () => {
 
   it("shows an inline draft status panel near the input controls", () => {
     expect(labSource).toContain("Draft Status");
-    expect(labSource).toContain("responseGuidance.next_action === \"ask_clarification\"");
+    expect(labSource).toContain("visibleNextAction === \"ask_clarification\"");
   });
 
   it("shows clarification prompt in a styled container, not raw JSON", () => {
     // Clarification prompt wrapped in a visually distinct box
     expect(labSource).toContain("ask_clarification");
-    expect(labSource).toContain("responseGuidance.clarification_question");
+    expect(labSource).toContain("visibleClarificationQuestion");
     // Phase 8C updated instruction text
     expect(labSource).toContain("Type your answer above");
   });

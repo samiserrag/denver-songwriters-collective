@@ -221,7 +221,7 @@ describe("Phase 8D — existing functionality preserved", () => {
   });
 
   it("preserves clarification hint chips (8C)", () => {
-    expect(labSource).toContain("responseGuidance.blocking_fields.map((field)");
+    expect(labSource).toContain("visibleBlockingFields.map((field)");
     expect(labSource).toContain("bg-amber-500/15 text-amber-700");
   });
 

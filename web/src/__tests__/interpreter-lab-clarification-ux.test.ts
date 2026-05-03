@@ -74,7 +74,7 @@ describe("Phase 8C — field-specific input hint chips", () => {
 // ---------------------------------------------------------------------------
 describe("Phase 8C — clarification prompt renders hint chips", () => {
   it("maps over blocking_fields to render hint chips", () => {
-    expect(labSource).toContain("responseGuidance.blocking_fields.map((field)");
+    expect(labSource).toContain("visibleBlockingFields.map((field)");
   });
 
   it("calls getFieldHint for each blocking field", () => {
@@ -104,7 +104,7 @@ describe("Phase 8C — clarification prompt renders hint chips", () => {
 describe("Phase 8C — single-question-first presentation", () => {
   it("renders clarification_question as primary text (not a label prefix)", () => {
     // The question text is rendered directly, not prefixed with "Question:"
-    expect(labSource).toContain("responseGuidance.clarification_question");
+    expect(labSource).toContain("visibleClarificationQuestion");
     // Old pattern "Question:" label should be removed
     const oldQuestionLabel = '<span className="font-semibold">Question:</span>';
     expect(labSource).not.toContain(oldQuestionLabel);
