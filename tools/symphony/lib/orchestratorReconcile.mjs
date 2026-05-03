@@ -15,6 +15,7 @@ import {
   STATE_STALE
 } from "./orchestratorState.mjs";
 import { validateOrchestratorStateSnapshot } from "./orchestratorStateManifest.mjs";
+import { compareWorkflowPolicySnapshots } from "./orchestratorWorkflowPolicy.mjs";
 
 export const DEFAULT_RECONCILE_STALE_THRESHOLD_MS = 4 * 60 * 60 * 1000;
 
@@ -275,18 +276,11 @@ function workflowDrift(issue, snapshot, evidence, observed) {
     return null;
   }
 
-  const acceptedHash = accepted.workflow_hash || accepted.hash || accepted.config_hash;
-  const currentHash = current.workflow_hash || current.hash || current.config_hash;
-  if (acceptedHash && currentHash && acceptedHash !== currentHash) {
+  const comparison = compareWorkflowPolicySnapshots(accepted, current);
+  if (!comparison.ok) {
     return "workflow_policy_drift";
   }
-
-  const acceptedVersion = accepted.workflow_version || accepted.version;
-  const currentVersion = current.workflow_version || current.version;
-  if (acceptedVersion && currentVersion && acceptedVersion !== currentVersion) {
-    return "workflow_policy_drift";
-  }
-  return null;
+  return comparison.changed ? comparison.reason : null;
 }
 
 function staleRunningReason(issue, evidence, options, now) {
