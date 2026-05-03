@@ -78,6 +78,8 @@ const DEFAULT_DRAFT_VERIFIER_MODEL = "gpt-5.5";
 const DEFAULT_WEB_SEARCH_VERIFIER_MODEL = "gpt-5.5";
 const ROUTE_SAFETY_MARGIN_MS = 8_000;
 const WEB_SEARCH_TIMEOUT_MS = 16_000;
+const VENUE_WEB_SEARCH_TIMEOUT_MS = 10_000;
+const EVENT_WEB_SEARCH_TIMEOUT_MS = 12_000;
 const INTERPRETER_TIMEOUT_MS = 85_000;
 const DRAFT_VERIFIER_TIMEOUT_MS = 8_000;
 const GOOGLE_GEOCODING_API_URL = "https://maps.googleapis.com/maps/api/geocode/json";
@@ -1121,6 +1123,14 @@ interface WebSearchQueryPlan {
   locationContext: string[];
 }
 
+type WebSearchCategoryKind = "venue" | "event";
+
+interface WebSearchCategoryAttempt {
+  category: WebSearchCategoryKind;
+  result: WebSearchVerificationResult | null;
+  categoryResult: WebSearchCategoryResult;
+}
+
 const DEFAULT_FACT_BUCKETS: WebSearchFactBuckets = {
   user_provided: [],
   extracted: [],
@@ -1196,7 +1206,14 @@ function buildWebSearchQueryPlan(input: {
     venueCandidates[0] ??
     null;
 
-  const venueQueries = uniqueStrings(venueCandidates, 6);
+  const venueQueries = uniqueStrings(
+    [
+      ...venueCandidates.slice(0, 3),
+      ...(primaryVenue ? [`${primaryVenue} address`] : []),
+      ...venueCandidates.slice(3),
+    ],
+    8
+  );
   const eventQueries = primaryVenue ? uniqueStrings([`${primaryVenue} ${eventPhrase}`], 3) : [];
 
   return { venueQueries, eventQueries, locationContext };
@@ -1302,10 +1319,12 @@ function buildWebSearchVerificationPrompt(input: {
   currentEvent?: Record<string, unknown> | null;
   currentDate: string;
   queryPlan: WebSearchQueryPlan;
+  searchCategory?: WebSearchCategoryKind;
 }) {
   return JSON.stringify(
     {
       task: "verify_public_event_details_for_event_draft",
+      search_category: input.searchCategory ?? "venue_and_event",
       current_date: input.currentDate,
       current_timezone: "America/Denver",
       source_message: input.message,
@@ -1325,6 +1344,11 @@ function buildWebSearchVerificationPrompt(input: {
       instructions: [
         "Use web search as concierge research, not only binary event verification.",
         "Separate venue enrichment from exact-event verification. Official venue facts can be useful even when the exact event listing is not found.",
+        input.searchCategory === "venue"
+          ? "This request is the fast venue-enrichment pass. Focus on venue_queries only and set event_search.status to not_applicable unless an exact-event source appears incidentally."
+          : input.searchCategory === "event"
+            ? "This request is the exact-event verification pass. Focus on event_queries only and set venue_search.status to not_applicable unless venue facts appear incidentally."
+            : "This request may use both venue_queries and event_queries.",
         "If source_message is a short follow-up like 'can you search?', use locked_draft, current_event, recent_user_context, extracted_image_text, and google_maps_hint to build the search query.",
         "Start from search_query_plan. Run venue_queries to verify identity/address/contact/website facts. Run event_queries to look for the exact event or recurring series.",
         "Run multiple targeted search angles when details are incomplete: event title + venue, venue + recurrence phrase, organizer/host + venue, and address + event type.",
@@ -1540,7 +1564,228 @@ function getBoundedStepTimeoutMs(input: {
   return Math.min(input.preferredMs, remaining);
 }
 
-async function verifyEventDetailsWithWebSearch(input: {
+function buildWebSearchResponseTextFormat() {
+  return {
+    format: {
+      type: "json_schema",
+      name: "event_web_search_verification",
+      strict: true,
+      schema: {
+        type: "object",
+        additionalProperties: false,
+        required: [
+          "status",
+          "summary",
+          "facts",
+          "sources",
+          "venue_search",
+          "event_search",
+          "fact_buckets",
+          "suggested_questions",
+        ],
+        properties: {
+          status: { type: "string", enum: ["searched", "no_reliable_sources"] },
+          summary: { type: "string" },
+          facts: {
+            type: "array",
+            maxItems: 12,
+            items: { type: "string" },
+          },
+          sources: {
+            type: "array",
+            maxItems: 8,
+            items: {
+              type: "object",
+              additionalProperties: false,
+              required: ["url", "title"],
+              properties: {
+                url: { type: "string" },
+                title: { type: ["string", "null"] },
+              },
+            },
+          },
+          venue_search: {
+            type: "object",
+            additionalProperties: false,
+            required: ["status", "summary", "confidence", "attempted_queries", "facts", "sources"],
+            properties: {
+              status: { type: "string", enum: ["verified", "not_found", "timeout", "not_applicable"] },
+              summary: { type: "string" },
+              confidence: { type: "string", enum: ["high", "medium", "low", "unknown"] },
+              attempted_queries: {
+                type: "array",
+                maxItems: 8,
+                items: { type: "string" },
+              },
+              facts: {
+                type: "array",
+                maxItems: 12,
+                items: { type: "string" },
+              },
+              sources: {
+                type: "array",
+                maxItems: 8,
+                items: {
+                  type: "object",
+                  additionalProperties: false,
+                  required: ["url", "title"],
+                  properties: {
+                    url: { type: "string" },
+                    title: { type: ["string", "null"] },
+                  },
+                },
+              },
+            },
+          },
+          event_search: {
+            type: "object",
+            additionalProperties: false,
+            required: ["status", "summary", "confidence", "attempted_queries", "facts", "sources"],
+            properties: {
+              status: { type: "string", enum: ["verified", "not_found", "timeout", "not_applicable"] },
+              summary: { type: "string" },
+              confidence: { type: "string", enum: ["high", "medium", "low", "unknown"] },
+              attempted_queries: {
+                type: "array",
+                maxItems: 8,
+                items: { type: "string" },
+              },
+              facts: {
+                type: "array",
+                maxItems: 12,
+                items: { type: "string" },
+              },
+              sources: {
+                type: "array",
+                maxItems: 8,
+                items: {
+                  type: "object",
+                  additionalProperties: false,
+                  required: ["url", "title"],
+                  properties: {
+                    url: { type: "string" },
+                    title: { type: ["string", "null"] },
+                  },
+                },
+              },
+            },
+          },
+          fact_buckets: {
+            type: "object",
+            additionalProperties: false,
+            required: [
+              "user_provided",
+              "extracted",
+              "inferred",
+              "searched_verified",
+              "conflicts",
+              "true_unknowns",
+            ],
+            properties: {
+              user_provided: { type: "array", maxItems: 12, items: { type: "string" } },
+              extracted: { type: "array", maxItems: 12, items: { type: "string" } },
+              inferred: { type: "array", maxItems: 12, items: { type: "string" } },
+              searched_verified: { type: "array", maxItems: 12, items: { type: "string" } },
+              conflicts: { type: "array", maxItems: 8, items: { type: "string" } },
+              true_unknowns: { type: "array", maxItems: 12, items: { type: "string" } },
+            },
+          },
+          suggested_questions: {
+            type: "array",
+            maxItems: 4,
+            items: { type: "string" },
+          },
+        },
+      },
+    },
+  };
+}
+
+function getWebSearchCategoryQueries(queryPlan: WebSearchQueryPlan, category: WebSearchCategoryKind): string[] {
+  return category === "venue" ? queryPlan.venueQueries : queryPlan.eventQueries;
+}
+
+function buildCategoryOnlyQueryPlan(queryPlan: WebSearchQueryPlan, category: WebSearchCategoryKind): WebSearchQueryPlan {
+  return category === "venue"
+    ? { ...queryPlan, eventQueries: [] }
+    : { ...queryPlan, venueQueries: [] };
+}
+
+function formatCategoryAttemptedQueries(label: string, queries: string[]): string | null {
+  const attempted = formatAttemptedQueries({
+    venueQueries: queries,
+    eventQueries: [],
+    locationContext: [],
+  });
+  return attempted ? `${label} tried ${attempted}.` : null;
+}
+
+function mergeWebSearchSources(...sourceLists: Array<ReadonlyArray<WebSearchVerificationSource> | undefined>): WebSearchVerificationSource[] {
+  const byUrl = new Map<string, WebSearchVerificationSource>();
+  for (const source of sourceLists.flatMap((list) => list ?? [])) {
+    if (!byUrl.has(source.url)) byUrl.set(source.url, source);
+  }
+  return [...byUrl.values()].slice(0, 8);
+}
+
+function mergeWebSearchFactBuckets(
+  buckets: Array<WebSearchFactBuckets | undefined>,
+  extras?: Partial<WebSearchFactBuckets>
+): WebSearchFactBuckets {
+  return {
+    user_provided: uniqueStrings([
+      ...buckets.flatMap((bucket) => bucket?.user_provided ?? []),
+      ...(extras?.user_provided ?? []),
+    ], 12),
+    extracted: uniqueStrings([
+      ...buckets.flatMap((bucket) => bucket?.extracted ?? []),
+      ...(extras?.extracted ?? []),
+    ], 12),
+    inferred: uniqueStrings([
+      ...buckets.flatMap((bucket) => bucket?.inferred ?? []),
+      ...(extras?.inferred ?? []),
+    ], 12),
+    searched_verified: uniqueStrings([
+      ...buckets.flatMap((bucket) => bucket?.searched_verified ?? []),
+      ...(extras?.searched_verified ?? []),
+    ], 12),
+    conflicts: uniqueStrings([
+      ...buckets.flatMap((bucket) => bucket?.conflicts ?? []),
+      ...(extras?.conflicts ?? []),
+    ], 8),
+    true_unknowns: uniqueStrings([
+      ...buckets.flatMap((bucket) => bucket?.true_unknowns ?? []),
+      ...(extras?.true_unknowns ?? []),
+    ], 12),
+  };
+}
+
+function isUsefulSearchCategory(category: WebSearchCategoryResult): boolean {
+  return category.status === "verified" && (category.sources.length > 0 || category.facts.length > 0);
+}
+
+function selectCategoryResult(input: {
+  result: WebSearchVerificationResult | null;
+  category: WebSearchCategoryKind;
+  queryPlan: WebSearchQueryPlan;
+  fallbackSummary: string;
+}): WebSearchCategoryResult {
+  const selected = input.category === "venue" ? input.result?.venue_search : input.result?.event_search;
+  const attemptedQueries = getWebSearchCategoryQueries(input.queryPlan, input.category);
+  if (!selected) {
+    return emptySearchCategory({
+      status: "not_found",
+      summary: input.fallbackSummary,
+      attemptedQueries,
+    });
+  }
+  return {
+    ...selected,
+    attempted_queries: selected.attempted_queries.length > 0 ? selected.attempted_queries : attemptedQueries,
+  };
+}
+
+async function runWebSearchCategory(input: {
   openAiKey: string;
   searchModel: string;
   message: string;
@@ -1551,11 +1796,27 @@ async function verifyEventDetailsWithWebSearch(input: {
   currentEvent?: Record<string, unknown> | null;
   currentDate: string;
   traceId: string | null;
-  returnNoReliableResult: boolean;
-}): Promise<WebSearchVerificationResult | null> {
+  queryPlan: WebSearchQueryPlan;
+  category: WebSearchCategoryKind;
+  timeoutMs: number;
+}): Promise<WebSearchCategoryAttempt> {
+  const attemptedQueries = getWebSearchCategoryQueries(input.queryPlan, input.category);
+  const label = input.category === "venue" ? "Venue search" : "Exact-event search";
+  if (attemptedQueries.length === 0) {
+    return {
+      category: input.category,
+      result: null,
+      categoryResult: emptySearchCategory({
+        status: "not_applicable",
+        summary: `${label} was not applicable because no targeted queries were available.`,
+        attemptedQueries,
+      }),
+    };
+  }
+
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), WEB_SEARCH_TIMEOUT_MS);
-  const queryPlan = buildWebSearchQueryPlan(input);
+  const timeout = setTimeout(() => controller.abort(), input.timeoutMs);
+  const focusedQueryPlan = buildCategoryOnlyQueryPlan(input.queryPlan, input.category);
 
   try {
     const searchResponse = await fetch(OPENAI_RESPONSES_URL, {
@@ -1572,7 +1833,11 @@ async function verifyEventDetailsWithWebSearch(input: {
         ...(supportsReasoningEffort(input.searchModel)
           ? { reasoning: { effort: getConfiguredReasoningEffort() } }
           : {}),
-        input: buildWebSearchVerificationPrompt({ ...input, queryPlan }),
+        input: buildWebSearchVerificationPrompt({
+          ...input,
+          queryPlan: focusedQueryPlan,
+          searchCategory: input.category,
+        }),
         tools: [
           {
             type: "web_search",
@@ -1585,143 +1850,10 @@ async function verifyEventDetailsWithWebSearch(input: {
             },
           },
         ],
-        tool_choice: input.returnNoReliableResult ? "required" : "auto",
+        tool_choice: "required",
         include: ["web_search_call.action.sources"],
-        max_output_tokens: 900,
-        text: {
-          format: {
-            type: "json_schema",
-            name: "event_web_search_verification",
-            strict: true,
-            schema: {
-              type: "object",
-              additionalProperties: false,
-              required: [
-                "status",
-                "summary",
-                "facts",
-                "sources",
-                "venue_search",
-                "event_search",
-                "fact_buckets",
-                "suggested_questions",
-              ],
-              properties: {
-                status: { type: "string", enum: ["searched", "no_reliable_sources"] },
-                summary: { type: "string" },
-                facts: {
-                  type: "array",
-                  maxItems: 12,
-                  items: { type: "string" },
-                },
-                sources: {
-                  type: "array",
-                  maxItems: 8,
-                  items: {
-                    type: "object",
-                    additionalProperties: false,
-                    required: ["url", "title"],
-                    properties: {
-                      url: { type: "string" },
-                      title: { type: ["string", "null"] },
-                    },
-                  },
-                },
-                venue_search: {
-                  type: "object",
-                  additionalProperties: false,
-                  required: ["status", "summary", "confidence", "attempted_queries", "facts", "sources"],
-                  properties: {
-                    status: { type: "string", enum: ["verified", "not_found", "timeout", "not_applicable"] },
-                    summary: { type: "string" },
-                    confidence: { type: "string", enum: ["high", "medium", "low", "unknown"] },
-                    attempted_queries: {
-                      type: "array",
-                      maxItems: 8,
-                      items: { type: "string" },
-                    },
-                    facts: {
-                      type: "array",
-                      maxItems: 12,
-                      items: { type: "string" },
-                    },
-                    sources: {
-                      type: "array",
-                      maxItems: 8,
-                      items: {
-                        type: "object",
-                        additionalProperties: false,
-                        required: ["url", "title"],
-                        properties: {
-                          url: { type: "string" },
-                          title: { type: ["string", "null"] },
-                        },
-                      },
-                    },
-                  },
-                },
-                event_search: {
-                  type: "object",
-                  additionalProperties: false,
-                  required: ["status", "summary", "confidence", "attempted_queries", "facts", "sources"],
-                  properties: {
-                    status: { type: "string", enum: ["verified", "not_found", "timeout", "not_applicable"] },
-                    summary: { type: "string" },
-                    confidence: { type: "string", enum: ["high", "medium", "low", "unknown"] },
-                    attempted_queries: {
-                      type: "array",
-                      maxItems: 8,
-                      items: { type: "string" },
-                    },
-                    facts: {
-                      type: "array",
-                      maxItems: 12,
-                      items: { type: "string" },
-                    },
-                    sources: {
-                      type: "array",
-                      maxItems: 8,
-                      items: {
-                        type: "object",
-                        additionalProperties: false,
-                        required: ["url", "title"],
-                        properties: {
-                          url: { type: "string" },
-                          title: { type: ["string", "null"] },
-                        },
-                      },
-                    },
-                  },
-                },
-                fact_buckets: {
-                  type: "object",
-                  additionalProperties: false,
-                  required: [
-                    "user_provided",
-                    "extracted",
-                    "inferred",
-                    "searched_verified",
-                    "conflicts",
-                    "true_unknowns",
-                  ],
-                  properties: {
-                    user_provided: { type: "array", maxItems: 12, items: { type: "string" } },
-                    extracted: { type: "array", maxItems: 12, items: { type: "string" } },
-                    inferred: { type: "array", maxItems: 12, items: { type: "string" } },
-                    searched_verified: { type: "array", maxItems: 12, items: { type: "string" } },
-                    conflicts: { type: "array", maxItems: 8, items: { type: "string" } },
-                    true_unknowns: { type: "array", maxItems: 12, items: { type: "string" } },
-                  },
-                },
-                suggested_questions: {
-                  type: "array",
-                  maxItems: 4,
-                  items: { type: "string" },
-                },
-              },
-            },
-          },
-        },
+        max_output_tokens: input.category === "venue" ? 650 : 750,
+        text: buildWebSearchResponseTextFormat(),
       }),
     });
 
@@ -1729,109 +1861,255 @@ async function verifyEventDetailsWithWebSearch(input: {
     const fallbackSources = collectWebSearchSources(searchData);
 
     if (!searchResponse.ok) {
-      console.warn("[events/interpret] web search verification skipped after upstream error", {
+      console.warn("[events/interpret] web search category skipped after upstream error", {
         traceId: input.traceId,
+        category: input.category,
         status: searchResponse.status,
         data: searchData,
       });
-      return input.returnNoReliableResult
-        ? buildNoReliableWebSearchResult(
-            "Search was requested, but the web-search service returned an upstream error before it could verify this event.",
-            queryPlan
-          )
-        : null;
+      return {
+        category: input.category,
+        result: null,
+        categoryResult: emptySearchCategory({
+          status: "not_found",
+          summary: `${label} returned an upstream error before it could verify reliable sources.`,
+          attemptedQueries,
+        }),
+      };
     }
 
     const searchObj = parseJsonObject(searchData);
     const outputText = searchObj ? extractResponseText(searchObj) : null;
     if (!outputText) {
-      return input.returnNoReliableResult
-        ? buildNoReliableWebSearchResult(
-            "Search was requested, but the web-search service returned no usable verification text.",
-            queryPlan
-          )
-        : null;
+      return {
+        category: input.category,
+        result: null,
+        categoryResult: emptySearchCategory({
+          status: "not_found",
+          summary: `${label} returned no usable verification text.`,
+          attemptedQueries,
+        }),
+      };
     }
 
     const parsed = parseJsonFromResponseText(outputText);
     if (!parsed) {
-      console.warn("[events/interpret] web search verification returned non-json output", {
+      console.warn("[events/interpret] web search category returned non-json output", {
         traceId: input.traceId,
+        category: input.category,
         outputPreview: redactEmails(truncate(outputText, 200)),
       });
-      return input.returnNoReliableResult
-        ? buildNoReliableWebSearchResult(
-            "Search was requested, but it did not return a readable exact-event source. I used the flyer/post details instead.",
-            queryPlan
-          )
-        : null;
+      return {
+        category: input.category,
+        result: null,
+        categoryResult: emptySearchCategory({
+          status: "not_found",
+          summary: `${label} did not return readable structured verification details.`,
+          attemptedQueries,
+        }),
+      };
     }
 
     const result = parseWebSearchVerification(parsed, fallbackSources);
     if (!result) {
-      return input.returnNoReliableResult
-        ? buildNoReliableWebSearchResult(
-            "Search was requested, but the web-search verifier did not return valid verification details.",
-            queryPlan
-          )
-        : null;
+      return {
+        category: input.category,
+        result: null,
+        categoryResult: emptySearchCategory({
+          status: "not_found",
+          summary: `${label} did not return valid verification details.`,
+          attemptedQueries,
+        }),
+      };
     }
-    if (result.status === "no_reliable_sources") {
-      return input.returnNoReliableResult ? { ...result, sources: [] } : null;
-    }
-    if (result.sources.length === 0) {
-      return input.returnNoReliableResult
-        ? {
-            status: "no_reliable_sources",
-            summary: result.summary || "Search ran but did not find a reliable exact public source.",
-            facts: [],
-            sources: [],
-            venue_search:
-              result.venue_search ??
-              emptySearchCategory({
-                status: "not_found",
-                summary: "No reliable venue source was returned.",
-                attemptedQueries: queryPlan.venueQueries,
-              }),
-            event_search:
-              result.event_search ??
-              emptySearchCategory({
-                status: "not_found",
-                summary: "No reliable exact event source was returned.",
-                attemptedQueries: queryPlan.eventQueries,
-              }),
-            fact_buckets: result.fact_buckets ?? DEFAULT_FACT_BUCKETS,
-            suggested_questions: result.suggested_questions ?? [],
-          }
-        : null;
-    }
-    if (isNonExactEventSearchResult(result) && !hasUsefulVenueSearch(result)) {
+
+    if (input.category === "event" && isNonExactEventSearchResult(result) && !hasUsefulVenueSearch(result)) {
       console.info("[events/interpret] web search verification ignored non-exact event result", {
         traceId: input.traceId,
         sourceCount: result.sources.length,
         summary: redactEmails(truncate(result.summary, 200)),
       });
-      return input.returnNoReliableResult ? { ...result, status: "no_reliable_sources", facts: [], sources: [] } : null;
+      return {
+        category: input.category,
+        result,
+        categoryResult: emptySearchCategory({
+          status: "not_found",
+          summary: "Exact-event search found sources, but they did not verify the exact event or recurring series.",
+          attemptedQueries,
+        }),
+      };
     }
-    return result;
+
+    return {
+      category: input.category,
+      result,
+      categoryResult: selectCategoryResult({
+        result,
+        category: input.category,
+        queryPlan: input.queryPlan,
+        fallbackSummary: `${label} ran but did not find reliable sources for this category.`,
+      }),
+    };
   } catch (error) {
     const isTimeout = error instanceof Error && error.name === "AbortError";
-    console.warn("[events/interpret] web search verification skipped", {
+    console.warn("[events/interpret] web search category skipped", {
       traceId: input.traceId,
+      category: input.category,
       isTimeout,
       error: error instanceof Error ? error.message : String(error),
     });
-    return input.returnNoReliableResult
-      ? buildNoReliableWebSearchResult(
-          isTimeout
-            ? "I could not find a reliable venue/address source before timeout. I can retry search, or save a custom location for now; to create a reusable venue safely I need an official page, Maps link, or address."
-            : "Search was requested, but the web-search step failed before it could verify this event.",
-          queryPlan
-        )
-      : null;
+    return {
+      category: input.category,
+      result: null,
+      categoryResult: emptySearchCategory({
+        status: isTimeout ? "timeout" : "not_found",
+        summary: isTimeout
+          ? `${label} timed out before returning reliable sources.`
+          : `${label} failed before it could verify reliable sources.`,
+        attemptedQueries,
+      }),
+    };
   } finally {
     clearTimeout(timeout);
   }
+}
+
+function buildCombinedWebSearchSummary(input: {
+  queryPlan: WebSearchQueryPlan;
+  venueSearch: WebSearchCategoryResult;
+  eventSearch: WebSearchCategoryResult;
+}): string {
+  const venueUseful = isUsefulSearchCategory(input.venueSearch);
+  const eventUseful = isUsefulSearchCategory(input.eventSearch);
+  if (venueUseful && eventUseful) {
+    return "I found source-backed venue details and a public source for this exact event or recurring series.";
+  }
+  if (venueUseful) {
+    const eventNote =
+      input.eventSearch.status === "timeout"
+        ? "Exact-event search timed out before finding a public listing"
+        : "I did not find a public listing for this exact event";
+    return `${eventNote}. Venue enrichment succeeded from source-backed venue facts, so event details should stay limited to the flyer/post or user-provided text.`;
+  }
+  if (eventUseful) {
+    return "I found a public source for this exact event or recurring series, but did not find source-backed reusable venue/address details.";
+  }
+
+  const attempted = [
+    formatCategoryAttemptedQueries("Venue search", input.queryPlan.venueQueries),
+    formatCategoryAttemptedQueries("Exact-event search", input.queryPlan.eventQueries),
+  ].filter((entry): entry is string => entry !== null);
+  const anyTimeout = input.venueSearch.status === "timeout" || input.eventSearch.status === "timeout";
+  const failureSummary = anyTimeout
+    ? "Search timed out before returning reliable venue or exact-event sources."
+    : "Search did not find reliable venue or exact-event sources.";
+  return [...attempted, failureSummary].join(" ");
+}
+
+function combineWebSearchCategoryAttempts(input: {
+  queryPlan: WebSearchQueryPlan;
+  venueAttempt: WebSearchCategoryAttempt;
+  eventAttempt: WebSearchCategoryAttempt;
+}): WebSearchVerificationResult {
+  const venueSearch = input.venueAttempt.categoryResult;
+  const eventSearch = input.eventAttempt.categoryResult;
+  const venueUseful = isUsefulSearchCategory(venueSearch);
+  const eventUseful = isUsefulSearchCategory(eventSearch);
+  const resultSources = mergeWebSearchSources(
+    input.venueAttempt.result?.sources,
+    input.eventAttempt.result?.sources,
+    venueSearch.sources,
+    eventSearch.sources
+  );
+  const resultFacts = uniqueStrings(
+    [
+      ...(input.venueAttempt.result?.facts ?? []),
+      ...(input.eventAttempt.result?.facts ?? []),
+      ...venueSearch.facts,
+      ...eventSearch.facts,
+    ],
+    12
+  );
+  const trueUnknowns = [
+    ...(venueUseful ? [] : ["reliable venue/address source"]),
+    ...(eventUseful ? [] : ["exact public event listing"]),
+    ...(eventUseful ? [] : ["cost", "signup link", "direct source link"]),
+  ];
+  const factBuckets = mergeWebSearchFactBuckets(
+    [input.venueAttempt.result?.fact_buckets, input.eventAttempt.result?.fact_buckets],
+    {
+      searched_verified: [
+        ...(venueUseful ? venueSearch.facts : []),
+        ...(eventUseful ? eventSearch.facts : []),
+      ],
+      true_unknowns: trueUnknowns,
+    }
+  );
+  const suggestedQuestions = uniqueStrings(
+    [
+      ...(input.venueAttempt.result?.suggested_questions ?? []),
+      ...(input.eventAttempt.result?.suggested_questions ?? []),
+    ],
+    4
+  );
+
+  return {
+    status: venueUseful || eventUseful ? "searched" : "no_reliable_sources",
+    summary: buildCombinedWebSearchSummary({
+      queryPlan: input.queryPlan,
+      venueSearch,
+      eventSearch,
+    }),
+    facts: resultFacts,
+    sources: resultSources,
+    venue_search: venueSearch,
+    event_search: eventSearch,
+    fact_buckets: factBuckets,
+    suggested_questions: suggestedQuestions,
+  };
+}
+
+async function verifyEventDetailsWithWebSearch(input: {
+  openAiKey: string;
+  searchModel: string;
+  message: string;
+  conversationHistory: Array<{ role: "user" | "assistant"; content: string }>;
+  extractedImageText?: string;
+  googleMapsHint: GoogleMapsHint | null;
+  lockedDraft?: Record<string, unknown> | null;
+  currentEvent?: Record<string, unknown> | null;
+  currentDate: string;
+  traceId: string | null;
+  returnNoReliableResult: boolean;
+}): Promise<WebSearchVerificationResult | null> {
+  const queryPlan = buildWebSearchQueryPlan(input);
+
+  const [venueAttempt, eventAttempt] = await Promise.all([
+    runWebSearchCategory({
+      ...input,
+      queryPlan,
+      category: "venue",
+      timeoutMs: VENUE_WEB_SEARCH_TIMEOUT_MS,
+    }),
+    runWebSearchCategory({
+      ...input,
+      queryPlan,
+      category: "event",
+      timeoutMs: EVENT_WEB_SEARCH_TIMEOUT_MS,
+    }),
+  ]);
+  const result = combineWebSearchCategoryAttempts({
+    queryPlan,
+    venueAttempt,
+    eventAttempt,
+  });
+  const anyTimeout =
+    result.venue_search?.status === "timeout" || result.event_search?.status === "timeout";
+
+  if (result.status === "searched" || input.returnNoReliableResult || anyTimeout) {
+    return result;
+  }
+  return null;
 }
 
 // ---------------------------------------------------------------------------

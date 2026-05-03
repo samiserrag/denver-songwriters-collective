@@ -29,6 +29,7 @@ Rules:
 - **Base SHA:** `6035d8548596` (current `origin/main` at claim time)
 - **Status:** `in_progress`
 - **Purpose:** Make venue enrichment resilient when exact-event web search times out.
+- **Notes:** Follow-up implementation keeps venue-search and exact-event search results independently timed so completed venue evidence is not discarded when exact-event verification times out.
 - **Files claimed:**
   - `docs/investigation/track1-claims.md`
   - `web/src/app/api/events/interpret/route.ts`

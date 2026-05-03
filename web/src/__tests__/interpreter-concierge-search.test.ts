@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-let capturedSearchPrompt: Record<string, unknown> | null = null;
+let capturedSearchPrompts: Record<string, unknown>[] = [];
 let capturedInterpreterPrompt: Record<string, unknown> | null = null;
-let searchMode: "venue-partial" | "timeout" = "venue-partial";
+let searchMode: "venue-partial" | "event-timeout" | "timeout" = "venue-partial";
 
 const createChainable = (result: Record<string, unknown>) => {
   const chainable: Record<string, unknown> = {
@@ -63,61 +63,106 @@ function openAiResponse(payload: Record<string, unknown>) {
   };
 }
 
+function venueSearchPayload(eventStatus: "not_found" | "timeout" | "not_applicable" = "not_applicable") {
+  return {
+    status: "searched",
+    summary: "Official venue page found for RMU Breckenridge.",
+    facts: ["Official venue page confirms RMU Breckenridge in Breckenridge, CO 80424."],
+    sources: [{ url: "https://example.com/rmu-breckenridge", title: "RMU Breckenridge" }],
+    venue_search: {
+      status: "verified",
+      summary: "Official venue page found for RMU Breckenridge.",
+      confidence: "high",
+      attempted_queries: ["RMU Breck", "RMU Breckenridge", "@rmubreck", "RMU Breckenridge address"],
+      facts: [
+        "RMU Breckenridge official page confirms the venue identity and Breckenridge address.",
+      ],
+      sources: [{ url: "https://example.com/rmu-breckenridge", title: "RMU Breckenridge" }],
+    },
+    event_search: {
+      status: eventStatus,
+      summary:
+        eventStatus === "timeout"
+          ? "Exact-event search timed out before returning a public open mic listing."
+          : "This venue-focused pass did not verify an exact open mic listing.",
+      confidence: "unknown",
+      attempted_queries: [],
+      facts: [],
+      sources: [],
+    },
+    fact_buckets: {
+      user_provided: ["User asked to search for RMU Breckenridge."],
+      extracted: ["Flyer says Open Mic Night, every Wednesday, 7-9pm, @rmubreck."],
+      inferred: ["First occurrence date should be confirmed from the next Wednesday."],
+      searched_verified: ["RMU Breckenridge official venue page found with high confidence."],
+      conflicts: [],
+      true_unknowns: ["cost", "signup link", "direct source link"],
+    },
+    suggested_questions: [
+      "Use Wednesday, May 6, 2026 as the first occurrence?",
+      "Is it free, or should cost stay blank?",
+      "Is signup walk-up, host-managed, or linked?",
+    ],
+  };
+}
+
+function eventSearchMissPayload() {
+  return {
+    status: "no_reliable_sources",
+    summary: "No exact public open mic listing was found.",
+    facts: [],
+    sources: [],
+    venue_search: {
+      status: "not_applicable",
+      summary: "This exact-event pass did not run venue enrichment.",
+      confidence: "unknown",
+      attempted_queries: [],
+      facts: [],
+      sources: [],
+    },
+    event_search: {
+      status: "not_found",
+      summary: "No exact public open mic listing was found.",
+      confidence: "medium",
+      attempted_queries: ["RMU Breckenridge open mic"],
+      facts: [],
+      sources: [],
+    },
+    fact_buckets: {
+      user_provided: ["User asked to search for RMU Breckenridge."],
+      extracted: ["Flyer says Open Mic Night, every Wednesday, 7-9pm, @rmubreck."],
+      inferred: [],
+      searched_verified: [],
+      conflicts: [],
+      true_unknowns: ["exact public event listing", "cost", "signup link", "direct source link"],
+    },
+    suggested_questions: [],
+  };
+}
+
 function installFetchMock() {
   return vi.spyOn(global, "fetch").mockImplementation(async (_url, init) => {
     const body = JSON.parse(String(init?.body ?? "{}")) as { model?: string; input?: unknown };
 
     if (body.model === "test-search-model") {
-      capturedSearchPrompt = JSON.parse(String(body.input)) as Record<string, unknown>;
+      const searchPrompt = JSON.parse(String(body.input)) as Record<string, unknown>;
+      capturedSearchPrompts.push(searchPrompt);
       if (searchMode === "timeout") {
         const error = new Error("search timeout");
         error.name = "AbortError";
         throw error;
       }
+      if (searchMode === "event-timeout" && searchPrompt.search_category === "event") {
+        const error = new Error("event search timeout");
+        error.name = "AbortError";
+        throw error;
+      }
+      const payload =
+        searchPrompt.search_category === "venue"
+          ? venueSearchPayload()
+          : eventSearchMissPayload();
       return new Response(
-        JSON.stringify(
-          openAiResponse({
-            status: "searched",
-            summary:
-              "I found RMU Breckenridge's official venue page and can use it for the reusable venue record. I did not find a public listing for this exact open mic, so event details should stay limited to the flyer: Wednesdays 7-9pm. Cost/signup/source link are still unknown.",
-            facts: [
-              "Official venue page confirms RMU Breckenridge in Breckenridge, CO 80424.",
-              "The flyer text says Open Mic Night every Wednesday 7-9pm at @rmubreck.",
-            ],
-            sources: [{ url: "https://example.com/rmu-breckenridge", title: "RMU Breckenridge" }],
-            venue_search: {
-              status: "verified",
-              summary: "Official venue page found for RMU Breckenridge.",
-              confidence: "high",
-              attempted_queries: ["RMU Breck", "RMU Breckenridge", "@rmubreck"],
-              facts: [
-                "RMU Breckenridge official page confirms the venue identity and Breckenridge address.",
-              ],
-              sources: [{ url: "https://example.com/rmu-breckenridge", title: "RMU Breckenridge" }],
-            },
-            event_search: {
-              status: "not_found",
-              summary: "No exact public open mic listing was found.",
-              confidence: "medium",
-              attempted_queries: ["RMU Breckenridge open mic"],
-              facts: [],
-              sources: [],
-            },
-            fact_buckets: {
-              user_provided: ["User asked to search for RMU Breckenridge."],
-              extracted: ["Flyer says Open Mic Night, every Wednesday, 7-9pm, @rmubreck."],
-              inferred: ["First occurrence date should be confirmed from the next Wednesday."],
-              searched_verified: ["RMU Breckenridge official venue page found with high confidence."],
-              conflicts: [],
-              true_unknowns: ["cost", "signup link", "direct source link"],
-            },
-            suggested_questions: [
-              "Use Wednesday, May 6, 2026 as the first occurrence?",
-              "Is it free, or should cost stay blank?",
-              "Is signup walk-up, host-managed, or linked?",
-            ],
-          })
-        ),
+        JSON.stringify(openAiResponse(payload)),
         { status: 200, headers: { "content-type": "application/json" } }
       );
     }
@@ -181,7 +226,7 @@ function installFetchMock() {
 
 beforeEach(() => {
   vi.restoreAllMocks();
-  capturedSearchPrompt = null;
+  capturedSearchPrompts = [];
   capturedInterpreterPrompt = null;
   searchMode = "venue-partial";
   process.env.ENABLE_NL_EVENTS_INTERPRETER = "true";
@@ -224,15 +269,54 @@ describe("POST /api/events/interpret — concierge search enrichment", () => {
     expect(body.human_summary).toContain("official venue page");
     expect(body.human_summary).toContain("Cost/signup/source link are still unknown");
 
-    const searchPlan = capturedSearchPrompt?.search_query_plan as {
+    const venuePrompt = capturedSearchPrompts.find((prompt) => prompt.search_category === "venue");
+    const eventPrompt = capturedSearchPrompts.find((prompt) => prompt.search_category === "event");
+    const searchPlan = venuePrompt?.search_query_plan as {
       venue_queries: string[];
       event_queries: string[];
     };
-    expect(searchPlan.venue_queries).toEqual(expect.arrayContaining(["RMU Breck", "RMU Breckenridge", "@rmubreck"]));
-    expect(searchPlan.event_queries).toContain("RMU Breckenridge open mic");
+    expect(searchPlan.venue_queries).toEqual(
+      expect.arrayContaining(["RMU Breck", "RMU Breckenridge", "@rmubreck", "RMU Breckenridge address"])
+    );
+    expect(searchPlan.event_queries).toEqual([]);
+    const eventSearchPlan = eventPrompt?.search_query_plan as {
+      venue_queries: string[];
+      event_queries: string[];
+    };
+    expect(eventSearchPlan.venue_queries).toEqual([]);
+    expect(eventSearchPlan.event_queries).toContain("RMU Breckenridge open mic");
     expect(capturedInterpreterPrompt?.web_search_verification).toMatchObject({
       venue_search: { status: "verified", confidence: "high" },
       event_search: { status: "not_found" },
+    });
+  });
+
+  it("preserves venue enrichment when exact-event search times out", async () => {
+    searchMode = "event-timeout";
+    installFetchMock();
+
+    const response = await POST(
+      new Request("http://localhost/api/events/interpret", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          mode: "create",
+          message:
+            "Flyer OCR: OPEN MIC NIGHT. Every Wednesday 7-9pm. Venue: RMU Breck / @rmubreck. Search for RMU Breckenridge.",
+          use_web_search: true,
+        }),
+      })
+    );
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.web_search_verification.venue_search.status).toBe("verified");
+    expect(body.web_search_verification.event_search.status).toBe("timeout");
+    expect(body.web_search_verification.summary).toContain("Exact-event search timed out");
+    expect(capturedInterpreterPrompt?.web_search_verification).toMatchObject({
+      status: "searched",
+      venue_search: { status: "verified" },
+      event_search: { status: "timeout" },
     });
   });
 
@@ -259,9 +343,10 @@ describe("POST /api/events/interpret — concierge search enrichment", () => {
       venue_search: { status: string; attempted_queries: string[] };
       event_search: { status: string; attempted_queries: string[] };
     };
-    expect(webSearch.summary).toContain("`RMU Breck`, `RMU Breckenridge`, `@rmubreck`, and `RMU Breckenridge open mic`");
+    expect(webSearch.summary).toContain("Venue search tried");
+    expect(webSearch.summary).toContain("Exact-event search tried");
     expect(webSearch.venue_search.status).toBe("timeout");
-    expect(webSearch.venue_search.attempted_queries).toEqual(expect.arrayContaining(["RMU Breck", "RMU Breckenridge", "@rmubreck"]));
+    expect(webSearch.venue_search.attempted_queries).toEqual(expect.arrayContaining(["RMU Breck", "RMU Breckenridge", "@rmubreck", "RMU Breckenridge address"]));
     expect(webSearch.event_search.status).toBe("timeout");
     expect(webSearch.event_search.attempted_queries).toContain("RMU Breckenridge open mic");
   });
