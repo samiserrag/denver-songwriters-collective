@@ -8,11 +8,12 @@ export const NEXT_ACTIONS = ["ask_clarification", "show_preview", "await_confirm
 export type NextAction = (typeof NEXT_ACTIONS)[number];
 
 export const IMAGE_INPUT_LIMITS = {
-  maxCount: 3,
+  maxCount: 6,
   maxDecodedBytes: 1 * 1024 * 1024, // 1MB after base64 decode
+  maxTotalEncodedBytes: 3 * 1024 * 1024, // shared image payload budget inside the function body cap
   maxIntakeBytes: 5 * 1024 * 1024,  // 5MB client intake before resize
   acceptedMimes: new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]),
-  requestBodyMaxBytes: 4 * 1024 * 1024, // 4MB total request body cap
+  requestBodyMaxBytes: 4 * 1024 * 1024, // stay below Vercel's 4.5MB function payload limit
 } as const;
 
 export interface ImageInput {
@@ -450,6 +451,7 @@ export function validateImageInputs(
   }
 
   const validated: ImageInput[] = [];
+  let totalEncodedBytes = 0;
 
   for (let i = 0; i < images.length; i++) {
     const img = images[i];
@@ -477,6 +479,15 @@ export function validateImageInputs(
       return {
         ok: false,
         error: `image_inputs[${i}] exceeds max decoded size of ${IMAGE_INPUT_LIMITS.maxDecodedBytes / 1024 / 1024}MB`,
+        status: 413,
+      };
+    }
+
+    totalEncodedBytes += data.length;
+    if (totalEncodedBytes > IMAGE_INPUT_LIMITS.maxTotalEncodedBytes) {
+      return {
+        ok: false,
+        error: `image_inputs exceed total encoded image budget of ${(IMAGE_INPUT_LIMITS.maxTotalEncodedBytes / 1024 / 1024).toFixed(1)}MB`,
         status: 413,
       };
     }

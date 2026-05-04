@@ -161,6 +161,17 @@ describe("ConversationalCreateUI — existing-event props + immediate links", ()
       /existingEventSnapshot && existingEditHref && existingPublicHref/,
     );
   });
+
+  it("keeps existing-event edit and profile links available in the mobile host layout", () => {
+    expect(componentSource).toContain('data-testid="host-mobile-event-links"');
+    expect(componentSource).toContain("lg:hidden");
+    expect(componentSource).toMatch(
+      /existingEventSnapshot && existingEditHref && existingPublicHref[\s\S]*?href=\{existingEditHref\}/,
+    );
+    expect(componentSource).toMatch(
+      /existingEventSnapshot && existingEditHref && existingPublicHref[\s\S]*?href=\{existingPublicHref\}/,
+    );
+  });
 });
 
 // ---------------------------------------------------------------------------

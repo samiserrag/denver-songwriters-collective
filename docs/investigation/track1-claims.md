@@ -42,6 +42,25 @@ Rules:
 
 ---
 
+### Lane 9 follow-up — Mobile AI controls parity
+
+- **Branch:** `codex/mobile-ai-controls-parity`
+- **Owner:** Lane 9
+- **Base SHA:** `cb8f537b8125` (current `origin/main` after refresh)
+- **Status:** `in_progress`
+- **Purpose:** Make host AI create/edit action links available on mobile wherever they are available on desktop, and let AI event creation process every uploaded source image instead of an artificially tiny first-images subset.
+- **Notes:** Narrow CRUI/image-input parity fix only; no migrations, production data, publishing gates, Lane 5, Lane 6, Symphony, interpreter/search behavior, reusable venue semantics, or Maps `external_url` behavior changes.
+- **Files claimed:**
+  - `docs/investigation/track1-claims.md`
+  - `web/src/app/(protected)/dashboard/my-events/_components/ConversationalCreateUI.tsx`
+  - `web/src/lib/events/interpretEventContract.ts`
+  - `web/src/lib/events/__tests__/interpretEventContract.test.ts`
+  - `web/src/__tests__/conversational-create-launch-surface.test.ts`
+  - `web/src/__tests__/ai-edit-existing-event-parity.test.ts`
+  - `web/src/__tests__/interpreter-lab-conversation-ux.test.ts`
+
+---
+
 ### Lane 9 follow-up — Venue search timeout resilience
 
 - **Branch:** `codex/track1-lane9-venue-search-timeout-resilient`
