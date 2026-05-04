@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 let capturedSearchPrompts: Record<string, unknown>[] = [];
 let capturedInterpreterPrompt: Record<string, unknown> | null = null;
 let searchMode: "venue-partial" | "event-timeout" | "timeout" = "venue-partial";
-let interpreterMode: "rmu" | "night-owl-venue-ask" = "rmu";
+let interpreterMode: "rmu" | "night-owl-venue-ask" | "secular-date-null" = "rmu";
 
 const createChainable = (result: Record<string, unknown>) => {
   const chainable: Record<string, unknown> = {
@@ -120,6 +120,17 @@ function fastVenueSearchPayload() {
   };
 }
 
+function secularVenueSearchPayload() {
+  return {
+    status: "verified",
+    summary: "Venue source found for Secular Hub.",
+    confidence: "high",
+    attempted_queries: ["Secular Hub", "Secular Hub address"],
+    facts: ["Secular Hub source confirms 254 N Knox Ct, Denver, CO."],
+    sources: [{ url: "https://www.secularhub.org/contact/", title: "Secular Hub Contact" }],
+  };
+}
+
 function eventSearchMissPayload() {
   return {
     status: "no_reliable_sources",
@@ -196,7 +207,9 @@ function installFetchMock() {
       }
       const payload =
         searchPrompt.task === "fast_venue_enrichment_for_event_draft"
-          ? fastVenueSearchPayload()
+          ? interpreterMode === "secular-date-null"
+            ? secularVenueSearchPayload()
+            : fastVenueSearchPayload()
           : searchPrompt.search_category === "venue"
             ? venueSearchPayload()
             : eventSearchMissPayload();
@@ -230,6 +243,9 @@ function installFetchMock() {
                 recurrence_rule: "weekly",
                 day_of_week: "Monday",
                 venue_name: "Night Owl Lounge",
+                address: "2000 W Midway Blvd",
+                city: "Broomfield",
+                state: "CO",
                 location_mode: "venue",
                 is_free: null,
                 cost_label: null,
@@ -237,6 +253,36 @@ function installFetchMock() {
                 external_url: null,
               },
             }
+          : interpreterMode === "secular-date-null"
+            ? {
+                next_action: "ask_clarification",
+                confidence: 0.82,
+                human_summary:
+                  "I drafted the one-time event from the flyer as Open Mic - Song Circle - Potluck at Secular Hub. The venue was verified online, but the exact event listing was not found; cost, signup link, and direct source link were not stated. The flyer date is in the past, so I need the intended event date before this can be previewed.",
+                clarification_question:
+                  "The flyer shows May 16, 2020, which is before today. What date should this one-time event use?",
+                blocking_fields: ["event_date"],
+                scope: "series",
+                draft_payload: {
+                  title: "Open Mic - Song Circle - Potluck",
+                  description: "Open mic, song circle, and potluck featuring Ducks Do Floyd.",
+                  event_type: ["open_mic", "song_circle"],
+                  start_date: null,
+                  event_date: null,
+                  start_time: "14:00:00",
+                  end_time: "18:00:00",
+                  series_mode: "single",
+                  venue_name: "Secular Hub",
+                  address: "254 N. Knox Ct.",
+                  city: "Denver",
+                  state: "CO",
+                  location_mode: "venue",
+                  is_free: null,
+                  cost_label: null,
+                  signup_url: null,
+                  external_url: "https://www.secularhub.org/contact/",
+                },
+              }
           : {
               next_action: "show_preview",
               confidence: 0.86,
@@ -434,10 +480,11 @@ describe("POST /api/events/interpret — concierge search enrichment", () => {
     expect(body.draft_payload.event_type).toEqual(["open_mic"]);
     expect(body.draft_payload.start_time).toBe("19:00:00");
     expect(body.draft_payload.end_time).toBe("21:00:00");
-    expect(body.draft_payload.cost_label).toBeUndefined();
-    expect(body.draft_payload.signup_url).toBeUndefined();
-    expect(body.draft_payload.external_url).toBeUndefined();
-    expect(body.draft_payload.custom_address).toBeUndefined();
+    expect(body.draft_payload.cost_label).toBeNull();
+    expect(body.draft_payload.signup_url).toBeNull();
+    expect(body.draft_payload.external_url).toBeNull();
+    expect(body.draft_payload.custom_location_name).toBeNull();
+    expect(body.draft_payload.custom_address).toBeNull();
     expect(body.web_search_verification.venue_search.status).toBe("timeout");
     expect(body.web_search_verification.event_search.status).toBe("timeout");
   });
@@ -488,6 +535,71 @@ describe("POST /api/events/interpret — concierge search enrichment", () => {
         zip: "80020",
       },
     });
+  });
+
+  it("treats source-backed venue address fields as a custom-location fallback without asking for venue_id", async () => {
+    searchMode = "timeout";
+    interpreterMode = "night-owl-venue-ask";
+    installFetchMock();
+
+    const response = await POST(
+      new Request("http://localhost/api/events/interpret", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          mode: "create",
+          message:
+            "Flyer text: Open Mic Night every Monday night 7-11 PM hosted by Mimi James and The Dustlighters. Night Owl Lounge, 2000 W Midway Blvd, Broomfield.",
+          use_web_search: true,
+        }),
+      })
+    );
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.next_action).toBe("show_preview");
+    expect(body.clarification_question).toBeNull();
+    expect(body.blocking_fields).not.toContain("venue_id");
+    expect(body.draft_payload.venue_name).toBe("Night Owl Lounge");
+    expect(body.draft_payload.custom_location_name).toBe("Night Owl Lounge");
+    expect(body.draft_payload.custom_address).toBe("2000 W Midway Blvd");
+    expect(body.draft_payload.custom_city).toBe("Broomfield");
+    expect(body.draft_payload.custom_state).toBe("CO");
+    expect(body.draft_payload.external_url).toBeNull();
+  });
+
+  it("normalizes a hallucinated past year question when the source only gives a future month/day", async () => {
+    interpreterMode = "secular-date-null";
+    installFetchMock();
+
+    const response = await POST(
+      new Request("http://localhost/api/events/interpret", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          mode: "create",
+          message:
+            "One time event. Open Mic - Song Circle - Potluck Sat May 16, 2:00 PM to 6:00 PM Secular Hub, 254 N. Knox Ct., Denver, CO. Featured Artist: Ducks Do Floyd.",
+          use_web_search: true,
+        }),
+      })
+    );
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.next_action).toBe("show_preview");
+    expect(body.clarification_question).toBeNull();
+    expect(body.blocking_fields).not.toContain("event_date");
+    expect(body.draft_payload.start_date).toBe("2026-05-16");
+    expect(body.draft_payload.event_date).toBe("2026-05-16");
+    expect(body.draft_payload.venue_name).toBe("Secular Hub");
+    expect(body.draft_payload.custom_location_name).toBe("Secular Hub");
+    expect(body.draft_payload.custom_address).toBe("254 N. Knox Ct.");
+    expect(body.draft_payload.external_url).toBeNull();
+    expect(body.human_summary).not.toContain("2020");
+    expect(body.human_summary).not.toMatch(/past|intended event date/i);
+    expect(body.web_search_verification.venue_search.status).toBe("verified");
+    expect(body.web_search_verification.event_search.status).toBe("not_found");
   });
 
   it("recovers with structured fallback JSON when all search times out and the interpreter emits non-json", async () => {

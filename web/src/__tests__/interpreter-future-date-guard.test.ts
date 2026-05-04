@@ -77,4 +77,44 @@ describe("interpreter future-date guard", () => {
     expect(draft.start_date).toBe("2027-04-19");
     expect(draft.event_date).toBe("2027-04-19");
   });
+
+  it("fills a missing date from an unambiguous source month/day without a year", () => {
+    const draft: Record<string, unknown> = {
+      title: "Open Mic - Song Circle - Potluck",
+    };
+
+    const result = applyFutureDateGuard({
+      draft,
+      message:
+        "One time event. Open Mic - Song Circle - Potluck Sat May 16, 2:00 PM to 6:00 PM.",
+      history: [],
+      todayIso: "2026-05-03",
+    });
+
+    expect(result).toEqual({
+      applied: true,
+      from: "missing",
+      to: "2026-05-16",
+      reason: "month_day_without_year",
+    });
+    expect(draft.start_date).toBe("2026-05-16");
+    expect(draft.event_date).toBe("2026-05-16");
+  });
+
+  it("does not fill a missing date from an explicit past source year", () => {
+    const draft: Record<string, unknown> = {
+      title: "Archived Song Circle",
+    };
+
+    const result = applyFutureDateGuard({
+      draft,
+      message: "Open Mic - Song Circle - Potluck Sat May 16, 2020.",
+      history: [],
+      todayIso: "2026-05-03",
+    });
+
+    expect(result).toEqual({ applied: false });
+    expect(draft.start_date).toBeUndefined();
+    expect(draft.event_date).toBeUndefined();
+  });
 });

@@ -615,6 +615,33 @@ function findMatchingMonthDayMention(text: string, month: number, day: number): 
   return null;
 }
 
+function findUnambiguousYearlessMonthDayMention(text: string): MonthDayMention | null {
+  MONTH_DAY_PATTERN.lastIndex = 0;
+  const mentions = new Map<string, MonthDayMention>();
+  let match: RegExpExecArray | null;
+  while ((match = MONTH_DAY_PATTERN.exec(text)) !== null) {
+    const normalizedMonth = match[1].toLowerCase().replace(/\.$/, "");
+    const mentionMonth = MONTH_NAME_TO_NUMBER[normalizedMonth];
+    const mentionDay = Number.parseInt(match[2], 10);
+    if (!mentionMonth || !Number.isInteger(mentionDay) || mentionDay < 1 || mentionDay > 31) {
+      continue;
+    }
+
+    const mentionYear = match[3] ? Number.parseInt(match[3], 10) : null;
+    if (typeof mentionYear === "number" && Number.isInteger(mentionYear)) {
+      return null;
+    }
+
+    mentions.set(`${mentionMonth}-${mentionDay}`, {
+      month: mentionMonth,
+      day: mentionDay,
+      year: null,
+    });
+  }
+
+  return mentions.size === 1 ? [...mentions.values()][0] : null;
+}
+
 export function nextFutureMonthDayDate(month: number, day: number, todayIso: string): string | null {
   const today = parseIsoDateParts(todayIso);
   if (!today) return null;
@@ -637,6 +664,11 @@ export function applyFutureDateGuard(input: {
   todayIso: string;
 }): FutureDateGuardResult {
   const { draft, message, history, extractedImageText, todayIso } = input;
+  const intentText = [
+    message,
+    ...history.filter((entry) => entry.role === "user").map((entry) => entry.content),
+    extractedImageText ?? "",
+  ].join("\n");
   const dateValue =
     typeof draft.start_date === "string" && draft.start_date.trim().length > 0
       ? draft.start_date
@@ -644,16 +676,36 @@ export function applyFutureDateGuard(input: {
         ? draft.event_date
         : null;
   const parsedDate = parseIsoDateParts(dateValue);
-  if (!dateValue || !parsedDate) return { applied: false };
+  if (!dateValue || !parsedDate) {
+    const inferredMention = findUnambiguousYearlessMonthDayMention(intentText);
+    if (!inferredMention) return { applied: false };
+    if (
+      PAST_EVENT_INTENT_PATTERN.test(intentText) &&
+      !FUTURE_DATE_INTENT_PATTERN.test(intentText)
+    ) {
+      return { applied: false };
+    }
+
+    const inferredDate = nextFutureMonthDayDate(
+      inferredMention.month,
+      inferredMention.day,
+      todayIso
+    );
+    if (!inferredDate) return { applied: false };
+
+    draft.start_date = inferredDate;
+    draft.event_date = inferredDate;
+
+    return {
+      applied: true,
+      from: "missing",
+      to: inferredDate,
+      reason: "month_day_without_year",
+    };
+  }
   if (compareIsoDate(dateValue, todayIso) > 0) {
     return applyOverEagerFutureYearPullback({ draft, message, history, extractedImageText, todayIso });
   }
-
-  const intentText = [
-    message,
-    ...history.filter((entry) => entry.role === "user").map((entry) => entry.content),
-    extractedImageText ?? "",
-  ].join("\n");
   const matchingMention = findMatchingMonthDayMention(intentText, parsedDate.month, parsedDate.day);
   if (!matchingMention) return { applied: false };
 
