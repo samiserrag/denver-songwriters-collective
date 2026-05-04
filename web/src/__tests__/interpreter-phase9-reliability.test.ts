@@ -201,14 +201,14 @@ describe("Phase 9B — event-type reliability", () => {
     expect(interpretRouteSource).toContain('(mode === "create" || mode === "edit_series")');
   });
 
-  it("runs optional online search verification before GPT-5.5 drafting", () => {
+  it("runs optional online search verification before GPT-5.4 nano drafting", () => {
     expect(interpretRouteSource).toContain("Phase A2 — Optional online event verification");
     expect(interpretRouteSource).toContain("shouldAttemptEventWebSearch");
     expect(interpretRouteSource).toContain('type: "web_search"');
     expect(interpretRouteSource).toContain('include: ["web_search_call.action.sources"]');
     expect(interpretRouteSource).toContain("web_search_verification");
     expect(interpretRouteSource).toContain("OPENAI_EVENT_WEB_SEARCH_ENABLED");
-    expect(interpretRouteSource).toContain('const DEFAULT_WEB_SEARCH_VERIFIER_MODEL = "gpt-5.5"');
+    expect(interpretRouteSource).toContain('const DEFAULT_WEB_SEARCH_VERIFIER_MODEL = "gpt-5.4-nano"');
     expect(interpretRouteSource).toContain("OPENAI_EVENT_WEB_SEARCH_MODEL");
     expect(interpretRouteSource).toContain("Run multiple targeted search angles");
     expect(interpretRouteSource).toContain("OPENAI_EVENT_WEB_SEARCH_REASONING_EFFORT");
