@@ -9,6 +9,7 @@
 import { describe, expect, it } from "vitest";
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { shouldSuppressDraftVerifierIssue } from "@/lib/events/interpreterPostprocess";
 
 const INTERPRET_ROUTE_PATH = path.resolve(
   __dirname,
@@ -339,7 +340,79 @@ describe("Phase 9B — event-type reliability", () => {
   it("keeps verifier results internal unless a high-risk issue needs one clarification", () => {
     expect(interpretRouteSource).toContain('(mode === "create" || mode === "edit_series") && resolvedNextAction !== "ask_clarification"');
     expect(interpretRouteSource).toContain('issue.severity === "high"');
+    expect(interpretRouteSource).toContain("shouldSuppressDraftVerifierIssue");
     expect(interpretRouteSource).toContain('resolvedNextAction = "ask_clarification"');
     expect(interpretRouteSource).toContain("Please confirm ${highRiskVerificationIssue.field}");
+  });
+});
+
+describe("Lane 9 — draft verifier question quality", () => {
+  it("keeps internal recurrence/schema questions out of host clarifications", () => {
+    expect(
+      shouldSuppressDraftVerifierIssue({
+        issue: {
+          severity: "high",
+          field: "recurrence_rule",
+          issue: "Need app-specific recurrence semantics.",
+          question:
+            "In your event system, does recurrence FREQ=WEEKLY;BYDAY=MO begin from start_date, or does event_date override the first occurrence?",
+        },
+        draft: {
+          start_date: "2026-05-11",
+          event_date: "2026-05-11",
+          recurrence_rule: "FREQ=WEEKLY;BYDAY=MO",
+        },
+        currentDate: "2026-05-04",
+      })
+    ).toBe(true);
+  });
+
+  it("suppresses redundant year confirmation when the current-year source date is still upcoming", () => {
+    expect(
+      shouldSuppressDraftVerifierIssue({
+        issue: {
+          severity: "high",
+          field: "start_date",
+          issue: "The flyer says May 11 without a year.",
+          question: "Confirm the year for the May 11 resume date, e.g. 2026?",
+        },
+        draft: {
+          start_date: "2026-05-11",
+          event_date: "2026-05-11",
+        },
+        currentDate: "2026-05-04",
+      })
+    ).toBe(true);
+  });
+
+  it("does not suppress year/date questions when the drafted date is already past", () => {
+    expect(
+      shouldSuppressDraftVerifierIssue({
+        issue: {
+          severity: "high",
+          field: "start_date",
+          issue: "The flyer says May 3 without a year.",
+          question: "Confirm the year for May 3.",
+        },
+        draft: {
+          start_date: "2026-05-03",
+          event_date: "2026-05-03",
+        },
+        currentDate: "2026-05-04",
+      })
+    ).toBe(false);
+  });
+
+  it("teaches the verifier the app-owned recurrence and current-year date contracts", () => {
+    expect(interpretRouteSource).toContain(
+      "Never ask the user how this app stores recurrence, RRULE, start_date, or event_date"
+    );
+    expect(interpretRouteSource).toContain(
+      "start_date/event_date anchors the first occurrence; recurrence_rule describes the recurring pattern"
+    );
+    expect(interpretRouteSource).toContain(
+      "When a source gives a month/day without a year and the current-year date is current_date or later"
+    );
+    expect(interpretRouteSource).toContain("do not ask to confirm the year");
   });
 });

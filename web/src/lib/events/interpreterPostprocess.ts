@@ -535,6 +535,67 @@ function compareIsoDate(a: string, b: string): number {
   return a < b ? -1 : 1;
 }
 
+type DraftVerifierIssueLike = {
+  severity?: string | null;
+  field?: string | null;
+  issue?: string | null;
+  question?: string | null;
+};
+
+const INTERNAL_DRAFT_VERIFIER_QUESTION_PATTERN =
+  /\b(?:event system|recurrence(?:\s+\w+){0,4}\s+(?:begin|start)|event_date\s+override|start_date\s+override|FREQ=|BYDAY=|RRULE|schema|database|choose the one that applies)\b/i;
+
+const REDUNDANT_YEAR_CONFIRMATION_PATTERN =
+  /\b(?:confirm|verify|check|which|what)\b[\s\S]{0,80}\byear\b|\byear\b[\s\S]{0,80}\b(?:confirm|verify|check|which|what)\b/i;
+
+function getVerifierIssueText(issue: DraftVerifierIssueLike): string {
+  return [issue.field, issue.issue, issue.question].filter(Boolean).join(" ");
+}
+
+function getDraftDateForIssue(
+  draft: Record<string, unknown>,
+  field: string | null | undefined
+): string | null {
+  const preferred =
+    field === "start_date" || field === "event_date"
+      ? draft[field]
+      : draft.start_date ?? draft.event_date;
+  return typeof preferred === "string" && preferred.trim().length > 0 ? preferred.trim() : null;
+}
+
+function isRedundantCurrentYearDateQuestion(input: {
+  issue: DraftVerifierIssueLike;
+  draft: Record<string, unknown>;
+  currentDate: string;
+}): boolean {
+  const field = input.issue.field ?? null;
+  if (field !== "start_date" && field !== "event_date") return false;
+
+  const text = getVerifierIssueText(input.issue);
+  if (!REDUNDANT_YEAR_CONFIRMATION_PATTERN.test(text)) return false;
+
+  const draftDate = getDraftDateForIssue(input.draft, field);
+  const parsedDraftDate = parseIsoDateParts(draftDate);
+  const parsedCurrentDate = parseIsoDateParts(input.currentDate);
+  if (!draftDate || !parsedDraftDate || !parsedCurrentDate) return false;
+  if (parsedDraftDate.year !== parsedCurrentDate.year) return false;
+
+  return compareIsoDate(draftDate, input.currentDate) >= 0;
+}
+
+export function shouldSuppressDraftVerifierIssue(input: {
+  issue: DraftVerifierIssueLike;
+  draft: Record<string, unknown>;
+  currentDate: string;
+}): boolean {
+  const text = getVerifierIssueText(input.issue);
+  if (INTERNAL_DRAFT_VERIFIER_QUESTION_PATTERN.test(text)) {
+    return true;
+  }
+
+  return isRedundantCurrentYearDateQuestion(input);
+}
+
 function findMatchingMonthDayMention(text: string, month: number, day: number): MonthDayMention | null {
   MONTH_DAY_PATTERN.lastIndex = 0;
   let match: RegExpExecArray | null;

@@ -22,6 +22,22 @@ Rules:
 
 ## Active claims
 
+### Lane 9 follow-up — Concierge question quality
+
+- **Branch:** `codex/lane9-concierge-question-quality`
+- **Owner:** Lane 9
+- **Base SHA:** `5ebad56db899` (current `origin/main` after refresh)
+- **Status:** `in_progress`
+- **Purpose:** Prevent the event concierge draft verifier from asking redundant current-year date confirmations or leaking internal recurrence/schema questions to hosts.
+- **Notes:** Narrow interpreter/verifier question-quality fix only; no migrations, production data, publishing gates, Lane 5, Lane 6, Symphony, CRUI/UI, reusable venue semantics, or Maps `external_url` behavior changes.
+- **Files claimed:**
+  - `docs/investigation/track1-claims.md`
+  - `web/src/app/api/events/interpret/route.ts`
+  - `web/src/lib/events/interpreterPostprocess.ts`
+  - `web/src/__tests__/interpreter-phase9-reliability.test.ts`
+
+---
+
 ### Lane 9 follow-up — Event AI nano model default
 
 - **Branch:** `codex/lane9-event-ai-nano-model`
