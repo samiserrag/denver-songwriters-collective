@@ -125,6 +125,7 @@ const DENIED_COMMAND_PATTERNS = [
     reason: "pipe_to_shell_command_denied"
   }
 ];
+const SHELL_METACHARACTER_PATTERN = /[;&|<>`$()]/;
 
 export function validateHookPolicy(input = {}, options = {}) {
   const errors = [];
@@ -364,6 +365,13 @@ function normalizeCommand(value, path, errors) {
         message: "hook command parts must be non-empty strings"
       });
       return "";
+    }
+    if (SHELL_METACHARACTER_PATTERN.test(part)) {
+      errors.push({
+        path: `${path}.${index}`,
+        reason: "hook_command_shell_metacharacter_denied",
+        message: "hook command parts cannot contain shell metacharacters"
+      });
     }
     return part;
   });
