@@ -4787,7 +4787,11 @@ export async function POST(request: Request) {
       ? futureDateGuardResult.reason === "future_year_pullback"
         ? `${dateNormalizedHumanSummary} Date set to ${futureDateGuardResult.to} (current year) because the source did not specify ${futureDateGuardResult.from.slice(0, 4)}.`
         : futureDateGuardResult.from === "missing"
-          ? `${dateNormalizedHumanSummary} Date set to ${futureDateGuardResult.to} from the source month/day and current year.`
+          ? futureDateGuardResult.reason === "explicit_past_date_rollforward"
+            ? `${dateNormalizedHumanSummary} Date set to ${futureDateGuardResult.to}; event creation treats stale source years as the next upcoming date unless you say this is archival.`
+            : `${dateNormalizedHumanSummary} Date set to ${futureDateGuardResult.to} from the source month/day and current year.`
+          : futureDateGuardResult.reason === "explicit_past_date_rollforward"
+            ? `${dateNormalizedHumanSummary} Date adjusted to ${futureDateGuardResult.to}; event creation treats stale source years as the next upcoming date unless you say this is archival.`
           : `${dateNormalizedHumanSummary} Date adjusted to ${futureDateGuardResult.to} because the source date would otherwise be in the past.`
       : dateNormalizedHumanSummary;
 

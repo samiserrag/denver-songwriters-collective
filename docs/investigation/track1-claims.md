@@ -22,6 +22,24 @@ Rules:
 
 ## Active claims
 
+### Lane 9 follow-up — No past dates by default in event creation
+
+- **Branch:** `codex/lane9-no-past-yearless-dates`
+- **Owner:** Lane 9
+- **Base SHA:** `dafb615809357082edbe54498e5fcf9d18339b32` (PR #288 merge commit on `main`)
+- **Status:** `in_progress`
+- **Purpose:** Enforce the product rule that event-creation dates are never interpreted as past dates unless the user explicitly asks for an archival/past event.
+- **Notes:** Narrow interpreter post-processing fix only; no migrations, production data, publishing gates, Lane 5, Lane 6, Symphony, CRUI/UI, reusable venue write semantics, or Maps `external_url` behavior changes.
+- **Files claimed:**
+  - `docs/investigation/track1-claims.md`
+  - `web/src/app/api/events/interpret/route.ts`
+  - `web/src/lib/events/interpreterPostprocess.ts`
+  - `web/src/__tests__/interpreter-concierge-search.test.ts`
+  - `web/src/__tests__/interpreter-future-date-guard.test.ts`
+  - `web/src/__tests__/interpreter-phase9-reliability.test.ts`
+
+---
+
 ### Lane 9 follow-up — Post-smoke venue/date normalization
 
 - **Branch:** `codex/lane9-concierge-post-smoke-normalization`
