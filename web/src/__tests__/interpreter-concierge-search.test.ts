@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 let capturedSearchPrompts: Record<string, unknown>[] = [];
 let capturedInterpreterPrompt: Record<string, unknown> | null = null;
 let searchMode: "venue-partial" | "event-timeout" | "timeout" = "venue-partial";
+let interpreterMode: "rmu" | "night-owl-venue-ask" = "rmu";
 
 const createChainable = (result: Record<string, unknown>) => {
   const chainable: Record<string, unknown> = {
@@ -155,6 +156,29 @@ function eventSearchMissPayload() {
 
 function installFetchMock() {
   return vi.spyOn(global, "fetch").mockImplementation(async (_url, init) => {
+    if (String(_url).includes("maps.googleapis.com/maps/api/geocode/json")) {
+      return new Response(
+        JSON.stringify({
+          status: "OK",
+          results: [
+            {
+              formatted_address: "2000 W Midway Blvd, Broomfield, CO 80020, USA",
+              place_id: "place_night_owl",
+              geometry: { location: { lat: 39.9201, lng: -105.0867 } },
+              address_components: [
+                { long_name: "2000", short_name: "2000", types: ["street_number"] },
+                { long_name: "West Midway Boulevard", short_name: "W Midway Blvd", types: ["route"] },
+                { long_name: "Broomfield", short_name: "Broomfield", types: ["locality"] },
+                { long_name: "Colorado", short_name: "CO", types: ["administrative_area_level_1"] },
+                { long_name: "80020", short_name: "80020", types: ["postal_code"] },
+              ],
+            },
+          ],
+        }),
+        { status: 200, headers: { "content-type": "application/json" } }
+      );
+    }
+
     const body = JSON.parse(String(init?.body ?? "{}")) as { model?: string; input?: unknown };
 
     if (body.model === "test-search-model") {
@@ -184,38 +208,68 @@ function installFetchMock() {
 
     if (body.model === "test-interpreter-model") {
       capturedInterpreterPrompt = JSON.parse(String(body.input)) as Record<string, unknown>;
+      const payload =
+        interpreterMode === "night-owl-venue-ask"
+          ? {
+              next_action: "ask_clarification",
+              confidence: 0.78,
+              human_summary:
+                "Drafted from the flyer as a weekly Monday open mic at Night Owl Lounge. Exact public event listing, cost, signup link, and source link were not found.",
+              clarification_question:
+                'I couldn\'t find a known venue matching "Night Owl Lounge". Could you provide the venue name, or specify if this is an online event?',
+              blocking_fields: ["venue_id"],
+              scope: "series",
+              draft_payload: {
+                title: "Night Owl Lounge - Open Mic",
+                description: "Open mic night hosted by Mimi James and The Dustlighters.",
+                event_type: ["open_mic"],
+                start_date: "2026-05-04",
+                start_time: "19:00:00",
+                end_time: "23:00:00",
+                series_mode: "weekly",
+                recurrence_rule: "weekly",
+                day_of_week: "Monday",
+                venue_name: "Night Owl Lounge",
+                location_mode: "venue",
+                is_free: null,
+                cost_label: null,
+                signup_url: null,
+                external_url: null,
+              },
+            }
+          : {
+              next_action: "show_preview",
+              confidence: 0.86,
+              human_summary:
+                "I found RMU Breckenridge's official venue page and can use it for the reusable venue record. I did not find a public listing for this exact open mic, so I'll keep event details limited to the flyer: Wednesdays 7-9pm. Cost/signup/source link are still unknown.",
+              clarification_question: null,
+              blocking_fields: [],
+              scope: "series",
+              draft_payload: {
+                title: "RMU Breckenridge - Open Mic",
+                description: "Open mic night at RMU Breckenridge. Every Wednesday from 7-9pm.",
+                event_type: ["open_mic"],
+                start_date: "2026-05-06",
+                start_time: "19:00:00",
+                end_time: "21:00:00",
+                series_mode: "weekly",
+                recurrence_rule: "weekly",
+                venue_name: "RMU Breckenridge",
+                custom_location_name: "RMU Breckenridge",
+                custom_address: "114 S Main St",
+                custom_city: "Breckenridge",
+                custom_state: "CO",
+                custom_zip: "80424",
+                location_mode: "venue",
+                is_free: null,
+                cost_label: null,
+                signup_url: null,
+                external_url: null,
+              },
+            };
       return new Response(
         JSON.stringify(
-          openAiResponse({
-            next_action: "show_preview",
-            confidence: 0.86,
-            human_summary:
-              "I found RMU Breckenridge's official venue page and can use it for the reusable venue record. I did not find a public listing for this exact open mic, so I'll keep event details limited to the flyer: Wednesdays 7-9pm. Cost/signup/source link are still unknown.",
-            clarification_question: null,
-            blocking_fields: [],
-            scope: "series",
-            draft_payload: {
-              title: "RMU Breckenridge - Open Mic",
-              description: "Open mic night at RMU Breckenridge. Every Wednesday from 7-9pm.",
-              event_type: ["open_mic"],
-              start_date: "2026-05-06",
-              start_time: "19:00:00",
-              end_time: "21:00:00",
-              series_mode: "weekly",
-              recurrence_rule: "weekly",
-              venue_name: "RMU Breckenridge",
-              custom_location_name: "RMU Breckenridge",
-              custom_address: "114 S Main St",
-              custom_city: "Breckenridge",
-              custom_state: "CO",
-              custom_zip: "80424",
-              location_mode: "venue",
-              is_free: null,
-              cost_label: null,
-              signup_url: null,
-              external_url: null,
-            },
-          })
+          openAiResponse(payload)
         ),
         { status: 200, headers: { "content-type": "application/json" } }
       );
@@ -244,6 +298,9 @@ beforeEach(() => {
   capturedSearchPrompts = [];
   capturedInterpreterPrompt = null;
   searchMode = "venue-partial";
+  interpreterMode = "rmu";
+  delete process.env.GOOGLE_GEOCODING_API_KEY;
+  delete process.env.GOOGLE_MAPS_API_KEY;
   process.env.ENABLE_NL_EVENTS_INTERPRETER = "true";
   process.env.OPENAI_API_KEY = "test-key";
   process.env.OPENAI_EVENT_INTERPRETER_MODEL = "test-interpreter-model";
@@ -383,6 +440,54 @@ describe("POST /api/events/interpret — concierge search enrichment", () => {
     expect(body.draft_payload.custom_address).toBeUndefined();
     expect(body.web_search_verification.venue_search.status).toBe("timeout");
     expect(body.web_search_verification.event_search.status).toBe("timeout");
+  });
+
+  it("uses Google Maps venue lookup when web search misses and does not ask for the known venue again", async () => {
+    process.env.GOOGLE_GEOCODING_API_KEY = "test-maps-key";
+    searchMode = "timeout";
+    interpreterMode = "night-owl-venue-ask";
+    installFetchMock();
+
+    const response = await POST(
+      new Request("http://localhost/api/events/interpret", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          mode: "create",
+          message:
+            "Attached flyer says Open Mic Night every Monday night 7-11 PM hosted by Mimi James and The Dustlighters at Night Owl Lounge, 2000 W Midway Blvd, Broomfield. Search for the venue and exact event.",
+          use_web_search: true,
+        }),
+      })
+    );
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.next_action).toBe("show_preview");
+    expect(body.clarification_question).toBeNull();
+    expect(body.blocking_fields).not.toContain("venue_id");
+    expect(body.draft_payload.venue_name).toBe("Night Owl Lounge");
+    expect(body.draft_payload.custom_location_name).toBe("Night Owl Lounge");
+    expect(body.draft_payload.custom_address).toBe("2000 West Midway Boulevard");
+    expect(body.draft_payload.custom_city).toBe("Broomfield");
+    expect(body.draft_payload.custom_state).toBe("CO");
+    expect(body.draft_payload.custom_zip).toBe("80020");
+    expect(body.draft_payload.google_maps_url).toContain("query_place_id=place_night_owl");
+    expect(body.draft_payload.external_url).toBeNull();
+    expect(body.web_search_verification.venue_search.status).toBe("verified");
+    expect(body.web_search_verification.venue_search.sources[0].url).toContain("google.com/maps/search");
+    expect(body.web_search_verification.event_search.status).toBe("timeout");
+    expect(capturedInterpreterPrompt?.google_maps_hint).toMatchObject({
+      place_name: "Night Owl Lounge",
+      place_id: "place_night_owl",
+      formatted_address: "2000 W Midway Blvd, Broomfield, CO 80020, USA",
+      address: {
+        street: "2000 West Midway Boulevard",
+        city: "Broomfield",
+        state: "CO",
+        zip: "80020",
+      },
+    });
   });
 
   it("recovers with structured fallback JSON when all search times out and the interpreter emits non-json", async () => {

@@ -248,6 +248,11 @@ function extractHostname(value: string): string | null {
   }
 }
 
+function isBlockedSearchEngineSource(value: string): boolean {
+  const hostname = extractHostname(value);
+  return hostname === "bing.com" || !!hostname?.endsWith(".bing.com");
+}
+
 function collectWebSearchSources(value: unknown): WebSearchVerificationSource[] {
   const seen = new Set<string>();
   const sources: WebSearchVerificationSource[] = [];
@@ -263,7 +268,7 @@ function collectWebSearchSources(value: unknown): WebSearchVerificationSource[] 
     if (!obj) return;
 
     const url = typeof obj.url === "string" ? obj.url : null;
-    if (url && /^https?:\/\//i.test(url) && !seen.has(url)) {
+    if (url && /^https?:\/\//i.test(url) && !isBlockedSearchEngineSource(url) && !seen.has(url)) {
       seen.add(url);
       sources.push({
         url,
@@ -335,6 +340,8 @@ interface GoogleMapsHint {
   source_url: string;
   final_url: string;
   place_name: string | null;
+  place_id?: string | null;
+  formatted_address?: string | null;
   latitude: number | null;
   longitude: number | null;
   address: ParsedAddressHint | null;
@@ -399,6 +406,7 @@ function extractAddressFromText(input: string): ParsedAddressHint | null {
     "Greeley",
     "Lafayette",
     "Lakewood",
+    "Broomfield",
     "Aurora",
     "Arvada",
     "Boulder",
@@ -411,6 +419,10 @@ function extractAddressFromText(input: string): ParsedAddressHint | null {
   ].join("|");
   const coloradoZipOnly = new RegExp(
     `\\b(\\d{1,6}\\s+(?:[NSEW]\\s+)?[A-Za-z0-9.'#-]+(?:\\s+[A-Za-z0-9.'#-]+){0,5})\\s+(${coloradoZipOnlyCities})\\s+(8\\d{4})\\b`,
+    "i"
+  );
+  const coloradoCityOnly = new RegExp(
+    `\\b(\\d{1,6}\\s+(?:[NSEW]\\s+)?[A-Za-z0-9.'#-]+(?:\\s+[A-Za-z0-9.'#-]+){0,5}\\s+${streetSuffix})\\b\\s+(${coloradoZipOnlyCities})\\b`,
     "i"
   );
 
@@ -435,6 +447,14 @@ function extractAddressFromText(input: string): ParsedAddressHint | null {
         return { street, city, state: "CO", zip };
       }
     }
+    const coloradoCityMatch = line.match(coloradoCityOnly);
+    if (coloradoCityMatch) {
+      const street = coloradoCityMatch[1]?.trim();
+      const city = coloradoCityMatch[2]?.trim();
+      if (street && city && !looksLikeNoisyStreetCandidate(street)) {
+        return { street, city, state: "CO", zip: null };
+      }
+    }
   }
   if (!match) {
     match = input.match(withCommas) || input.match(compact);
@@ -447,6 +467,14 @@ function extractAddressFromText(input: string): ParsedAddressHint | null {
       const zip = coloradoZipMatch[3]?.trim() || null;
       if (street && city && !looksLikeNoisyStreetCandidate(street)) {
         return { street, city, state: "CO", zip };
+      }
+    }
+    const coloradoCityMatch = input.match(coloradoCityOnly);
+    if (coloradoCityMatch) {
+      const street = coloradoCityMatch[1]?.trim();
+      const city = coloradoCityMatch[2]?.trim();
+      if (street && city && !looksLikeNoisyStreetCandidate(street)) {
+        return { street, city, state: "CO", zip: null };
       }
     }
   }
@@ -548,12 +576,124 @@ async function reverseGeocodeCoords(
   }
 }
 
+type GoogleGeocodeResult = {
+  formatted_address?: string;
+  place_id?: string;
+  partial_match?: boolean;
+  geometry?: { location?: { lat?: number; lng?: number } };
+  address_components?: Array<{ long_name?: string; short_name?: string; types?: string[] }>;
+};
+
+function parseAddressFromGoogleGeocodeResult(result: GoogleGeocodeResult): ParsedAddressHint | null {
+  const components = result.address_components || [];
+  const byType = (type: string) =>
+    components.find((c) => Array.isArray(c.types) && c.types.includes(type));
+
+  const streetNumber = byType("street_number")?.long_name || "";
+  const route = byType("route")?.long_name || "";
+  const city =
+    byType("locality")?.long_name ||
+    byType("postal_town")?.long_name ||
+    byType("administrative_area_level_2")?.long_name ||
+    "";
+  const state = byType("administrative_area_level_1")?.short_name || "";
+  const zip = byType("postal_code")?.long_name || null;
+  const street = [streetNumber, route].filter(Boolean).join(" ").trim();
+
+  if (!street || !city || !state) return null;
+  return { street, city, state, zip };
+}
+
+function buildGoogleMapsSearchUrl(query: string, placeId?: string | null): string {
+  const url = new URL("https://www.google.com/maps/search/");
+  url.searchParams.set("api", "1");
+  url.searchParams.set("query", query);
+  if (placeId) {
+    url.searchParams.set("query_place_id", placeId);
+  }
+  return url.toString();
+}
+
+function buildGoogleMapsVenueHintQueries(sources: string[]): string[] {
+  const combined = sources.join("\n");
+  const parsedAddress = extractAddressFromText(combined);
+  const venueCandidates = buildVenueSearchCandidates({
+    sources,
+    maxCandidates: 4,
+  }).filter((candidate) => !candidate.trim().startsWith("@"));
+  const locationParts = parsedAddress
+    ? [parsedAddress.street, parsedAddress.city, parsedAddress.state, parsedAddress.zip].filter(
+        (part): part is string => typeof part === "string" && part.trim().length > 0
+      )
+    : [];
+
+  return uniqueStrings(
+    venueCandidates.map((candidate) => [candidate, ...locationParts].join(" ")),
+    3
+  );
+}
+
+async function resolveGoogleMapsVenueQueryHint(input: {
+  sources: string[];
+  geocodingApiKey: string;
+}): Promise<GoogleMapsHint | null> {
+  for (const query of buildGoogleMapsVenueHintQueries(input.sources)) {
+    try {
+      const url = new URL(GOOGLE_GEOCODING_API_URL);
+      url.searchParams.append("address", query);
+      url.searchParams.append("region", "us");
+      url.searchParams.append("components", "country:US");
+      url.searchParams.append("key", input.geocodingApiKey);
+
+      const response = await fetch(url.toString());
+      if (!response.ok) continue;
+      const data = (await response.json()) as {
+        status?: string;
+        results?: GoogleGeocodeResult[];
+      };
+      const result = data.status === "OK" && Array.isArray(data.results) ? data.results[0] : null;
+      if (!result || result.partial_match) continue;
+
+      const address = parseAddressFromGoogleGeocodeResult(result);
+      const mapsUrl = buildGoogleMapsSearchUrl(query, result.place_id ?? null);
+      return {
+        source_url: mapsUrl,
+        final_url: mapsUrl,
+        place_name: query.replace(/\s+\d{1,6}\s+.*$/i, "").trim() || null,
+        place_id: result.place_id ?? null,
+        formatted_address: result.formatted_address ?? null,
+        latitude:
+          typeof result.geometry?.location?.lat === "number"
+            ? result.geometry.location.lat
+            : null,
+        longitude:
+          typeof result.geometry?.location?.lng === "number"
+            ? result.geometry.location.lng
+            : null,
+        address,
+      };
+    } catch {
+      // Try the next candidate; web search remains the fallback.
+    }
+  }
+
+  return null;
+}
+
 async function resolveGoogleMapsHint(input: {
   sources: string[];
   geocodingApiKey: string | null;
+  allowTextQuery?: boolean;
 }): Promise<GoogleMapsHint | null> {
   const candidates = extractGoogleMapsUrls(...input.sources);
-  if (candidates.length === 0) return null;
+  if (candidates.length === 0) {
+    return input.geocodingApiKey && input.allowTextQuery
+      ? resolveGoogleMapsVenueQueryHint({
+          sources: input.sources,
+          geocodingApiKey: input.geocodingApiKey,
+        })
+      : null;
+  }
 
   const sourceUrl = candidates[0];
   let finalUrl = sourceUrl;
@@ -582,6 +722,8 @@ async function resolveGoogleMapsHint(input: {
     source_url: sourceUrl,
     final_url: finalUrl,
     place_name: placeName,
+    place_id: null,
+    formatted_address: null,
     latitude: coords?.latitude ?? null,
     longitude: coords?.longitude ?? null,
     // Prefer deterministic geocoding from map coordinates over noisy free text.
@@ -1371,6 +1513,11 @@ function buildWebSearchVerificationPrompt(input: {
       google_maps_hint: input.googleMapsHint,
       locked_draft: input.lockedDraft ?? null,
       current_event: input.currentEvent ?? null,
+      source_preference: {
+        default_search: "Google Search and Google Maps first",
+        avoid: ["Bing search/result pages"],
+        note: "If the upstream web-search backend exposes a choice, use Google Search/Maps. Do not cite Bing search result pages as evidence; cite direct official, venue, organizer, social, ticketing, calendar, or Google Maps sources instead.",
+      },
       search_query_plan: {
         venue_queries: input.queryPlan.venueQueries,
         event_queries: input.queryPlan.eventQueries,
@@ -1378,6 +1525,7 @@ function buildWebSearchVerificationPrompt(input: {
       },
       instructions: [
         "Use web search as concierge research, not only binary event verification.",
+        "Default to Google Search and Google Maps for venue/event lookup when the web-search backend gives you a choice. Do not use Bing search result pages as sources.",
         "Separate venue enrichment from exact-event verification. Official venue facts can be useful even when the exact event listing is not found.",
         input.searchCategory === "venue"
           ? "This request is the fast venue-enrichment pass. Focus on venue_queries only and set event_search.status to not_applicable unless an exact-event source appears incidentally."
@@ -1466,10 +1614,16 @@ function buildFastVenueSearchPrompt(input: {
       google_maps_hint: input.googleMapsHint,
       locked_draft: input.lockedDraft ?? null,
       current_event: input.currentEvent ?? null,
+      source_preference: {
+        default_search: "Google Search and Google Maps first",
+        avoid: ["Bing search/result pages"],
+        note: "If the upstream web-search backend exposes a choice, use Google Search/Maps. Do not cite Bing search result pages as evidence; cite direct venue, organizer, trusted directory, or Google Maps sources instead.",
+      },
       venue_queries: input.queryPlan.venueQueries,
       location_context: input.queryPlan.locationContext,
       instructions: [
         "This is a fast venue-enrichment pass. Only verify venue identity and address/contact facts.",
+        "Default to Google Search and Google Maps for venue lookup when the web-search backend gives you a choice. Do not use Bing search result pages as sources.",
         "Run only venue_queries. Do not search for or verify the exact event, recurrence, cost, signup, or event source URL.",
         "Prefer official venue pages, Google/Maps-like business listings, or trusted directory pages that clearly identify the venue.",
         "Return verified only when a source reliably confirms venue identity plus at least one useful location/contact fact such as street address, city/state/ZIP, phone, website, Maps URL, or coordinates.",
@@ -1494,6 +1648,7 @@ function buildFastVenueSearchPrompt(input: {
 function parseWebSearchSource(value: unknown): WebSearchVerificationSource | null {
   const row = parseJsonObject(value);
   if (!row || typeof row.url !== "string" || !/^https?:\/\//i.test(row.url)) return null;
+  if (isBlockedSearchEngineSource(row.url)) return null;
   return {
     url: row.url,
     title: typeof row.title === "string" && row.title.trim() ? row.title.trim().slice(0, 180) : null,
@@ -1879,6 +2034,7 @@ function formatCategoryAttemptedQueries(label: string, queries: string[]): strin
 function mergeWebSearchSources(...sourceLists: Array<ReadonlyArray<WebSearchVerificationSource> | undefined>): WebSearchVerificationSource[] {
   const byUrl = new Map<string, WebSearchVerificationSource>();
   for (const source of sourceLists.flatMap((list) => list ?? [])) {
+    if (isBlockedSearchEngineSource(source.url)) continue;
     if (!byUrl.has(source.url)) byUrl.set(source.url, source);
   }
   return [...byUrl.values()].slice(0, 8);
@@ -1913,6 +2069,130 @@ function mergeWebSearchFactBuckets(
       ...buckets.flatMap((bucket) => bucket?.true_unknowns ?? []),
       ...(extras?.true_unknowns ?? []),
     ], 12),
+  };
+}
+
+function formatParsedAddress(address: ParsedAddressHint | null): string | null {
+  if (!address) return null;
+  return [address.street, address.city, address.state, address.zip].filter(Boolean).join(", ");
+}
+
+function buildGoogleMapsVenueSource(hint: GoogleMapsHint): WebSearchVerificationSource | null {
+  const url = hint.final_url || hint.source_url;
+  if (!/^https?:\/\//i.test(url)) return null;
+  return {
+    url,
+    title: hint.place_name ? `${hint.place_name} on Google Maps` : "Google Maps venue result",
+    domain: "google.com/maps",
+  };
+}
+
+function buildGoogleMapsVenueFacts(hint: GoogleMapsHint): string[] {
+  const address = formatParsedAddress(hint.address) ?? hint.formatted_address ?? null;
+  const venueName = hint.place_name ?? "the venue";
+  return uniqueStrings(
+    [
+      address ? `Google Maps confirms ${venueName} at ${address}.` : null,
+      typeof hint.latitude === "number" && typeof hint.longitude === "number"
+        ? `Google Maps returned coordinates for ${venueName}.`
+        : null,
+    ].filter((fact): fact is string => fact !== null),
+    4
+  );
+}
+
+function mergeGoogleMapsHintIntoWebSearchVerification(
+  verification: WebSearchVerificationResult | null,
+  hint: GoogleMapsHint | null
+): WebSearchVerificationResult | null {
+  if (!hint) return verification;
+  const facts = buildGoogleMapsVenueFacts(hint);
+  const source = buildGoogleMapsVenueSource(hint);
+  if (facts.length === 0 && !source) return verification;
+
+  const base =
+    verification ??
+    ({
+      status: "searched",
+      summary: "Google Maps returned venue details.",
+      facts: [],
+      sources: [],
+      venue_search: emptySearchCategory({
+        status: "not_applicable",
+        summary: "No separate web venue search was run.",
+        attemptedQueries: [],
+      }),
+      event_search: emptySearchCategory({
+        status: "not_applicable",
+        summary: "No exact-event search was run.",
+        attemptedQueries: [],
+      }),
+      fact_buckets: { ...DEFAULT_FACT_BUCKETS },
+      suggested_questions: [],
+    } satisfies WebSearchVerificationResult);
+
+  const priorVenue =
+    base.venue_search ??
+    emptySearchCategory({
+      status: "not_applicable",
+      summary: "No separate web venue search was run.",
+    });
+  const venueSearch: WebSearchCategoryResult = {
+    ...priorVenue,
+    status: "verified",
+    confidence: priorVenue.confidence === "high" ? "high" : facts.length > 0 ? "high" : "medium",
+    summary:
+      priorVenue.status === "verified"
+        ? priorVenue.summary
+        : "Google Maps returned reusable venue identity/location details.",
+    facts: uniqueStrings([...facts, ...priorVenue.facts], 8),
+    sources: mergeWebSearchSources(source ? [source] : [], priorVenue.sources),
+  };
+  const eventSearch =
+    base.event_search ??
+    emptySearchCategory({
+      status: "not_applicable",
+      summary: "No exact-event search was run.",
+    });
+  const eventUseful = isUsefulSearchCategory(eventSearch);
+  const factBuckets: WebSearchFactBuckets = {
+    ...DEFAULT_FACT_BUCKETS,
+    ...(base.fact_buckets ?? {}),
+  };
+  const trueUnknowns = uniqueStrings(
+    [
+      ...factBuckets.true_unknowns.filter(
+        (unknown) => !/\b(?:venue|address|location)\b/i.test(unknown)
+      ),
+      ...(eventUseful ? [] : ["exact public event listing", "cost", "signup link", "direct source link"]),
+    ],
+    12
+  );
+
+  return {
+    ...base,
+    status: "searched",
+    summary: buildCombinedWebSearchSummary({
+      queryPlan: { venueQueries: [], eventQueries: [], locationContext: [] },
+      venueSearch,
+      eventSearch,
+    }),
+    facts: uniqueStrings([...facts, ...base.facts], 12),
+    sources: mergeWebSearchSources(source ? [source] : [], base.sources),
+    venue_search: venueSearch,
+    event_search: eventSearch,
+    fact_buckets: mergeWebSearchFactBuckets(
+      [
+        {
+          ...factBuckets,
+          true_unknowns: [],
+        },
+      ],
+      {
+        searched_verified: facts,
+        true_unknowns: trueUnknowns,
+      }
+    ),
   };
 }
 
@@ -3705,6 +3985,7 @@ export async function POST(request: Request) {
   const googleMapsHint = await resolveGoogleMapsHint({
     sources: [normalizedMessage, ...conversationHistory.map((h) => h.content), extractedImageText || ""],
     geocodingApiKey,
+    allowTextQuery: useWebSearch,
   });
 
   let webSearchVerification: WebSearchVerificationResult | null = null;
@@ -3761,6 +4042,7 @@ export async function POST(request: Request) {
       });
     }
   }
+  webSearchVerification = mergeGoogleMapsHintIntoWebSearchVerification(webSearchVerification, googleMapsHint);
 
   // ---------------------------------------------------------------------------
   // Phase B — Structured interpretation

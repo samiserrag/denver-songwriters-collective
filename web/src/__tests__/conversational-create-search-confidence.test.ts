@@ -175,13 +175,75 @@ describe("CRUI concierge source-confidence display", () => {
     })).toBe(false);
   });
 
-  it("filters Google Maps URLs from displayed source links so they are not treated as event external sources", () => {
+  it("shows Google Maps venue links for venue evidence without treating them as exact-event sources", () => {
     const display = buildConciergeSearchEvidenceDisplay({
-      verification: baseVerification({ sources: [mapsSource, source] }),
+      verification: baseVerification({
+        sources: [source],
+        venue_search: {
+          status: "verified",
+          summary: "Google Maps returned reusable venue identity/location details.",
+          confidence: "high",
+          attempted_queries: ["RMU Breckenridge"],
+          facts: ["Google Maps confirms RMU Breckenridge at 114 S Main St, Breckenridge, CO."],
+          sources: [source, mapsSource],
+        },
+      }),
       draftPayload: { venue_name: "RMU Breckenridge" },
     });
 
+    expect(display?.kind).toBe("venue_partial");
+    expect(display?.sourceLinks).toEqual([source, mapsSource]);
+  });
+
+  it("still filters Google Maps URLs from exact-event source links", () => {
+    const display = buildConciergeSearchEvidenceDisplay({
+      verification: baseVerification({
+        sources: [mapsSource, source],
+        summary: "Exact event listing found.",
+        event_search: {
+          status: "verified",
+          summary: "Exact recurring open mic listing found.",
+          confidence: "high",
+          attempted_queries: ["RMU Breckenridge open mic"],
+          facts: ["Public listing confirms the recurring open mic."],
+          sources: [source],
+        },
+      }),
+      draftPayload: { venue_name: "RMU Breckenridge" },
+    });
+
+    expect(display?.kind).toBe("event_verified");
     expect(display?.sourceLinks).toEqual([source]);
+  });
+
+  it("suppresses stale known-venue questions when Maps-backed venue evidence is already present", () => {
+    const display = buildConciergeSearchEvidenceDisplay({
+      verification: baseVerification({
+        sources: [mapsSource],
+        venue_search: {
+          status: "verified",
+          summary: "Google Maps returned reusable venue identity/location details.",
+          confidence: "high",
+          attempted_queries: ["Night Owl Lounge 2000 W Midway Blvd Broomfield CO"],
+          facts: ["Google Maps confirms Night Owl Lounge at 2000 W Midway Blvd, Broomfield, CO."],
+          sources: [mapsSource],
+        },
+      }),
+      draftPayload: {
+        venue_name: "Night Owl Lounge",
+        custom_address: "2000 W Midway Blvd",
+        custom_city: "Broomfield",
+        custom_state: "CO",
+      },
+    });
+
+    expect(display?.suppressAddressQuestion).toBe(true);
+    expect(shouldSuppressVenueAddressQuestion({
+      display,
+      clarificationQuestion:
+        'I couldn\'t find a known venue matching "Night Owl Lounge". Could you provide the venue name, or specify if this is an online event?',
+      blockingFields: ["venue_id"],
+    })).toBe(true);
   });
 
   it("uses category-level venue sources when the top-level source union is empty", () => {

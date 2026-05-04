@@ -333,7 +333,7 @@ export function buildAiPromptUserEnvelope(input: BuildUserPromptInput): string {
   if (input.googleMapsHint) {
     envelope.google_maps_hint = input.googleMapsHint;
     envelope.google_maps_note =
-      "A Google Maps link was detected and server-expanded. Prefer this hint for location/address fields when present. Do not ask for address again if full address is already available in this hint.";
+      "A Google Maps venue/location hint was detected or server-resolved. Prefer this hint for location/address fields when present. Do not ask for address again if full address is already available in this hint.";
   }
 
   if (input.webSearchVerification) {

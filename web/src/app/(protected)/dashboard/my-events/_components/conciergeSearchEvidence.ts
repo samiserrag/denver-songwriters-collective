@@ -128,11 +128,14 @@ function hasAddressEvidence(input: {
   );
 }
 
-function filterDisplaySources(sources: WebSearchVerificationSource[]): WebSearchVerificationSource[] {
+function filterDisplaySources(
+  sources: WebSearchVerificationSource[],
+  options: { allowGoogleMaps?: boolean } = {}
+): WebSearchVerificationSource[] {
   const seen = new Set<string>();
   const result: WebSearchVerificationSource[] = [];
   for (const source of sources) {
-    if (isGoogleMapsUrl(source.url)) continue;
+    if (!options.allowGoogleMaps && isGoogleMapsUrl(source.url)) continue;
     const key = source.url.trim().toLowerCase();
     if (!key || seen.has(key)) continue;
     seen.add(key);
@@ -158,6 +161,13 @@ export function buildConciergeSearchEvidenceDisplay(input: {
     ...(venueSearch?.sources ?? []),
     ...(eventSearch?.sources ?? []),
   ]);
+  const venueSourceLinks = filterDisplaySources(
+    [
+      ...(venueSearch?.sources ?? []),
+      ...verification.sources,
+    ],
+    { allowGoogleMaps: true }
+  );
   const missingFields = getMissingEventFields({ verification, venueUseful });
   const addressBacked = hasAddressEvidence({
     draftPayload: input.draftPayload,
@@ -177,7 +187,7 @@ export function buildConciergeSearchEvidenceDisplay(input: {
         formatAttemptedQueries("Venue search", venueSearch.attempted_queries),
         formatAttemptedQueries("Exact-event search", eventSearch.attempted_queries),
       ].filter((detail): detail is string => detail !== null),
-      sourceLinks,
+      sourceLinks: venueSourceLinks,
       missingFields,
       followupQuestion,
       suppressAddressQuestion: false,
@@ -200,7 +210,7 @@ export function buildConciergeSearchEvidenceDisplay(input: {
         eventSearch?.summary ? `Exact event: ${eventSearch.summary}` : null,
         followupQuestion,
       ].filter((detail): detail is string => detail !== null),
-      sourceLinks,
+      sourceLinks: venueSourceLinks,
       missingFields,
       followupQuestion,
       suppressAddressQuestion: addressBacked,
@@ -263,8 +273,11 @@ export function shouldSuppressVenueAddressQuestion(input: {
   if (!input.display?.suppressAddressQuestion) return false;
   const question = input.clarificationQuestion ?? "";
   const asksForAddress = /\b(street address|address|city|state|zip|where is|where's)\b/i.test(question);
+  const asksForAlreadyBackedVenue =
+    input.display.kind === "venue_partial" &&
+    /\b(?:known venue|venue name|matching|where will|held)\b/i.test(question);
   const blocksAddress = (input.blockingFields ?? []).some((field) =>
-    ["address", "custom_address", "custom_city", "custom_state", "custom_zip"].includes(field)
+    ["venue_id", "address", "custom_address", "custom_city", "custom_state", "custom_zip"].includes(field)
   );
-  return asksForAddress || blocksAddress;
+  return asksForAddress || asksForAlreadyBackedVenue || blocksAddress;
 }

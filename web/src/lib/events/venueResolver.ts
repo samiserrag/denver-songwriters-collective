@@ -180,6 +180,7 @@ function cleanVenueSearchCandidate(raw: string): string | null {
   const normalized = normalizeForMatch(candidate);
   if (!normalized && !candidate.startsWith("@")) return null;
   if (VENUE_CONTEXT_ONLY_TERMS.has(normalized)) return null;
+  if (/\b(?:the venue|exact event|exact)\b/i.test(candidate)) return null;
 
   const tokens = [...tokenize(candidate)];
   if (tokens.length > 0 && tokens.every((token) => EVENT_CANDIDATE_WORDS.has(token))) {
