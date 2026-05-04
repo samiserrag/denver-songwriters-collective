@@ -60,20 +60,20 @@ describe("Interpreter image extraction (Phase 3 route)", () => {
     expect(routeSource).toContain("model: modelName");
   });
 
-  it("uses fast vision extraction before GPT-5.5 event reasoning", () => {
+  it("uses fast vision extraction before GPT-5.4 nano event reasoning", () => {
     expect(routeSource).toContain('const DEFAULT_VISION_EXTRACTION_MODEL = "gpt-4.1-mini"');
     expect(routeSource).toContain("const visionModel = process.env.OPENAI_EVENT_VISION_MODEL?.trim() || DEFAULT_VISION_EXTRACTION_MODEL");
     expect(routeSource).toContain("extractTextFromImages(openAiKey, validatedImages, visionModel)");
     expect(routeSource).toContain("const model = process.env.OPENAI_EVENT_INTERPRETER_MODEL?.trim() || DEFAULT_INTERPRETER_MODEL");
   });
 
-  it("defaults the interpreter to GPT-5.5 when no env override is set", () => {
-    expect(routeSource).toContain('const DEFAULT_INTERPRETER_MODEL = "gpt-5.5"');
+  it("defaults the interpreter to GPT-5.4 nano when no env override is set", () => {
+    expect(routeSource).toContain('const DEFAULT_INTERPRETER_MODEL = "gpt-5.4-nano"');
   });
 
-  it("defaults verifier and web-search reasoning passes to GPT-5.5", () => {
-    expect(routeSource).toContain('const DEFAULT_DRAFT_VERIFIER_MODEL = "gpt-5.5"');
-    expect(routeSource).toContain('const DEFAULT_WEB_SEARCH_VERIFIER_MODEL = "gpt-5.5"');
+  it("defaults verifier and web-search reasoning passes to GPT-5.4 nano", () => {
+    expect(routeSource).toContain('const DEFAULT_DRAFT_VERIFIER_MODEL = "gpt-5.4-nano"');
+    expect(routeSource).toContain('const DEFAULT_WEB_SEARCH_VERIFIER_MODEL = "gpt-5.4-nano"');
     expect(routeSource).toContain("const verifierModel = process.env.OPENAI_EVENT_DRAFT_VERIFIER_MODEL?.trim() || DEFAULT_DRAFT_VERIFIER_MODEL");
     expect(routeSource).toContain("const webSearchModel = process.env.OPENAI_EVENT_WEB_SEARCH_MODEL?.trim() || DEFAULT_WEB_SEARCH_VERIFIER_MODEL");
   });

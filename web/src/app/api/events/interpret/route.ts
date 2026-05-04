@@ -72,10 +72,10 @@ import {
 export const maxDuration = 120;
 
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
-const DEFAULT_INTERPRETER_MODEL = "gpt-5.5";
+const DEFAULT_INTERPRETER_MODEL = "gpt-5.4-nano";
 const DEFAULT_VISION_EXTRACTION_MODEL = "gpt-4.1-mini";
-const DEFAULT_DRAFT_VERIFIER_MODEL = "gpt-5.5";
-const DEFAULT_WEB_SEARCH_VERIFIER_MODEL = "gpt-5.5";
+const DEFAULT_DRAFT_VERIFIER_MODEL = "gpt-5.4-nano";
+const DEFAULT_WEB_SEARCH_VERIFIER_MODEL = "gpt-5.4-nano";
 const ROUTE_SAFETY_MARGIN_MS = 8_000;
 const WEB_SEARCH_TIMEOUT_MS = 100_000;
 const FAST_VENUE_WEB_SEARCH_TIMEOUT_MS = 50_000;

@@ -22,6 +22,22 @@ Rules:
 
 ## Active claims
 
+### Lane 9 follow-up — Event AI nano model default
+
+- **Branch:** `codex/lane9-event-ai-nano-model`
+- **Owner:** Lane 9
+- **Base SHA:** `69597969d82a` (current `origin/main` after refresh)
+- **Status:** `in_progress`
+- **Purpose:** Lower the default event AI concierge create/edit, draft verifier, and web-search model from GPT-5.5 to GPT-5.4 nano while preserving existing environment overrides.
+- **Notes:** Model-default-only cost control change; no migrations, production data, publishing gates, Lane 5, Lane 6, Symphony, CRUI behavior, venue writes, reusable venue semantics, or Maps `external_url` behavior changes.
+- **Files claimed:**
+  - `docs/investigation/track1-claims.md`
+  - `web/src/app/api/events/interpret/route.ts`
+  - `web/src/__tests__/interpreter-image-extraction.test.ts`
+  - `web/src/__tests__/interpreter-phase9-reliability.test.ts`
+
+---
+
 ### Lane 9 follow-up — Google Maps venue clarification fix
 
 - **Branch:** `codex/track1-lane9-venue-clarification-fix`
