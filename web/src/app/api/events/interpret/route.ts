@@ -376,6 +376,223 @@ function isGoogleMapsUrl(value: unknown): value is string {
   return typeof value === "string" && GOOGLE_MAPS_URL_SINGLE_REGEX.test(value.trim());
 }
 
+function draftString(value: unknown): string | null {
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+}
+
+function normalizeAddressEvidenceText(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/\b(north)\b/g, "n")
+    .replace(/\b(south)\b/g, "s")
+    .replace(/\b(east)\b/g, "e")
+    .replace(/\b(west)\b/g, "w")
+    .replace(/\b(street)\b/g, "st")
+    .replace(/\b(avenue)\b/g, "ave")
+    .replace(/\b(boulevard)\b/g, "blvd")
+    .replace(/\b(road)\b/g, "rd")
+    .replace(/\b(drive)\b/g, "dr")
+    .replace(/\b(lane)\b/g, "ln")
+    .replace(/\b(court)\b/g, "ct")
+    .replace(/\b(place)\b/g, "pl")
+    .replace(/\b(parkway)\b/g, "pkwy")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function textContainsDraftAddress(input: {
+  text: string;
+  street: string;
+  city: string | null;
+  state: string | null;
+}): boolean {
+  const haystack = normalizeAddressEvidenceText(input.text);
+  const street = normalizeAddressEvidenceText(input.street);
+  const city = input.city ? normalizeAddressEvidenceText(input.city) : null;
+  const state = input.state ? normalizeAddressEvidenceText(input.state) : null;
+  if (!haystack || !street) return false;
+
+  if (haystack.includes(street) && (!city || haystack.includes(city))) {
+    return true;
+  }
+
+  const streetNumber = street.match(/^\d{1,6}\b/)?.[0] ?? null;
+  const streetWords = street
+    .replace(/^\d{1,6}\b/, "")
+    .trim()
+    .split(/\s+/)
+    .filter((part) => part.length > 1);
+  const hasStreetShape =
+    !!streetNumber &&
+    haystack.includes(streetNumber) &&
+    streetWords.slice(0, 2).every((part) => haystack.includes(part));
+
+  return hasStreetShape && (!city || haystack.includes(city)) && (!state || haystack.includes(state) || state === "co");
+}
+
+function venueSearchEvidenceContainsDraftAddress(input: {
+  webSearchVerification: WebSearchVerificationResult | null;
+  street: string;
+  city: string | null;
+  state: string | null;
+}): boolean {
+  const venueSearch = input.webSearchVerification?.venue_search;
+  if (venueSearch?.status !== "verified") return false;
+  const evidenceText = [
+    venueSearch.summary,
+    ...(venueSearch.facts ?? []),
+    ...(venueSearch.sources ?? []).flatMap((source) => [source.title, source.url]),
+  ]
+    .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+    .join("\n");
+  return textContainsDraftAddress({
+    text: evidenceText,
+    street: input.street,
+    city: input.city,
+    state: input.state,
+  });
+}
+
+function normalizeSourceBackedCustomLocation(input: {
+  draft: Record<string, unknown>;
+  sourceText: string;
+  webSearchVerification: WebSearchVerificationResult | null;
+}): { applied: boolean } {
+  const { draft, sourceText, webSearchVerification } = input;
+  if (hasNonEmptyString(draft.venue_id)) return { applied: false };
+
+  const locationName = draftString(draft.custom_location_name) ?? draftString(draft.venue_name);
+  const street = draftString(draft.custom_address) ?? draftString(draft.address);
+  const city = draftString(draft.custom_city) ?? draftString(draft.city);
+  const state = draftString(draft.custom_state) ?? draftString(draft.state);
+  const zip = draftString(draft.custom_zip) ?? draftString(draft.zip);
+  if (!locationName || !street || !city) return { applied: false };
+
+  const sourceBacked =
+    textContainsDraftAddress({ text: sourceText, street, city, state }) ||
+    venueSearchEvidenceContainsDraftAddress({ webSearchVerification, street, city, state });
+  if (!sourceBacked) return { applied: false };
+
+  let applied = false;
+  if (!hasNonEmptyString(draft.custom_location_name)) {
+    draft.custom_location_name = locationName;
+    applied = true;
+  }
+  if (!hasNonEmptyString(draft.custom_address)) {
+    draft.custom_address = street;
+    applied = true;
+  }
+  if (!hasNonEmptyString(draft.custom_city)) {
+    draft.custom_city = city;
+    applied = true;
+  }
+  if (state && !hasNonEmptyString(draft.custom_state)) {
+    draft.custom_state = state.toUpperCase();
+    applied = true;
+  }
+  if (zip && !hasNonEmptyString(draft.custom_zip)) {
+    draft.custom_zip = zip;
+    applied = true;
+  }
+  if (!hasNonEmptyString(draft.location_mode)) {
+    draft.location_mode = "venue";
+    applied = true;
+  }
+
+  return { applied };
+}
+
+function clearUnsupportedAllTimeoutCustomLocation(input: {
+  draft: Record<string, unknown>;
+  sourceText: string;
+  webSearchVerification: WebSearchVerificationResult | null;
+}): { cleared: boolean } {
+  const { draft, sourceText, webSearchVerification } = input;
+  if (!webSearchTimedOutCompletely(webSearchVerification)) return { cleared: false };
+  if (hasNonEmptyString(draft.venue_id)) return { cleared: false };
+  if (!hasNonEmptyString(draft.custom_location_name)) return { cleared: false };
+
+  const street = draftString(draft.custom_address) ?? draftString(draft.address);
+  const city = draftString(draft.custom_city) ?? draftString(draft.city);
+  const state = draftString(draft.custom_state) ?? draftString(draft.state);
+  const addressIsSourceBacked =
+    !!street &&
+    !!city &&
+    (textContainsDraftAddress({ text: sourceText, street, city, state }) ||
+      venueSearchEvidenceContainsDraftAddress({ webSearchVerification, street, city, state }));
+  if (addressIsSourceBacked) return { cleared: false };
+
+  draft.custom_location_name = null;
+  draft.custom_address = null;
+  draft.custom_city = null;
+  draft.custom_state = null;
+  draft.custom_zip = null;
+  draft.custom_latitude = null;
+  draft.custom_longitude = null;
+  draft.address = null;
+  draft.city = null;
+  draft.state = null;
+  draft.zip = null;
+  return { cleared: true };
+}
+
+function normalizeUrlForComparison(value: string): string | null {
+  try {
+    const url = new URL(value);
+    url.hash = "";
+    const pathname = url.pathname.replace(/\/+$/, "");
+    return `${url.hostname.toLowerCase()}${pathname}${url.search}`.replace(/\/+$/, "");
+  } catch {
+    return null;
+  }
+}
+
+function sourceTextContainsUrl(sourceText: string, urlValue: string): boolean {
+  const normalizedUrl = normalizeUrlForComparison(urlValue);
+  if (!normalizedUrl) return false;
+  const normalizedSource = sourceText.toLowerCase();
+  return normalizedSource.includes(urlValue.toLowerCase()) || normalizedSource.includes(normalizedUrl);
+}
+
+function venueSearchSourceUrls(value: WebSearchVerificationResult | null): Set<string> {
+  const urls = new Set<string>();
+  for (const source of value?.venue_search?.sources ?? []) {
+    if (typeof source.url !== "string") continue;
+    const normalized = normalizeUrlForComparison(source.url);
+    if (normalized) urls.add(normalized);
+  }
+  return urls;
+}
+
+function clearVenueOnlyExternalUrl(input: {
+  draft: Record<string, unknown>;
+  sourceText: string;
+  webSearchVerification: WebSearchVerificationResult | null;
+}): { cleared: boolean } {
+  const externalUrl = draftString(input.draft.external_url);
+  if (!externalUrl) return { cleared: false };
+  if (isGoogleMapsUrl(externalUrl)) {
+    input.draft.external_url = null;
+    return { cleared: true };
+  }
+  if (input.webSearchVerification?.event_search?.status === "verified") {
+    return { cleared: false };
+  }
+  if (sourceTextContainsUrl(input.sourceText, externalUrl)) {
+    return { cleared: false };
+  }
+
+  const normalizedExternalUrl = normalizeUrlForComparison(externalUrl);
+  if (!normalizedExternalUrl) return { cleared: false };
+  if (!venueSearchSourceUrls(input.webSearchVerification).has(normalizedExternalUrl)) {
+    return { cleared: false };
+  }
+
+  input.draft.external_url = null;
+  return { cleared: true };
+}
+
 function normalizeStateCode(input: string): string {
   const normalized = input.trim().toLowerCase();
   if (normalized === "colorado") return "CO";
@@ -2924,40 +3141,63 @@ function buildAllSearchTimeoutInterpreterFallback(input: {
   lockedDraft: Record<string, unknown> | null;
   webSearchVerification: WebSearchVerificationResult | null;
   currentDate: string;
+  modelPayload?: Record<string, unknown> | null;
 }): Record<string, unknown> {
   const sourceText = [
     input.message,
     ...input.conversationHistory.map((entry) => entry.content),
     input.extractedImageText ?? "",
   ].join("\n");
+  const modelDraft = parseJsonObject(input.modelPayload?.draft_payload);
   const draft: Record<string, unknown> = {
     ...(input.mode === "create" && input.lockedDraft ? input.lockedDraft : {}),
+    ...(modelDraft ?? {}),
   };
-  const venueName = fallbackVenueNameFromSearch(input.webSearchVerification);
+  const venueName =
+    draftString(draft.venue_name) ??
+    draftString(draft.custom_location_name) ??
+    fallbackVenueNameFromSearch(input.webSearchVerification);
   const weekdayMatch = sourceText.match(/\bevery\s+(sunday|monday|tuesday|wednesday|thursday|friday|saturday)s?\b/i);
   const timeRange = extractFallbackTimeRange(sourceText);
   const facts: string[] = [];
 
-  if (/\bopen\s*mic\b/i.test(sourceText)) {
+  if (
+    /\bopen\s*mic\b/i.test(sourceText) &&
+    (!Array.isArray(draft.event_type) || draft.event_type.length === 0)
+  ) {
     draft.event_type = ["open_mic"];
     facts.push("open mic");
   }
-  if (venueName) {
+  if (venueName && !hasNonEmptyString(draft.venue_name)) {
     draft.venue_name = venueName;
+  }
+  if (venueName) {
     draft.location_mode = "venue";
   }
   if (weekdayMatch) {
     const weekday = weekdayMatch[1].toLowerCase();
-    draft.series_mode = "weekly";
-    draft.recurrence_rule = "weekly";
-    draft.day_of_week = weekday.charAt(0).toUpperCase() + weekday.slice(1);
+    if (!hasNonEmptyString(draft.series_mode) || draft.series_mode === "single") {
+      draft.series_mode = "weekly";
+    }
+    if (!hasNonEmptyString(draft.recurrence_rule)) {
+      draft.recurrence_rule = "weekly";
+    }
+    if (!hasNonEmptyString(draft.day_of_week)) {
+      draft.day_of_week = weekday.charAt(0).toUpperCase() + weekday.slice(1);
+    }
     const startDate = nextWeekdayDateKey(input.currentDate, weekday);
-    if (startDate) draft.start_date = startDate;
+    if (startDate && !hasNonEmptyString(draft.start_date) && !hasNonEmptyString(draft.event_date)) {
+      draft.start_date = startDate;
+    }
     facts.push(`every ${draft.day_of_week}`);
   }
   if (timeRange) {
-    draft.start_time = timeRange.start_time;
-    if (timeRange.end_time) draft.end_time = timeRange.end_time;
+    if (!hasNonEmptyString(draft.start_time)) {
+      draft.start_time = timeRange.start_time;
+    }
+    if (timeRange.end_time && !hasNonEmptyString(draft.end_time)) {
+      draft.end_time = timeRange.end_time;
+    }
     facts.push("7-9pm time range");
   }
   if (!draft.title) {
@@ -2969,14 +3209,31 @@ function buildAllSearchTimeoutInterpreterFallback(input: {
   }
 
   const knownFacts = facts.length > 0 ? ` I kept the source-backed event facts I could read: ${facts.join(", ")}.` : "";
+  const modelNextAction =
+    typeof input.modelPayload?.next_action === "string" &&
+    validateNextAction(input.modelPayload.next_action)
+      ? input.modelPayload.next_action
+      : "ask_clarification";
+  const modelBlockingFields = Array.isArray(input.modelPayload?.blocking_fields)
+    ? input.modelPayload.blocking_fields
+        .filter((field): field is string => typeof field === "string" && field.trim().length > 0)
+        .map((field) => field.trim())
+    : [];
+  const timeoutGuidance =
+    "Venue search and exact-event search both timed out, so I kept the draft limited to source/user-provided facts. Cost, signup link, and direct source link are still unknown unless the source stated them.";
+
   return {
-    next_action: "ask_clarification",
+    next_action: modelDraft ? modelNextAction : "ask_clarification",
     confidence: 0.42,
-    human_summary:
-      `Venue search and exact-event search both timed out before returning reliable public sources.${knownFacts} Cost, signup link, and direct source link are still unknown.`,
-    clarification_question:
-      "I can retry search, or save a custom location for now. To create a reusable venue safely later, send an official page or Maps link.",
-    blocking_fields: ["venue_id"],
+    human_summary: `${timeoutGuidance}${knownFacts}`,
+    clarification_question: modelNextAction === "ask_clarification"
+      ? "Search timed out before I could verify venue or exact-event sources. Should I retry search, or should I save/use a custom location for now?"
+      : null,
+    blocking_fields: modelBlockingFields.length > 0
+      ? modelBlockingFields
+      : modelNextAction === "ask_clarification"
+        ? [venueName ? "venue_id" : "venue_name"]
+        : [],
     scope: weekdayMatch ? "series" : "ambiguous",
     draft_payload: draft,
   };
@@ -3195,6 +3452,22 @@ function stripOptionalExternalUrlAskFromSummary(summary: string): string {
   const cleaned = summary
     .replace(
       /\s*(?:Need|Needs|Still need|Missing)\s+[^.?!]*(?:external|source|website|url|link)[^.?!]*[.?!]?/gi,
+      ""
+    )
+    .replace(/\s{2,}/g, " ")
+    .trim();
+
+  return cleaned || summary.trim();
+}
+
+function stripResolvedDateClarificationFromSummary(summary: string): string {
+  const cleaned = summary
+    .replace(
+      /\s*(?:The flyer|The source|Source|Flyer)[^.?!]*(?:date|year)[^.?!]*(?:past|before today|archival|2020)[^.?!]*[.?!]?/gi,
+      ""
+    )
+    .replace(
+      /\s*I\s+(?:need|found)\s+[^.?!]*(?:date|year)[^.?!]*(?:before this can be (?:previewed|published)|confirming|confirm)[^.?!]*[.?!]?/gi,
       ""
     )
     .replace(/\s{2,}/g, " ")
@@ -4175,7 +4448,16 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "Interpreter output is not a JSON object." }, { status: 502 });
       }
       if (webSearchTimedOutCompletely(webSearchVerification)) {
-        responsePayload = buildAllSearchTimeoutFallbackForRequest();
+        responsePayload = buildAllSearchTimeoutInterpreterFallback({
+          mode,
+          message: normalizedMessage,
+          conversationHistory,
+          extractedImageText,
+          lockedDraft,
+          webSearchVerification,
+          currentDate,
+          modelPayload: parsedObj,
+        });
         console.warn("[events/interpret] replaced valid all-search-timeout output with deterministic fallback", {
           userId: sessionUser.id,
           traceId,
@@ -4221,12 +4503,27 @@ export async function POST(request: Request) {
   const modelScope = responsePayload.scope;
 
   const sanitizedDraft = sanitizeInterpretDraftPayload(mode, responsePayload.draft_payload, dateKey);
+  const sourceEvidenceText = [
+    normalizedMessage,
+    ...conversationHistory.map((entry) => entry.content),
+    extractedImageText ?? "",
+  ].join("\n");
   const locationHintResult = applyLocationHintsToDraft({
     draft: sanitizedDraft,
     message: normalizedMessage,
     conversationHistory,
     extractedImageText,
     googleMapsHint,
+  });
+  const customLocationNormalizationResult = normalizeSourceBackedCustomLocation({
+    draft: sanitizedDraft,
+    sourceText: sourceEvidenceText,
+    webSearchVerification,
+  });
+  const unsupportedAllTimeoutCustomLocationClearResult = clearUnsupportedAllTimeoutCustomLocation({
+    draft: sanitizedDraft,
+    sourceText: sourceEvidenceText,
+    webSearchVerification,
   });
 
   // ---------------------------------------------------------------------------
@@ -4313,6 +4610,9 @@ export async function POST(request: Request) {
         if (needsOnlineUrl) {
           resolvedClarificationQuestion =
             "Please provide the online event URL (Zoom, YouTube, etc.) for this online event.";
+        } else if (webSearchTimedOutCompletely(webSearchVerification)) {
+          resolvedClarificationQuestion =
+            "Search timed out before I could verify venue or exact-event sources. Should I retry search, or should I save/use a custom location for now?";
         } else {
           const inputHint = venueResolution.inputName
             ? ` matching "${venueResolution.inputName}"`
@@ -4424,6 +4724,11 @@ export async function POST(request: Request) {
           todayIso: currentDate,
         })
       : { applied: false as const };
+  const venueOnlyExternalUrlClearBeforeVerifier = clearVenueOnlyExternalUrl({
+    draft: sanitizedDraft,
+    sourceText: sourceEvidenceText,
+    webSearchVerification,
+  });
 
   // INTERPRETER-08: Normalize series_mode when recurrence_rule is present.
   // Must run after recurrence intent guard + mergeLockedCreateDraft to avoid
@@ -4474,12 +4779,17 @@ export async function POST(request: Request) {
   const humanSummary = shouldStripOptionalExternalUrlAsk
     ? stripOptionalExternalUrlAskFromSummary(responsePayload.human_summary)
     : responsePayload.human_summary.trim();
+  const dateNormalizedHumanSummary = futureDateGuardResult.applied
+    ? stripResolvedDateClarificationFromSummary(humanSummary)
+    : humanSummary;
   const finalHumanSummary =
-    futureDateGuardResult.applied && !humanSummary.includes(futureDateGuardResult.to)
+    futureDateGuardResult.applied && !dateNormalizedHumanSummary.includes(futureDateGuardResult.to)
       ? futureDateGuardResult.reason === "future_year_pullback"
-        ? `${humanSummary} Date set to ${futureDateGuardResult.to} (current year) — the source did not specify ${futureDateGuardResult.from.slice(0, 4)}.`
-        : `${humanSummary} Date adjusted to ${futureDateGuardResult.to} because the source date would otherwise be in the past.`
-      : humanSummary;
+        ? `${dateNormalizedHumanSummary} Date set to ${futureDateGuardResult.to} (current year) because the source did not specify ${futureDateGuardResult.from.slice(0, 4)}.`
+        : futureDateGuardResult.from === "missing"
+          ? `${dateNormalizedHumanSummary} Date set to ${futureDateGuardResult.to} from the source month/day and current year.`
+          : `${dateNormalizedHumanSummary} Date adjusted to ${futureDateGuardResult.to} because the source date would otherwise be in the past.`
+      : dateNormalizedHumanSummary;
 
   const remainingBeforeVerifier = getRemainingRouteBudgetMs(requestStartedAt);
   const canRunDraftVerifier =
@@ -4516,6 +4826,11 @@ export async function POST(request: Request) {
     enforceVenueCustomExclusivity(sanitizedDraft);
     resolvedBlockingFields = pruneSatisfiedBlockingFields(sanitizedDraft, resolvedBlockingFields);
   }
+  const venueOnlyExternalUrlClearAfterVerifier = clearVenueOnlyExternalUrl({
+    draft: sanitizedDraft,
+    sourceText: sourceEvidenceText,
+    webSearchVerification,
+  });
 
   if (mode === "create" || mode === "edit_series") {
     ensureEventTypeFromDraftSignals({
@@ -4616,7 +4931,14 @@ export async function POST(request: Request) {
         }
       : {}),
     ...(locationHintResult.applied ? { locationHintApplied: true } : {}),
+    ...(customLocationNormalizationResult.applied ? { customLocationFromSourceAddress: true } : {}),
+    ...(unsupportedAllTimeoutCustomLocationClearResult.cleared
+      ? { unsupportedAllTimeoutCustomLocationCleared: true }
+      : {}),
     ...(futureDateGuardResult.applied ? { futureDateGuard: futureDateGuardResult } : {}),
+    ...(venueOnlyExternalUrlClearBeforeVerifier.cleared || venueOnlyExternalUrlClearAfterVerifier.cleared
+      ? { venueOnlyExternalUrlCleared: true }
+      : {}),
     ...(venueResolution
       ? {
           venueResolution: {

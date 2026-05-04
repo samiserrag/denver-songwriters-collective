@@ -22,6 +22,24 @@ Rules:
 
 ## Active claims
 
+### Lane 9 follow-up — Post-smoke venue/date normalization
+
+- **Branch:** `codex/lane9-concierge-post-smoke-normalization`
+- **Owner:** Lane 9
+- **Base SHA:** `3cae0646` (current `origin/main` after refresh)
+- **Status:** `in_progress`
+- **Purpose:** Fix post-deploy Night Owl and Secular Hub smoke regressions where source-backed custom venue/address evidence and yearless future dates were still turned into unnecessary clarification questions.
+- **Notes:** Narrow interpreter post-processing fix only; no migrations, production data, publishing gates, Lane 5, Lane 6, Symphony, CRUI/UI, reusable venue write semantics, or Maps `external_url` behavior changes.
+- **Files claimed:**
+  - `docs/investigation/track1-claims.md`
+  - `web/src/app/api/events/interpret/route.ts`
+  - `web/src/lib/events/interpreterPostprocess.ts`
+  - `web/src/__tests__/interpreter-concierge-search.test.ts`
+  - `web/src/__tests__/interpreter-future-date-guard.test.ts`
+  - `web/src/__tests__/interpreter-phase9-reliability.test.ts`
+
+---
+
 ### Lane 9 follow-up — Concierge question quality
 
 - **Branch:** `codex/lane9-concierge-question-quality`
