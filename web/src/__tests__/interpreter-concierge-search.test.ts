@@ -602,6 +602,35 @@ describe("POST /api/events/interpret — concierge search enrichment", () => {
     expect(body.web_search_verification.event_search.status).toBe("not_found");
   });
 
+  it("rolls stale extracted years forward instead of asking users to fix past dates", async () => {
+    interpreterMode = "secular-date-null";
+    installFetchMock();
+
+    const response = await POST(
+      new Request("http://localhost/api/events/interpret", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          mode: "create",
+          message:
+            "One time event. Open Mic - Song Circle - Potluck Sat May 16, 2020, 2:00 PM to 6:00 PM Secular Hub, 254 N. Knox Ct., Denver, CO. Featured Artist: Ducks Do Floyd.",
+          use_web_search: true,
+        }),
+      })
+    );
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.next_action).toBe("show_preview");
+    expect(body.clarification_question).toBeNull();
+    expect(body.blocking_fields).not.toContain("event_date");
+    expect(body.draft_payload.start_date).toBe("2026-05-16");
+    expect(body.draft_payload.event_date).toBe("2026-05-16");
+    expect(body.draft_payload.external_url).toBeNull();
+    expect(body.human_summary).not.toContain("2020");
+    expect(body.human_summary).toContain("Date set to 2026-05-16");
+  });
+
   it("recovers with structured fallback JSON when all search times out and the interpreter emits non-json", async () => {
     searchMode = "timeout";
     const fetchMock = installFetchMock();

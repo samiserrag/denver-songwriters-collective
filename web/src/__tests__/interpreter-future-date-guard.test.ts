@@ -101,9 +101,9 @@ describe("interpreter future-date guard", () => {
     expect(draft.event_date).toBe("2026-05-16");
   });
 
-  it("does not fill a missing date from an explicit past source year", () => {
+  it("rolls a missing date from an explicit stale source year forward for create flows", () => {
     const draft: Record<string, unknown> = {
-      title: "Archived Song Circle",
+      title: "Open Mic - Song Circle - Potluck",
     };
 
     const result = applyFutureDateGuard({
@@ -113,8 +113,56 @@ describe("interpreter future-date guard", () => {
       todayIso: "2026-05-03",
     });
 
+    expect(result).toEqual({
+      applied: true,
+      from: "missing",
+      to: "2026-05-16",
+      reason: "explicit_past_date_rollforward",
+    });
+    expect(draft.start_date).toBe("2026-05-16");
+    expect(draft.event_date).toBe("2026-05-16");
+  });
+
+  it("does not roll explicit past dates forward when the user asks for an archive", () => {
+    const draft: Record<string, unknown> = {
+      title: "Archived Song Circle",
+      start_date: "2020-05-16",
+      event_date: "2020-05-16",
+    };
+
+    const result = applyFutureDateGuard({
+      draft,
+      message: "Add this past event archive from Sat May 16, 2020.",
+      history: [],
+      todayIso: "2026-05-03",
+    });
+
     expect(result).toEqual({ applied: false });
-    expect(draft.start_date).toBeUndefined();
-    expect(draft.event_date).toBeUndefined();
+    expect(draft.start_date).toBe("2020-05-16");
+    expect(draft.event_date).toBe("2020-05-16");
+  });
+
+  it("rolls an existing stale explicit year forward unless the user says it is archival", () => {
+    const draft: Record<string, unknown> = {
+      title: "Open Mic - Song Circle - Potluck",
+      start_date: "2020-05-16",
+      event_date: "2020-05-16",
+    };
+
+    const result = applyFutureDateGuard({
+      draft,
+      message: "Open Mic - Song Circle - Potluck Sat May 16, 2020.",
+      history: [],
+      todayIso: "2026-05-03",
+    });
+
+    expect(result).toEqual({
+      applied: true,
+      from: "2020-05-16",
+      to: "2026-05-16",
+      reason: "explicit_past_date_rollforward",
+    });
+    expect(draft.start_date).toBe("2026-05-16");
+    expect(draft.event_date).toBe("2026-05-16");
   });
 });

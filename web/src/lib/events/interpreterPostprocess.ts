@@ -508,7 +508,11 @@ export type FutureDateGuardResult =
       applied: true;
       from: string;
       to: string;
-      reason: "month_day_without_year" | "future_intent" | "future_year_pullback";
+      reason:
+        | "month_day_without_year"
+        | "explicit_past_date_rollforward"
+        | "future_intent"
+        | "future_year_pullback";
     };
 
 function parseIsoDateParts(value: unknown): IsoDateParts | null {
@@ -642,6 +646,39 @@ function findUnambiguousYearlessMonthDayMention(text: string): MonthDayMention |
   return mentions.size === 1 ? [...mentions.values()][0] : null;
 }
 
+function findUnambiguousCreateMonthDayMention(text: string): MonthDayMention | null {
+  MONTH_DAY_PATTERN.lastIndex = 0;
+  const mentions = new Map<string, MonthDayMention>();
+  let match: RegExpExecArray | null;
+  while ((match = MONTH_DAY_PATTERN.exec(text)) !== null) {
+    const normalizedMonth = match[1].toLowerCase().replace(/\.$/, "");
+    const mentionMonth = MONTH_NAME_TO_NUMBER[normalizedMonth];
+    const mentionDay = Number.parseInt(match[2], 10);
+    if (!mentionMonth || !Number.isInteger(mentionDay) || mentionDay < 1 || mentionDay > 31) {
+      continue;
+    }
+
+    const mentionYear = match[3] ? Number.parseInt(match[3], 10) : null;
+    const key = `${mentionMonth}-${mentionDay}`;
+    const existing = mentions.get(key);
+    if (existing) {
+      mentions.set(key, {
+        ...existing,
+        year: existing.year === mentionYear ? existing.year : null,
+      });
+      continue;
+    }
+
+    mentions.set(key, {
+      month: mentionMonth,
+      day: mentionDay,
+      year: Number.isInteger(mentionYear) ? mentionYear : null,
+    });
+  }
+
+  return mentions.size === 1 ? [...mentions.values()][0] : null;
+}
+
 export function nextFutureMonthDayDate(month: number, day: number, todayIso: string): string | null {
   const today = parseIsoDateParts(todayIso);
   if (!today) return null;
@@ -677,7 +714,7 @@ export function applyFutureDateGuard(input: {
         : null;
   const parsedDate = parseIsoDateParts(dateValue);
   if (!dateValue || !parsedDate) {
-    const inferredMention = findUnambiguousYearlessMonthDayMention(intentText);
+    const inferredMention = findUnambiguousCreateMonthDayMention(intentText);
     if (!inferredMention) return { applied: false };
     if (
       PAST_EVENT_INTENT_PATTERN.test(intentText) &&
@@ -700,7 +737,10 @@ export function applyFutureDateGuard(input: {
       applied: true,
       from: "missing",
       to: inferredDate,
-      reason: "month_day_without_year",
+      reason:
+        typeof inferredMention.year === "number"
+          ? "explicit_past_date_rollforward"
+          : "month_day_without_year",
     };
   }
   if (compareIsoDate(dateValue, todayIso) > 0) {
@@ -711,7 +751,6 @@ export function applyFutureDateGuard(input: {
 
   const hasFutureIntent = FUTURE_DATE_INTENT_PATTERN.test(intentText);
   const hasExplicitYear = typeof matchingMention.year === "number";
-  if (hasExplicitYear && !hasFutureIntent) return { applied: false };
   if (PAST_EVENT_INTENT_PATTERN.test(intentText) && !hasFutureIntent) return { applied: false };
 
   const nextDate = nextFutureMonthDayDate(parsedDate.month, parsedDate.day, todayIso);
@@ -728,7 +767,11 @@ export function applyFutureDateGuard(input: {
     applied: true,
     from: dateValue,
     to: nextDate,
-    reason: hasFutureIntent ? "future_intent" : "month_day_without_year",
+    reason: hasFutureIntent
+      ? "future_intent"
+      : hasExplicitYear
+        ? "explicit_past_date_rollforward"
+        : "month_day_without_year",
   };
 }
 
