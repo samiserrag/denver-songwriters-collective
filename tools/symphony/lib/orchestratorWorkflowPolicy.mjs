@@ -10,6 +10,8 @@ const KNOWN_TOP_LEVEL_FIELDS = new Set([
   "workflow_format",
   "workflow_version"
 ]);
+const SUPPORTED_WORKFLOW_FORMATS = new Set(["yaml-front-matter", "legacy-json-comment"]);
+const REQUIRED_LABEL_KEYS = Object.freeze(["ready", "running", "humanReview", "blocked", "general"]);
 
 export function buildWorkflowPolicySnapshot(workflowPolicy, options = {}) {
   try {
@@ -23,9 +25,11 @@ export function buildWorkflowPolicySnapshot(workflowPolicy, options = {}) {
     if (typeof promptTemplate !== "string") {
       throw new Error("workflow policy input requires prompt_template string");
     }
+    const workflowFormat = workflowPolicy.workflow_format ?? workflowPolicy.format;
+    assertSupportedWorkflowFormat(workflowFormat);
+    validateWorkflowConfigShape(workflowPolicy.config);
 
     const generatedAt = options.now === undefined ? null : toIsoTimestamp(options.now, "now");
-    const workflowFormat = stringOrNull(workflowPolicy.workflow_format ?? workflowPolicy.format);
     const workflowVersion = workflowPolicy.workflow_version
       ?? workflowPolicy.version
       ?? workflowPolicy.config.version
@@ -133,6 +137,74 @@ function acceptedTimeouts(config) {
     execution_timeout_minutes: codex.execution_timeout_minutes ?? null,
     execution_timeout_kill_grace_seconds: codex.execution_timeout_kill_grace_seconds ?? null
   };
+}
+
+function assertSupportedWorkflowFormat(format) {
+  if (typeof format !== "string" || format.length === 0) {
+    throw new Error("workflow policy input requires workflow format string");
+  }
+  if (!SUPPORTED_WORKFLOW_FORMATS.has(format)) {
+    throw new Error(`unsupported workflow format: ${format}`);
+  }
+}
+
+function validateWorkflowConfigShape(config) {
+  if (config.version !== 1) {
+    throw new Error("version must be 1");
+  }
+  if (config.max_concurrent_agents !== 1) {
+    throw new Error("max_concurrent_agents must be 1 for Phase 1");
+  }
+  validateLabels(config.labels);
+  if (!config.workspace?.root || !config.workspace?.logs || !config.workspace?.state) {
+    throw new Error("workspace.root, workspace.logs, and workspace.state are required");
+  }
+  assertPositiveInteger(config.recovery?.stale_running_minutes, "recovery.stale_running_minutes");
+  assertPositiveInteger(config.lock?.stale_minutes, "lock.stale_minutes");
+  if (config.codex?.adapter !== "codex-exec") {
+    throw new Error("Phase 1 supports only the codex-exec adapter");
+  }
+  assertPositiveNumber(config.codex?.execution_timeout_minutes, "codex.execution_timeout_minutes");
+  assertPositiveNumber(
+    config.codex?.execution_timeout_kill_grace_seconds,
+    "codex.execution_timeout_kill_grace_seconds"
+  );
+}
+
+function validateLabels(labels) {
+  if (!isPlainObject(labels)) {
+    throw new Error("config.labels must be an object");
+  }
+  const values = [];
+  for (const key of REQUIRED_LABEL_KEYS) {
+    const value = labels[key];
+    if (typeof value !== "string" || value.length === 0) {
+      throw new Error(`labels.${key} is required`);
+    }
+    values.push(value);
+  }
+  if (new Set(values).size !== values.length) {
+    throw new Error("labels must not contain duplicate values");
+  }
+}
+
+function assertPositiveInteger(value, name) {
+  if (value === undefined) {
+    return;
+  }
+  if (!Number.isInteger(value) || value < 1) {
+    throw new Error(`${name} must be a positive integer`);
+  }
+}
+
+function assertPositiveNumber(value, name) {
+  if (value === undefined) {
+    return;
+  }
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue) || numericValue <= 0) {
+    throw new Error(`${name} must be a positive number`);
+  }
 }
 
 function unknownTopLevelFields(input) {
