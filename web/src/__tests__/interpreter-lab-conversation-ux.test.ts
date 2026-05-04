@@ -202,6 +202,48 @@ describe("Phase 8B — existing functionality preserved", () => {
     expect(labSource).toContain("+ Add image");
   });
 
+  it("shows shared desktop/mobile guidance for how many images fit the AI request", () => {
+    expect(labSource).toContain("imageBudgetStatus");
+    expect(labSource).toContain('data-testid="image-budget-status"');
+    expect(labSource).toContain('aria-live="polite"');
+    expect(labSource).toContain("fit in this AI request after compression");
+    expect(labSource).toContain("canAddMoreImages");
+    expect(labSource).toContain("maxTotalEncodedBytes");
+    expect(labSource).toContain("openImagePicker");
+    expect(labSource).toContain('role="alert"');
+  });
+
+  it("shows max-count image guidance before remaining-budget guidance", () => {
+    const maxCountBranch = labSource.indexOf(
+      "stagedImages.length >= IMAGE_INPUT_LIMITS.maxCount"
+    );
+    const remainingBudgetBranch = labSource.indexOf("remainingEncodedImageBytes <= 0");
+    expect(maxCountBranch).toBeGreaterThanOrEqual(0);
+    expect(remainingBudgetBranch).toBeGreaterThanOrEqual(0);
+    expect(maxCountBranch).toBeLessThan(remainingBudgetBranch);
+    expect(labSource).toContain(
+      "Max ${IMAGE_INPUT_LIMITS.maxCount} images added. Remove one to add another."
+    );
+  });
+
+  it("renders every staged image in the shared desktop/mobile image grid", () => {
+    const imageGridStart = labSource.indexOf('className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4"');
+    expect(imageGridStart).toBeGreaterThanOrEqual(0);
+    const imageGridBlock = labSource.slice(imageGridStart, labSource.indexOf("{stagedImages.length === 0", imageGridStart));
+    expect(imageGridBlock).toContain('data-testid="staged-image-grid"');
+    expect(imageGridBlock).toContain("stagedImages.map((img)");
+    expect(imageGridBlock).not.toContain("stagedImages.slice");
+  });
+
+  it("sends every staged image to the interpreter payload", () => {
+    const submitBlock = labSource.slice(
+      labSource.indexOf("// Attach image inputs"),
+      labSource.indexOf("const coverIntentEditAllowed")
+    );
+    expect(submitBlock).toContain("payload.image_inputs = stagedImages.map");
+    expect(submitBlock).not.toContain("stagedImages.slice");
+  });
+
   it("preserves locked_draft multi-turn context", () => {
     expect(labSource).toContain("locked_draft");
     expect(labSource).toContain("lastInterpretResponse.draft_payload");

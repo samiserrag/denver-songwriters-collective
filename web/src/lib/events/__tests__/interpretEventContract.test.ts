@@ -131,6 +131,40 @@ describe("interpretEventContract", () => {
 // validateImageInputs
 // ---------------------------------------------------------------------------
 describe("validateImageInputs", () => {
+  it("keeps interpreter image requests below the Vercel function payload ceiling", () => {
+    expect(IMAGE_INPUT_LIMITS.requestBodyMaxBytes).toBe(4 * 1024 * 1024);
+    expect(IMAGE_INPUT_LIMITS.maxTotalEncodedBytes).toBeLessThan(
+      IMAGE_INPUT_LIMITS.requestBodyMaxBytes
+    );
+  });
+
+  it("allows more than two source images so the interpreter can inspect full posts", () => {
+    expect(IMAGE_INPUT_LIMITS.maxCount).toBeGreaterThan(2);
+    const images = Array.from({ length: IMAGE_INPUT_LIMITS.maxCount }, (_, index) => ({
+      data: `AAAA${index}`,
+      mime_type: "image/jpeg",
+    }));
+    const result = validateImageInputs(images);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.images).toHaveLength(IMAGE_INPUT_LIMITS.maxCount);
+    }
+  });
+
+  it("rejects images that fit individually but exceed the total encoded image budget", () => {
+    const perImageData = "A".repeat(Math.floor(IMAGE_INPUT_LIMITS.maxTotalEncodedBytes / 3) + 10_000);
+    const result = validateImageInputs([
+      { data: perImageData, mime_type: "image/jpeg" },
+      { data: perImageData, mime_type: "image/jpeg" },
+      { data: perImageData, mime_type: "image/jpeg" },
+    ]);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.status).toBe(413);
+      expect(result.error).toContain("total encoded image budget");
+    }
+  });
+
   it("returns empty array for undefined/null", () => {
     expect(validateImageInputs(undefined)).toEqual({ ok: true, images: [] });
     expect(validateImageInputs(null)).toEqual({ ok: true, images: [] });

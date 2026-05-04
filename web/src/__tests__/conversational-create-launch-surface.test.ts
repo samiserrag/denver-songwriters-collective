@@ -168,6 +168,20 @@ describe("Phase 8E — host variant forces create mode", () => {
     expect(componentSource).toContain("The editor and preview links open the same saved draft");
   });
 
+  it("keeps saved-draft edit and preview controls available in the mobile host layout", () => {
+    expect(componentSource).toContain('data-testid="host-mobile-event-links"');
+    expect(componentSource).toContain("lg:hidden");
+    expect(componentSource).toMatch(
+      /createdSummary && createdPublicHref[\s\S]*?href=\{`\/dashboard\/my-events\/\$\{createdSummary\.eventId\}`\}/
+    );
+    expect(componentSource).toMatch(
+      /createdSummary && createdPublicHref[\s\S]*?href=\{createdPublicHref\}/
+    );
+    expect(componentSource).toMatch(
+      /createdSummary && createdPublicHref[\s\S]*?Open draft preview/
+    );
+  });
+
   it("shows the internal draft verification result in the host review panel", () => {
     expect(componentSource).toContain("parseDraftVerification");
     expect(componentSource).toContain("Draft double-check");

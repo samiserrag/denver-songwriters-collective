@@ -579,6 +579,18 @@ const MAX_DIMENSION = 1200;
 const JPEG_QUALITY = 0.8;
 const ACCEPTED_MIMES = [...IMAGE_INPUT_LIMITS.acceptedMimes];
 
+function getEncodedImageBytes(base64: string): number {
+  return new TextEncoder().encode(base64).byteLength;
+}
+
+function getTotalEncodedImageBytes(images: StagedImage[]): number {
+  return images.reduce((total, image) => total + getEncodedImageBytes(image.base64), 0);
+}
+
+function formatImageBudget(bytes: number): string {
+  return `${(bytes / 1024 / 1024).toFixed(1)}MB`;
+}
+
 function resizeImageToBase64(file: File): Promise<{ base64: string; mime_type: string }> {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -1527,6 +1539,27 @@ export function ConversationalCreateUI({
   // P1 fix: ref-based count prevents concurrent stageFiles() from exceeding max
   const stagedCountRef = useRef(0);
   useEffect(() => { stagedCountRef.current = stagedImages.length; }, [stagedImages.length]);
+  const stagedEncodedBytesRef = useRef(0);
+  const stagedEncodedBytes = useMemo(() => getTotalEncodedImageBytes(stagedImages), [stagedImages]);
+  useEffect(() => { stagedEncodedBytesRef.current = stagedEncodedBytes; }, [stagedEncodedBytes]);
+  const remainingEncodedImageBytes = Math.max(
+    IMAGE_INPUT_LIMITS.maxTotalEncodedBytes - stagedEncodedBytes,
+    0
+  );
+  const canAddMoreImages =
+    stagedImages.length < IMAGE_INPUT_LIMITS.maxCount && remainingEncodedImageBytes > 0;
+  const imageUploadLimitMessage =
+    stagedImages.length >= IMAGE_INPUT_LIMITS.maxCount
+      ? `Max ${IMAGE_INPUT_LIMITS.maxCount} images added. Remove one to add another.`
+      : `Only ${stagedImages.length} image${stagedImages.length === 1 ? "" : "s"} fit in this AI request after compression. Remove one or use smaller screenshots to add more.`;
+  const imageBudgetStatus =
+    stagedImages.length === 0
+      ? `AI can read up to ${IMAGE_INPUT_LIMITS.maxCount} images when they fit in one request.`
+      : stagedImages.length >= IMAGE_INPUT_LIMITS.maxCount
+        ? `Max ${IMAGE_INPUT_LIMITS.maxCount} images added. Remove one to add another.`
+      : remainingEncodedImageBytes <= 0
+        ? `Only ${stagedImages.length} image${stagedImages.length === 1 ? "" : "s"} fit in this AI request after compression. Remove one or use smaller screenshots to add more.`
+        : `${stagedImages.length} image${stagedImages.length === 1 ? "" : "s"} fit so far; about ${formatImageBudget(remainingEncodedImageBytes)} left for more images.`;
 
   // P2 fix: track all created object URLs for reliable cleanup on unmount
   const objectUrlsRef = useRef<Set<string>>(new Set());
@@ -2011,6 +2044,13 @@ export function ConversationalCreateUI({
         setImageError("Resized image still exceeds 1MB — try a smaller image.");
         return;
       }
+      const encodedBytes = getEncodedImageBytes(base64);
+      if (stagedEncodedBytesRef.current + encodedBytes > IMAGE_INPUT_LIMITS.maxTotalEncodedBytes) {
+        setImageError(
+          `Only ${stagedCountRef.current} image${stagedCountRef.current === 1 ? "" : "s"} fit in this AI request after compression. Remove one or use a smaller screenshot to add more.`
+        );
+        return;
+      }
 
       const previewUrl = URL.createObjectURL(file);
       objectUrlsRef.current.add(previewUrl);
@@ -2024,6 +2064,7 @@ export function ConversationalCreateUI({
       };
 
       stagedCountRef.current += 1;
+      stagedEncodedBytesRef.current += encodedBytes;
       setStagedImages((prev) => [...prev, staged]);
     } catch {
       setImageError("Failed to process image.");
@@ -2054,6 +2095,12 @@ export function ConversationalCreateUI({
       const remaining = IMAGE_INPUT_LIMITS.maxCount - stagedCountRef.current - queuedCount;
       if (remaining <= 0) {
         setImageError(`Max ${IMAGE_INPUT_LIMITS.maxCount} images allowed`);
+        return;
+      }
+      if (stagedEncodedBytesRef.current >= IMAGE_INPUT_LIMITS.maxTotalEncodedBytes) {
+        setImageError(
+          `Only ${stagedCountRef.current} image${stagedCountRef.current === 1 ? "" : "s"} fit in this AI request after compression. Remove one or use smaller screenshots to add more.`
+        );
         return;
       }
 
@@ -2089,6 +2136,14 @@ export function ConversationalCreateUI({
     [cropQueue.length, cropTarget]
   );
 
+  const openImagePicker = useCallback(() => {
+    if (!canAddMoreImages) {
+      setImageError(imageUploadLimitMessage);
+      return;
+    }
+    fileInputRef.current?.click();
+  }, [canAddMoreImages, imageUploadLimitMessage]);
+
   const removeImage = useCallback((id: string) => {
     setStagedImages((prev) => {
       const target = prev.find((img) => img.id === id);
@@ -2096,6 +2151,10 @@ export function ConversationalCreateUI({
         URL.revokeObjectURL(target.previewUrl);
         objectUrlsRef.current.delete(target.previewUrl);
         stagedCountRef.current = Math.max(0, stagedCountRef.current - 1);
+        stagedEncodedBytesRef.current = Math.max(
+          0,
+          stagedEncodedBytesRef.current - getEncodedImageBytes(target.base64)
+        );
       }
       return prev.filter((img) => img.id !== id);
     });
@@ -3052,6 +3111,7 @@ export function ConversationalCreateUI({
       return [];
     });
     stagedCountRef.current = 0;
+    stagedEncodedBytesRef.current = 0;
     setImageError(null);
     setCoverCandidateId(null);
     setCoverMessage(null);
@@ -3138,6 +3198,58 @@ export function ConversationalCreateUI({
               <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
               {effectiveBackLabel}
             </Link>
+            {(createdSummary && createdPublicHref) ||
+            (existingEventSnapshot && existingEditHref && existingPublicHref) ? (
+              <div
+                className="mt-3 rounded-lg border border-[var(--color-border-input)] bg-[var(--color-bg-secondary)]/35 p-3 lg:hidden"
+                data-testid="host-mobile-event-links"
+              >
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text-tertiary)]">
+                  Event controls
+                </p>
+                {createdSummary && createdPublicHref ? (
+                  <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                    <Link
+                      href={`/dashboard/my-events/${createdSummary.eventId}`}
+                      target="_blank"
+                      className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+                    >
+                      <FileText className="h-4 w-4" aria-hidden="true" />
+                      {createdSummary.isPublished ? "Edit event" : "Edit / publish"}
+                    </Link>
+                    <Link
+                      href={createdPublicHref}
+                      target="_blank"
+                      className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg border border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)] px-3 py-2 text-sm font-semibold text-[var(--color-background)] shadow-sm hover:opacity-90"
+                    >
+                      <ExternalLink className="h-4 w-4" aria-hidden="true" />
+                      {createdSummary.isPublished ? "Open live page" : "Open draft preview"}
+                    </Link>
+                  </div>
+                ) : existingEventSnapshot && existingEditHref && existingPublicHref ? (
+                  <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                    <Link
+                      href={existingEditHref}
+                      target="_blank"
+                      className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+                    >
+                      <FileText className="h-4 w-4" aria-hidden="true" />
+                      Open edit page
+                    </Link>
+                    <Link
+                      href={existingPublicHref}
+                      target="_blank"
+                      className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg border border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)] px-3 py-2 text-sm font-semibold text-[var(--color-background)] shadow-sm hover:opacity-90"
+                    >
+                      <ExternalLink className="h-4 w-4" aria-hidden="true" />
+                      {existingEventSnapshot.isPublished
+                        ? "Open live page"
+                        : "Open profile preview"}
+                    </Link>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         ) : (
           <div>
@@ -3555,8 +3667,8 @@ export function ConversationalCreateUI({
               </span>
               <button
                 type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={stagedImages.length >= IMAGE_INPUT_LIMITS.maxCount}
+                onClick={openImagePicker}
+                disabled={!canAddMoreImages}
                 className="text-xs px-2 py-1 rounded bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] disabled:opacity-40 transition-colors"
               >
                 + Add image
@@ -3574,9 +3686,19 @@ export function ConversationalCreateUI({
                 }}
               />
             </div>
+            <p
+              className="text-xs text-[var(--color-text-tertiary)]"
+              data-testid="image-budget-status"
+              aria-live="polite"
+            >
+              {imageBudgetStatus}
+            </p>
 
             {stagedImages.length > 0 && (
-              <div className="flex gap-3 flex-wrap">
+              <div
+                className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4"
+                data-testid="staged-image-grid"
+              >
                 {stagedImages.map((img) => {
                   const isSelected = coverCandidateId === img.id;
                   const isApplied =
@@ -3600,13 +3722,13 @@ export function ConversationalCreateUI({
                   return (
                     <div
                       key={img.id}
-                      className={`group w-28 overflow-hidden rounded-lg bg-[var(--color-bg-secondary)] transition-all ${
+                      className={`group min-w-0 overflow-hidden rounded-lg bg-[var(--color-bg-secondary)] transition-all ${
                         isSelected
                           ? "ring-2 ring-[var(--color-accent-primary)] border-2 border-[var(--color-accent-primary)]"
                           : "border border-[var(--color-border-input)]"
                       }`}
                     >
-                      <div className="relative h-28">
+                      <div className="relative aspect-square">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={img.previewUrl}
@@ -3674,8 +3796,9 @@ export function ConversationalCreateUI({
             {stagedImages.length === 0 && (
               <button
                 type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="flex w-full items-center gap-3 rounded-lg border border-dashed border-[var(--color-border-input)] bg-[var(--color-bg-secondary)]/40 px-4 py-3 text-left transition-colors hover:border-[var(--color-accent-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]/40"
+                onClick={openImagePicker}
+                disabled={!canAddMoreImages}
+                className="flex w-full items-center gap-3 rounded-lg border border-dashed border-[var(--color-border-input)] bg-[var(--color-bg-secondary)]/40 px-4 py-3 text-left transition-colors hover:border-[var(--color-accent-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]/40 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)]">
                   <ImagePlus className="h-4 w-4" aria-hidden="true" />
@@ -3703,7 +3826,9 @@ export function ConversationalCreateUI({
             )}
 
             {imageError && (
-              <p className="text-xs text-[var(--color-text-error)]">{imageError}</p>
+              <p className="text-xs text-[var(--color-text-error)]" role="alert">
+                {imageError}
+              </p>
             )}
           </div>
 
@@ -4081,8 +4206,9 @@ export function ConversationalCreateUI({
                   ) : (
                     <button
                       type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="flex w-full items-center gap-3 rounded-lg border border-dashed border-[var(--color-border-input)] bg-[var(--color-bg-secondary)]/30 px-3 py-3 text-left text-sm text-[var(--color-text-secondary)] hover:border-[var(--color-accent-primary)]"
+                      onClick={openImagePicker}
+                      disabled={!canAddMoreImages}
+                      className="flex w-full items-center gap-3 rounded-lg border border-dashed border-[var(--color-border-input)] bg-[var(--color-bg-secondary)]/30 px-3 py-3 text-left text-sm text-[var(--color-text-secondary)] hover:border-[var(--color-accent-primary)] disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <ImagePlus className="h-4 w-4" aria-hidden="true" />
                       Add a flyer or cover image
