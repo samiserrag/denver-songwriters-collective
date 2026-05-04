@@ -66,6 +66,7 @@ import {
   normalizeSeriesModeConsistency,
   pruneOptionalBlockingFields,
   pruneSatisfiedBlockingFields,
+  shouldSuppressDraftVerifierIssue,
 } from "@/lib/events/interpreterPostprocess";
 
 /** Vercel serverless function timeout — vision, drafting, search, and verifier calls need headroom. */
@@ -3402,6 +3403,8 @@ function buildDraftVerifierPrompt(input: {
         "Use patches for safe corrections such as title cleanup, event_type/category cleanup, signup_time vs start_time, end_time, recurrence_rule/series_mode, custom venue name/address/city/state, cost, age policy, or description.",
         "Do not set venue_id unless it is already present in draft_payload or venue_resolution explicitly resolved to that id. Prefer venue_name/custom_location fields for new venues.",
         "For recurring in-person events at a named place that is not in the venue catalog, preserve full custom venue details so the save step can promote it to a reusable venue.",
+        "Never ask the user how this app stores recurrence, RRULE, start_date, or event_date. The app contract is: start_date/event_date anchors the first occurrence; recurrence_rule describes the recurring pattern.",
+        "When a source gives a month/day without a year and the current-year date is current_date or later, do not ask to confirm the year; use the current year or patch to it.",
         "Flag high severity only for contradictions or publish-critical problems that cannot be safely patched: wrong date, past date for a new event, wrong venue, impossible time order, wrong event type, invented facts, or missing required field.",
         "If web_search_verification has sourced facts that conflict with the draft, flag high only when publishing would likely be wrong.",
         "Do not flag optional missing details such as cost, source URL, end time, capacity, or age policy.",
@@ -4526,7 +4529,16 @@ export async function POST(request: Request) {
 
   const patchedFields = new Set(appliedVerifierPatches.map((patch) => patch.field));
   const highRiskVerificationIssue =
-    draftVerification?.issues.find((issue) => issue.severity === "high" && !patchedFields.has(issue.field)) ?? null;
+    draftVerification?.issues.find(
+      (issue) =>
+        issue.severity === "high" &&
+        !patchedFields.has(issue.field) &&
+        !shouldSuppressDraftVerifierIssue({
+          issue,
+          draft: sanitizedDraft,
+          currentDate,
+        })
+    ) ?? null;
   if (highRiskVerificationIssue && resolvedNextAction !== "ask_clarification") {
     resolvedNextAction = "ask_clarification";
     resolvedBlockingFields = [highRiskVerificationIssue.field || "draft_verification"];
