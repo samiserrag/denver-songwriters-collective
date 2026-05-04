@@ -66,6 +66,27 @@ describe("Interpreter location hints", () => {
     expect(routeSource).toContain("address: addressFromCoords || addressFromText");
   });
 
+  it("uses Google Maps geocoding as venue lookup when no Maps URL was pasted", () => {
+    expect(routeSource).toContain("resolveGoogleMapsVenueQueryHint");
+    expect(routeSource).toContain("buildGoogleMapsVenueHintQueries");
+    expect(routeSource).toContain("query_place_id");
+    expect(routeSource).toContain("mergeGoogleMapsHintIntoWebSearchVerification");
+  });
+
+  it("defaults web-search prompts to Google and rejects Bing result sources", () => {
+    expect(routeSource).toContain("source_preference");
+    expect(routeSource).toContain("Google Search and Google Maps first");
+    expect(routeSource).toContain("Default to Google Search and Google Maps");
+    expect(routeSource).toContain("isBlockedSearchEngineSource");
+    expect(routeSource).toContain("bing.com");
+    expect(routeSource).toContain("Do not use Bing search result pages as sources");
+  });
+
+  it("recognizes Broomfield flyer address lines without requiring a ZIP", () => {
+    expect(routeSource).toContain('"Broomfield"');
+    expect(routeSource).toContain("coloradoCityOnly");
+  });
+
   it("strips maps URLs from draft external_url during hardening", () => {
     expect(routeSource).toContain("if (isGoogleMapsUrl(draft.external_url))");
     expect(routeSource).toContain("draft.external_url = null");

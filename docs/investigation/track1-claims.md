@@ -22,6 +22,26 @@ Rules:
 
 ## Active claims
 
+### Lane 9 follow-up — Google Maps venue clarification fix
+
+- **Branch:** `codex/track1-lane9-venue-clarification-fix`
+- **Owner:** Lane 9
+- **Base SHA:** `d9ceea17336e` (current `origin/main` after refresh)
+- **Status:** `in_progress`
+- **Purpose:** Make Google Maps/geocoding the deterministic venue evidence path for flyer-derived venue/address text, and prevent stale "known venue" clarification prompts after Maps-backed venue evidence is already present.
+- **Notes:** Follow-up to the Night Owl Lounge production smoke. Scope is venue evidence and concierge wording only; no production mutation, publishing gate, migrations, Lane 5, Lane 6, Symphony, reusable venue writes, or event `external_url` behavior changes.
+- **Files claimed:**
+  - `docs/investigation/track1-claims.md`
+  - `web/src/app/api/events/interpret/route.ts`
+  - `web/src/app/(protected)/dashboard/my-events/_components/conciergeSearchEvidence.ts`
+  - `web/src/lib/events/aiPromptContract.ts`
+  - `web/src/lib/events/venueResolver.ts`
+  - `web/src/__tests__/interpreter-concierge-search.test.ts`
+  - `web/src/__tests__/conversational-create-search-confidence.test.ts`
+  - `web/src/__tests__/interpreter-location-hints.test.ts`
+
+---
+
 ### Lane 9 follow-up — Venue search timeout resilience
 
 - **Branch:** `codex/track1-lane9-venue-search-timeout-resilient`
