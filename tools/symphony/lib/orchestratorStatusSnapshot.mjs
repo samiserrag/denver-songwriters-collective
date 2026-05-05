@@ -18,6 +18,14 @@ import { validateOrchestratorStateSnapshot } from "./orchestratorStateManifest.m
 import { buildToolEvidenceStatus } from "./orchestratorToolEvidence.mjs";
 
 const STATE_VALUES = Object.freeze(Object.values(ORCHESTRATOR_STATES));
+const SECRET_VALUE_PATTERNS = [
+  /ghp_[A-Za-z0-9_]{20,}/,
+  /github_pat_[A-Za-z0-9_]{20,}/,
+  /\bsk-[A-Za-z0-9_-]{20,}/,
+  /\bxox[baprs]-[A-Za-z0-9-]{20,}/,
+  /\bBearer\s+[A-Za-z0-9._~+/-]+=*/i,
+  /\b(postgres|postgresql|mysql|mongodb):\/\/[^/\s:@]+:[^@\s]+@/i
+];
 
 export function buildOrchestratorStatusSnapshot(snapshot, options = {}) {
   let generatedAt;
@@ -93,7 +101,7 @@ function buildStatus(snapshot, generatedAt, options) {
     }
   }
 
-  return {
+  return redactSecretLikeValues({
     ok: true,
     mode: options.mode || "snapshot",
     generated_at: generatedAt,
@@ -131,7 +139,7 @@ function buildStatus(snapshot, generatedAt, options) {
     last_outcome: snapshot.last_outcome ?? null,
     actions: [],
     durableWrites: []
-  };
+  });
 }
 
 function runningSummary(issue, generatedAt) {
@@ -239,4 +247,19 @@ function toIsoTimestamp(value, label) {
 
 function isPlainObject(value) {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function redactSecretLikeValues(value) {
+  if (Array.isArray(value)) {
+    return value.map((entry) => redactSecretLikeValues(entry));
+  }
+  if (isPlainObject(value)) {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, entry]) => [key, redactSecretLikeValues(entry)])
+    );
+  }
+  if (typeof value === "string" && SECRET_VALUE_PATTERNS.some((pattern) => pattern.test(value))) {
+    return "[REDACTED]";
+  }
+  return value;
 }
