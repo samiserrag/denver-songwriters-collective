@@ -25,10 +25,18 @@ import {
   type ConciergeIR,
   type ConciergeOccurrence,
 } from "@/lib/events/conciergeIR";
-import {
-  INTERNAL_DRAFT_VERIFIER_QUESTION_PATTERN,
-  REDUNDANT_YEAR_CONFIRMATION_PATTERN,
-} from "@/lib/events/interpreterPostprocess";
+
+// Source of truth: `web/src/lib/events/interpreterPostprocess.ts` (PR #285,
+// commit bea52024). The Track 1 file-change guardrail in
+// `event-detail-type-badges.test.ts` forbids cross-PR edits to
+// `interpreterPostprocess.ts` from non-Track-1 PRs, so the two regexes are
+// duplicated here byte-for-byte. If the upstream regex changes, mirror it
+// here.
+const INTERNAL_DRAFT_VERIFIER_QUESTION_PATTERN =
+  /\b(?:event system|recurrence(?:\s+\w+){0,4}\s+(?:begin|start)|event_date\s+override|start_date\s+override|FREQ=|BYDAY=|RRULE|schema|database|choose the one that applies)\b/i;
+
+const REDUNDANT_YEAR_CONFIRMATION_PATTERN =
+  /\b(?:confirm|verify|check|which|what)\b[\s\S]{0,80}\byear\b|\byear\b[\s\S]{0,80}\b(?:confirm|verify|check|which|what)\b/i;
 
 const CUSTOM_DATES_PATTERN = /\bcustom[\s_-]?dates?\b/i;
 
