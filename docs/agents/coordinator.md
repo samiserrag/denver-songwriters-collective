@@ -30,6 +30,25 @@ Then read lane-specific docs only as needed for the current request:
 | Lane 4 | Symphony helper | Symphony read-only review, critique, and decision memos unless explicitly assigned implementation. |
 | Lane 5 | Event audit/admin alerts/growth | Event audit log, admin alerting, and growth/public-surface planning. Defaults to docs-only investigation until approved stop-gates release runtime work. |
 | Lane 6 | Strategy/public-good infrastructure policy | Operating thesis, ingestion ethics, source registry, verification model, agentic maintenance policy, and trust-layer governance. Docs-only by default; implementation surfaces require separate stop-gates. |
+| Lane 9 | Track 1 / event AI | Active event-creation / event-edit AI surfaces, concierge IR architecture, interpreter route, prompt/contract refinement. Builds on `docs/investigation/track1-claims.md`. Implementation allowed; must respect Lane 2 BOLA, Lane 5 audit, Lane 6 trust-layer, and Symphony boundaries. |
+| Lane 10 | Strategy editing | Docs-only edits to narrative scope (e.g., open-mics / grassroots-performance wedge). Operates on strategy docs only. Gates SOURCE-OBS-01 activation language but does not implement Lane 6 stop-gates. No code, no schema, no migrations. |
+
+## Tool Ownership
+
+Each lane runs in a specific agent environment. When auditing reports from Codex Web lanes, verify PR existence on GitHub via the plugin before trusting executor metadata.
+
+| Lane | Active tool | PR creation method |
+|---|---|---|
+| Lane 1 (coordinator) | Claude | n/a — no code edits |
+| Lane 2 (Track 2) | Codex Web | Manual "Create PR" button click in Codex Web UI |
+| Lane 3 (Symphony builder) | Codex Web | Manual "Create PR" button click in Codex Web UI |
+| Lane 4 (Symphony helper) | Claude or as assigned | Native PR creation via plugin |
+| Lane 5 (event audit / growth) | Claude | Native PR creation via plugin |
+| Lane 6 (strategy / public-good) | Claude | Native PR creation via plugin |
+| Lane 9 (Track 1 / event AI) | Claude | Native PR creation via plugin |
+| Lane 10 (strategy editing) | Claude | Native PR creation via plugin |
+
+Codex Web caveat: the GitHub Connector renames branches and re-applies commits when the human clicks "Create PR" — executor's reported branch name and SHA are advisory until the PR exists on GitHub. The Connector also auto-applies the `codex` label.
 
 ## Role
 
