@@ -546,10 +546,10 @@ type DraftVerifierIssueLike = {
   question?: string | null;
 };
 
-const INTERNAL_DRAFT_VERIFIER_QUESTION_PATTERN =
+export const INTERNAL_DRAFT_VERIFIER_QUESTION_PATTERN =
   /\b(?:event system|recurrence(?:\s+\w+){0,4}\s+(?:begin|start)|event_date\s+override|start_date\s+override|FREQ=|BYDAY=|RRULE|schema|database|choose the one that applies)\b/i;
 
-const REDUNDANT_YEAR_CONFIRMATION_PATTERN =
+export const REDUNDANT_YEAR_CONFIRMATION_PATTERN =
   /\b(?:confirm|verify|check|which|what)\b[\s\S]{0,80}\byear\b|\byear\b[\s\S]{0,80}\b(?:confirm|verify|check|which|what)\b/i;
 
 function getVerifierIssueText(issue: DraftVerifierIssueLike): string {
